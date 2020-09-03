@@ -4,4 +4,4 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - modelflow 
+  - modelflow=0.3.01
