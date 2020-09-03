@@ -1,0 +1,8 @@
+name: base
+name: base
+channels:
+  - ibh  
+  - defaults
+  - conda-forge
+dependencies:
+  - modelflow
