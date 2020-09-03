@@ -3,5 +3,15 @@ channels:
   - ibh  
   - conda-forge
 dependencies:
-  - modelflow=1.0.00
-  - python=3.7
+  - pandas
+  - seaborn
+  - networkx
+  - graphviz
+  - sympy
+  - cvxopt
+  - numba
+  - spyder
+  - jupyter_contrib_nbextensions
+  - jupyter_nbextensions_configurator
+  - qgrid
+  - ipysheet
