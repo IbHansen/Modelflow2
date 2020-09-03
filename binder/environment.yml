@@ -30,3 +30,4 @@ dependencies:
   - numba
   - jupyter_contrib_nbextensions
   - conda-build
+  - modelflow
