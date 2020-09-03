@@ -4,14 +4,29 @@ channels:
   - conda-forge
 dependencies:
   - pandas
+  - scipy 
+  - numexpr
+  - bottleneck
+  - XLsxWriter
+  - pyarrow
+  - tabulate
+  - xlrd
+  - xlwt
+  - zlib 
+  - xarray  
+  - setuptools
+  - wheel  
+  - spyder 
+  - matplotlib
   - seaborn
-  - networkx
-  - graphviz
-  - sympy
+  - numpy >=1.19.1
+  - sympy 
   - cvxopt
-  - numba
-  - spyder
-  - jupyter_contrib_nbextensions
-  - jupyter_nbextensions_configurator
+  - graphviz
   - qgrid
-  - ipysheet
+  - rise
+  - jupyter 
+  - networkx
+  - numba
+  - jupyter_contrib_nbextensions
+  - conda-build
