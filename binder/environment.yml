@@ -24,7 +24,6 @@ dependencies:
   - cvxopt
   - graphviz
   - qgrid
-  - rise
   - jupyter 
   - networkx
   - numba
