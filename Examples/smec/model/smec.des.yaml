@@ -1,0 +1,3346 @@
+AAB:
+  des: IO-koeff., lev. fra landbrug til byggeri
+AACB:
+  des: IO-koeff., lev. fra landbrug til bilforbrug
+AACE:
+  des: IO-koeff., lev. fra landbrug til energiforbrug
+AACH:
+  des: IO-koeff., lev. fra landbrug til boligforbrug
+AACV:
+  des: IO-koeff., lev. fra landbrug til forbrug af andre varer
+AAEI:
+  des: IO-koeff., lev. fra landbrug til industrieksport
+AAI:
+  des: IO-koeff., lev. fra landbrug til industri
+ABCH:
+  des: IO-koeff., lev. fra byggeri til boligforbrug
+ABCO:
+  des: IO-koeff., lev. fra byggeri til off. forbrug
+ABE:
+  des: IO-koeff., lev. fra byggeri til energierhv.
+ABEI:
+  des: IO-koeff., lev. fra byggeri til industrieksport
+ABESQ:
+  des: "IO-koeff., lev. fra byggeri til \xF8vrig tjenesteeksport"
+ABH:
+  des: IO-koeff., lev. fra byggeri til boligbenyttelse
+ABIB:
+  des: IO-koeff., lev. fra byggeri til bygn.inv.
+ABT:
+  des: IO-koeff., lev. fra byggeri til tjenesteerhv.
+AE:
+  des: "Endelig samlet eftersp\xF8rgsel, mio. kr."
+AEA:
+  des: IO-koeff., lev. fra energierhv. til landbrug
+AEB:
+  des: IO-koeff., lev. fra energierhv. til byggeri
+AECE:
+  des: IO-koeff., lev. fra energierhv. til energiforbrug
+AECG:
+  des: IO-koeff., lev. fra energierhv. til benzinforbrug
+AEE:
+  des: IO-koeff., lev. fra energierhv. til energierhv.
+AEEE:
+  des: IO-koeff., lev. fra energierhv. til energieksport
+AEI:
+  des: IO-koeff., lev. fra energierhv. til industri
+AEO:
+  des: IO-koeff., lev. fra energierhv. til off. erhverv
+AET:
+  des: IO-koeff., lev. fra energierhv. til tjenesteerhv.
+AFGIFT_GAP:
+  des: Bidrag til output gap fra afgiftsforhold
+AFGIFT_S:
+  des: Strukturel udvikling i afgiftsforhold (BNP/BVT)
+AFGIFT_SX:
+  des: "Strukturel udvikling i afgiftsforhold (BNP/BVT), eksogent sk\xF8n, relevant\
+    \ hvis DXAFGIFT_S=1"
+AHCH:
+  des: IO-koeff., lev. fra boligbenyttelse til boligforbrug
+AI:
+  des: "Endelig indenlandsk eftersp\xF8rgsel, mio. kr."
+AIA:
+  des: IO-koeff., lev. fra industri til landbrug
+AIB:
+  des: IO-koeff., lev. fra industri til byggeri
+AICV:
+  des: IO-koeff., lev. fra industri til forbrug af andre varer
+AIEI:
+  des: IO-koeff., lev. fra industri til industrieksport
+AIESQ:
+  des: "IO-koeff., lev. fra industri til \xF8vrig tjenesteeksport"
+AII:
+  des: IO-koeff., lev. fra industri til industri
+AIIM:
+  des: IO-koeff., lev. fra industri til maskininv.
+AIPS:
+  des: "Endelig indenlandsk privat eftersp\xF8rgsel, mio. kr."
+AIT:
+  des: IO-koeff., lev. fra industri til tjenesteerhv.
+AMECE:
+  des: IO-koeff., lev. fra import af energi til energiforbrug
+AMECG:
+  des: IO-koeff., lev. fra import af energi til benzinforbrug
+AMEE:
+  des: IO-koeff., lev. fra import af energi til energierhv.
+AMEEE:
+  des: IO-koeff., lev. fra import af energi til energieksport
+AMES:
+  des: "IO-koeff., lev. fra import af energi til s\xF8fart"
+AMET:
+  des: IO-koeff., lev. fra import af energi til tjenesteerhv.
+AMIA:
+  des: IO-koeff., lev. fra industriimport til landbrug
+AMIB:
+  des: IO-koeff., lev. fra industriimport til byggeri
+AMICB:
+  des: IO-koeff., lev. fra industriimport til bilforbrug
+AMICV:
+  des: IO-koeff., lev. fra industriimport til forbrug af andre varer
+AMIEi:
+  des: IO-koeff., lev. fra industriimport til industrieksport
+AMII:
+  des: IO-koeff., lev. fra industriimport til industri
+AMIIM:
+  des: IO-koeff., lev. fra industriimport til maskininv.
+AMIO:
+  des: IO-koeff., lev. fra industriimport til off. erhverv
+AMIT:
+  des: IO-koeff., lev. fra industriimport til tjenesteerhv.
+AMSQB:
+  des: "IO-koeff., lev. fra \xF8vrig tjenesteimport til byggeri"
+AMSQCS:
+  des: "IO-koeff., lev. fra import af \xF8vrige tjenester til tjensteforbrug"
+AMSQESQ:
+  des: "IO-koeff., lev. fra \xF8vrig tjenesteimport til \xF8vrig tjenesteeksport"
+AMSQI:
+  des: "IO-koeff., lev. fra import af \xF8vrige tjenester til industri"
+AMSQIM:
+  des: "IO-koeff., lev. fra import af \xF8vrige tjenester til maskininv."
+AMSQN:
+  des: "IO-koeff., lev. fra import af \xF8vrige tjenester til Nords\xF8erhv."
+AMSQO:
+  des: "IO-koeff., lev. fra \xF8vrig tjenesteimport til off. erhverv"
+AMSQS:
+  des: "IO-koeff., lev. fra import af \xF8vrige tjenester til s\xF8fart"
+AMSQT:
+  des: "IO-koeff., lev. fra import af \xF8vrige tjenester til tjenesteerhv."
+AMSSS:
+  des: "IO-koeff., lev. fra import af s\xF8fart til s\xF8fart"
+AMTCT:
+  des: IO-koeff., lev. fra import af turisme til forbrug af turisme
+ANE:
+  des: "IO-koeff., lev. fra nords\xF8erhv. til energierhv."
+ANEE:
+  des: "IO-koeff., lev. fra nords\xF8erhv. til energieksport"
+AOCO:
+  des: IO-koeff., lev. fra off. erhverv til off. forbrug
+AOCS:
+  des: IO-koeff., lev. fra off. erhverv til tjensteforbrug
+AOO:
+  des: IO-koeff., lev. fra off. erhverv til off. erhverv
+AOT:
+  des: IO-koeff., lev. fra off. erhverv til tjenesteerhv.
+ASESQ:
+  des: "IO-koeff., lev. fra tjenesteerhv. til \xF8vrig tjenesteeksport"
+AST:
+  des: "IO-koeff., lev. fra s\xF8fart til tjenesteerhv."
+ASVA:
+  des: IO-koeff., indh. af varetilkn. skat i landbrug
+ASVB:
+  des: IO-koeff., indh. af varetilkn. skat i byggeri
+ASVCB:
+  des: IO-koeff., indh. af varetilkn. skat i bilforbrug
+ASVCE:
+  des: IO-koeff., indh. af varetilkn. skat i energiforbrug
+ASVCG:
+  des: IO-koeff., indh. af varetilkn. skat i benzinforbrug
+ASVCH:
+  des: IO-koeff., indh. af varetilkn. skat i boligforbrug
+ASVCO:
+  des: IO-koeff., indh. af varetilkn. skat i off. forbrug
+ASVCS:
+  des: IO-koeff., indh. af varetilkn. skat i tjensteforbrug
+ASVCT:
+  des: IO-koeff., indh. af varetilkn. skat i turistforbrug
+ASVCV:
+  des: IO-koeff., indh. af varetilkn. skat i forbrug af andre varer
+ASVE:
+  des: IO-koeff., indh. af varetilkn. skat i energierhv.
+ASVEE:
+  des: IO-koeff., indh. af varetilkn. skat i energieksport
+ASVEI:
+  des: IO-koeff., indh. af varetilkn. skat i industrieksport
+ASVESQ:
+  des: "IO-koeff., indh. af varetilkn. skat i \xF8vrig tjenesteeksport"
+ASVH:
+  des: IO-koeff., indh. af varetilkn. skat i boligbenyttelse
+ASVI:
+  des: IO-koeff., indh. af varetilkn. skat i industri
+ASVIB:
+  des: IO-koeff., indh. af varetilkn. skat i bygn.inv.
+ASVIM:
+  des: IO-koeff., indh. af varetilkn. skat i maskininv.
+ASVN:
+  des: "IO-koeff., indh. af varetilkn. skat i nords\xF8erhv."
+ASVO:
+  des: IO-koeff., indh. af varetilkn. skat i off. erhverv
+ASVS:
+  des: "IO-koeff., indh. af varetilkn. skat i s\xF8fart"
+ASVT:
+  des: IO-koeff., indh. af varetilkn. skat i tjenesteerhv.
+AT:
+  des: Samlet tilgang, mio. kr.
+ATA:
+  des: IO-koeff., lev. fra tjenesteerhv. til landbrug
+ATB:
+  des: IO-koeff., lev. fra tjenesteerhv. til byggeri
+ATCB:
+  des: IO-koeff., lev. fra tjenesteerhv. til bilforbrug
+ATCE:
+  des: IO-koeff., lev. fra tjenesteerhv. til energiforbrug
+ATCG:
+  des: IO-koeff., lev. fra tjenesteerhv. til benzinforbrug
+ATCH:
+  des: IO-koeff., lev. fra tjenesteerhv. til boligforbrug
+ATCO:
+  des: IO-koeff., lev. fra tjenesteerhv. til off. forbrug
+ATCS:
+  des: IO-koeff., lev. fra tjenesteerhv. til tjensteforbrug
+ATCV:
+  des: IO-koeff., lev. fra tjenesteerhv. til forbrug af andre varer
+ATE:
+  des: IO-koeff., lev. fra tjenesteerhv. til energierhv.
+ATEI:
+  des: IO-koeff., lev. fra tjenesteerhv. til industrieksport
+ATESQ:
+  des: "IO-koeff., lev. fra tjenesteerhv. til \xF8vrig tjenesteeksport"
+ATH:
+  des: IO-koeff., lev. fra tjenesteerhv. til boligbenyttelse
+ATI:
+  des: IO-koeff., lev. fra tjenesteerhv. til industri
+ATIB:
+  des: IO-koeff., lev. fra tjenesteerhv. til bygn.inv.
+ATIM:
+  des: IO-koeff., lev. fra tjenesteerhv. til maskininv.
+ATN:
+  des: "IO-koeff., lev. fra tjenesteerhv. til Nords\xF8"
+ATO:
+  des: IO-koeff., lev. fra tjenesteerhv. til off. erhverv
+ATS:
+  des: "IO-koeff., lev. fra tjenesteerhv. til s\xF8fart"
+ATT:
+  des: IO-koeff., lev. fra tjenesteerhv. til tjenesteerhv.
+AYFA:
+  des: IO-koeff., BVT-kvote i landbrug
+AYFB:
+  des: IO-koeff., BVT-kvote i byggeri
+AYFE:
+  des: IO-koeff., BVT-kvote i energierhv.
+AYFH:
+  des: IO-koeff., BVT-kvote i boligbenyttelse
+AYFI:
+  des: IO-koeff., BVT-kvote i industri
+AYFN:
+  des: "IO-koeff., BVT-kvote i nords\xF8erhv."
+AYFO:
+  des: IO-koeff., BVT-kvote i off. erhverv
+AYFS:
+  des: "IO-koeff., BVT-kvote i s\xF8fart"
+AYFT:
+  des: IO-koeff., BVT-kvote i tjenesteerhv.
+BCPK:
+  des: "Forbrugskvoten baseret p\xE5 kortsigtsindkomsten."
+BCPL:
+  des: "Forbrugskvoten baseret p\xE5 langsigtsindkomsten"
+BEJ:
+  des: "Rate for ejendomsskatter, der indg\xE5r i user cost udtrykket"
+BFISIM:
+  des: Implicit sats i beregningen af FISIM i husholdningernes rentefradrag (FISIM=BFISIM*YW1)
+BIBOS:
+  des: Offentlige bygningsinvesteringers andel af de samlede off. investeringer
+BIVB:
+  des: "Skattem\xE6ssige afskrivninger bygninger, implicit sats"
+BIVM:
+  des: "Skattem\xE6ssige afskrivninger maskiner, implicit sats"
+BIVOS:
+  des: Offentlige afskrivningers andel af offentligt forbrug
+BPB_S:
+  des: "V\xE6gt til private byerhverv i strukturel timeproduktivitet"
+BPB_SX:
+  des: "V\xE6gt til private byerhverv i strukturel timeproduktivitet, eksogent sk\xF8\
+    n, relevant hvis DXBPB_S=1"
+BQLTJD:
+  des: "Aktiveringsomfang (i st\xF8ttet besk\xE6ftigelse) af dagpengeledige"
+BQLTJK:
+  des: "Aktiveringsomfang (i st\xF8ttet besk\xE6ftigelse) af kontanthj\xE6lpsledige"
+BQSA:
+  des: "Andel af selvst\xE6ndige i landbrug"
+BQSB:
+  des: "Andel af selvst\xE6ndige i byggeri"
+BQSE:
+  des: "Andel af selvst\xE6ndige i energi erhverv"
+BQSH:
+  des: "Andel af selvst\xE6ndige i boligben."
+BQSI:
+  des: "Andel af selvst\xE6ndige i industri"
+BQSN:
+  des: "Andel af selvst\xE6ndige i Nords\xF8erhvervevet"
+BQST:
+  des: "Andel af selvst\xE6ndige i tjeneste erhverv"
+BR_S:
+  des: "V\xE6gt til \xF8vrige erhverv i strukturel timeproduktivitet"
+BR_SX:
+  des: "V\xE6gt til \xF8vrige erhverv i strukturel timeproduktivitet, eksogent sk\xF8\
+    n, relevant hvis DXBR_S=1"
+BSDR:
+  des: "PAL-skatteafgiftspligtig andel af pensionssektorens afkast (Andel af pensionsformuen\
+    \ optjent f\xF8r 1983)"
+BTAOPM:
+  des: "Andel af pensionister der modtager mediecheck (indf\xF8rt med medieforliget\
+    \ i 2018)"
+BTAPOK:
+  des: 'Andel medlemmer af folkekirken (egentlig: andel af indkomsten som der skal
+    betales kirkeskat af)'
+BTGCB:
+  des: Momsbelastn.grad vedr. forbrug af biler
+BTGCE:
+  des: Momsbelastn.grad vedr. forbrug af energi
+BTGCG:
+  des: Momsbelastn.grad vedr. forbrug af benzin
+BTGCH:
+  des: Momsbelastn.grad vedr. forbrug af boligben.
+BTGCO:
+  des: Momsbelastn.grad vedr. off. forbrug
+BTGCS:
+  des: Momsbelastn.grad vedr. forbrug af tjen.
+BTGCV:
+  des: "Momsbelastn.grad vedr. forbrug af \xF8vrige varer."
+BTGIBH:
+  des: Momsbelastn.grad vedr. boliginvest.
+BTGIBOS:
+  des: Momsbelastn.grad vedr. off. bygn.invst.
+BTGIBPS:
+  des: Momsbelastn.grad vedr. privat bygn.invest.
+BTGIL:
+  des: Momsbelastn.grad vedr. lagerinvest.
+BTGIMOS:
+  des: Momsbelastn.grad vedr. off. maskininvest.
+BTGIMPS:
+  des: Momsbelastn.grad vedr. privat maskininvest.
+BTGVA:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i landbrug"
+BTGVB:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i byggeri"
+BTGVE:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i energi"
+BTGVH:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i boligben."
+BTGVI:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i industri"
+BTGVN:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i Nords\xF8"
+BTGVO:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i off. prod."
+BTGVS:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i s\xF8fart"
+BTGVT:
+  des: "Momsbelastn.grad vedr. r\xE5stofomk. i tjenesteerhverv"
+BTKOPEF:
+  des: "Modelberegnet andel af (fuldtids)personer i efterl\xF8nsordning som modtager\
+    \ skattefri efterl\xF8nspr\xE6mie"
+BTPEF:
+  des: "Andel af arbejdsstyrken tilmeldt efterl\xF8nsordning"
+BTPPFI:
+  des: Implicit bidragssats vedr. arbejdsgiveradministrerede pensioner. Andel af indkomst
+BTPPIAF:
+  des: Implicit bidragssats vedr. arbejdsgiveradministrerede alderspensioner. Andel
+    af indkomst
+BTPPIAQ:
+  des: Implicit bidragssats vedr. ikke-arbejdsgiveradministrerede alderspensioner.
+    Andel af indkomst
+BTPPIKF:
+  des: Implicit bidragssats vedr. arbejdsgiveradministrerede kapitalpensioner. Aandel
+    af indkomst
+BTPPIKQ:
+  des: Implicit bidragssats vedr. ikke-arbejdsgiver administrerede kapitalpensioner.
+    Andel af indkomst
+BTPPILF:
+  des: "Implicit bidragssats vedr. arbejdsgiveradministrerede pensioner med l\xF8\
+    bende udbetalinger. Andel af indkomst"
+BTPPILFTY:
+  des: "Pensionsindbetalingsandel for indkomstoverf\xF8rselsmodtagere (indf\xF8rt\
+    \ gradvist fra 2020 med FL19)"
+BTPPILQ:
+  des: "Implicit bidragssats vedr. ikke-arbejdsgiveradministrerede pensioner med l\xF8\
+    bende udbetalinger. Andel af indkomst"
+BTPPUA:
+  des: Udbetalingsandel for aldersopsparing. Andel af formuen i aldersopsparing
+BTPPUK:
+  des: Udbetalingsandel for kapitalpension. Andel af formuen i kapitalpension
+BTPPUL:
+  des: "Udbetalingsandel for l\xF8bende udbetalinger"
+BU5064:
+  des: "Andelen af 50-64-\xE5rige i forhold til resterende befolkning"
+BUL:
+  des: "Ledighedsprocent. Ledigheden som andel af arbejdsstyrken, hvor ledighed og\
+    \ besk\xE6ftigelse er opgjort eksklusiv s\xE5kaldte orlovspersoner"
+BULBAK:
+  des: "Andel af aktiverede kontanthj\xE6lpsmodtager, som indg\xE5r i bruttoledighed"
+BUL_S:
+  des: Strukturel ledighedsprocent.
+BYSB:
+  des: "Andel af personlig indkomst i f\xF8rste indkomsttrin, dvs. andel der betales\
+    \ bundskat af"
+BYSK:
+  des: Andel af skattepligtig indkomst i kommuneskat, dvs. (1-andel), der er friholdt
+    pga. personfradrag mv.
+BYSK_S:
+  des: bys korrigeret for renteudgifters andel af skattegrundlag
+BYSM:
+  des: Andel af personlig indkomst i andet indkomsttrin, dvs. andel der betales mellemskat
+    af
+BYSS:
+  des: Andel af skattepligtig indkomst i sundhedsbidrag, dvs. (1-andel), der er friholdt
+    pga. personfradrag mv.
+BYSS_S:
+  des: bys korrigeret for renteudgifters andel af skattegrundlag
+BYST:
+  des: Andel af personlig indkomst i tredje indkomsttrin, dvs. andel der betales topskat
+    af
+BYW:
+  des: "L\xF8nkvote, hele \xF8konomien."
+BYW1:
+  des: "L\xF8nkvote inkl. l\xF8nsum for selvst\xE6ndige, hele \xF8konomien."
+BYW1P:
+  des: "L\xF8nkvote inkl. l\xF8nsum for selvst\xE6ndige, private erhverv"
+BYW1PB:
+  des: "L\xF8nkvote inkl. l\xF8nsum for selvst\xE6ndige, private byerhverv, B+T+I"
+BYW1PB_S:
+  des: "Strukturelt bud p\xE5 l\xF8nkvote i private byerhverv inkl. imputeret l\xF8\
+    n for selvst\xE6ndige"
+BYW1PS:
+  des: "L\xF8nkvote inkl. l\xF8nsum for selvst\xE6ndige, privat sektor."
+BYWPB:
+  des: "L\xF8nkvote, private byerhverv, B+T+I"
+BYWPS:
+  des: "L\xF8nkvote, privat sektor."
+Btipppsn:
+  des: Andel af nettorenteindkomst med kompensation for tab af fradrag
+CA:
+  des: Samlet privat forbrug ekskl. biler, mio. kr.
+CB:
+  des: Privat forbrug af biler, mio. kr.
+CDLU:
+  des: Privat forbrug der fordeles via forbrugsfordelingssystemet DLU, mio. kr.
+CO:
+  des: Off. forbrug, mio. kr.
+COC:
+  des: Off. forbrug, kollektivt, mio. kr.
+COI:
+  des: Off. forbrug, individuelt, mio. kr.
+COZ:
+  des: Offentligt forbrug ekskl. afskrivninger, mio. kr.
+CP:
+  des: Privat forbrug, i alt, mio. kr.
+CQ:
+  des: "Privat forbrug ekskl. bilk\xF8b og boligben., mio. kr."
+CQO:
+  des: "Hj\xE6lpevariabel til forbrugsallokeringssystem (overskydende budget), mio\
+    \ kr."
+D4803:
+  des: Dummy, =1 fra 1948-2003, 0 herefter
+D4879:
+  des: Dummy, =1 fra 1948-79, 0 herefter
+D8599:
+  des: Dummy i rel. for fess, lig 1 til og med 1999
+DPRBA:
+  des: Afskrivningsrate, bygn. kap. i landbrug
+DPRBB:
+  des: Afskrivningsrate, bygn. kap. i byggeri
+DPRBE:
+  des: Afskrivningsrate, bygn. kap. i energi
+DPRBH:
+  des: Afskrivningsrate, bygn. kap. i boligben.
+DPRBI:
+  des: Afskrivningsrate, bygn. kap. i industri
+DPRBN:
+  des: "Afskrivningsrate, bygn. kap. i Nords\xF8erhv."
+DPRBO:
+  des: Afskrivningsrate, bygn. kap. i off. erhverv
+DPRBS:
+  des: "Afskrivningsrate, bygn. kap. i s\xF8fart"
+DPRBT:
+  des: Afskrivningsrate, bygn. kap. i tjeneste erhverv
+DPRCB:
+  des: Implicit afskrivningsrate, biler
+DPRMA:
+  des: Afskrivningsrate, mask. kap. i landbrug
+DPRMB:
+  des: Afskrivningsrate, mask. kap. i byggeri
+DPRME:
+  des: Afskrivningsrate, mask. kap. i energi
+DPRMI:
+  des: Afskrivningsrate, mask. kap. i industri
+DPRMN:
+  des: "Afskrivningsrate, mask. kap. i Nords\xF8erhv."
+DPRMO:
+  des: Afskrivningsrate, mask. kap. i off. erhverv
+DPRMS:
+  des: "Afskrivningsrate, mask. kap. i s\xF8fart"
+DPRMT:
+  des: Afskrivningsrate, mask. kap. i tjeneste erhverv
+DSE:
+  des: "Dummy i ligning for ejendomsskat til usercost, der fanger, at ejendomsskat\
+    \ var fradragsberettiget f\xF8r 1985"
+DTAB:
+  des: Niveauvariabel i Cobb-Douglas produktionsfunktion for neutrale tekniske fremskridt,
+    byggeri, polynomium
+DTABF:
+  des: Niveauvariabel i Cobb-Douglas produktionsfunktion for neutrale tekniske fremskridt,
+    byggeri, faktisk
+DTAI:
+  des: Niveauvariabel i Cobb-Douglas produktionsfunktion for neutrale tekniske fremskridt,
+    industri, polynomium
+DTAIF:
+  des: Niveauvariabel i Cobb-Douglas produktionsfunktion for neutrale tekniske fremskridt,
+    industri, faktisk
+DTALFAB:
+  des: Eksponent i Cobb-Douglas-produktionsfunktionen for forvridende tekniske fremskridt,
+    byggeri, polynomium
+DTALFABF:
+  des: Eksponent i Cobb-Douglas-produktionsfunktionen for forvridende tekniske fremskridt,
+    byggeri, faktisk
+DTALFAI:
+  des: Eksponent i Cobb-Douglas-produktionsfunktionen for forvridende tekniske fremskridt,
+    industri, polynomium
+DTALFAIF:
+  des: Eksponent i Cobb-Douglas-produktionsfunktionen for forvridende tekniske fremskridt,
+    industri, faktisk
+DTALFAT:
+  des: Eksponent i Cobb-Douglas-produktionsfunktionen for forvridende tekniske fremskridt,
+    tjenesteerhverv, polynomium
+DTALFATF:
+  des: Eksponent i Cobb-Douglas-produktionsfunktionen for forvridende tekniske fremskridt,
+    tjenesteerhverv, faktisk
+DTAT:
+  des: Niveauvariabel i Cobb-Douglas-produktionsfunktionen for neutrale tekniske fremskridt,
+    tjenesteerhverv, polynomium
+DTATF:
+  des: Niveauvariabel i Cobb-Douglas-produktionsfunktionen for neutrale tekniske fremskridt,
+    tjenesteerhverv, faktisk
+DTFC:
+  des: "Dummy, =0 frem til 1977, vokser med 1 fra 1978-87, og u\xE6ndret fra 1988\
+    \ og frem."
+DTFESS:
+  des: "Trend i relation for eksport af s\xF8fart"
+DTFMZSQ:
+  des: "Trend i relation for import af \xF8vrige tjenester"
+DXIOFU:
+  des: Eksogeniseringsdummy for IOFU. Normalt = 0
+DXIVOS:
+  des: Eksogeniseringsdummy for IVOS. Normalt = 0
+DXPSRTY:
+  des: Eksogeniseringsdummy i relation for satsreguleringsindekset. Normalt = 0, svarende
+    til endog. bestemmelse
+DXSIP:
+  des: "Eksogeniseringsdummy for punktafgifter. Normalt = 0. N\xE5r DXSIP=1 f\xF8\
+    lger punktafgifterne nettoprisindekset"
+DXSIQEJ:
+  des: Eksogeniseringsdummy for SIQEJ. Normalt = 0
+DXSSYEJ:
+  des: Eksogeniseringsdummy for SSYEH. Normalt = 0
+DXVYFHA:
+  des: "Eksogeniseringsdummy for produktivitet i landbrug. Normalt = 0. N\xE5r DXVYFHA=1\
+    \ bestemmes besk\xE6ftigelsen af den eksogene produktivitet, VYFHAX, og BVT"
+DXVYFHB:
+  des: "Eksogeniseringsdummy for produktivitet i byggeri. Normalt = 0. N\xE5r DXVYFHB=1\
+    \ bestemmes besk\xE6ftigelsen af den eksogene produktivitet, VYFHBX, og BVT"
+DXVYFHI:
+  des: "Eksogeniseringsdummy for produktivitet i industri. Normalt = 0. N\xE5r DXVYFHI=1\
+    \ bestemmes besk\xE6ftigelsen af den eksogene produktivitet, VYFHIX, og BVT"
+DXVYFHT:
+  des: "Eksogeniseringsdummy for produktivitet i tjenesteerhv.Normalt = 0. N\xE5r\
+    \ DXVYFHT=1 bestemmes besk\xE6ftigelsen af den eksogene produktivitet, VYFHTX,\
+    \ og BVT"
+DXafgift_s:
+  des: "Eksogeniseringsdummy for AFGIFT_S, s\xE6tter AFGIFT_S=FY/FYF. Normalt = 0"
+DXbpb_s:
+  des: "Eksogeniseringsdummy for BPB_S, s\xE6tter BPB_S=(hqpb_s/hq_s)*(pyfpb.1/pyf.1).\
+    \ Normalt = 0"
+DXbr_s:
+  des: "Eksogeniseringsdummy for BR_S, s\xE6tter BR_S=(hqr_s/hq_s)*(pyfr.1/pyf.1).\
+    \ Normalt = 0"
+DXhg:
+  des: "Eksogeniseringsdummy for KHGW, s\xE6tter KHGW s\xE5 HG=HG_S. Normalt = 0"
+DXhqr_s:
+  des: "Eksogeniseringsdummy for HQR_S, s\xE6tter HQR_S=HQR. Normalt = 0"
+DXpy_s:
+  des: "Eksogeniseringsdummy for PY_S, s\xE6tter PY_S=PY. Normalt = 0"
+DXvyfhr_s:
+  des: "Eksogeniseringsdummy for VYFHR_S, s\xE6tter VYFHR_S=VYFHR. Normalt = 0"
+E:
+  des: Eksport i alt, mio. kr.
+EE:
+  des: Eksport af energi, mio. kr.
+EFFKR:
+  des: Effektiv kronekurs, indeks 2000=100
+EI:
+  des: Eksport af industrivarer, mio. kr.
+EMUGLD:
+  des: "\xD8MU-g\xE6ld, brutto, mio kr."
+ENL:
+  des: "Betalingsbalancens l\xF8bende poster, saldo, mio. kr."
+ENLR:
+  des: "Residual p\xE5 betalingsbalancens l\xF8bende poster, mio. kr."
+ENVT:
+  des: Vare og tjenestebalancen, saldo mio. kr.
+ES:
+  des: Eksport af tjenester, ekskl. turisme, mio. kr.
+ESQ:
+  des: "Eksport af \xF8vrige tjenester, mio. kr."
+ESS:
+  des: "Eksport af s\xF8fart, mio. kr."
+EST:
+  des: Eksport af tjenester, ialt, mio. kr.
+ET:
+  des: Eksport af turisme, mio. kr.
+EV:
+  des: Vareeksport, mio. kr.
+FAE:
+  des: "Endelig samlet eftersp\xF8rgsel, mio. kr. 2010-priser k\xE6deindeks"
+FAI:
+  des: "Endelig indenlandsk eftersp\xF8rgsel, mio. kr. 2010-priser k\xE6deindeks"
+FAIPS:
+  des: "Endelig indenlandsk privat eftersp\xF8rgsel, mio. kr. 2010-priser k\xE6deindeks"
+FAMI:
+  des: Markedseftersp. i import af varer
+FAMSQ:
+  des: "Markedseftersp. i import af \xF8vrige tjenester"
+FAT:
+  des: "Samlet tilgang, mio. kr. 2010-priser k\xE6deindeks"
+FCA:
+  des: "Andet privat forbrug (end k\xF8ret\xF8jer), mio. kr. 2010-priser k\xE6deindeks"
+FCAHJ:
+  des: "Hj\xE6lpevariabel til at sikre konvergens af forbrugsmodel (lig FCA)"
+FCB:
+  des: "Privat forbrug af k\xF8ret\xF8jer, mio. kr. 2010-priser k\xE6deindeks"
+FCDLU:
+  des: "Privat forbrug bestemt i DLU, mio. kr. 2010-priser k\xE6deindeks"
+FCE:
+  des: "Privat forbrug af energi, mio. kr. 2010-priser k\xE6deindeks"
+FCG:
+  des: "Privat forbrug af benzin, mio. kr. 2010-priser k\xE6deindeks"
+FCH:
+  des: "Privat forbrug af boligben., mio. kr. 2010-priser k\xE6deindeks"
+FCO:
+  des: "Off. forbrug, mio. kr. 2010-priser k\xE6deindeks"
+FCOC:
+  des: "Off. forbrug, kollektivt, mio. 2010-priser k\xE6deindeks"
+FCOGL:
+  des: "Off. forbrug, inputbaseret, mio. kr. 2010-priser k\xE6deindeks"
+FCOI:
+  des: "Off. forbrug, individuelt, mio. 2010-priser k\xE6deindeks"
+FCOZ:
+  des: "Offentligt forbrug ekskl. afskrivninger, mio. kr. 2010-priser k\xE6deindeks"
+FCP:
+  des: "Privat forbrug i alt, mio. kr. 2010-priser k\xE6deindeks"
+FCS:
+  des: "Privat forbrug af tjen. og trans., mio. kr. 2010-priser k\xE6deindeks"
+FCT:
+  des: "Privat forbrug af turisme, mio. kr. 2010-priser k\xE6deindeks"
+FCV:
+  des: "Privat forbrug af andre varer, mio. kr. 2010-priser k\xE6deindeks"
+FE:
+  des: "Eksport i alt, mio. kr. 2010-priser k\xE6deindeks"
+FEE:
+  des: "Eksport af energi, mio. kr. 2010-priser k\xE6deindeks"
+FEEI:
+  des: Markedsudtryk for industrieksporten = verdens import af industrivarer. 2010=1
+FEEIW:
+  des: Modelberegnet markedsudtryk for industrieksport
+FEI:
+  des: "Eksport af industrivarer, mio. kr. 2010-priser k\xE6deindeks"
+FES:
+  des: "Eksport af tjenester, ekskl. turisme, mio. kr. 2010-priser k\xE6deindeks"
+FESQ:
+  des: "Eksport af \xF8vrige tjenester, mio. kr. 2010-priser k\xE6deindeks"
+FESQW:
+  des: "Modelberegnet eksport af \xF8vrige tjenester"
+FESS:
+  des: "Eksport af s\xF8fart, mio. kr. 2010-priser k\xE6deindeks"
+FESSW:
+  des: "Modelberegnet eksport af s\xF8fart"
+FEST:
+  des: "Eksport af tjenester, i alt, mio. kr. 2010-priser k\xE6deindeks"
+FET:
+  des: "Eksport af turisme, mio. kr. 2010-priser k\xE6deindeks"
+FEV:
+  des: "Vareeksport, mio. kr. 2010-priser k\xE6deindeks"
+FI:
+  des: "Investeringer i alt, mio. kr. 2010-priser k\xE6deindeks"
+FIB:
+  des: "Investeringer i bygninger inkl. boliger, mio. kr. 2010-priser k\xE6deindeks"
+FIBA:
+  des: "Bygn. inv. i landbrug, mio. kr. 2010-priser k\xE6deindeks"
+FIBB:
+  des: "Bygn. inv. i byggeri, mio. kr. 2010-priser k\xE6deindeks"
+FIBE:
+  des: "Bygn. inv. i energi erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FIBH:
+  des: "Boliginvesteringer, mio. kr. 2010-priser k\xE6deindeks"
+FIBI:
+  des: "Bygn. inv. i industri mio. kr. 2010-priser k\xE6deindeks"
+FIBN:
+  des: "Bygn. inv. i Nords\xF8erhv., mio. kr. 2010-priser k\xE6deindeks"
+FIBO:
+  des: "Bygn. inv. i offentlig erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FIBOS:
+  des: "Off. sektors invest. i bygninger, mio. kr. 2010-priser k\xE6deindeks"
+FIBPB:
+  des: "Bygn. inv. i priv. byerhverv, B+I+T mio. kr. 2010-priser k\xE6deindeks"
+FIBPS:
+  des: Privat sektors invest. i bygninger, residual beregnet
+FIBS:
+  des: "Bygn. inv. i s\xF8fart, mio. kr. 2010-priser k\xE6deindeks"
+FIBT:
+  des: "Bygn. inv. i tjeneste erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FIBXH:
+  des: "Bygningsinvesteringer ekskl. boliger, mio. kr. 2010-priser k\xE6deindeks"
+FIF:
+  des: "Faste bruttoinvesteringer, mio. kr. 2010-priser k\xE6deindeks"
+FIFPS:
+  des: "Private faste bruttoinvesteringer, mio. kr. 2010-priser k\xE6deindeks"
+FIL:
+  des: "Lagerinvest. i alt, mio. kr. 2010-priser k\xE6deindeks"
+FILA:
+  des: Lagerinvest. i landbrug, mio. kr. 2010-priser
+FILE:
+  des: Lagerinvest. i energi erhverv, mio. kr. 2010-priser
+FILI:
+  des: Lagerinvest. i industri mio. kr. 2010-priser
+FILME:
+  des: Lagerinvest. i import af energi, mio. kr. 2010-priser
+FILMI:
+  des: Lagerinvest. i import af andre varer, residualt beregnet
+FILN:
+  des: "Lagerinvest. i Nords\xF8erhv, mio. kr. 2010-priser"
+FILSV:
+  des: "Lagerinvest., afgiftsindhold, mio. kr. 2010-priser k\xE6deindeks"
+FILT:
+  des: Lagerinvest. i tjeneste erhverv, mio. kr. 2010-priser
+FIM:
+  des: "Maskininvest. i alt, mio. kr. 2010-priser k\xE6deindeks"
+FIMA:
+  des: "Maskininv. i landbrug, mio. kr. 2010-priser k\xE6deindeks"
+FIMB:
+  des: "Maskininv. i byggeri, mio. kr. 2010-priser k\xE6deindeks"
+FIME:
+  des: "Maskininv. i energi erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FIMI:
+  des: "Maskininv. i industri mio. kr. 2010-priser k\xE6deindeks"
+FIMN:
+  des: "Maskininv. i Nords\xF8erhv., mio. kr. 2010-priser k\xE6deindeks"
+FIMO:
+  des: "Maskininv. i off. erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FIMOS:
+  des: "Off. sektors maskininvesteringer, mio. kr. 2010-priser k\xE6deindeks"
+FIMPB:
+  des: "Maskininv. i priv. byerhverv, B+I+T mio. kr. 2010-priser k\xE6deindeks"
+FIMPS:
+  des: Privat sektors maskininvesteringer, residualt beregnet
+FIMS:
+  des: "Maskininv. i s\xF8fart, mio. kr. 2010-priser k\xE6deindeks"
+FIMT:
+  des: "Maskininv. i tjeneste erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FIMX:
+  des: "Maskininvest. ekskl. forskning og udvikling i offentlig branche, mio. kr.\
+    \ 2010-priser k\xE6deindeks"
+FIMXO:
+  des: "Maskininv. i off. erhverv ekskl. forskning og udvikling, mio. kr. 2010-priser\
+    \ k\xE6deindeks"
+FIMXOS:
+  des: "Off. sektors maskininvesteringer ekskl. forskning og udvikling, mio. kr. 2010-priser\
+    \ k\xE6deindeks"
+FINBH:
+  des: "Nettoboliginvesteringer, mio. kr. 2010-priser k\xE6deindeks"
+FIOFU:
+  des: "Investeringer i forskning og udvikling, off. erhverv, mio. kr. 2010-priser\
+    \ k\xE6deindeks"
+FIOS:
+  des: "Off. sektors nyinvesteringer i alt, mio. kr. 2010-priser k\xE6deindeks"
+FIV:
+  des: Afskrivninger i alt. mio. kr. 2010-priser
+FIVO:
+  des: Afskrivninger offentligt erhverv, mio. kr. 2010-priser
+FIVOS:
+  des: "Afskrivninger offentlig sektor (indg\xE5r i off.forbrug FCO), mio. kr. 2010-priser"
+FIXOS:
+  des: "Off. sektors nyinvesteringer ekskl. forskning og udvikling, mio. kr. 2010-priser\
+    \ k\xE6deindeks"
+FKB:
+  des: Bygningskapital i alt (inkl. boliger), mio. kr. 2010-priser
+FKBA:
+  des: Bygningskapital landbrug, mio. kr. 2010-priser
+FKBB:
+  des: Bygningskapital byggeri, mio. kr. 2010-priser
+FKBE:
+  des: Bygningskapital energi erhverv, mio. kr. 2010-priser
+FKBH:
+  des: Boligkapital, mio. kr. 2010-priser
+FKBI:
+  des: Bygningskapital industri mio. kr. 2010-priser
+FKBN:
+  des: "Bygningskapital Nords\xF8erhv., mio. kr. 2010-priser"
+FKBO:
+  des: Bygningskapital off. erhverv, mio. kr. 2010-priser
+FKBPB:
+  des: Bygningskapital private byerhverv B+I+T, mio. kr. 2010-priser
+FKBS:
+  des: "Bygningskapital s\xF8fart, mio. kr. 2010-priser"
+FKBT:
+  des: Bygningskapital tjeneste erhverv, mio. kr. 2010-priser
+FKCB:
+  des: Bilbeholdning (kapitalapparat), mio. kr. 2010-priser
+FKM:
+  des: Maskinkapital i alt, mio. kr. 2010-priser
+FKMA:
+  des: Maskinkapital landbrug, mio. kr. 2010-priser
+FKMB:
+  des: Maskinkapital byggeri, mio. kr. 2010-priser
+FKMBW:
+  des: "\xD8nsket FKM i byggeri, mio. kr. 2010-priser"
+FKME:
+  des: Maskinkapital energi erhverv, mio. kr. 2010-priser
+FKMI:
+  des: Maskinkapital industri mio. kr. 2010-priser
+FKMIW:
+  des: "\xD8nsket FKM i industri mio. kr. 2010-priser"
+FKMN:
+  des: "Maskinkapital Nords\xF8erhv., mio. kr. 2010-priser"
+FKMO:
+  des: Maskinkapital off. erhverv, mio. kr. 2010-priser
+FKMPB:
+  des: Maskinkapital private byerhverv B+I+T, mio. kr. 2010-priser
+FKMS:
+  des: "Maskinkapital s\xF8fart, mio. kr. 2010-priser"
+FKMT:
+  des: Maskinkapital tjeneste erhverv, mio. kr. 2010-priser
+FKMTW:
+  des: "\xD8nsket FKM i tjeneste erhverv, mio. kr. 2010-priser"
+FKPB:
+  des: Samlet kapitalapparat (maskiner+bygninger) i private byerhverv, mio. 2010-priser
+FM:
+  des: "Import i alt, mio. kr. 2010-priser k\xE6deindeks"
+FME:
+  des: "Import af energi, mio. kr. 2010-priser k\xE6deindeks"
+FMI:
+  des: "Import af andre varer, mio. kr. 2010-priser k\xE6deindeks"
+FMS:
+  des: "Import af tjenester, ekskl. turisme, mio. kr. 2010-priser k\xE6deindeks"
+FMSQ:
+  des: "Import af \xF8vrige tjenester ialt, mio. kr. 2010-priser k\xE6deindeks"
+FMSS:
+  des: "Import af s\xF8fart, ialt, mio. kr. 2010-priser k\xE6deindeks"
+FMST:
+  des: "Import af tjenester ialt, mio. kr. 2010-priser k\xE6deindeks"
+FMT:
+  des: "Import af turisme, mio. kr. 2010-priser k\xE6deindeks"
+FMV:
+  des: "Vareimport i alt, mio. kr. 2010-priser k\xE6deindeks"
+FMZI:
+  des: "Konkurrenceudsat del af import af andre varer, mio. kr. 2010-priser k\xE6\
+    deindeks"
+FMZSQ:
+  des: "Konkurrenceudsat del af import af \xF8vrige tjenester, mio. kr. 2010-priser\
+    \ k\xE6deindeks"
+FSIV:
+  des: "Samlede produktskatter, mio. kr. 2010-priser k\xE6deindeks"
+FVEA:
+  des: Energiforbrug i landbrug, io-bestemt
+FVEB:
+  des: Energiforbrug i byggeri, io-bestemt
+FVEE:
+  des: Energiforbrug i energi erhverv, io-bestemt
+FVEI:
+  des: Energiforbrug i industri io-bestemt
+FVEO:
+  des: Energiforbrug i offentlig erhverv, io-bestemt
+FVES:
+  des: "Energiforbrug i s\xF8fart, io-bestemt"
+FVET:
+  des: Energiforbrug i tjeneste erhverv, io-bestemt
+FVEX:
+  des: Energiforbrug i erhverv i alt, io-bestemt
+FVMA:
+  des: "\xD8vrigt vareforbrug i landbrug, io-bestemt"
+FVMB:
+  des: "\xD8vrigt vareforbrug i byggeri, io-bestemt"
+FVME:
+  des: "\xD8vrigt vareforbrug i energiforsyning, io-bestemt"
+FVMH:
+  des: "\xD8vrigt vareforbrug i boligben., io-bestemt"
+FVMI:
+  des: "\xD8vrigt vareforbrug i industri io-bestemt"
+FVMN:
+  des: "\xD8vrigt vareforbrug i Nords\xF8, io-bestemt"
+FVMO:
+  des: "\xD8vrigt vareforbrug i offentlig erhverv, io-bestemt"
+FVMS:
+  des: "\xD8vrigt vareforbrug i s\xF8fart erhverv, io-bestemt"
+FVMT:
+  des: "\xD8vrigt vareforbrug i tjeneste erhverv, io-bestemt"
+FVX:
+  des: Samlet vareforbrug i erhverv i alt
+FX:
+  des: "Prod.v\xE6rdi i alt, mio. kr. 2010-priser k\xE6deindeks"
+FXA:
+  des: "Prod.v\xE6rdi i landbrug, mio. kr. 2010-priser k\xE6deindeks"
+FXB:
+  des: "Prod.v\xE6rdi i byggeri, mio. kr. 2010-priser k\xE6deindeks"
+FXE:
+  des: "Prod.v\xE6rdi i energiforsyning, mio. kr. 2010-priser k\xE6deindeks"
+FXH:
+  des: "Prod.v\xE6rdi i boligben., mio. kr. 2010-priser k\xE6deindeks"
+FXI:
+  des: "Prod.v\xE6rdi i industri, mio. kr. 2010-priser k\xE6deindeks"
+FXN:
+  des: "Prod.v\xE6rdi i Nords\xF8, mio. kr. 2010-priser k\xE6deindeks"
+FXO:
+  des: "Prod.v\xE6rdi i offentlig erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FXP:
+  des: "Prod.v\xE6rdi i private erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FXPB:
+  des: "Prod.v\xE6rdi i private byerhverv (B+I+T), mio. kr. 2010-priser k\xE6deindeks"
+FXPR:
+  des: "Prod.v\xE6rdi i private resterhverv (A+E+H+N+S), mio. kr. 2010-priser k\xE6\
+    deindeks"
+FXS:
+  des: "Prod.v\xE6rdi i s\xF8fart, mio. kr. 2010-priser k\xE6deindeks"
+FXT:
+  des: "Prod.v\xE6rdi i tjeneste erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FY:
+  des: "BNP, mio. kr. 2010-priser k\xE6deindeks"
+FYDK:
+  des: "Disponibel indk. p\xE5 kort sigt, mio. kr. 2010-priser k\xE6deindeks. Indeholder\
+    \ l\xF8n- og transferingsindkomster, renteindt\xE6gter, bruttorestindkomst i visse\
+    \ erhverv samt netto-pensionsudbetalinger"
+FYDL:
+  des: "Disponibel indk. p\xE5 lang sigt, mio. kr. 2010-priser k\xE6deindeks. Indeholder\
+    \ l\xF8n- og transferingsindkomster + netto- restindkomst. Der foretages sk\xF8\
+    nm\xE6ssig korrektion i skattebetalingerne, s\xE5ledes at renter og pensionsind-\
+    \ og udbetalinger ikke p\xE5virker FYDL. Adskiller sig fra FYDK ved Pensionsbetalinger,\
+    \ renteindt\xE6gter, afskrivninger samt restindkomst i s\xE6rlige erhverv."
+FYF:
+  des: "BVT, mio. kr. 2010-priser k\xE6deindeks"
+FYFA:
+  des: "BVT i landbrug, mio. kr. 2010-priser k\xE6deindeks"
+FYFB:
+  des: "BVT i byggeri, mio. kr. 2010-priser k\xE6deindeks"
+FYFE:
+  des: "BVT i energiforsyning, mio. kr. 2010-priser k\xE6deindeks"
+FYFH:
+  des: "BVT i boligben, mio. kr. 2010-priser k\xE6deindeks"
+FYFI:
+  des: "BVT i industri, mio. kr. 2010-priser k\xE6deindeks"
+FYFN:
+  des: "BVT i Nords\xF8erhv., mio. kr. 2010-priser k\xE6deindeks"
+FYFO:
+  des: "BVT i offentlig erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FYFP:
+  des: "BVT i private erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FYFPB:
+  des: "BVT i private byerhverv (B+I+T), mio. kr. 2010-priser k\xE6deindeks"
+FYFPR:
+  des: "BVT i private resterhverv (A+E+H+N+S), mio. kr. 2010-priser k\xE6deindeks"
+FYFR:
+  des: "BVT i resterhverv (A+E+H+N+S+O), mio. kr. 2010-priser k\xE6deindeks"
+FYFS:
+  des: "BVT i s\xF8fart, mio. kr. 2010-priser k\xE6deindeks"
+FYFT:
+  des: "BVT i tjeneste erhverv, mio. kr. 2010-priser k\xE6deindeks"
+FYF_GAP:
+  des: Bidrag til output gap fra BVT, pct.
+FYF_S:
+  des: "Potentiel BVT, mio. kr. 2010-priser k\xE6deindeks"
+FY_GAP:
+  des: Output gap, pct.
+FY_S:
+  des: "Potentiel BNP, mio. kr. 2010-priser k\xE6deindeks"
+GFCB:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for privat forbrug af k\xF8\
+    ret\xF8jer"
+GFCP:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for privat forbrug i alt"
+GFEEI:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for markedet for dansk eksport\
+    \ af industrivarer"
+GFEI:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for eksport af industrivarer"
+GFESQ:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for eksport af \xF8vrige\
+    \ tjenester"
+GFESS:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for eksport af s\xF8fartstjenester"
+GFET:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for eksport af turisme og\
+    \ gr\xE6nsehandel"
+GFMZI:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for konkurrenceudsat import\
+    \ af industrivarer"
+GFMZSQ:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for konkurrenceudsat import\
+    \ af tjenester eksklusiv s\xF8fart"
+GLNAP:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for timel\xF8nomkostninger\
+    \ i industrien"
+GPCPE:
+  des: "Inflationsforventningerne (geometrisk gennemsnit, v\xE6gt = 0.5)"
+GPEE:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for prisen p\xE5 eksport\
+    \ af energivarer"
+GPEEI:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for konkurrentprisen p\xE5\
+    \ eksportmarkedet for industrivarer"
+GPHK:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for kontantprisen p\xE5\
+    \ enfamiliehuse"
+GPIB:
+  des: "V\xE6kst i PIB"
+GPIBE:
+  des: Inflationsforventninger i bygningsusercost
+GPIM:
+  des: "V\xE6kst i PIM"
+GPIME:
+  des: Inflationsforventninger i maskinusercost
+GPME:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for prisen p\xE5 import\
+    \ af energivarer"
+GPYFB:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for PYFB"
+GPYFI:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for PYFI"
+GPYFT:
+  des: "Trendkorrigeret konstantled i \xE6ndringsrelation for PYFT"
+HA:
+  des: "Aftalt arbejdstid, timer pr. \xE5r"
+HG:
+  des: "Gennemsnitlig arbejdstid, ialt, timer pr. \xE5r"
+HGA:
+  des: "Gennemsnitlig arbejdstid i landbrug, timer pr. \xE5r"
+HGB:
+  des: "Gennemsnitlig arbejdstid i byggeri, timer pr. \xE5r"
+HGE:
+  des: "Gennemsnitlig arbejdstid i energiforsyning, timer pr. \xE5r"
+HGH:
+  des: "Gennemsnitlig arbejdstid i boligben, timer pr. \xE5r"
+HGI:
+  des: "Gennemsnitlig arbejdstid i industri, timer pr. \xE5r"
+HGN:
+  des: "Gennemsnitlig arbejdstid i Nords\xF8erhv., timer pr. \xE5r"
+HGO:
+  des: "Gennemsnitlig arbejdstid i off. erhverv, timer pr. \xE5r"
+HGS:
+  des: "Gennemsnitlig arbejdstid i s\xF8fart, timer pr. \xE5r"
+HGT:
+  des: "Gennemsnitlig arbejdstid i tjeneste erhverv, timer pr. \xE5r"
+HGW:
+  des: "Udgangspunkt for samlet gennemsnitlig arbejdstid, timer pr. \xE5r"
+HG_GAP:
+  des: Bidrag til output gap fra gns. arb.tid
+HG_S:
+  des: "Strukturel gennemsnitlig arbejdstid, timer pr. \xE5r"
+HQ:
+  des: Erlagte arbejdstimer i alt, mio. timer
+HQA:
+  des: Erlagte arbejdstimer i landbrug, mio. timer
+HQAX:
+  des: "Antal arbejdstimer i landbrug. Eksogent sk\xF8n for landbrugsbesk\xE6ftigelse,\
+    \ n\xE5r besk\xE6ftigelsen ikke fastl\xE6gges ud fra en eksogen produktivitet.\
+    \ Dvs. kun relevant for DXVYFHA = 0"
+HQB:
+  des: Erlagte arbejdstimer i byggeri, mio. timer
+HQBN:
+  des: "N\xF8dvendige antal arb. timer i byggeri, mio. timer"
+HQBW:
+  des: "\xD8nsket antal arb.timer i byggeri, mio. timer"
+HQE:
+  des: Erlagte arbejdstimer i energiforsyning, mio. timer
+HQH:
+  des: Erlagte arbejdstimer i boligben., mio. timer
+HQI:
+  des: Erlagte arbejdstimer i industri mio. timer
+HQIN:
+  des: "N\xF8dvendige antal arb.timer i industri, mio. timer"
+HQIW:
+  des: "\xD8nsket antal arb.timer i industri, mio. timer"
+HQN:
+  des: "Erlagte arbejdstimer i Nords\xF8erhv., mio. timer"
+HQO:
+  des: Erlagte arbejdstimer i off. erhverv, mio. timer
+HQPB:
+  des: Erlagte arbejdstimer i private byerhverv, B+I+T, mio. timer
+HQPB_S:
+  des: Strukturelt HQPB
+HQPR:
+  des: Erlagte arbejdstimer i private resterhverv, A+E+H+N+S, mio. timer
+HQR:
+  des: Erlagte arbejdstimer i resterhverv, A+E+H+N+S+O, mio. timer
+HQR_S:
+  des: Udglattet HQR
+HQR_SX:
+  des: "Udglattet HQR, eksogent sk\xF8n, relevant hvis DXHQR_S=1"
+HQS:
+  des: "Erlagte arbejdstimer i s\xF8fart, mio. timer"
+HQT:
+  des: Erlagte arbejdstimer i tjeneste erhverv, mio. timer
+HQTN:
+  des: "N\xF8dvendige antal arb. timer i tjeneste erhverv, mio. timer"
+HQTW:
+  des: "\xD8nsket antal arb.timer i tjeneste erhverv, mio. timer"
+HQ_GAP:
+  des: "Bidrag til output gap fra besk\xE6ftigelse i timer"
+HQ_S:
+  des: Strukturelt niveau for erlagte arbejdstimer i alt, mio. timer
+I:
+  des: Investeringer i alt, mio. kr.
+IB:
+  des: Investeringer i bygninger, mio. kr.
+IBH:
+  des: Investeringer i boligbyggeri, mio. kr.
+IBOS:
+  des: "Off. sektors bygge- og anl\xE6gsinvesteringer, mio. kr."
+IBPS:
+  des: "Privat sektors bygge- og anl\xE6gsinvesteringer, mio. kr."
+IBXH:
+  des: Bygningsinvesteringer ekskl. boliger, mio. kr.
+IF:
+  des: Faste bruttoinvesteringer, mio. kr.
+IFPS:
+  des: Private faste bruttoinvesteringer, mio. kr.
+IL:
+  des: Lagerinvest. i alt, mio. kr.
+IM:
+  des: Maskininvest. i alt, mio. kr.
+IMOS:
+  des: Off. sektors maskininvesteringer, mio. kr.
+IMPS:
+  des: Privat sektors maskininvesteringer, mio. kr.
+IMX:
+  des: Maskininvest. ekskl. forskning og udvikling i offentlig branche, mio. kr.
+IMXOS:
+  des: Off. sektors maskininvesteringer ekskl. forskning og udvikling, mio. kr.
+IO-koeff., lev. fra landbrug til landbrug:
+  des: ''
+IOFU:
+  des: Investeringer i forskning og udvikling, off. erhverv, mio. kr.
+IOFUX:
+  des: "Eksogent sk\xF8n for investeringer i forskning og udvikling, off. erhverv,\
+    \ mio. kr. relevant, n\xE5r DXIOFU = 1"
+IOS:
+  des: Off. sektors nyinvesteringer, mio. kr.
+IV:
+  des: Afskrivninger, mio. kr.
+IVOS:
+  des: Offentlig sektors afskrivninger, mio. kr.
+IVSPS:
+  des: "Skattem\xE6ssige afskrivninger, mio. kr."
+IWB10YS:
+  des: "10-\xE5rig statspapirrente"
+IWB10YSDEU:
+  des: "Tysk 10-\xE5rig statspapirrente"
+IWB30YR:
+  des: "30-\xE5rig realkreditrente"
+IWBB:
+  des: "Bidragssats (gns.) p\xE5 realkreditl\xE5n"
+IWBECB:
+  des: ECB minimum bid rate pengepolitisk rente
+IWBZ:
+  des: Effektiv obligationsrente
+IWDEH:
+  des: "Rentesats p\xE5 husholdningernes indest\xE5ende"
+IWI:
+  des: Implicit rente for rentebetalinger vedr. bruttoformue i udland
+IWLO:
+  des: "Pengeinstitutternes effektive udl\xE5nsrente"
+IWPP:
+  des: "Implicit afkastrate f\xF8r skat for den private pensionssektor inkl. ATP,\
+    \ LD, DMP og SP, mio. kr."
+IWU:
+  des: "Implicit rente for rentebetalinger vedr. bruttog\xE6ld i udland"
+IXOS:
+  des: Off. sektors nyinvesteringer ekskl. forskning og udvikling, mio. kr.
+JRHQI:
+  des: "Justeringsled i relationen for industrierhvervets timebesk\xE6ftigelse"
+JRHQT:
+  des: "Justeringsled i relationen for tjenesteerhvervets timebesk\xE6ftigelse"
+JTSUIH:
+  des: "Justeringsled for skattesats i relation for usercost vedr. boliger. Fanger\
+    \ \xE6ndringer i rentefradragsretten, der ikke f\xF8lger af kommune- eller gennemsnitlig\
+    \ statsskattesats"
+JUA:
+  des: Konjunkturbidrag (mv.) i arbejdsstyrken, 1.000 pers.
+JWPP:
+  des: "Residual i formueakkumulationsligning for pensionssektor som f\xF8lge af manglende\
+    \ overensstemmelse i underliggende data. Indeholder bl.a. overf\xF8rlser i forbindelse\
+    \ med oml\xE6gning af DMP og SP i 2002-2003. Netto, mio. kr."
+KAQWY:
+  des: Implicit andel af Ysda, der betales SP-bidrag af
+KCOC:
+  des: Kollektivt forbrugs andel af offentligt forbrug
+KFCHW:
+  des: Trendkorrigeret konstantled i niveaurelation for FCH
+KFEEIW:
+  des: Trendkorrigeret konstantled i niveaurelation for markedet for dansk eksport
+    af industrivarer
+KFESQW:
+  des: "Trendkorrigeret konstantled i niveaurelation for eksport af \xF8vrige tjenester"
+KFESSW:
+  des: "Trendkorrigeret konstantled i niveaurelation for eksport af s\xF8fartstjenester"
+KFIB:
+  des: "Korrektionsfaktor i relation for FIB (korr. fra faste priser til k\xE6deindeks)"
+KFIBE:
+  des: Investeringskvote, bygn. i E
+KFIBN:
+  des: Investeringskvote, bygn. i N
+KFIBO:
+  des: Korrektionsfaktor i relation for FIBO (overgang fra off. sektor til off. erhverv)
+KFIBS:
+  des: Investeringskvote, bygn. i S
+KFIME:
+  des: Investeringskvote, maskiner i E
+KFIMN:
+  des: Investeringskvote, maskiner i N
+KFIMO:
+  des: Korrektionsfaktor i relation for FIMO (overgang fra off. sektor til off. erhverv)
+KFIMS:
+  des: Investeringskvote, maskiner i S
+KFIMX:
+  des: "Korrektionsfaktor i relation for FIMX (korr. fra faste priser til k\xE6deindeks)"
+KFIVOS:
+  des: Korrektionsfaktor i overgang fra afskrivninger i offentligt erhverv til offentlig
+    sektor
+KFKBA:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBA
+KFKBB:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBB
+KFKBE:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBE
+KFKBH:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBH
+KFKBHE:
+  des: Ejerandelen af boligkapitalen
+KFKBI:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBI
+KFKBN:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBN
+KFKBO:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBO
+KFKBS:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBS
+KFKBT:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIBT
+KFKMA:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIMA
+KFKMB:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIMB
+KFKME:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIME
+KFKMI:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIMI
+KFKMN:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIMN
+KFKMO:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIMO
+KFKMS:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIMS
+KFKMT:
+  des: Korrektionsfaktor i dynamisk investeringsidentitet for FIMT
+KFMI:
+  des: "Korrektionsfaktor vedr. FMI. Sikrer via io-systemet modkorrektioner i indenlandske\
+    \ leverancer, n\xE5r importkvoten \xE6ndres"
+KFMSQ:
+  des: "Korrektionsfaktor vedr. FMSQ. Sikrer via io-systemet modkorrektioner i indenlandske\
+    \ leverancer, n\xE5r importkvoten \xE6ndres"
+KFXS:
+  des: Korrektionsfaktor i relation for AST
+KFYFO:
+  des: Korrektionsfaktor i relation for FYFO
+KHGA:
+  des: Korrektionsfaktor i relation for HGA
+KHGB:
+  des: Korrektionsfaktor i relation for HGB
+KHGE:
+  des: Korrektionsfaktor i relation for HGE
+KHGH:
+  des: Korrektionsfaktor i relation for HGH
+KHGI:
+  des: Korrektionsfaktor i relation for HGI
+KHGN:
+  des: Korrektionsfaktor i relation for HGN
+KHGO:
+  des: Korrektionsfaktor i relation for HGO
+KHGS:
+  des: Korrektionsfaktor i relation for HGS
+KHGT:
+  des: Korrektionsfaktor i relation for HGT
+KHGW:
+  des: Korrektionsfaktor i relation for HGW
+KHGWX:
+  des: "Korrektionsfaktor i relation for HGW, eksogent sk\xF8n, relevant hvis DXHG_S=0"
+KIVO:
+  des: Korrektionsfaktor i relation for YFO
+KIVSPS:
+  des: Korrektionsfaktor i relation for IVSPS
+KKF:
+  des: Modelteknisk korrektionsfaktor til BVT i tjenesteerhverv
+KKP:
+  des: "Modelteknisk korrektionsfaktor til priser p\xE5 endelig anvendelse"
+KLA:
+  des: Korrektionsfaktor i relation for YWA
+KLB:
+  des: Korrektionsfaktor i relation for YWB
+KLE:
+  des: Korrektionsfaktor i relation for YWE
+KLH:
+  des: Korrektionsfaktor i relation for YWH
+KLI:
+  des: Korrektionsfaktor i relation for YWI
+KLN:
+  des: Korrektionsfaktor i relation for YWN
+KLS:
+  des: Korrektionsfaktor i relation for YWS
+KLT:
+  des: Korrektionsfaktor i relation for YWT
+KL_GAP:
+  des: Bidrag til output gap fra K/L forhold
+KOCS:
+  des: Korrektionsfaktor i relation for AOCS
+KPEE:
+  des: Korrektionsfaktor i relation for PEE
+KPEEIW:
+  des: "Trendkorrigeret konstantled i niveaurelation for konkurrentprisen p\xE5 eksportmarkedet\
+    \ for industrivarer"
+KPEEW:
+  des: "Trendkorrigeret konstantled i niveaurelation for prisen p\xE5 eksport af energivarer"
+KPESQ:
+  des: Korrektionsfaktor i relation for PESQ
+KPET:
+  des: Korrektionsfaktor i relation for PET
+KPIBH:
+  des: Korrektionsfaktor i relation for PIBH
+KPIBOS:
+  des: Korrektionsfaktor i relation for PIBOS
+KPIBPS:
+  des: Korrektionsfaktor i relation for PIBPS
+KPIL:
+  des: Korrektionsfaktor i relation for PIL
+KPIMPS:
+  des: Korrektionsfaktor i relation for PIMPS
+KPIMXOS:
+  des: Korrektionsfaktor i relation for PIMXOS
+KPIOFU:
+  des: "Korrektionsfaktor i overgang fra deflator p\xE5 offentlig produktion (PXO)\
+    \ til deflator p\xE5 offentligt produceret F&U (PIOFU)"
+KPIV:
+  des: Korrektionsfaktor i relation for PIV
+KPIVOS:
+  des: Korrektionsfaktor i relation for PIVOS
+KPMEW:
+  des: "Trendkorrigeret konstantled i niveaurelation for prisen p\xE5 import af energivarer"
+KPNCB:
+  des: Korrektionsfaktor i relation for PNCB
+KPNCE:
+  des: Korrektionsfaktor i relation for PNCE
+KPNCG:
+  des: Korrektionsfaktor i relation for PNCG
+KPNCH:
+  des: Korrektionsfaktor i relation for PNCH
+KPNCO:
+  des: Korrektionsfaktor i relation for PNCO
+KPNCS:
+  des: Korrektionsfaktor i relation for PNCS
+KPNCV:
+  des: Korrektionsfaktor i relation for PNCV
+KPNEI:
+  des: Korrektionsfaktor i relation for PNEI
+KPNIB:
+  des: Korrektionsfaktor i relation for PNIB
+KPNIMX:
+  des: Korrektionsfaktor i relation for KPNIMX
+KPVA:
+  des: Korrektionsfaktor i relation for VA
+KPVB:
+  des: Korrektionsfaktor i relation for VB
+KPVE:
+  des: Korrektionsfaktor i relation for VE
+KPVH:
+  des: Korrektionsfaktor i relation for VH
+KPVI:
+  des: Korrektionsfaktor i relation for VI
+KPVN:
+  des: Korrektionsfaktor i relation for VN
+KPVO:
+  des: Korrektionsfaktor i relation for VO
+KPVS:
+  des: Korrektionsfaktor i relation for VS
+KPVT:
+  des: Korrektionsfaktor i relation for VT
+KQOS:
+  des: Korrektionsfaktor i relation for QOS
+KSDM:
+  des: Korrektionsfaktor i relation for SDM, der fanger forholdet mellem voksenbefolkning
+    og husstande
+KSDP:
+  des: "Korrektionsfaktor i SDP (i forel\xF8bige \xE5r kan en almindelig residualberegning\
+    \ af SDPA give et uforklarligt tal, derfor indf\xF8res en korrektionsfaktor, som\
+    \ kan s\xE6ttes manuelt i slut\xE5r, s\xE5 SDPA bliver normal)"
+KSIPPSO:
+  des: Residualberegnet korrektionfaktor vedr. PSO afgift (provnue = ksippso*Sippso+Siqpso)*1.04)
+KSIQAB:
+  des: Korrektionsfaktor i relation for SIQAB
+KSIQAM:
+  des: Korrektionsfaktor i relation for SIQAM
+KSIQEJ:
+  des: KSIQEJ*TSIQEJ er implicit grundskattesats
+KSIQOS:
+  des: Korrektionsfaktor i relation for YWOS Fanger forskel mellem den offentlige
+    sektors betaling af andre skatter og det offentlige erhvervs betaling heraf
+KSSYEJ:
+  des: Korrektionsfaktor i relation for SSYEJ
+KSSYS:
+  des: Korrektionsfaktor i relation for SSYS
+KSSYSP:
+  des: Korrektionsfaktor i relation for SSYSP
+KTIORN:
+  des: "TIORNs andel af samlet nords\xF8provenuKorrektionsfaktor"
+KTIOVN:
+  des: "TIOVNs andel af samlet nords\xF8provenuKorrektionsfaktor"
+KTIRK:
+  des: "TIRKs andel af samlet nords\xF8provenuKorrektionsfaktor"
+KTIRO:
+  des: "TIROs andel af samlet nords\xF8provenuKorrektionsfaktor"
+KTPPKU:
+  des: "Eksogen faktor, der fanger, at udbetalte kapitalpensionerikke fuldt indg\xE5\
+    r i den forbrugsbestemmende kortsigtsindkomst"
+KULU:
+  des: "Andel af reg. ledige p\xE5 kontanthj\xE6lp"
+KVOS:
+  des: "Korrektionsfaktor i relation for VOSSikrer omregning af r\xE5vareinput i offentligt\
+    \ erhverv til r\xE5vareinput i den offentlige sektor"
+KWFI:
+  des: Finansiel bruttoformue i udland som andel af BNP
+KWPP:
+  des: Normal kursgevinstrate i pensionssektoren - opgjort som enandel af pensionsformuen.
+    Samlet afkastrate i pensionssektorbliver dermed KWPP+IWPP,
+KW_z_o:
+  des: Justering af tilgang af offentlige aktiver, mio. kr.
+KYLWS:
+  des: "Korrektionsfaktor i relation for skattepligtig indkomst vedr. ligningsm\xE6\
+    ssige fradrag, 1.000 2010-kr. pr. besk."
+KYRPHS:
+  des: "Korrektionsfaktor i relation for skattepligtig indkomstSikrer, at ligningen\
+    \ rammer skattestatistikkens lejev\xE6rdigrundlag"
+KYS:
+  des: Korrektionsfaktor i relation for skattepligtig indk.
+KYSDA:
+  des: Korrektionsfaktor i relation for YSDA
+KYSDSQ:
+  des: Korrektionsfaktor i relation for grundlaget for selskabsskat. Angiver selskabsskattepligtig
+    indkomsts andel af restindk.
+KYSP:
+  des: Korrektionsfaktor i relation for personlig indk.
+KYWOS:
+  des: Korrektionsfaktor i relation for YWOS
+LA:
+  des: "Implicit timel\xF8n i landbrug, kr. pr. time"
+LB:
+  des: "Implicit timel\xF8n i byggeri, kr. pr. time"
+LE:
+  des: "Implicit timel\xF8n i energiforsyning, kr. pr. time"
+LH:
+  des: "Implicit timel\xF8n i boligbenyt., kr. pr. time"
+LI:
+  des: "Implicit timel\xF8n i industri kr. pr. time"
+LN:
+  des: "Implicit timel\xF8n i Nords\xF8erhv., kr. pr. time"
+LNAP:
+  des: "Timel\xF8nsomkostninger i industrien, jf. Danmarks Statistiks summariske l\xF8\
+    nindeks for fremstilling, kr. pr. time"
+LO:
+  des: "Implicit timel\xF8n i offentlig sektor, kr. pr. time"
+LOHKK:
+  des: "Gennemsnitlig bruttol\xF8n for off. ansatte, kr. pr. time"
+LS:
+  des: "Implicit timel\xF8n i s\xF8fart, kr. pr. time"
+LT:
+  des: "Implicit timel\xF8n i tjeneste erhverv, kr. pr. time"
+M:
+  des: Import i alt, mio. kr.
+ME:
+  des: Import af energi, mio. kr.
+MI:
+  des: Import af industrivarer, mio. kr.
+MS:
+  des: Import af tjenester, ekskl. turisme, mio. kr.
+MSQ:
+  des: "Import af \xF8vrige tjenester, mio. kr."
+MSS:
+  des: "Import af s\xF8fart, mio. kr."
+MST:
+  des: Import af tjenester, mio. kr.
+MT:
+  des: Import af turisme, mio. kr.
+MV:
+  des: Vareimport, mio. kr.
+NBS:
+  des: "Antal offentligt st\xF8ttede boliger under opf\xF8relse"
+NTPPIA:
+  des: Samlet efter-skat afkast (inkl. omvurderinger), Aldersopsparing
+NTPPIK:
+  des: Samlet efter-skat afkast (inkl. omvurderinger), kapitalpensionsopsparing
+NTPPIL:
+  des: "Samlet efter-skat afkast (inkl. omvurderinger), pensionsordninger med l\xF8\
+    bende udbetalinger"
+OPP:
+  des: Omvurderinger vedr. pensionsformue
+OW_o_z:
+  des: Omvurderinger, offentlige passiver, mio. kr.
+OW_z_o:
+  des: Omvurderinger, offentlige aktier, mio. kr.
+PAE:
+  des: "Pris for endelig samlet eftersp\xF8rgsel, indeks 2010=1"
+PAI:
+  des: "Pris for endelig indenlandsk eftersp\xF8rgsel, indeks 2010=1"
+PAIPS:
+  des: "Pris for endelig indenlandsk privat eftersp\xF8rgsel, indeks 2010=1"
+PAT:
+  des: Pris for samlet tilgang, indeks 2010=1
+PCA:
+  des: "Pris p\xE5 forbrug ekskl. biler, indeks 2010=1"
+PCB:
+  des: "Pris p\xE5 forbrug af biler, indeks 2010=1"
+PCDLU:
+  des: "Pris p\xE5 forbrug bestemt i DLU, indeks 2010=1"
+PCE:
+  des: "Pris p\xE5 forbrug af energi, indeks 2010=1"
+PCG:
+  des: "Pris p\xE5 forbrug af benzin, indeks 2010=1"
+PCH:
+  des: "Pris p\xE5 forbrug af boligben., indeks 2010=1"
+PCO:
+  des: "Pris p\xE5 off. forbrug, indeks 2010=1"
+PCOGL:
+  des: "Pris p\xE5 inputbaseret offentligt forbrug, indeks 2010=1"
+PCOZ:
+  des: "Deflator p\xE5 offentligt forbrug ekskl. afskrivninger, indeks 2010=1"
+PCP:
+  des: "Pris p\xE5 privat forbrug i alt, indeks 2010=1"
+PCS:
+  des: "Pris p\xE5 forbrug af tjen. og trans., indeks 2010=1"
+PCT:
+  des: "Pris p\xE5 forbrug af turisme, indeks 2010=1"
+PCV:
+  des: "Pris p\xE5 forbrug af andre varer, indeks 2010=1"
+PE:
+  des: "Pris p\xE5 eksport af varer og tjenester, indeks 2010=1"
+PEE:
+  des: "Pris p\xE5 eksport af energi, indeks 2010=1"
+PEEI:
+  des: "Konkurrentpris p\xE5 eksportmarkedet for industrivarer (dansk valuta), indeks\
+    \ 2010=1"
+PEEIW:
+  des: "Modelberegnet konkurrentpris p\xE5 eksportmarkedet for industrivarer"
+PEESQ:
+  des: "Konkurrentpris p\xE5 eksportmarkedet for \xF8vrige tjenester (dansk valuta),\
+    \ indeks 2010=1"
+PEEW:
+  des: "Modelberegnet pris p\xE5 eksport af energi"
+PEI:
+  des: "Pris p\xE5 eksport af industrivarer, indeks 2010=1"
+PES:
+  des: "Pris p\xE5 eksport af tjenester, ekskl. turisme, indeks 2010=1"
+PESQ:
+  des: "Pris p\xE5 eksport af \xF8vrige tjenester, indeks 2010=1"
+PESS:
+  des: "Pris p\xE5 eksport af s\xF8fart, indeks 2010=1"
+PEST:
+  des: "Pris p\xE5 eksport af tjenester, indeks 2010=1"
+PET:
+  des: "Pris p\xE5 eksport af turisme, indeks 2010=1"
+PEV:
+  des: "Pris p\xE5 eksport af varer, indeks 2010=1"
+PHGK:
+  des: "Kontantprisen p\xE5 byggegrunde, indeks 2010=1"
+PHK:
+  des: "Kontantpris p\xE5 enfamiliehuse, indeks 2010=1"
+PHV:
+  des: "Vurderingsprisen (danner grundlag for beregning af lejev\xE6rdi), indeks 2010=1"
+PI:
+  des: "Pris p\xE5 investeringer, indeks 2010=1"
+PIB:
+  des: "Pris p\xE5 investeringer i bygninger, indeks 2010=1"
+PIBH:
+  des: "Pris p\xE5 investeringer i bolig, indeks 2010=1"
+PIBOS:
+  des: "Pris p\xE5 off. investeringer i bygninger, indeks 2010=1"
+PIBPS:
+  des: "Pris p\xE5 private investeringer i bygninger, indeks 2010=1"
+PIBXH:
+  des: "Deflator p\xE5 bygningsinvesteringer ekskl. boliger, indeks 2010=1"
+PIF:
+  des: "Pris p\xE5 faste bruttoinvesteringer, indeks 2010=1"
+PIFPS:
+  des: "Deflator p\xE5 faste bruttoinvesteringer i privat sektor, indeks 2010=1"
+PIL:
+  des: "Pris p\xE5 lagerinvest. i alt, indeks 2010=1"
+PIM:
+  des: "Pris p\xE5 maskininvest. i alt, indeks 2010=1"
+PIMOS:
+  des: "Pris p\xE5 off. maskininvesteringer, indeks 2010=1"
+PIMPS:
+  des: "Pris p\xE5 private maskininvesteringer, indeks 2010=1"
+PIMX:
+  des: "Pris p\xE5 maskininvest. ekskl. forskning og udvikling i offentlig branche,\
+    \ indeks 2010=1"
+PIMXOS:
+  des: "Pris p\xE5 off. maskininvesteringer ekskl. forskning og udvikling, indeks\
+    \ 2010=1"
+PIOFU:
+  des: "Pris p\xE5 investeringer i forskning og udvikling, off. erhverv, indeks 2010=1"
+PIOS:
+  des: "Pris p\xE5 offentlige nyinvesteringer, indeks 2010=1"
+PIV:
+  des: "Pris p\xE5 afskrivninger i alt, indeks 2010=1"
+PIVOS:
+  des: "Pris p\xE5 offentlige afskrivninger (indeholder ogs\xE5 overgang fra off.erhv.\
+    \ til off.sektor), indeks"
+PIXOS:
+  des: "Pris p\xE5 off. nyinvesteringer ekskl. forskning og udvikling, indeks 2010=1"
+PKBB:
+  des: "Usercost p\xE5 bygningskapital i byggeri"
+PKBI:
+  des: "Usercost p\xE5 bygningskapital i industri"
+PKBT:
+  des: "Usercost p\xE5 bygningskapital i tjeneste erhverv"
+PKMB:
+  des: "Usercost p\xE5 maskinkapital i byggeri"
+PKMI:
+  des: "Usercost p\xE5 maskinkapital i industri"
+PKMT:
+  des: "Usercost p\xE5 maskinkapital i tjeneste erhverv"
+PM:
+  des: "Pris p\xE5 import i alt, indeks 2010=1"
+PME:
+  des: "Pris p\xE5 import af energi, indeks 2010=1"
+PMEW:
+  des: "Modelberegnet pris p\xE5 import af energi"
+PMI:
+  des: "Pris p\xE5 import af industrivarer, indeks 2010=1"
+PMS:
+  des: "Pris p\xE5 import af tjenester, ekskl. turisme, indeks 2010=1"
+PMSQ:
+  des: "Pris p\xE5 import af \xF8vrige tjenester, indeks 2010=1"
+PMSS:
+  des: "Pris p\xE5 import af s\xF8fart, indeks 2010=1"
+PMST:
+  des: "Pris p\xE5 import af tjenester, indeks 2010=1"
+PMT:
+  des: "Pris p\xE5 import af turisme, indeks 2010=1"
+PMV:
+  des: "Pris p\xE5 import af varer, indeks 2010=1"
+PNCB:
+  des: "Nettopris p\xE5 forbrug af biler"
+PNCE:
+  des: "Nettopris p\xE5 forbrug af energi"
+PNCG:
+  des: "Nettopris p\xE5 forbrug af benzin"
+PNCH:
+  des: "Nettopris p\xE5 forbrug af bolig"
+PNCO:
+  des: "Nettopris p\xE5 offentlig forbrug"
+PNCP:
+  des: "Nettopris p\xE5 samlet privat forbrug"
+PNCP_S:
+  des: "Strukturel nettopris p\xE5 samlet privat forbrug (benyttes i finanseffektberegning)"
+PNCS:
+  des: "Nettopris p\xE5 forbrug af tjen. og trans."
+PNCV:
+  des: "Nettopris p\xE5 forbrug af andre varer"
+PNEI:
+  des: "Nettopris p\xE5 eksport af industrivarer"
+PNIB:
+  des: "Nettopris p\xE5 investeringer i bygninger"
+PNIMX:
+  des: "Nettopris p\xE5 maskininv. ekskl. forskning og udvikling i off. erhverv"
+PSIV:
+  des: "Pris p\xE5 produktskatter, indeks 2010=1"
+PSRTY:
+  des: "Satsreguleringsindeks - normalt svarende til \xE5rsl\xF8nstigning 2 \xE5r\
+    \ f\xF8r efter arbejdsmarkedsbidrag og korrigeret for arbejdsgiverbetalte pensionsbidrag\
+    \ minus 0,3 pct.point. Anvendes ved regulering af transfereringer"
+PSRTYX:
+  des: "Eksogent sk\xF8n satsreguleringsindekset. Relevant, n\xE5r DXPSRTY = 0"
+PTTYP:
+  des: "Reguleringsindeks baseret p\xE5 forbrugerprisstigning 2 \xE5r f\xF8r, 2010\
+    \ = 1"
+PVX:
+  des: "Pris p\xE5 samlet vareforbrug i erhverv, indeks 2010=1"
+PWOIL:
+  des: "Pris p\xE5 r\xE5olie (Brent), dollar per t\xF8nde"
+PX:
+  des: "Pris p\xE5 produktion i alt, indeks 2010=1"
+PXA:
+  des: "Pris p\xE5 produktion i landbrug, indeks 2010=1"
+PXB:
+  des: "Pris p\xE5 produktion i byggeri, indeks 2010=1"
+PXE:
+  des: "Pris p\xE5 produktion i energiforsyning, indeks 2010=1"
+PXH:
+  des: "Pris p\xE5 produktion i boligben. indeks 2010=1"
+PXI:
+  des: "Pris p\xE5 produktion i industri indeks 2010=1"
+PXMI:
+  des: "Relativ pris p\xE5 import af andre varer"
+PXMSQ:
+  des: "Relativ pris p\xE5 import af \xF8vrige tjenester"
+PXN:
+  des: "Pris p\xE5 produktion i Nords\xF8erhv., indeks 2010=1"
+PXO:
+  des: "Pris p\xE5 produktion i off. erhverv, indeks 2010=1"
+PXP:
+  des: Deflator for produktion i private erhverv, indeks 2010=1
+PXPB:
+  des: Deflator for produktion i private byerhverv, indeks 2010=1
+PXPR:
+  des: Deflator for produktion i private resterhverv (A+E+H+N+S), indeks 2010=1
+PXS:
+  des: "Pris p\xE5 produktion i s\xF8fart, indeks 2010=1"
+PXT:
+  des: "Pris p\xE5 produktion i tjeneste erhverv, indeks 2010=1"
+PY:
+  des: BNP-deflator, indeks 2010=1
+PYF:
+  des: BVT-deflator i alt, indeks 2010=1
+PYFA:
+  des: BVT-deflator for landbrug, indeks 2010=1
+PYFAX:
+  des: BVT-deflator for landbrug, indeks 2010=1
+PYFB:
+  des: BVT-deflator for byggeri, indeks 2010=1
+PYFBW:
+  des: Langsigtet BVT-deflator for byggeri, indeks 2010=1
+PYFE:
+  des: BVT-deflator for energiforsyning, indeks 2010=1
+PYFH:
+  des: BVT-deflator for boligben. indeks 2010=1
+PYFI:
+  des: BVT-deflator for industri indeks 2010=1
+PYFIW:
+  des: Langsigtet BVT-deflator for industri indeks 2010=1
+PYFN:
+  des: "BVT-deflator for Nords\xF8erhv., indeks 2010=1"
+PYFO:
+  des: BVT-deflator for off. erhverv, indeks 2010=1
+PYFP:
+  des: BVT-deflator for private erhverv, indeks 2010=1
+PYFPB:
+  des: BVT-deflator for private byerhverv, indeks 2010=1
+PYFPBE:
+  des: "Trendm\xE6ssig udvikling i PYFPB (indg\xE5r som inflationsforventning i l\xF8\
+    nrelation)"
+PYFPR:
+  des: BVT-deflator for private resterhverv (A+E+H+N+S), indeks 2010=1
+PYFR:
+  des: BVT-deflator for resterhverv, indeks 2010=1
+PYFS:
+  des: "BVT-deflator for s\xF8fart, indeks 2010=1"
+PYFT:
+  des: BVT-deflator for tjeneste erhverv, indeks 2010=1
+PYFTW:
+  des: Langsigtet BVT-deflator for tjeneste erhverv, indeks 2010=1
+PY_GAP:
+  des: BNP-deflator, afvigelse i pct. af strukturel BNP-deflatator
+PY_S:
+  des: Potentiel BNP-deflatator
+PY_SX:
+  des: "Potentiel BNP-deflatator, eksogent sk\xF8n, relevant hvis DXPY_S=1"
+Q:
+  des: "Samlet antal besk\xE6ftigede ekskl. orlov, 1000 pers."
+Q1:
+  des: "Samlet antal besk\xE6ftigede inkl. orlov, NR definition, 1000 pers."
+QA:
+  des: "Antal besk\xE6ftigede i landbrug, 1000 pers."
+QB:
+  des: "Antal besk\xE6ftigede i byggeri, 1000 pers."
+QE:
+  des: "Antal besk\xE6ftigede i energiforsyning, 1000 pers."
+QH:
+  des: "Antal besk\xE6ftigede i boligben. 1000 pers."
+QI:
+  des: "Antal besk\xE6ftigede i industri 1000 pers."
+QLTFS:
+  des: "Antal besk\xE6ftigede i flexjob, sk\xE5nejob mv., 1000 pers."
+QLTJD:
+  des: "Antal besk\xE6ftigede i jobtr\xE6ning fra dagpenge, 1000 pers."
+QLTJK:
+  des: "Antal besk\xE6ftigede i jobtr\xE6ning fra kontanthj\xE6lp, 1000 pers."
+QMB:
+  des: "Antal barselsdagpengemodtagere fra besk\xE6ftigelse jf. statistikken vedr.\
+    \ offentlig fors\xF8rgede, 1000 pers."
+QMF:
+  des: "Antal personer p\xE5 arbejdsmarkedsorlov fra besk\xE6ftigelse mv. jf. statistikken\
+    \ vedr. offentlig fors\xF8rgede, 1000 pers."
+QMS:
+  des: "Antal sygedagpengemodtagere fra besk\xE6ftigelse jf. statistikken vedr. offentlig\
+    \ fors\xF8rgede, 1000 pers."
+QN:
+  des: "Antal besk\xE6ftigede i Nords\xF8erhv., 1000 pers."
+QO:
+  des: "Antal besk\xE6ftigede i off. erhverv, 1000 pers."
+QOS:
+  des: "Besk\xE6ftigelse i off. sektor, 1000 pers."
+QPB:
+  des: "Besk\xE6ftigelse i private byerhverv B+I+T, 1000 pers."
+QPFO_K:
+  des: "Antal besk\xE6ftigede p\xE5 f\xF8rtidspension, konjunkturbidrag, 1000 pers."
+QPFO_S:
+  des: "Strukturelt antal besk\xE6ftigede p\xE5 f\xF8rtidspension, 1000 pers."
+QPFP:
+  des: "Antal besk\xE6ftigede p\xE5 folkepension, 1000 pers."
+QPS:
+  des: "Besk\xE6ftigelse i privat sektor, 1000 pers."
+QS:
+  des: "Antal selvst\xE6ndige i alt, 1000 pers."
+QSA:
+  des: "Antal selvst\xE6ndige i landbrug, 1000 pers."
+QSB:
+  des: "Antal selvst\xE6ndige i byggeri, 1000 pers."
+QSE:
+  des: "Antal selvst\xE6ndige i energiforsyning, 1000 pers."
+QSH:
+  des: "Antal selvst\xE6ndige i boligben., 1000 pers."
+QSI:
+  des: "Antal selvst\xE6ndige i industri 1000 pers."
+QSN:
+  des: "Antal selvst\xE6ndige i Nords\xF8erhv., 1000 pers."
+QSO:
+  des: "Antal selvst\xE6ndige i off. erhverv, 1000 pers."
+QST:
+  des: "Antal selvst\xE6ndige i tjeneste erhverv, 1000 pers."
+QT:
+  des: "Antal besk\xE6ftigede i tjeneste erhverv, 1000 pers."
+QW:
+  des: "Antal l\xF8nmodtagere i alt, 1000 pers."
+QWA:
+  des: "Antal l\xF8nmodtagere i landbrug, 1000 pers."
+QWB:
+  des: "Antal l\xF8nmodtagere i byggeri, 1000 pers."
+QWE:
+  des: "Antal l\xF8nmodtagere i energiforsyning, 1000 pers."
+QWH:
+  des: "Antal l\xF8nmodtagere i boligben., 1000 pers."
+QWI:
+  des: "Antal l\xF8nmodtagere i industri 1000 pers."
+QWN:
+  des: "Antal l\xF8nmodtagere i Nords\xF8 erhv., 1000 pers."
+QWO:
+  des: "Antal l\xF8nmodtagere i off. erhverv, 1000 pers."
+QWP:
+  des: "Antal l\xF8nmodtagere i private erhverv, 1000 pers."
+QWS:
+  des: "Antal l\xF8nmodtagere i s\xF8fart (=al besk.) 1000 pers."
+QWT:
+  des: "Antal l\xF8nmodtagere i tjeneste erhverv 1000 pers."
+Q_GAP:
+  des: "Bidrag til output gap fra besk\xE6ftigelse i pers."
+Q_S:
+  des: "Strukturelt antal besk\xE6ftigede, 1000 pers."
+Qm:
+  des: "Orlovspersoner i NR besk\xE6ftigelsen, 1000 pers."
+Qmr:
+  des: "St\xF8rre konflikter i NR besk\xE6ftigelsen, 1000 pers."
+RPB:
+  des: "Risikopr\xE6mie i usercost i byggeri"
+RPI:
+  des: "Risikopr\xE6mie i usercost i industri"
+RPIWBZ:
+  des: "M\xE5l for niveauforskel (risikopr\xE6mie) mellem den effektive obligationsrente\
+    \ og et v\xE6gtet gennemsnit af markedsrenter"
+RPIWDEH:
+  des: "M\xE5l for niveauforskel (risikopr\xE6mie) mellem rente p\xE5 husholdningers\
+    \ indest\xE5ende og et v\xE6gtet gennemsnit af markedsrenter"
+RPIWI:
+  des: "M\xE5l for niveauforskel (risikopr\xE6mie) mellem renten p\xE5 aktiver i udlandet\
+    \ og et v\xE6gtet gennemsnit af markedsrenter"
+RPIWLO:
+  des: "M\xE5l for niveauforskel (risikopr\xE6mie) mellem pengeinstitutternes effektive\
+    \ udl\xE5nsrente og et v\xE6gtet gennemsnit af markedsrenter"
+RPIWPP:
+  des: "Normal forskel (risikopr\xE6mie) mellem  implicit afkastrate for privat pensionssektor\
+    \ og 30 \xE5rig realkreditrente"
+RPIWU:
+  des: "M\xE5l for niveauforskel (risikopr\xE6mie) mellem renten p\xE5 bruttog\xE6\
+    ld i udland og et v\xE6gtet gennemsnit af markedsrenter"
+RPT:
+  des: "Risikopr\xE6mie i usercost i tjeneste erhverv"
+S:
+  des: Skatter i alt, mio. kr.
+SA:
+  des: Andre skatter, mio. kr.
+SAK:
+  des: Kapitalskat, afgift af arv og gaver, mio. kr.
+SAP:
+  des: Sats for pensionsbidrag fra arbejdsgiveren.
+SAQWY:
+  des: Bidrag til SP i 1999-2001, mio. kr.
+SAR:
+  des: Resterende sociale bidrag (LG mv.), mio. kr.
+SARR:
+  des: Resterende sociale bidrag ekskl. imputerede bidrag til tjenestemandspension
+    vedr. frasolgte statsvirksomheder, mio. kr.
+SARTPT:
+  des: Imputerede bidrag til tjenestemandspension vedr. frasolgte statsvirksomheder,
+    mio. kr.
+SASO:
+  des: "Obligatoriske bidrag til sociale ordninger, mio. kr. Prim\xE6rt bidrag til\
+    \ LG samt bidrag til SP i 1999-2001"
+SD:
+  des: Direkte skatter i alt, mio. kr.
+SDA:
+  des: Arbejdsmarkedsbidrag (bruttoskat) mio. kr.
+SDK:
+  des: Kildeskatter, ialt mio. kr.
+SDM:
+  des: Medielicens
+SDP:
+  des: Andre personlige indkomstskatter
+SDPA:
+  des: "Andre personlige indkomstskatter fratrukket afgift p\xE5 udbetalte kapitalpensioner\
+    \ inkl. LD, mio. kr."
+SDR:
+  des: Pensionsafkastbeskatning (tidligere realrenteafgift og midlertidig fomueafgift
+    i 1983), mio. kr.
+SDS:
+  des: Selskabsskatter, mio. kr.
+SDSN:
+  des: Selskabsskatter fra kulbrinteskattepligtige selskaber, mio. kr.
+SDSQ:
+  des: Selskabsskatter fra ikke-kulbrinteskattepligtige selskaber, mio. kr.
+SDU:
+  des: AUD-bidrag fra husholdningerne, mio. kr.
+SDV:
+  des: "Husholdningernes v\xE6gtafgifter, mio. kr."
+SI:
+  des: Samlede indirekte skatter, netto for subsidier, mio. kr.
+SIG:
+  des: Samlet momsprovenu, mio. kr.
+SIGC:
+  des: "Momsprovenu p\xE5 forbrug i alt, mio. kr."
+SIGIN:
+  des: "Momsprovenu p\xE5 invest. ekskl. skibe og fly, mio. kr."
+SIGV:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger, mio. kr."
+SIGVA:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i landbrug, mio. kr."
+SIGVB:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i byggeri, mio. kr."
+SIGVE:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i energi erhverv, mio. kr."
+SIGVH:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i boligben., mio. kr."
+SIGVI:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i industri, mio. kr."
+SIGVN:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i Nords\xF8., mio. kr."
+SIGVO:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i offentlig erhverv, mio. kr."
+SIGVS:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i s\xF8fart, mio. kr."
+SIGVT:
+  des: "Momsprovenu p\xE5 r\xE5stofomkostninger i tjeneste erhverv, mio. kr."
+SIM:
+  des: Toldprovenu, mio. kr.
+SIP:
+  des: Provenu af punktafgifter minus subsidier, mio. kr.
+SIPAA:
+  des: "Hektarst\xF8tte, mio. kr."
+SIPAAX:
+  des: "Eksogent udgangssk\xF8n for hektarst\xF8tte, mio. kr. Forskel mellem SIPAA\
+    \ og SIPAAX indg\xE5r i ligning for BVT-deflator for landbrug, PYFA"
+SIPEE:
+  des: "FEOGA eksportst\xF8tte, mio. kr."
+SIPEF:
+  des: "Punktafgiftsprovenu p\xE5 forbr., inv. og eksport, mio. kr."
+SIPEI:
+  des: "Punktafgiftsprovenu p\xE5 eksport af varer, mio. kr."
+SIPEQ:
+  des: "Punktafgiftsprovenu p\xE5 eksport residualt, mio. kr."
+SIPEU:
+  des: Produktafgifter til EU, mio. kr. Indsat /06.06.16 SAN
+SIPPSO:
+  des: Produktsubsidie vedr. PSO, mio. kr.
+SIPSU:
+  des: Produktsubsidier, mio. kr.
+SIPSUER:
+  des: "FEOGA produktionsst\xF8tte udover hektarst\xF8tte, mio. kr. Samlet produktionsst\xF8\
+    tte = -SIPAA - SIPSUER"
+SIPSUERX:
+  des: "Eksogent udgangssk\xF8n for FEOGA produktionsst\xF8tte udover hektarst\xF8\
+    tte, mio. kr. Forskel mellem SIPSUERX og SIPSUERX indg\xE5r i ligning for BVT-deflator\
+    \ for landbrug, PYFA"
+SIPUR:
+  des: Residual vedr. varefordelte subsidier
+SIPV:
+  des: "Punktafgift vedr. r\xE5varek\xF8b, mio. kr."
+SIPVA:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i landbrug, mio. kr."
+SIPVB:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i byggeri, mio. kr."
+SIPVE:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i energi erhverv, mio. kr."
+SIPVEA:
+  des: Punktafgift vedr. energi i landbrug, mio. kr.
+SIPVEB:
+  des: Punktafgift vedr. energi i byggeri, mio. kr.
+SIPVEE:
+  des: Punktafgift vedr. energi i energi erhverv, mio. kr.
+SIPVEI:
+  des: Punktafgift vedr. energi i industri mio. kr.
+SIPVEO:
+  des: Punktafgift vedr. energi i offentlig erhverv, mio. kr.
+SIPVES:
+  des: "Punktafgift vedr. energi i s\xF8fart, mio. kr."
+SIPVET:
+  des: Punktafgift vedr. energi i tjeneste erhverv, mio. kr.
+SIPVH:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i boligben., mio. kr."
+SIPVI:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i industri mio. kr."
+SIPVMA:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i landbrug, mio. kr."
+SIPVMB:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i byggeri, mio. kr."
+SIPVME:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i energi erhverv, mio. kr."
+SIPVMH:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i boligben., mio. kr."
+SIPVMI:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i industri mio. kr."
+SIPVMN:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i Nords\xF8., mio. kr."
+SIPVMO:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i offentlig erhverv, mio. kr."
+SIPVMS:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i s\xF8fart, mio. kr."
+SIPVMT:
+  des: "Punktafgift vedr. \xF8vrigt vareforbrug i tjeneste erhverv, mio. kr."
+SIPVN:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i Nords\xF8 (=R\xF8rledningsafgift), mio.\
+    \ kr."
+SIPVO:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i offentlig erhverv, mio. kr."
+SIPVS:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i s\xF8fart, mio. kr."
+SIPVT:
+  des: "Punktafgift vedr. r\xE5varek\xF8b i tjeneste erhverv, mio. kr."
+SIQ:
+  des: Andre produktionsskatter, mio. kr.
+SIQA:
+  des: Andre produktionsskatter i landbrug, mio. kr.
+SIQAA:
+  des: "Brakl\xE6gningsst\xF8tte mv., mio. kr."
+SIQAB:
+  des: Arbejdsmarkedsbidrag betalt af arb.givere, mio. kr.
+SIQAM:
+  des: "Provenu af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum,\
+    \ mio. kr."
+SIQB:
+  des: Andre produktionsskatter i byggeri, mio. kr.
+SIQCO2:
+  des: Andre produktionskatter vedr. bortauktionering af C02-kvoter
+SIQE:
+  des: Andre produktionsskatter i energi erhverv, mio. kr.
+SIQEJ:
+  des: Ejendomsskatter, mio. kr.
+SIQEJX:
+  des: "Eksogent udgangssk\xF8n for SIQEJ (relevant n\xE5r DXSIQEJ=1), mio. kr."
+SIQEU:
+  des: Produktionssubsider til private fra EU, mio. kr.
+SIQEUR:
+  des: "Produktionssubsider til private fra EU udover brakl\xE6gningsst\xF8tte, mio.\
+    \ kr."
+SIQH:
+  des: Andre produktionsskatter i boligben., mio. kr.
+SIQI:
+  des: Andre produktionsskatter i industri, mio. kr.
+SIQLT:
+  des: "L\xF8ntilskud, mio. kr."
+SIQN:
+  des: "Andre produktionsskatter i Nords\xF8, mio. kr."
+SIQO:
+  des: Andre produktionsskatter i offentlig erhverv, mio. kr.
+SIQPSO:
+  des: Produktionssubsidie vedr. PSO, mio. kr.
+SIQR:
+  des: Resterende andre produktionsskatter, mio. kr.
+SIQS:
+  des: "Andre produktionsskatter i s\xF8fart, mio. kr."
+SIQSH:
+  des: Subsidier til almene boliger (rentesikring mv.), mio. kr.
+SIQSQ:
+  des: "\xD8vrige produktionsssubsidier (inkl. EU subs.), mio. kr."
+SIQSR:
+  des: "\xD8vrige produktionsssubsidier, mio. kr."
+SIQSU:
+  des: Andre produktionssubsidier, mio. kr.
+SIQT:
+  des: Andre produktionsskatter i tjenesteerhv., mio. kr.
+SIQU:
+  des: Aud-bidrag mv. fra erhvervene, mio. kr.
+SIQV:
+  des: "V\xE6gtafgifter og gr\xF8n ejerafgift fra erhvervene, mio. kr."
+SIQWA:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i landbrug, mio. kr."
+SIQWB:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i byggeri, mio. kr."
+SIQWE:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i energierh., mio. kr."
+SIQWH:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i boligben., mio. kr."
+SIQWI:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i industri, mio. kr."
+SIQWN:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i Nords\xF8, mio. kr."
+SIQWO:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i off.erh., mio. kr."
+SIQWS:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i s\xF8fart, mio. kr."
+SIQWT:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i tjenesteerhv., mio.\
+    \ kr."
+SIR:
+  des: Registreringsafgiftsprovenu, mio. kr.
+SISU:
+  des: Subsidier, mio. kr.
+SISUDK:
+  des: Subsidier dansk-finansieret, mio. kr.
+SISUEU:
+  des: Subsidier EU-finansieret, mio. kr.
+SIV:
+  des: Produktskatter, mio. kr.
+SN:
+  des: "Samlet provenu fra nords\xF8beskatning, mio. kr."
+SSFK:
+  des: "Formueskat samt s\xE6rlig indkomstskat, mio. kr."
+SSY:
+  des: Slutskatter vedr. indkomster ialt, mio. kr.
+SSYA:
+  des: Slutskatter vedr. aktieskat, mio. kr.
+SSYD:
+  des: "Slutskatter vedr. d\xF8dsboskat, mio. kr."
+SSYEJ:
+  des: "Slutskatter vedr. ejendomsv\xE6rdiskat, mio. kr."
+SSYEJX:
+  des: "Eksogent udgangssk\xF8n for SSYEJ (relevant n\xE5r DXSSYEJ=1), mio. kr."
+SSYS:
+  des: Slutskatter vedr. skattepligtig indkomst, mio. kr.
+SSYSP:
+  des: Slutskatter vedr. personlig indkomst, mio. kr.
+SSYV:
+  des: Slutskatter vedr. virksomhedsskat, mio. kr.
+Sipaf_pso:
+  des: PSO afgift, mio. kr.
+Siqejh:
+  des: "Grundskyld p\xE5 boligbenyttelse"
+Siqejxh:
+  des: "\xD8vrige ejendomsskatter"
+Siqw:
+  des: "Ikke-varefordelte indirekte afgifter vedr. l\xF8nsum i alt"
+Ssyn:
+  des: Nedslag i personlige indkomstskatter vedr. renteudgifter. Kilde Skat-teministeriet
+TAFO:
+  des: "Andre l\xF8bende overf\xF8rsler fra udland til offentlig sektor, mio. kr."
+TAFPN:
+  des: "Overf\xF8rsler og skatter fra udland til privat sektor, netto, mio. kr."
+TAOF:
+  des: "Andre l\xF8bende overf\xF8rsler fra offentlig sektor til udland, mio. kr."
+TAOFF:
+  des: "Andre l\xF8bende overf\xF8rsler fra offentlig sektor til F\xE6r\xF8erne, mio.\
+    \ kr."
+TAOFG:
+  des: "Andre l\xF8bende overf\xF8rsler fra offentlig sektor til Gr\xF8nland, mio.\
+    \ kr."
+TAOFR:
+  des: "Andre l\xF8bende overf\xF8rsler fra offentlig sektor til ulandsbistand mv.,\
+    \ mio. kr."
+TAOP:
+  des: "Andre l\xF8bende overf\xF8rsler fra offentlig til privat sektor, mio. kr."
+TAOPI:
+  des: "Andre l\xF8bende overf\xF8rsler fra offentlig til privat sektor, indekstill\xE6\
+    g jf. statistikbanken OFF10: 2.2"
+TAOPIX:
+  des: "Udgangssk\xF8n for TAOPI, ekskl. korrektion for satsregulering, mio. 2010-kr."
+TAOPM:
+  des: "Mediecheck til pensionister (indf\xF8rt med medieforliget i 2018), mio. kr."
+TAOPR:
+  des: "Andre l\xF8bende overf\xF8rsler fra offentlig til privat sektor, eksklusiv\
+    \ indkomstoverf\xF8rsler jf. statistikbanken OFF10: 2.1-2.4"
+TAOPY:
+  des: "Andre l\xF8bende overf\xF8rsler fra offentlig til privat sektor, andre indkomstoverf\xF8\
+    rsler jf. statistikbanken OFF10: 2.1, 2.3 og 2.4"
+TAOPYX:
+  des: "Udgangssk\xF8n for TAOPY, ekskl. korrektion for satsregulering, mio. 2010-kr."
+TAPO:
+  des: "Andre l\xF8bende overf\xF8rsler fra privat til offentlig sektor, mio. kr."
+TAPOK:
+  des: Kirkeskat
+TAPOR:
+  des: "Andre l\xF8bende overf\xF8rsler ekskl. kirkeskat fra privat til offentlig\
+    \ sektor, mio. kr."
+TAQWY:
+  des: Sats for SP-bidrag, = 0.01 1999-2001, 0 ellers
+TBPHO:
+  des: Frivillige bidrag til social ordninger, mio.kr.
+TEUBZ:
+  des: "Danmarks bidrag til EUs budget vedr. BNI, moms-grundlag, private sektors punktafgifter\
+    \ til EU samt resterende, overf\xF8rsler. Mio. kr."
+TEUN:
+  des: "EU-overf\xF8rsler i alt, netto fra EU, mio. kr."
+TEUR:
+  des: "\xD8vrige overf\xF8rsler fra EU, mio. kr."
+TFFN:
+  des: Nettofordringserhvervelse i udlandet, mio. kr.
+TFOIP:
+  des: "Offentlige prim\xE6re indt\xE6gter, mio. kr."
+TFOIQ:
+  des: "\xD8vrige offentlige indt\xE6gter, mio. kr."
+TFON:
+  des: Nettofordringserhvervelse i den offentlige sektor. Mio. kr.
+TFOPN:
+  des: "Offentlig prim\xE6re saldo, mio. kr."
+TFOUP:
+  des: "Offentlige prim\xE6re udgifter, mio. kr."
+TFOUQ:
+  des: "\xD8vrige offentlige udgifter, mio. kr."
+TFPN:
+  des: Nettofordringserhvervelse i privat sektor, jf. TFPN + TFFN + TFON = 0. Mio
+    kr.
+TFPPB:
+  des: Totalfaktorproduktivitet i PB-erhvervet
+TFPPN:
+  des: Nettofordringserhvervelse i privat pensionssektor, mio. kr.
+TFPQN:
+  des: Nettofordringserhvervelse i privat ikke-pensionssektor. Mio kr.
+TFP_GAP:
+  des: Bidrag til output gap fra totalfaktorproduktivitet
+TG:
+  des: Generel momssats
+TIFN:
+  des: "Nettorenteindt\xE6gter fra udlandet. mio. kr."
+TIION:
+  des: "Nettorenteindt\xE6gter i offentlig, ekskl. overskud mv., jf. TION = TIION\
+    \ + TIOR + TIOV. Mio kr."
+TIIPN:
+  des: "Den private sektors nettorenteindt\xE6gter, ekskl. jordrente mv., jf. TIIPN\
+    \ + TIION = TIFN. Mio kr."
+TIIPQN:
+  des: "Privat ikke-pensionsektors nettorenteindt\xE6gter, ekskl. jordrente mv., jf.\
+    \ TIIPN = TIPPN + TIIPQN. Mio kr."
+TIOFU:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. IOFU
+TION:
+  des: "Nettorenteindt\xE6gter i offentlig sektor. mio. kr."
+TIOR:
+  des: "Off. indt\xE6gter af jord og rettigheder, mio. kr."
+TIORN:
+  des: "Off. indt\xE6gter fra jordrente fra Nords\xF8en, mio. kr."
+TIORR:
+  des: "Off. indt\xE6gter af jord og rettigheder, \xF8vrige, mio. kr."
+TIOV:
+  des: Overskud af offentlig virksomhed, mio. kr.
+TIOVN:
+  des: "Nords\xF8udbytte fra statens medejerskab, mio. kr."
+TIOVR:
+  des: "Overskud af offentlig virksomhed ekskl. Nords\xF8, mio. kr."
+TIPN:
+  des: "Den private sektors nettorenteindt\xE6gter, jf. TIPN + TION = TIFN = 0. Mio\
+    \ kr."
+TIPPN:
+  des: "Afkast f\xF8r skat, alle pensionsordninger, mio. kr."
+TIPPPS:
+  des: Skattepligtige renter i skattepligtig indkomst, mio. kr.
+TIPPS:
+  des: Skattepligtige renter i selskabsskattegrundlag, mio. kr.
+TIPQN:
+  des: "Privat ikke-pensionsektors nettorenteindt\xE6gter, jf. TIPN = TIPPN + TIPQN.\
+    \ Mio kr."
+TIRK:
+  des: "Ressourceindt\xE6gt fra Nords\xF8 (tidl. kulbrinteskat), mio. kr."
+TIRO:
+  des: "Ressourceindt\xE6gt fra Nords\xF8 (tidl. olier\xF8rledningsafgift), mio. kr."
+TIR_Z_O:
+  des: "Renteindt\xE6gter mv.i offentlig sektor, mio. kr."
+TI_O_Z:
+  des: Formueindkomst, udgift, offenltig sekotr, mio. kr.
+TI_Z_O:
+  des: "Formueindkomst, indt\xE6gt, offentlig sektor, mio. kr."
+TKFO:
+  des: "Kapitaloverf\xF8rsler fra udland til offentlig sektor, mio. kr."
+TKFPN:
+  des: "Kapitaloverf\xF8rsler fra udland til privat sektor, netto, mio. kr."
+TKOF:
+  des: "Kapitaloverf\xF8rsler fra offentlig sektor til udland, mio. kr."
+TKOP:
+  des: "Kapitaloverf\xF8rsler fra offentlig til privat sektor, k\xF8b af jord og rettigheder\
+    \ samt lagerinvesteringer, mio. kr."
+TKOPEF:
+  des: "Udbetalte efterl\xF8nspr\xE6mier"
+TKOPR:
+  des: "Andre kapitaloverf\xF8rsler fra offentlig til privat sektor, eksklusiv efterl\xF8\
+    nspr\xE6mier"
+TKPO:
+  des: "Kapitaloverf\xF8rsler fra privat til offentlig sektor, mio. kr."
+TKS:
+  des: Gennemsnitlig kirkeskattesats
+TME:
+  des: Toldsats for import af energi
+TMI:
+  des: Toldsats for import af andre varer
+TOBINQH:
+  des: "Forholdet mellem pris p\xE5 ejerboliger og investeringsprisen 2010=1"
+TPAF:
+  des: Frivillige sociale bidrag til a-kasse
+TPCB:
+  des: "Punktafgiftssats for forbrug af bilk\xF8b"
+TPCE:
+  des: Punktafgiftssats for forbrug af energi
+TPCEX:
+  des: Punktafgiftssats for forbrug af energi ekskl. nettoeffekt af PSO-ordning, modelberegnet
+TPCG:
+  des: Punktafgiftssats for forbrug af benzin
+TPCH:
+  des: Punktafgiftssats for forbrug af boligben.
+TPCO:
+  des: Punktafgiftssats for offentligtforbrug
+TPCS:
+  des: Punktafgiftssats for forbrug af tjen. og trans.
+TPCV:
+  des: Punktafgiftssats for forbrug af andre varer
+TPEF:
+  des: "Frivillige sociale bidrag til efterl\xF8n"
+TPIBH:
+  des: Punktafgiftssats for invest. i bolig
+TPIBOS:
+  des: Punktafgiftssats for invest. i bygninger, offentlige
+TPIBPS:
+  des: Punktafgiftssats for invest. i bygninger, private
+TPIL:
+  des: Punktafgiftssats for invest. i Lagre
+TPIMOS:
+  des: Punktafgiftssats for invest. i maskiner, offentlig
+TPIMPS:
+  des: Punktafgiftssats for invest. i maskiner, privat
+TPPFI:
+  des: Indbetalinger til arbejdsgiveradministrerede pensionsordninger inkl. ATP, DMP,
+    SP og LD, mio. kr.
+TPPI:
+  des: Indbetalinger til pensionsordninger i alt, mio. kr.
+TPPIA:
+  des: Indbetalinger til aldersopsparing i alt, mio. kr.
+TPPIAF:
+  des: Indbetalinger til aldersopsparing arbejdsgiveradministrerede, mio. kr.
+TPPIAQ:
+  des: Indbetalinger til aldersopsparing ikke arbejdsgiveradministrerede, mio. kr.
+TPPIK:
+  des: Indbetalinger til gammel kapitalpensionsordning i alt, mio. kr.
+TPPIKF:
+  des: Indbetalinger til gammel kapitalpensionsordning arbejdsgiveradministrerede,
+    mio. kr.
+TPPIKQ:
+  des: Indbetalinger til gammel kapitalpensionsordning ikke arbejdsgiveradministrerede,
+    mio. kr.
+TPPIL:
+  des: "Indbetalinger til pensionsordninger med l\xF8bende udbetalinger i alt, mio.\
+    \ kr."
+TPPILF:
+  des: "Indbetalinger til pensionsordninger med l\xF8bende udbetalinger arbejdsgiveradministrerede,\
+    \ mio. kr."
+TPPILFTY:
+  des: "Pensionsindbetaling for indkomstoverf\xF8rselsmodtagere (indf\xF8rt gradvist\
+    \ fra 2020 med FL19)"
+TPPILQ:
+  des: "Indbetalinger til pensionsordninger med l\xF8bende udbetalinger ikke-arbejdsgiveradministrerede,\
+    \ mio. kr."
+TPPKU:
+  des: Udbetalinger fra kapitalpensionsordninger inkl. LD, mio. kr.
+TPPLU:
+  des: "Udbetalinger fra pensionsordninger med l\xF8bende udbetalinger inkl. ATP,\
+    \ SP og DMP, mio. kr."
+TPPQI:
+  des: "Indbetalinger til \xF8vrige (ikke arbejdsgiveradministrerede) pensionsordninger,\
+    \ mio. kr."
+TPPU:
+  des: Udbetalinger fra pensionsordninger i alt, mio. kr.
+TPPUA:
+  des: Udbetalinger fra aldersopsparing, mio. kr.
+TPPUK:
+  des: Udbetalinger fra gammel kapitalpensionsordning, inkl LD, mio. kr.
+TPPUL:
+  des: "Udbetalinger fra pensionsordninger med l\xF8bende udbetalinger, mio. kr."
+TPR:
+  des: "\xD8vrige frivillige bidrag til sociale ordninger, mio. kr."
+TPVEA:
+  des: Punktafgiftssats vedr. energiforbrug i landbrug
+TPVEB:
+  des: Punktafgiftssats vedr. energiforbrug i byggeri
+TPVEE:
+  des: Punktafgiftssats vedr. energiforbrug i energierhverv
+TPVEI:
+  des: Punktafgiftssats vedr. energiforbrug i industri
+TPVEIX:
+  des: Punktafgiftssats vedr. energiforbrug i industri ekskl. nettoeffekt af PSO-ordning,
+    modelberegnet
+TPVEO:
+  des: Punktafgiftssats vedr. energiforbrug i offentlig erhverv
+TPVES:
+  des: "Punktafgiftssats vedr. energiforbrug i s\xF8fart"
+TPVET:
+  des: Punktafgiftssats vedr. energiforbrug i tjeneste erhverv
+TPVETX:
+  des: Punktafgiftssats vedr. energiforbrug i tjenesteerhverv ekskl. nettoeffekt af
+    PSO-ordning, modelberegnet
+TPVMA:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i landbrug"
+TPVMB:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i byggeri"
+TPVME:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i energierhverv"
+TPVMH:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i boligben."
+TPVMI:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i industri"
+TPVMN:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i Nords\xF8"
+TPVMO:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i offentlig erhverv"
+TPVMS:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i s\xF8fart"
+TPVMT:
+  des: "Punktafgiftssats vedr. \xF8vrigt vareforbrug i tjeneste erhverv"
+TQAB:
+  des: Sats for arbejdsmarkedsbidrag betalt af arb.givere
+TQKEJ:
+  des: "Sats for ejendomsv\xE6rdiskat"
+TQU:
+  des: Sats for AUD-bidrag mv. fra erhvervene
+TRCB:
+  des: "Registreringsafgiftssats vedr. husholdningernes bilk\xF8b"
+TRIMPS:
+  des: Registreringsafgiftssats vedr. private mask.invest.
+TSAK:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SAK
+TSARR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SARR
+TSARTPT:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SARTPT
+TSB:
+  des: "Sats vedr. skat af personlig indkomst i f\xF8rste indkomsttrin (bundskat)"
+TSDA:
+  des: Sats for arbejdsmarkedsbidrag
+TSDL:
+  des: "Lejev\xE6rdiprocent"
+TSDM:
+  des: Regelsats for medieliciens ekskl. moms
+TSDPK:
+  des: "Sats for afgift p\xE5 udbetalte kapitalpensioner, LD mv."
+TSDR:
+  des: Skattesats for alm. afkast i pensionsafkastbeskatningen (tidl. realrenteafgift)
+TSDRA:
+  des: Skattesats for kursgevinster i pensionsafkastbeskatningen (tidl. realrenteafgift)
+TSDS:
+  des: Selskabsskattesats
+TSDU:
+  des: "Sats for l\xF8nmodtagernes AUD-bidrag"
+TSDV:
+  des: "V\xE6gtafgiftssats for k\xF8ret\xF8jer for husholdningerne (implicit sats)"
+TSIPUR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SIPUR
+TSIQEJ:
+  des: Gennemsnitlig grundskyldspromille
+TSIQEUR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SIQEUR
+TSIQLT:
+  des: "Implicit sats for aktiverede med l\xF8ntilskud (2010-kr. pr person pr. \xE5\
+    r)"
+TSIQSH:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SIQSH
+TSIQSR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SIQSR
+TSIQV:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SIQV
+TSK:
+  des: Sats vedr. kommuneskat
+TSM:
+  des: Sats vedr. skat af personlig indkomst i anden indkomsttrin (mellemskat)
+TSN:
+  des: "Gennemsnitlig beskatningsgrad i nords\xF8en"
+TSS:
+  des: Sats vedr. sundhedsbidrag
+TSS0:
+  des: Gennemsnitligt skattesats vedr. skattepligtig indk.
+TSSP0:
+  des: Gennemsnitligt skattesats vedr. personlig indk.
+TSSYA:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SSYA
+TSSYD:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SSYD
+TSSYV:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. SSYV
+TST:
+  des: Sats vedr. skat af personlig indkomst i tredje indkomsttrin (topskat)
+TSUIH:
+  des: Skattesats i uih-relationen (rentefradrags sats)
+TTAFO:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TAFO
+TTAFPN:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TAFPN
+TTAOFF:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TAOFF
+TTAOFG:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TAOFG
+TTAOFR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TAOFR
+TTAOPM:
+  des: "Sats for mediecheck til pensionister (indf\xF8rt med medieforliget i 2018),\
+    \ 2010-kr./pers."
+TTAOPR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TAOPR
+TTAPOR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TAPOR
+TTEUBZ:
+  des: Sats vedr Danmarks BNI-bidrag mv. til EU, jf. TEFBZ
+TTEUR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TEUR
+TTIPPS:
+  des: Skattepligtige renter i selskaber (andel af strukturelt BNP) udover 0.1*TIIPQN
+TTKFO:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TKFO
+TTKFPN:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TKFPN
+TTKOF:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TKOF
+TTKOPEF:
+  des: "Maksimal efterl\xF8nspr\xE6mie f\xF8r satsregulering, 2010-priser"
+TTKOPR:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TKOPR
+TTKPO:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TKPO
+TTPAF:
+  des: "Implicit sats for frivilige bidrag til a-kasse (2010-kr pr. person pr. \xE5\
+    r)"
+TTPEF:
+  des: "Implicit sats for frivilige bidrag til efterl\xF8n (2010-kr pr. person pr.\
+    \ \xE5r)"
+TTPR:
+  des: "Implicit sats for \xF8vrige frivillige bidrag (2010-kr pr. person pr. \xE5\
+    r)"
+TTWEN:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TWEN
+TTYDA:
+  des: "Implicit sats for midl.arb.mark.ydelse (2010-kr. pr person pr. \xE5r)"
+TTYDD:
+  des: "Implicit sats for dagpenge (2010-kr. pr person pr. \xE5r)"
+TTYKS:
+  des: "Implicit sats for kontanthj\xE6lp (2010-kr. pr person pr. \xE5r)"
+TTYMB:
+  des: "Implicit sats for barselsdagpenge (2010-kr. pr person pr. \xE5r)"
+TTYMF:
+  des: "Implicit sats for arbejdsmarkedsorlov (2010-kr. pr person pr. \xE5r)"
+TTYMFDP:
+  des: "Implicit sats for feriedagpenge (2010-kr. pr person pr. \xE5r)"
+TTYMR:
+  des: "Implicit sats for ressourceforl\xF8b (2010-kr. pr person pr. \xE5r)"
+TTYMS:
+  des: "Implicit sats for sygedagpenge (2010-kr. pr person pr. \xE5r)"
+TTYPE:
+  des: "Implicit sats for efterl\xF8n (2010-kr. pr person pr. \xE5r)"
+TTYPFO:
+  des: "Implicit sats for f\xF8rtidspension (2010-kr. pr person pr. \xE5r)"
+TTYPFP:
+  des: "Implicit sats for folkepension (2010-kr. pr person pr. \xE5r)"
+TTYPRI:
+  des: Implicit sats (andel af strukturelt, nominelt BNP) vedr. TYPRI
+TTYRBF:
+  des: "Implicit sats for b\xF8rnefamilieydelsen = b\xF8rne- og ungeydelsen (2010-kr.\
+    \ pr person pr. \xE5r)"
+TTYRGC:
+  des: "Implicit sats for gr\xF8n check (2010-kr pr. person pr. \xE5r)"
+TTYRHY:
+  des: "Implicit sats for boligydelse (2010-kr. pr person pr. \xE5r)"
+TTYUAK:
+  des: "Implicit sats for aktiverede dagpengemodtagere udenfor arbejdsstyrken (2010-kr.\
+    \ pr person pr. \xE5r)"
+TTYUKAK:
+  des: "Implicit sats for aktiverede kontanthj\xE6lpsmodtagere udenfor arbejdsstyrken\
+    \ (2010-kr. pr person pr. \xE5r)"
+TTYULY:
+  des: "Implicit sats for ledighedsydelse (2010-kr. pr person pr. \xE5r)"
+TTYURY:
+  des: "Implicit sats for revalideringsydelse (2010-kr. pr person pr. \xE5r)"
+TTYUSU:
+  des: "Implicit sats for SU (2010-kr. pr person pr. \xE5r)"
+TWEN:
+  des: "L\xF8nninger og arbejdsgiverbidrag fra udlandet, netto mio. kr."
+TY:
+  des: "Indkomstoverf\xF8rsler til husholdningerne, mio. kr."
+TYD:
+  des: "Arbejdsl\xF8shedsunderst\xF8ttelse, mio. kr."
+TYDA:
+  des: "Arbejdsl\xF8shedsunderst\xF8ttelse til midl.arb.mark.ydelse, mio. kr."
+TYDD:
+  des: "Arbejdsl\xF8shedsunderst\xF8ttelse ex midl.arb.mark.ydelse, mio. kr."
+TYKR:
+  des: "Kontanthj\xE6lp, ikke skattepligtig del, mio. kr."
+TYKRX:
+  des: "Udgangsv\xE6rdi for TYKR, ekskl. korrektion for satsregulering, mio. 2010-kr."
+TYKS:
+  des: "Kontanthj\xE6lp, mio. kr."
+TYKSL:
+  des: "Udgift til ledige kontanthj\xE6lpsmodtagere, mio. kr."
+TYKSR:
+  des: "Udgift til ikke-arbejdsmarkedsparate kontanthj\xE6lpsmodtagere, mio. kr."
+TYM:
+  des: Syge-, barsels- og feriedagpenge samt arbejdsmarkedorlov og jobrotation, mio.
+    kr.
+TYMB:
+  des: Barselsdagpenge, mio. kr.
+TYMF:
+  des: Arbejdsmarkedsorlov, mio. kr.
+TYMFDP:
+  des: Feriedagpenge, mio. kr.
+TYMR:
+  des: "Ressourceforl\xF8b, mio. kr."
+TYMS:
+  des: Sygedagpenge, mio. kr.
+TYP:
+  des: Samlede pensioner, mio. kr.
+TYPE:
+  des: "Efterl\xF8n (inkl. overgangsydelse og flexydelse), mio. kr."
+TYPFO:
+  des: "F\xF8rtidspension, mio. kr."
+TYPFP:
+  des: Folkepension, mio. kr.
+TYPFU:
+  des: "Folkepension og f\xF8rtidspension til udland, mio. kr."
+TYPR:
+  des: "\xD8vrige pensioner (tjenestem\xE6nd mv.), mio. kr."
+TYPRI:
+  des: Imputerede tjenestemandspensioner, mio. kr.
+TYPRX:
+  des: "Udgangsv\xE6rdi for TYPR, ekskl. korrektion for satsregulering, mio. 2010-kr."
+TYR:
+  des: "\xD8vrige transfereringer, mio. kr."
+TYRBF:
+  des: "B\xF8rnefamilieydelsen = b\xF8rne- og ungeydelsen, mio. kr."
+TYRGC:
+  des: "Gr\xF8n check, mio. kr."
+TYRHS:
+  des: Boligsikring, mio. kr.
+TYRHSX:
+  des: "Udgangsv\xE6rdi for TYRHS, ekskl. korrektion for satsregulering, mio. 2010-kr."
+TYRHY:
+  des: Boligydelse, mio. kr.
+TYRR:
+  des: "Resterende ikke-skattepligitge indkomstoverf\xF8rsler, mio. kr."
+TYRRR:
+  des: "\xD8vrige ikke skattepligtige indkomstoverf\xF8rsler, mio. kr."
+TYRRRX:
+  des: "Udgangsv\xE6rdi for TYRRR, ekskl. korrektion for satsregulering, mio. 2010-kr."
+TYRS:
+  des: "Resterende skattepligitge indkomstoverf\xF8rsler, mio. kr."
+TYRSX:
+  des: "Udgangsv\xE6rdi for TYRS, ekskl. korrektion for satsregulering, mio. 2010-kr."
+TYU:
+  des: Uddannelse, aktivering mv., mio. kr.
+TYUAK:
+  des: "Overf\xF8rsler til aktiverede dagpengemodtagere udenfor arbejdsstyrken, mio.\
+    \ kr."
+TYUKAK:
+  des: "Overf\xF8rsler til aktiverede kontanthj\xE6lpsmodtagere udenfor arbejdsstyrken,\
+    \ mio. kr."
+TYULY:
+  des: Ledighedsydelse, mio. kr.
+TYURY:
+  des: Revalideringsydelse, mio. kr.
+TYUSU:
+  des: SU-udgifter, mio. kr.
+TY_OFF10:
+  des: "Indkomstoverf\xF8rsler til husholdninger inkl. indekstill\xE6g mv., jf statistibanken\
+    \ OFF10"
+U:
+  des: Befolkning, 1000 pers.
+UA:
+  des: Arbejdsstyrken i antal personer, 1000 pers.
+UAKX:
+  des: Aktiverede dagpengeledige udenfor arbejdsstyrken, 1.000 pers.
+UAKX_K:
+  des: Aktiverede dagpengeledige udenfor arbejdsstyrken, konjunkturbidrag, 1.000 pers.
+UAKX_S:
+  des: Aktiverede dagpengeledige udenfor arbejdsstyrken, strukturel, 1.000 pers.
+UA_GAP:
+  des: Bidrag til output gap fra arbejdsstyrke
+UA_K:
+  des: Konjunkturbidrag til arbejdsstyrken, 1000 pers.
+UA_S:
+  des: Strukturel arbejdsstyrke, 1000 pers.
+UB:
+  des: "B\xF8rn, 0-14 \xE5r (og pers. p\xE5 15-16 \xE5r, som ikke er i uddannelse\
+    \ eller besk.), 1000 pers."
+UCOST:
+  des: Usercost udtryk i kontantprisrelation
+UDFY:
+  des: "Industrieksporthandelsv\xE6gtet BNP, indeks 2010=1"
+UDFY_S:
+  des: "Industrieksporthandelsv\xE6gtet BNP, strukturelt"
+UDLIHT:
+  des: "Timel\xF8nsomkostninger i udlandet (udenlandsk valuta), indeks"
+UDVYFH:
+  des: Timeproduktivitet i udlandet, indeks
+UEF:
+  des: "Antal personer p\xE5 efterl\xF8n, 1000 pers."
+UFDP:
+  des: "Antal personer p\xE5 feriedagpenge, 1000 pers."
+UFO:
+  des: "Antal f\xF8rtidspensionister, 1000 hel\xE5rspersoner"
+UFP:
+  des: "Antal folkepensionister, 1000 hel\xE5rspersoner"
+UFY:
+  des: "Antal personer p\xE5 flexydelse, 1000 pers."
+UKAK:
+  des: "Modtagere af kontanthj\xE6lp, aktiverede, 1000 pers."
+UKAK_K:
+  des: "Modtagere af kontanthj\xE6lp, aktiverede, konjunkturbidrag, 1000 pers."
+UKAK_S:
+  des: "Modtagere af kontanthj\xE6lp, aktiverede, strukturel, 1000 pers."
+UKXA:
+  des: "Ikke arbejdsmarkedsparate kontanthj\xE6lpsmodtagere, 1000 pers."
+UKXA_K:
+  des: "Ikke arbejdsmarkedsparate kontanthj\xE6lpsmodtagere, konjunkturbidrag, 1000\
+    \ pers."
+UKXA_S:
+  des: "Ikke arbejdsmarkedsparate kontanthj\xE6lpsmodtagere, strukturel, 1000 pers."
+UL:
+  des: Ledigheden i antal personer, 1000 pers.
+ULB:
+  des: Bruttoledighed, 1000 pers.
+ULBAK:
+  des: Aktiverede i bruttoledighed (matchgruppe 1, kortere aktivering), 1000 pers.
+ULDP:
+  des: Antal ledige dagpengemodtagere inkl. midl. arb.mark.ydelse, 1000 pers.
+ULDPA:
+  des: "Antal ledige dagpengemodtagere p\xE5 midl. arb.mark.ydelse, 1000 pers."
+ULDPD:
+  des: Antal ledige dagpengemodtagere, 1000 pers.
+ULU:
+  des: "Antal ledige p\xE5 kontanthj\xE6lp, 1000 pers."
+ULY:
+  des: "Antal personer p\xE5 ledighedsydelse, 1000 pers."
+ULY_K:
+  des: "Antal personer p\xE5 ledighedsydelse, konjunkturbidrag, 1000 pers."
+ULY_S:
+  des: "Antal personer p\xE5 ledighedsydelse, strukturel, 1000 pers."
+UL_GAP:
+  des: Bidrag til output gap fra ledighed
+UL_S:
+  des: Strukturel ledighed, 1000 pers.
+UMB:
+  des: "Antal personer p\xE5 barselsdagpenge udenfor arbejdsstyrke, 1000 pers."
+UMJ:
+  des: Antal personer i jobrotation, 1000 pers.
+UMJ_K:
+  des: Antal personer i jobrotation, konjunkturbidrag, 1000 pers.
+UMJ_S:
+  des: Antal personer i jobrotation, strukturel (=0), 1000 pers.
+UMR:
+  des: "Antal personer p\xE5 ressourceforl\xF8b, 1000 pers."
+UMS:
+  des: "Antal personer p\xE5 sygedagpenge udenfor arbejdsstyrken, 1000 pers."
+UOV:
+  des: "Antal personer p\xE5 overgangsydelse, 1000 pers."
+UPFO:
+  des: "Antal personer p\xE5 f\xF8rtidspension udenfor arbejdsstyrken, 1000 pers."
+UPFO_K:
+  des: "Antal personer p\xE5 f\xF8rtidspension udenfor arbejdsstyrken, konjunkturbidrag,\
+    \ 1000 pers."
+UPFO_S:
+  des: "Antal personer p\xE5 f\xF8rtidspension udenfor arbejdsstyrken, strukturel,\
+    \ 1000 pers."
+UPFP:
+  des: "Antal personer p\xE5 folkepension udenfor arbejdsstyrken, 1000 pers."
+UPT:
+  des: "Antal personer p\xE5 tjenestemandspension, 1000 pers."
+UR:
+  des: Antal personer i restgruppen (skovfolk), 1000 pers.
+URY:
+  des: "Antal personer p\xE5 revalideringsydelse, 1000 pers."
+UR_K:
+  des: Antal personer i restgruppen (skovfolk), konjunkturbidrag, 1000 pers.
+UR_S:
+  des: Antal personer i restgruppen (skovfolk), strukturel, 1000 pers.
+USB:
+  des: "Antal personer p\xE5 barselsdagpenge, 1000 pers."
+USF:
+  des: "Antal personer p\xE5 arbejdsmarkedsorlov, 1000 pers."
+USS:
+  des: "Antal personer p\xE5 sygedagpenge, 1000 pers."
+USU:
+  des: Antal SU-modtagere, 1000 pers.
+UUXA:
+  des: Antal personer under uddannelse uden for arbejdsstyrken, 1000 pers.
+UUXA_K:
+  des: Antal personer under uddannelse uden for arbejdsstyrken, konjunkturbidrag,
+    1000 pers.
+UUXA_S:
+  des: Antal personer under uddannelse uden for arbejdsstyrken, strukturel, 1000 pers.
+VA:
+  des: Samlet vareforbrug i landbrug, mio. kr.
+VB:
+  des: Samlet vareforbrug i byggeri, mio. kr.
+VDEU:
+  des: "Valutakursen p\xE5 euro (tidligere D-mark), kr. pr. 100 euro (?)"
+VE:
+  des: Samlet vareforbrug i energiforsyning, mio. kr.
+VGBR:
+  des: "Valutakursen p\xE5 pund, kr. pr. 100 pund (?)"
+VH:
+  des: Samlet vareforbrug i boligbenyttelse, mio. kr.
+VI:
+  des: Samlet vareforbrug i industri, mio. kr.
+VJPN:
+  des: "Valutakursen p\xE5 yen, kr. pr. 100 yen (?)"
+VLBNP:
+  des: "\xC6ndring i normale enhedsl\xF8nomk. i byggeri"
+VLINP:
+  des: "\xC6ndring i normale enhedsl\xF8nomk. i industri"
+VLTNP:
+  des: "\xC6ndring i normale enhedsl\xF8nomk. i tjeneste erhverv"
+VN:
+  des: "Samlet vareforbrug i Nords\xF8, mio. kr."
+VNOR:
+  des: "Valutakursen p\xE5 norske kroner, kr. pr. 100 norske kroner"
+VO:
+  des: Samlet vareforbrug i off. erhverv, mio. kr.
+VOS:
+  des: Samlet vareforbrug i off. sektor, mio. kr.
+VS:
+  des: "Samlet vareforbrug i s\xF8fart, mio. kr."
+VSWE:
+  des: "Valutakursen p\xE5 svenske kroner, kr. pr. 100 svenske kroner"
+VT:
+  des: Samlet vareforbrug i tjenesteerhverv, mio. kr.
+VTFPB:
+  des: "V\xE6kst i totalfaktorprodutiviteten i byggeri. Trendv\xE6rdi, der indg\xE5\
+    r i produktionsfunktion"
+VTFPBF:
+  des: "V\xE6kst i totalfaktorprodutiviteten i byggeri. Faktisk v\xE6rdi"
+VTFPI:
+  des: "V\xE6kst i totalfaktorprodutiviteten i industri. Trendv\xE6rdi, der indg\xE5\
+    r i produktionsfunktion"
+VTFPIF:
+  des: "V\xE6kst i totalfaktorprodutiviteten i industri. Faktisk v\xE6rdi"
+VTFPT:
+  des: "V\xE6kst i totalfaktorprodutiviteten i tjenesteerhverv. Trendv\xE6rdi, der\
+    \ indg\xE5r i produktionsfunktion"
+VTFPTF:
+  des: "V\xE6kst i totalfaktorprodutiviteten i tjeneste erhverv. Faktisk v\xE6rdi"
+VUSA:
+  des: "Valutakursen p\xE5 $, kr. pr. 100 $"
+VX:
+  des: Samlet vareforbrug i erhverv, mio. kr.
+VYFH:
+  des: "Timeproduktivitet i hele \xF8konomien"
+VYFHA:
+  des: "Timeproduktivitet i landbrug og f\xF8devareindustri"
+VYFHAX:
+  des: "Eksogen timeproduktivitet i landbrug og f\xF8devareindustri, relevant n\xE5\
+    r DXVYFHA=1"
+VYFHB:
+  des: Timeproduktivitet i byggeri
+VYFHBX:
+  des: "Eksogen timeproduktivitet i byggeri, relevant n\xE5r DXVYFHB=1"
+VYFHE:
+  des: Timeproduktivitet i energi
+VYFHH:
+  des: Timeproduktivitet i boligbenyttelse
+VYFHI:
+  des: Timeproduktivitet i industri
+VYFHIX:
+  des: "Eksogen timeproduktivitet i industri relevant n\xE5r DXVYFHI=1"
+VYFHN:
+  des: "Timeproduktivitet i Nords\xF8"
+VYFHO:
+  des: Timeproduktivitet i offentligt erhverv
+VYFHPB:
+  des: Timeproduktivitet i private byerherv, B+I+T
+VYFHPB_GAP:
+  des: Bidrag til output gap fra timeproduktivitet i private byerhverv
+VYFHPB_S:
+  des: Potentiel timeproduktivitet, private byerhverv
+VYFHR:
+  des: "Timeproduktivitet, resten af \xF8kn."
+VYFHR_S:
+  des: "Strukturel timeproduktivitet, resten af \xF8kn."
+VYFHR_SX:
+  des: "Strukturel timeproduktivitet, resten af \xF8kn., eksogent sk\xF8n, relevant\
+    \ hvis DXVYFHR_S=1"
+VYFHT:
+  des: Timeproduktivitet i tjeneste erhverv
+VYFHTX:
+  des: "Eksogen timeproduktivitet i tjeneste erhverv, relevant n\xE5r DXVYFHT=1"
+VYFH_GAP:
+  des: Bidrag til output gap fra timeproduktivitet
+VYFH_S:
+  des: "Potentiel timeproduktivitet, hele \xF8konomien"
+WBH:
+  des: "Realkreditg\xE6ld i husholdninger, mio. kr."
+WCP:
+  des: Den samlede forbrugsbestemmende formue, mio. kr
+WF:
+  des: "Finansiel formue i udland (=minus udlandsg\xE6lden), mio kr."
+WFI:
+  des: Finansiel bruttoformue i udland, mio. kr.
+WFU:
+  des: "Finansiel bruttog\xE6ld i udland, mio. kr."
+WN_O:
+  des: Finansiel nettoformue i offentlig sektor, ultimo, mio kr.
+WP:
+  des: Finansiel formue i den private sektor, jf. WP + WF + WO = 0. Mio kr.
+WPP:
+  des: Formue i pensionssektoren, mio kr.
+WPPA:
+  des: Formue i aldersopsparing
+WPPK:
+  des: Formue i gammel kapitalpensionsordning
+WPPL:
+  des: "Formue i pensionsordninger med l\xF8bende udbetalinger"
+WPQ:
+  des: Finansiel formue i privat ikke-pensionssektor, jf. WP = WPP + WPQ. Mio kr.
+W_O_Z:
+  des: Finansielle passiver i offentligs sektor, ultimo, mio. kr.
+W_Z_O:
+  des: Finansielle aktiver i offentlig sektor, ultimo, mio. kr.
+X:
+  des: "Produktionsv\xE6rdi i alt, mio. kr."
+XA:
+  des: "Produktionsv\xE6rdi i landbrug mv., mio. kr."
+XB:
+  des: "Produktionsv\xE6rdi i byggeri mv., mio. kr."
+XE:
+  des: "Produktionsv\xE6rdi i energi erhverv, mio. kr."
+XH:
+  des: "Produktionsv\xE6rdi i boligben., mio. kr."
+XI:
+  des: "Produktionsv\xE6rdi i industri mio. kr."
+XN:
+  des: "Produktionsv\xE6rdi i Nords\xF8erhv., mio. kr."
+XO:
+  des: "Produktionsv\xE6rdi i offentlig erhverv, mio. kr."
+XOS:
+  des: "Produktionsv\xE6rdi i offentlig sektor, mio. kr."
+XP:
+  des: "Produktionsv\xE6rdi i private erhverv, mio. kr."
+XPB:
+  des: "Produktionsv\xE6rdi i private byerhverv, mio. kr."
+XPR:
+  des: "Produktionsv\xE6rdi i private resterhverv, mio. kr."
+XS:
+  des: "Produktionsv\xE6rdi i s\xF8fart, mio. kr."
+XT:
+  des: "Produktionsv\xE6rdi i tjeneste erhverv, mio. kr."
+Y:
+  des: Bruttonationalprodukt, mio. kr.
+YD:
+  des: Simplificeret disponibel indkomst, mio. kr.
+YDK:
+  des: "Disponibel indk. p\xE5 kort sigt, mio. kr.Indeholder l\xF8n- og transferingsindkomster,\
+    \ renteindt\xE6gter, bruttorestindkomst i visse erhverv samt netto-pensionsudbetalinger"
+YDK_S:
+  des: Skattedelen af YDK
+YDK_Y:
+  des: "Indkomstdelen af YDK. Indeholder b\xE5de l\xF8n- og kapitalindkomst"
+YDL:
+  des: "Disponibel indk. p\xE5 lang sigt, mio. kr. Indeholder l\xF8n- og transferingsindkomster\
+    \ + nettorestindkomst. Der foretages sk\xF8nm\xE6ssig korrektion i skattebetalingerne,\
+    \ s\xE5ledes at renter og pensionsind-udbetalinger ikke p\xE5virker YDL. Adskiller\
+    \ sig fra YDK ved Pensionsbetalinger, renteindt\xE6gter, afskrivninger samt restindkomst\
+    \ i s\xE6rlige erhverv."
+YDL_S:
+  des: Skattedelen af YDL
+YDL_Y:
+  des: Indkomstdelen af YDL
+YDNR:
+  des: Den disponible indkomst i henhold til nationalregnskabet, mio. kr.
+YF:
+  des: "Bruttov\xE6rditilv\xE6kst i alt, mio. kr."
+YFA:
+  des: BVT i landbrug, mio. kr.
+YFB:
+  des: BVT i byggeri, mio. kr.
+YFE:
+  des: BVT i energi erhverv, mio. kr.
+YFH:
+  des: BVT i boligben., mio. kr.
+YFI:
+  des: BVT i industri mio. kr.
+YFN:
+  des: "BVT i Nords\xF8 erhverv, mio. kr."
+YFO:
+  des: BVT i offentlig erhverv, mio. kr.
+YFOS:
+  des: BVT i offentlig sektor, mio. kr.
+YFP:
+  des: BVT i private erhverv, mio. kr.
+YFPB:
+  des: BVT i private byerhverv, mio. kr.
+YFPR:
+  des: BVT i private resterhverv, mio. kr.
+YFR:
+  des: BVT i resterhverv (A+E+H+N+S+O), mio. kr.
+YFS:
+  des: "BVT i s\xF8fart, mio. kr."
+YFT:
+  des: BVT i tjeneste erhverv, mio. kr.
+YI:
+  des: BNI, mio. kr. Indsat /06.06.16 SAN
+YLWS:
+  des: "Ligningsm\xE6ssigefradrag, mio. kr."
+YR:
+  des: Restindkomst i alt, mio. kr.
+YRA:
+  des: Restindkomst i landbrug mv., mio. kr.
+YRB:
+  des: Restindkomst i byggeri mv., mio. kr.
+YRE:
+  des: Restindkomst i energi erhverv, mio. kr.
+YRH:
+  des: Restindkomst i boligben., mio. kr.
+YRI:
+  des: Restindkomst i industri mio. kr.
+YRN:
+  des: "Restindkomst i Nords\xF8erhv., mio. kr."
+YRO:
+  des: Restindkomst i offentlig erhverv, mio. kr.
+YRS:
+  des: "Restindkomst i s\xF8fart, mio. kr."
+YRT:
+  des: Restindkomst i tjeneste erhverv, mio. kr.
+YS:
+  des: Skattepligtig indkomst, mio. kr.
+YSDA:
+  des: Grundlag for arbejdsmarkedsbidrag (bruttoskat), mio. kr.
+YSDSQ:
+  des: Skattepligtig indkomst vedr. alm. selskabsskat, mio. kr.
+YSP:
+  des: Personlig indkomst, mio. kr.
+YW:
+  des: "L\xF8nsum i alt, mio. kr."
+YW1:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i alt, mio. kr."
+YW1A:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i landbrug, mio. kr."
+YW1B:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i byggeri, mio. kr."
+YW1E:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i energi erhverv, mio. kr."
+YW1H:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i boligben., mio. kr."
+YW1I:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i industri mio. kr."
+YW1N:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i Nords\xF8erhv., mio. kr."
+YW1S:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i s\xF8fart, mio. kr."
+YW1T:
+  des: "L\xF8nsum inkl. selvst\xE6ndige i tjeneste erhverv, mio. kr."
+YWA:
+  des: "L\xF8nsum i landbrug, mio. kr."
+YWB:
+  des: "L\xF8nsum i byggeri, mio. kr."
+YWE:
+  des: "L\xF8nsum i energi erhverv, mio. kr."
+YWH:
+  des: "L\xF8nsum i boligben., mio. kr."
+YWI:
+  des: "L\xF8nsum i industri mio. kr."
+YWN:
+  des: "L\xF8nsum i Nords\xF8erhv., mio. kr."
+YWO:
+  des: "L\xF8nsum i offentligt erhverv, mio. kr."
+YWOS:
+  des: "L\xF8nsum i offentlig sektor, mio. kr."
+YWS:
+  des: "L\xF8nsum i s\xF8fart, mio. kr."
+YWT:
+  des: "L\xF8nsum i tjeneste erhverv, mio. kr."
+Y_GAP:
+  des: Output gap (nominelt), pct.
+Y_S:
+  des: Strukturelt BNP, mio.
+Yrphs:
+  des: "Hj\xE6lpevariabel i Ys-relationen, beskatning af lejev\xE6rdi af egen bolig\
+    \ (lejv\xE6rdibeskatning oph\xF8rer i 1999 og erstattes af ejendomsv\xE6rdibeskatningen)"
+bfcbw:
+  des: "Modelberegnet niveau for bilk\xF8bskvote"
+bfcpw:
+  des: "Modelberegnet niveau for \xF8nsket forbrugskvote"
+bfeiw:
+  des: Modelberegnet niveau for industrieksportens markedsandel
+bfetw:
+  des: Modelberegnet niveau for tjenesteeksportens markedsandel
+bfkbhw:
+  des: Modelberegnet niveau for boligkapital-indkomst forholdet
+bfmziw:
+  des: Modelberegnet niveau for importkvote af industrievarer
+bfmzsqw:
+  des: "Modelberegnet niveau for importkvote af \xF8vrige tjenester (fmzsq)"
+bkbb:
+  des: Bygningskapitalens andel af samlet kapital (fKzb) i byggeri
+bkbbw:
+  des: "\xD8nsket andel af bygningskapital i landbrug"
+bkbi:
+  des: Bygningskapitalens andel af samlet kapital (fKzi) i industri
+bkbiw:
+  des: "\xD8nsket andel af bygningskapital i industri"
+bkbt:
+  des: Bygningskapitalens andel af samlet kapital (fKzt) i private tjenester
+bkbtw:
+  des: "\xD8nsket andel af bygningskapital i private tjenester"
+bsiqaba:
+  des: Andel af arbejdsmarkedsbidrag betalt af arb.givere (Siqab) fra landbrug
+bsiqabb:
+  des: Andel af arbejdsmarkedsbidrag betalt af arb.givere (Siqab) fra byggeri
+bsiqabe:
+  des: Andel af arbejdsmarkedsbidrag betalt af arb.givere (Siqab) fra energierhverv
+bsiqabh:
+  des: Andel af arbejdsmarkedsbidrag betalt af arb.givere (Siqab) fra boligbenyttelse
+bsiqabi:
+  des: Andel af arbejdsmarkedsbidrag betalt af arb.givere (Siqab) fra industri
+bsiqabn:
+  des: "Andel af arbejdsmarkedsbidrag betalt af arb.givere (Siqab) fra nords\xF8produktion"
+bsiqabo:
+  des: Andel af arbejdsmarkedsbidrag betalt af arb.givere (Siqab) fra offentige tjenester
+bsiqabs:
+  des: "Andel af arbejdsmarkedsbidrag betalt af arb.givere (Siqab) fra s\xF8fart"
+bsiqama:
+  des: "Andel af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum (Siqam)\
+    \ fra landbrug"
+bsiqamb:
+  des: "Andel af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum (Siqam)\
+    \ fra byggeri"
+bsiqame:
+  des: "Andel af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum (Siqam)\
+    \ fra energierhverv"
+bsiqamh:
+  des: "Andel af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum (Siqam)\
+    \ fra boligbenyttelse"
+bsiqami:
+  des: "Andel af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum (Siqam)\
+    \ fra industri"
+bsiqamn:
+  des: "Andel af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum (Siqam)\
+    \ fra nords\xF8produktion"
+bsiqamo:
+  des: "Andel af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum (Siqam)\
+    \ fra offentlige tjenester"
+bsiqams:
+  des: "Andel af arbejdsmarkedsbidrag vedr. v\xE6rditilv\xE6kst eller l\xF8nsum (Siqam)\
+    \ fra s\xF8fart"
+bsiqco2a:
+  des: Andel af andre produktionskatter vedr. bortauktionering af C02-kvoter (Siqco2)
+    fra landbrug
+bsiqco2b:
+  des: Andel af andre produktionskatter vedr. bortauktionering af C02-kvoter (Siqco2)
+    fra byggeri
+bsiqco2e:
+  des: Andel af andre produktionskatter vedr. bortauktionering af C02-kvoter (Siqco2)
+    fra energierhverv
+bsiqco2h:
+  des: Andel af andre produktionskatter vedr. bortauktionering af C02-kvoter (Siqco2)
+    fra boligbenyttelse
+bsiqco2i:
+  des: Andel af andre produktionskatter vedr. bortauktionering af C02-kvoter (Siqco2)
+    fra industri
+bsiqco2n:
+  des: "Andel af andre produktionskatter vedr. bortauktionering af C02-kvoter (Siqco2)\
+    \ fra nords\xF8produktionen"
+bsiqco2o:
+  des: Andel af andre produktionskatter vedr. bortauktionering af C02-kvoter (Siqco2)
+    fra offentlige tjenester
+bsiqco2s:
+  des: "Andel af andre produktionskatter vedr. bortauktionering af C02-kvoter (Siqco2)\
+    \ fra s\xF8fart"
+bsiqeja:
+  des: "Andel af ejendomsskat ekskl. grundskyld p\xE5 boliger (Siqejxh) fra landbrug"
+bsiqejb:
+  des: "Andel af ejendomsskat ekskl. grundskyld p\xE5 boliger (Siqejxh) fra byggeri"
+bsiqeje:
+  des: "Andel af ejendomsskat ekskl. grundskyld p\xE5 boliger (Siqejxh) fra energiproduktion"
+bsiqejh:
+  des: "Andel af ejendomsskat ekskl. grundskyld p\xE5 boliger (Siqejxh) fra boligbenyttelse"
+bsiqeji:
+  des: "Andel af ejendomsskat ekskl. grundskyld p\xE5 boliger (Siqejxh) fra industri"
+bsiqejn:
+  des: "Andel af ejendomsskat ekskl. grundskyld p\xE5 boliger (Siqejxh) fra nords\xF8\
+    produktion"
+bsiqejo:
+  des: "Andel af ejendomsskat ekskl. grundskyld p\xE5 boliger (Siqejxh) fra offentlige\
+    \ tjenester"
+bsiqejs:
+  des: "Andel af ejendomsskat ekskl. grundskyld p\xE5 boliger (Siqejxh) fra s\xF8\
+    fart"
+bsiqlta:
+  des: "Andel af l\xF8ntilskud (Siqlt) til landbrug"
+bsiqltb:
+  des: "Andel af l\xF8ntilskud (Siqlt) til byggeri"
+bsiqlte:
+  des: "Andel af l\xF8ntilskud (Siqlt) til energi erhverv"
+bsiqlth:
+  des: "Andel af l\xF8ntilskud (Siqlt) til boligbenyttelse"
+bsiqlti:
+  des: "Andel af l\xF8ntilskud (Siqlt) til industri"
+bsiqltn:
+  des: "Andel af l\xF8ntilskud (Siqlt) til nords\xF8produktion"
+bsiqlto:
+  des: "Andel af l\xF8ntilskud (Siqlt) til offentlige tjenester"
+bsiqlts:
+  des: "Andel af l\xF8ntilskud (Siqlt) til s\xF8fart"
+bsiqra:
+  des: Andel af resterende produktionsskatter (Siqr) fra landbrug
+bsiqrb:
+  des: Andel af resterende produktionsskatter (Siqr) fra byggeri
+bsiqre:
+  des: Andel af resterende produktionsskatter (Siqr) fra energi erhverv
+bsiqrh:
+  des: Andel af resterende produktionsskatter (Siqr) fra boligbenytttelse
+bsiqri:
+  des: Andel af resterende produktionsskatter (Siqr) fra industri
+bsiqrn:
+  des: "Andel af resterende produktionsskatter (Siqr) fra nords\xF8produktion"
+bsiqro:
+  des: Andel af resterende produktionsskatter (Siqr) fra offentlige tjenester
+bsiqrs:
+  des: "Andel af resterende produktionsskatter (Siqr) fra s\xF8fart"
+bsiqsqa:
+  des: "Andel af \xF8vrige produktionssubsidier (Siqsq) til landbrug"
+bsiqsqb:
+  des: "Andel af \xF8vrige produktionssubsidier (Siqsq) til byggeri"
+bsiqsqe:
+  des: "Andel af \xF8vrige produktionssubsidier (Siqsq) til energi erhverv"
+bsiqsqh:
+  des: "Andel af \xF8vrige produktionssubsidier (Siqsq) til boligbenyttelse"
+bsiqsqi:
+  des: "Andel af \xF8vrige produktionssubsidier (Siqsq) til industri"
+bsiqsqn:
+  des: "Andel af \xF8vrige produktionssubsidier (Siqsq) til nords\xF8produktion"
+bsiqsqo:
+  des: "Andel af \xF8vrige produktionssubsidier (Siqsq) til offentlige tjenester"
+bsiqsqs:
+  des: "Andel af \xF8vrige produktionssubsidier (Siqsq) til s\xF8fart"
+bsiqua:
+  des: Andel af Aud-bidrag (Siqu) fra landbrug
+bsiqub:
+  des: Andel af Aud-bidrag (Siqu) fra byggeri
+bsique:
+  des: Andel af Aud-bidrag (Siqu) fra energi erhverv
+bsiquh:
+  des: Andel af Aud-bidrag (Siqu) fra boligbenyttelse
+bsiqui:
+  des: Andel af Aud-bidrag (Siqu) fra industri
+bsiqun:
+  des: "Andel af Aud-bidrag (Siqu) fra nords\xF8produktion"
+bsiquo:
+  des: Andel af Aud-bidrag (Siqu) fra offentlige tjenester
+bsiqus:
+  des: "Andel af Aud-bidrag (Siqu) fra s\xF8fart"
+bsiqva:
+  des: "Andel af v\xE6gtafgift og gr\xF8n ejerafgift (Siqv) fra landbrug"
+bsiqvb:
+  des: "Andel af v\xE6gtafgift og gr\xF8n ejerafgift (Siqv) fra byggeri"
+bsiqve:
+  des: "Andel af v\xE6gtafgift og gr\xF8n ejerafgift (Siqv) fra energierhverv"
+bsiqvh:
+  des: "Andel af v\xE6gtafgift og gr\xF8n ejerafgift (Siqv) fra boligbenyttelse"
+bsiqvi:
+  des: "Andel af v\xE6gtafgift og gr\xF8n ejerafgift (Siqv) fra industri"
+bsiqvn:
+  des: "Andel af v\xE6gtafgift og gr\xF8n ejerafgift (Siqv) fra nords\xF8produktion"
+bsiqvo:
+  des: "Andel af v\xE6gtafgift og gr\xF8n ejerafgift (Siqv) fra offentlige tjenester"
+bsiqvs:
+  des: "Andel af v\xE6gtafgift og gr\xF8n ejerafgift (Siqv) fra s\xF8fart"
+btippps:
+  des: "Nettokapitalindt\xE6gter i skattepligtig indkomst, Andel"
+btippps_s:
+  des: Strukturelt niveau for BTIPPPS
+d4711:
+  des: "dummy for kompensation for fradrag forrenteudgifter (v\xE6rdi=1 f\xF8r 2012,\
+    \ 0 ellers)"
+fKbbw:
+  des: "Modelberegnet \xF8nsket bygningskapital i byggeri, mio. kr. 2010-priser"
+fKbiw:
+  des: "Modelberegnet \xF8nsket bygningskapital i industri, mio. kr. 2010-priser"
+fKzbw:
+  des: "Modelberegnet \xF8nsket maskin- og bygningskapital i byggeri, mio. kr. 2010-priser"
+fKzi:
+  des: Maskin- og bygningskapital i industri, mio. kr. 2010-priser
+fKziw:
+  des: "Modelberegnet \xF8nsket maskin- og bygningskapital i industri, mio. kr. 2010-priser"
+fkbtw:
+  des: "Modelberegnet \xF8nsket bygningskapital i private tjenesteerhverv, mio. kr.\
+    \ 2010-priser"
+fkzb:
+  des: Maskin- og bygningskapital i byggeri, mio. kr. 2010-priser
+fkzt:
+  des: Maskin- og bygningskapital i private tjenesterehverv, mio. kr. 2010-priser
+fkztw:
+  des: "Modelberegnet \xF8nsket maskin- og bygningskapital i private tjenesteerhverv,\
+    \ mio. kr. 2010-priser"
+fy_tr:
+  des: "Trendm\xE6ssig BNP"
+kbfcbw:
+  des: "Trendkorrigeret konstantled i niveaurelation for bilk\xF8bskvoten"
+kbfcpw:
+  des: Trendkorrigeret konstantled i niveaurelation for forbrugskvoten
+kbfeiw:
+  des: Trendkorrigeret konstantled i niveaurelation for industrieksportens markedsandel
+kbfetw:
+  des: Trendkorrigeret konstantled i niveaurelation for tjenesteeksportens markedsandel
+kbfkbhw:
+  des: Trendkorrigeret konstantled i niveaurelation for boligkapital-indkomst forholdet
+kbfmziw:
+  des: Trendkorrigeret konstantled i niveaurelation for importkvote af industrivarer
+kbfmzsqw:
+  des: "Trendkorrigeret konstantled i niveaurelation for importkvote af \xF8vrige\
+    \ tjenester (fmzsq)"
+logkl_tr:
+  des: Underliggende trend i Log(K/L)
+logtfp_s:
+  des: Log(TFP*)
+pkzb:
+  des: "Usercost p\xE5 maskin- og bygningskapital i byggeri, indeks 2010=1"
+pkzi:
+  des: "Usercost p\xE5 maskin- og bygningskapital i industri, indeks 2010=1"
+pkzt:
+  des: "Usercost p\xE5 maskin- og bygningskapital i private tjenesteerhverv, indeks\
+    \ 2010=1"
+rpiw_o_z:
+  des: "Risikopr\xE6mie i W_z_o (forskel mellem implicit rente og renteafkast p\xE5\
+    \ 10-\xE5rig statspapir)"
+rpiw_z_o:
+  des: "Risikopr\xE6mie i W_o_z (forskel mellem implicit rente og renteafkast p\xE5\
+    \ 10-\xE5rig statspapir)"
+trco:
+  des: "Registreringsafgiftssats vedr. offentlig sektors bilk\xF8b"
+vyfhpb_tr:
+  des: "Trendm\xE6ssig timeproduktivitet PB-erhverv"

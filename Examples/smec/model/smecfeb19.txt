@@ -1,0 +1,1124 @@
+FRML <_DJRD,JR,EXO> PEEIW=( (( (EXP(0.22733*LOG(((UDLIHT/UDVYFH)/EFFKR)*100) + 0.77267*LOG(PMI) + KPEEIW))*(1+JRPEEIW ))*(1-DPEEIW)+ZPEEIW*DPEEIW)*(1+PEEIW_JR ))*(1-PEEIW_D)+PEEIW_X*PEEIW_D$
+FRML <_SJRD,JR,EXO,DAMP> PEEI=( (( (EXP(LOG(PEEI(-1))+0.48415*((LOG(((UDLIHT/UDVYFH)/EFFKR)))-(LOG(((UDLIHT(-1)/UDVYFH(-1))/EFFKR(-1))))) + 0.42319*((LOG(PMI))-(LOG(PMI(-1)))) + 0.09265*((LOG(PME))-(LOG(PME(-1)))) + GPEEI
+                              -0.30834*LOG(PEEI(-1)/PEEIW(-1))))*(1+JRPEEI ))*(1-DPEEI)+ZPEEI*DPEEI)*(1+PEEI_JR ))*(1-PEEI_D)+PEEI_X*PEEI_D$
+FRML <_DJRD,JR,EXO> FEEIW=( (( (EXP(1.96443*LOG(UDFY_S) + KFEEIW))*(1+JRFEEIW ))*(1-DFEEIW)+ZFEEIW*DFEEIW)*(1+FEEIW_JR ))*(1-FEEIW_D)+FEEIW_X*FEEIW_D$
+FRML <_SJRD,JR,EXO,DAMP> FEEI=( (( (EXP(LOG(FEEI(-1))+3.05178*((LOG(UDFY))-(LOG(UDFY(-1)))) + GFEEI
+                               -0.12702*LOG(FEEI(-1)/FEEIW(-1))))*(1+JRFEEI ))*(1-DFEEI)+ZFEEI*DFEEI)*(1+FEEI_JR ))*(1-FEEI_D)+FEEI_X*FEEI_D$
+FRML <_DJRD,JR,EXO> BFEIW=( (( (EXP(-2.5*LOG(PEI/PEEI) + KBFEIW))*(1+JRBFEIW ))*(1-DBFEIW)+ZBFEIW*DBFEIW)*(1+BFEIW_JR ))*(1-BFEIW_D)+BFEIW_X*BFEIW_D$
+FRML <_SJRD,JR,EXO,DAMP> FEI=( (( (EXP(LOG(FEI(-1))+0.59085*((LOG(FEEI))-(LOG(FEEI(-1)))) - 0.56055*((LOG(PEI/PEEI))-(LOG(PEI(-1)/PEEI(-1)))) + GFEI
+                               -0.2*(LOG(FEI(-1)/FEEI(-1))-LOG(BFEIW(-1)))))*(1+JRFEI ))*(1-DFEI)+ZFEI*DFEI)*(1+FEI_JR ))*(1-FEI_D)+FEI_X*FEI_D$
+FRML <_GJRD,JR,EXO> FEE           =( (( ( FEE(-1)*(FXN/FXN(-1)) + JFEE )*(1+JRFEE ))*(1-DFEE)+ZFEE*DFEE)*(1+FEE_JR ))*(1-FEE_D)+FEE_X*FEE_D$
+FRML <_GJRD,JR,EXO> PEESQ         =( (( ( PEESQ(-1)*(1+0.80*((LOG((UDLIHT/UDVYFH)/EFFKR))-(LOG((UDLIHT(-1)/UDVYFH(-1))/EFFKR(-1))))+0.20*((LOG(PMSQ))-(LOG(PMSQ(-1))))) )*(1+JRPEESQ ))*(1-DPEESQ)+ZPEESQ*DPEESQ)*(1+PEESQ_JR ))*(1-PEESQ_D)+PEESQ_X*PEESQ_D$
+FRML <_DJRD,JR,EXO> FESQW=( (( (EXP(1.85716*LOG(UDFY_S) - 0.80825*LOG(PESQ/PEESQ)
+                               -0.25715*D4803  + KFESQW))*(1+JRFESQW ))*(1-DFESQW)+ZFESQW*DFESQW)*(1+FESQW_JR ))*(1-FESQW_D)+FESQW_X*FESQW_D$
+FRML <_SJRD,JR,EXO,DAMP> FESQ=( (( (EXP(LOG(FESQ(-1))+3.66554*(UDFY/UDFY_S-1) - 1.48551*((LOG(PESQ/PEESQ))-(LOG(PESQ(-1)/PEESQ(-1)))) + GFESQ
+                               -0.53855*LOG(FESQ(-1)/FESQW(-1))))*(1+JRFESQ ))*(1-DFESQ)+ZFESQ*DFESQ)*(1+FESQ_JR ))*(1-FESQ_D)+FESQ_X*FESQ_D$
+FRML <_DJRD,JR,EXO> FESSW=( (( (EXP(LOG(UDFY_S) + (0.01543+0.09685*D8599)*DTFESS
+                               - 3.16194*D8599 + KFESSW))*(1+JRFESSW ))*(1-DFESSW)+ZFESSW*DFESSW)*(1+FESSW_JR ))*(1-FESSW_D)+FESSW_X*FESSW_D$
+FRML <_SJRD,JR,EXO,DAMP> FESS=( (( (EXP(LOG(FESS(-1))+2.75878*(UDFY/UDFY_S-1) + GFESS
+                               -0.26918*LOG(FESS(-1)/FESSW(-1))))*(1+JRFESS ))*(1-DFESS)+ZFESS*DFESS)*(1+FESS_JR ))*(1-FESS_D)+FESS_X*FESS_D$
+FRML <_DJRD,JR,EXO> BFETW=( (( (EXP(KBFETW))*(1+JRBFETW ))*(1-DBFETW)+ZBFETW*DBFETW)*(1+BFETW_JR ))*(1-BFETW_D)+BFETW_X*BFETW_D$
+FRML <_SJRD,JR,EXO,DAMP> FET=( (( (EXP(LOG(FET(-1))+1.33127*((LOG(UDFY))-(LOG(UDFY(-1)))) - 0.92460*(.5*((LOG(PET/PMI))-(LOG(PET(-1)/PMI(-1))))+.5*((LOG(PET(-1)/PMI(-1)))-(LOG(PET(-2)/PMI(-2)))))  + GFET
+                               -0.21769*(LOG(FET(-1)/UDFY_S(-1))-LOG(BFETW(-1)))))*(1+JRFET ))*(1-DFET)+ZFET*DFET)*(1+FET_JR ))*(1-FET_D)+FET_X*FET_D$
+FRML <_I> FEV           = (FEE*PEE(-1)+FEI*PEI(-1))/PEV(-1) $
+FRML <_I> FES           = (FESS*PESS(-1)+FESQ*PESQ(-1))/PES(-1) $
+FRML <_I> FEST          = (FET*PET(-1)+FES*PES(-1))/PEST(-1) $
+FRML <_I> FE            = (FEV*PEV(-1)+FEST*PEST(-1))/PE(-1) $
+FRML <_DJRD,JR,EXO> BFCPW=( (( (EXP(0.12688*LOG((WCP/PCP)/FYDL) - 1.42316*BU5064 + KBFCPW))*(1+JRBFCPW ))*(1-DBFCPW)+ZBFCPW*DBFCPW)*(1+BFCPW_JR ))*(1-BFCPW_D)+BFCPW_X*BFCPW_D$
+FRML <_SJRD,JR,EXO,DAMP> FCP=( (( (EXP(LOG(FCP(-1))+0.34875*((LOG(FYDK))-(LOG(FYDK(-1)))) + 0.25 *((LOG(Q))-(LOG(Q(-1)))) + GFCP
+                                -0.30668*(LOG(FCP(-1)/FYDL(-1))-LOG(BFCPW(-1)))))*(1+JRFCP ))*(1-DFCP)+ZFCP*DFCP)*(1+FCP_JR ))*(1-FCP_D)+FCP_X*FCP_D$
+FRML <_D> BCPK          =  FCP/FYDK $
+FRML <_D> BCPL          =  FCP/FYDL $
+FRML <_I> FCAHJ         = (FCDLU*PCDLU(-1)+FCH*PCH(-1)-FET*PET(-1))/PCA(-1) $
+FRML <_D> PCA           = CA/FCAHJ $
+FRML <_D> FCA           = (FCP*PCP(-1)-FCB*PCB(-1))/PCA(-1) $
+FRML <_I> FCDLU         = (FCE*PCE(-1)+FCG*PCG(-1)+FCV*PCV(-1)+FCS*PCS(-1)+FCT*PCT(-1))/PCDLU(-1) $
+FRML <_I> PCDLU         = (FCE*PCE+FCG*PCG+FCV*PCV+FCS*PCS+FCT*PCT)/FCDLU $
+FRML <_I> CDLU          = FCDLU*PCDLU $
+FRML <_SJ_,J,DAMP> FCE           =  2543.63 +       0*DTFC + .886207*(FCE(-1)-0.00*FET(-1)*PET(-1)/PCE(-1)) + .010897*CQO/PCE + 0.00*FET*PET/PCE + JFCE+FCE_J$
+FRML <_SJ_,J,DAMP> FCG           =  1070.66 +       0*DTFC + .846404*(FCG(-1)-0.05*FET(-1)*PET(-1)/PCG(-1)) + .007898*CQO/PCG + 0.05*FET*PET/PCG + JFCG+FCG_J$
+FRML <_SJ_,J,DAMP> FCV           =  37716.1 - 2015.55*DTFC + .299723*(FCV(-1)-0.50*FET(-1)*PET(-1)/PCV(-1)) + .558405*CQO/PCV + 0.50*FET*PET/PCV + JFCV+FCV_J$
+FRML <_SJ_,J,DAMP> FCS           = -45384.8 +       0*DTFC + .749489*(FCS(-1)-0.45*FET(-1)*PET(-1)/PCS(-1)) + .384341*CQO/PCS + 0.45*FET*PET/PCS + JFCS+FCS_J$
+FRML <_SJ_,J,DAMP> FCT           = -5717.84 +       0*DTFC + .845058*(FCT(-1)-0.00*FET(-1)*PET(-1)/PCT(-1)) + .038459*CQO/PCT + 0.00*FET*PET/PCT + JFCT+FCT_J$
+FRML <_D> CQ            = CP - PCB*FCB - PCH*FCH $
+FRML <_S,DAMP> CQO           = CQ - ( PCE*(( 2543.63 +       0*DTFC + .886207*(FCE(-1)-0.00*FET(-1)*PET(-1)/PCE(-1))) + JFCE)
+                                     +PCG*(( 1070.66 +       0*DTFC + .846404*(FCG(-1)-0.05*FET(-1)*PET(-1)/PCG(-1))) + JFCG)
+                                     +PCV*(( 37716.1 - 2015.55*DTFC + .299723*(FCV(-1)-0.50*FET(-1)*PET(-1)/PCV(-1))) + JFCV)
+                                     +PCS*((-45384.8 +       0*DTFC + .749489*(FCS(-1)-0.45*FET(-1)*PET(-1)/PCS(-1))) + JFCS)
+                                     +PCT*((-5717.84 +       0*DTFC + .845058*(FCT(-1)-0.00*FET(-1)*PET(-1)/PCT(-1))) + JFCT) ) $
+FRML <_DJRD,JR,EXO> BFCBW=( (( (EXP(-0.34917*LOG(PCB/PCP) + KBFCBW))*(1+JRBFCBW ))*(1-DBFCBW)+ZBFCBW*DBFCBW)*(1+BFCBW_JR ))*(1-BFCBW_D)+BFCBW_X*BFCBW_D$
+FRML <_SJRD,JR,EXO,DAMP> FCB=( (( (EXP(LOG(FCB(-1))+2.27727*((LOG(FYDL))-(LOG(FYDL(-1)))) - 0.74251*((LOG(PCB/PCP))-(LOG(PCB(-1)/PCP(-1)))) + 1.60549*((LOG(PHK/PCP))-(LOG(PHK(-1)/PCP(-1)))) + GFCB
+                               -0.41422*(LOG(FCB(-1)/FYDL(-1))-LOG(BFCBW(-1)))))*(1+JRFCB ))*(1-DFCB)+ZFCB*DFCB)*(1+FCB_JR ))*(1-FCB_D)+FCB_X*FCB_D$
+FRML <_D> FKCB          = FCB + (1-DPRCB)*FKCB(-1) $
+FRML <_SJRD,JR,EXO,DAMP> FCH=( (( (EXP(0.82443*LOG(FKBH) + KFCHW))*(1+JRFCH ))*(1-DFCH)+ZFCH*DFCH)*(1+FCH_JR ))*(1-FCH_D)+FCH_X*FCH_D$
+FRML <_D> GPIB          = (PIB - PIB(-1))/PIB(-1) $
+FRML <_D> GPIBE         = (1-DGPIBE)*( 0.25*GPIB+0.75*GPIBE(-1) + JGPIBE )
+                                + DGPIBE*ZGPIBE $
+FRML <_D> GPIM          = (PIM - PIM(-1))/PIM(-1) $
+FRML <_D> GPIME         = (1-DGPIME)*( 0.25*GPIM+0.75*GPIME(-1) + JGPIME )
+                                + DGPIME*ZGPIME $
+FRML <_D> PKMI          = ((1-TSDS*BIVM)/(1-TSDS))*(0.5*IWLO*(1-TSDS)+0.5*IWLO+DPRMI-GPIME+RPI)*PIM $
+FRML <_D> PKBI          = ((1-TSDS*BIVB)/(1-TSDS))*(0.5*IWLO*(1-TSDS)+0.5*IWLO+DPRBI-GPIBE+RPI)*PIB $
+FRML <_D> PKZI          = (PKMI*FKMI + PKBI*FKBI)/FKZI $
+FRML <_DJRD,JR,EXO> FKZIW=( (( (EXP(DTALFAI*LOG((1-DTALFAI)/DTALFAI)
+                               + LOG(FYFI) - LOG(DTAI)
+                               + DTALFAI*(LOG(LI)-LOG(PKZI))))*(1+JRFKZIW ))*(1-DFKZIW)+ZFKZIW*DFKZIW)*(1+FKZIW_JR ))*(1-FKZIW_D)+FKZIW_X*FKZIW_D$
+FRML <_D> FKBIW         = BKBIW*FKZIW$
+FRML <_D> FKMIW         = (1-BKBIW)*FKZIW$
+FRML <_SJRD,JR,EXO,DAMP> FKMI=( (( (EXP(LOG(FKMI(-1))+0.21343*(0.5*((LOG(UDFY))-(LOG(UDFY(-1))))+0.5*((LOG(UDFY(-1)))-(LOG(UDFY(-2)))))
+                               + 0.47991*((LOG(FKMI(-1)))-(LOG(FKMI(-2))))
+                               + 0.00428*((LOG(FKMIW))-(LOG(FKMIW(-1))))
+                               + 0.00684
+                               - 0.06901*LOG(FKMI(-1)/FKMIW(-1))))*(1+JRFKMI ))*(1-DFKMI)+ZFKMI*DFKMI)*(1+FKMI_JR ))*(1-FKMI_D)+FKMI_X*FKMI_D$
+FRML <_D> FIMI          = (((FKMI)-(FKMI(-1))) + DPRMI*FKMI(-1))*KFKMI $
+FRML <_SJRD,JR,EXO,DAMP> FKBI=( (( (EXP(LOG(FKBI(-1))+0.12431*(0.5*((LOG(FYFI))-(LOG(FYFI(-1))))+0.5*((LOG(FYFI(-1)))-(LOG(FYFI(-2)))))
+                               + 0.55323*((LOG(FKBI(-1)))-(LOG(FKBI(-2))))
+                               + 0.00615
+                               - 0.05407*LOG(FKBI(-1)/FKBIW(-1))))*(1+JRFKBI ))*(1-DFKBI)+ZFKBI*DFKBI)*(1+FKBI_JR ))*(1-FKBI_D)+FKBI_X*FKBI_D$
+FRML <_D> FIBI          = (((FKBI)-(FKBI(-1))) + DPRBI*FKBI(-1))*KFKBI $
+FRML <_D> FKZI          = FKMI + FKBI$
+FRML <_D> BKBI          = FKBI/FKZI $
+FRML <_G> DTAI=EXP(LOG(DTAI(-1))+VTFPI/100 + (LOG(FKZI)-LOG(HQI))*((DTALFAI)-(DTALFAI(-1))))$
+FRML <_G> DTAIF         = FYFI/( (HQI**DTALFAI) * (FKZI**(1-DTALFAI)) ) $
+FRML <_G> VTFPIF        = 100*(((LOG(DTAIF))-(LOG(DTAIF(-1))))-((LOG(FKZI)-LOG(HQI))*((DTALFAI)-(DTALFAI(-1))))) $
+FRML <_G> DTALFAIF      = LI*HQI/(LI*HQI+PKMI*FKMI+PKBI*FKBI) $
+FRML <_D> PKMT          = ((1-TSDS*BIVM)/(1-TSDS))*(0.5*IWLO*(1-TSDS)+0.5*IWLO+DPRMT-GPIME+RPT)*PIM $
+FRML <_D> PKBT          = ((1-TSDS*BIVB)/(1-TSDS))*(0.5*IWLO*(1-TSDS)+0.5*IWLO+DPRBT-GPIBE+RPT)*PIB $
+FRML <_D> PKZT          = (PKMT*FKMT + PKBT*FKBT)/FKZT$
+FRML <_DJRD,JR,EXO> FKZTW=( (( (EXP(DTALFAT*LOG((1-DTALFAT)/DTALFAT)
+                               + LOG(FYFT) - LOG(DTAT)
+                               + DTALFAT*(LOG(LT)-LOG(PKZT))))*(1+JRFKZTW ))*(1-DFKZTW)+ZFKZTW*DFKZTW)*(1+FKZTW_JR ))*(1-FKZTW_D)+FKZTW_X*FKZTW_D$
+FRML <_D> FKBTW         = BKBTW*FKZTW$
+FRML <_D> FKMTW         = (1-BKBTW)*FKZTW$
+FRML <_SJRD,JR,EXO,DAMP> FKMT=( (( (EXP(LOG(FKMT(-1))+0.36598*((LOG(FYFT))-(LOG(FYFT(-1))))
+                               + 0.63754*((LOG(FKMT(-1)))-(LOG(FKMT(-2))))
+                               + 0.00813
+                               - 0.09182*LOG(FKMT(-1)/FKMTW(-1))))*(1+JRFKMT ))*(1-DFKMT)+ZFKMT*DFKMT)*(1+FKMT_JR ))*(1-FKMT_D)+FKMT_X*FKMT_D$
+FRML <_D> FIMT          = (((FKMT)-(FKMT(-1))) + DPRMT*FKMT(-1))*KFKMT $
+FRML <_SJRD,JR,EXO,DAMP> FKBT=( (( (EXP(LOG(FKBT(-1))+0.08299*((LOG(FYFT))-(LOG(FYFT(-1))))
+                                -0.00619*((LOG(FYFT(-1)))-(LOG(FYFT(-2))))
+                               + 0.79133*((LOG(FKBT(-1)))-(LOG(FKBT(-2))))
+                               + 0.00137
+                               - 0.07*LOG(FKBT(-1)/FKBTW(-1))))*(1+JRFKBT ))*(1-DFKBT)+ZFKBT*DFKBT)*(1+FKBT_JR ))*(1-FKBT_D)+FKBT_X*FKBT_D$
+FRML <_D> FIBT          = (((FKBT)-(FKBT(-1))) + DPRBT*FKBT(-1))*KFKBT $
+FRML <_D> FKZT          = FKMT + FKBT$
+FRML <_D> BKBT          = FKBT/FKZT $
+FRML <_G> DTAT=EXP(LOG(DTAT(-1))+VTFPT/100 + (LOG(FKZT)-LOG(HQT))*((DTALFAT)-(DTALFAT(-1))))$
+FRML <_G> DTATF         = FYFT/((HQT**DTALFAT) * (FKZT**(1-DTALFAT))) $
+FRML <_G> VTFPTF        = 100*(((LOG(DTATF))-(LOG(DTATF(-1))))-((LOG(FKZT)-LOG(HQT))*((DTALFAT)-(DTALFAT(-1))))) $
+FRML <_G> DTALFATF      = LT*HQT/(LT*HQT+PKMT*FKMT+PKBT*FKBT) $
+FRML <_D> PKMB          = ((1-TSDS*BIVM)/(1-TSDS))*(0.5*IWLO*(1-TSDS)+0.5*IWLO+DPRMB-GPIME+RPB)*PIM $
+FRML <_D> PKBB          = ((1-TSDS*BIVB)/(1-TSDS))*(0.5*IWLO*(1-TSDS)+0.5*IWLO+DPRBB-GPIBE+RPB)*PIB $
+FRML <_D> PKZB          = (PKMB*FKMB + PKBB*FKBB)/FKZB$
+FRML <_DJRD,JR,EXO> FKZBW=( (( (EXP(DTALFAB*LOG((1-DTALFAB)/DTALFAB)
+                               + LOG(FYFB) - LOG(DTAB)
+                               + DTALFAB*(LOG(LB)-LOG(PKZB))))*(1+JRFKZBW ))*(1-DFKZBW)+ZFKZBW*DFKZBW)*(1+FKZBW_JR ))*(1-FKZBW_D)+FKZBW_X*FKZBW_D$
+FRML <_D> FKBBW         = BKBBW*FKZBW$
+FRML <_D> FKMBW         = (1-BKBBW)*FKZBW$
+FRML <_SJRD,JR,EXO,DAMP> FKZB=( (( (EXP(LOG(FKZB(-1))+0.08695*((LOG(FYFB))-(LOG(FYFB(-1))))
+                               + 0.49456*((LOG(FKZB(-1)))-(LOG(FKZB(-2))))
+                               + 0.00537
+                               - 0.01932*LOG(FKZB(-1)/FKZBW(-1))))*(1+JRFKZB ))*(1-DFKZB)+ZFKZB*DFKZB)*(1+FKZB_JR ))*(1-FKZB_D)+FKZB_X*FKZB_D$
+FRML <_D> FIMB          = (((FKMB)-(FKMB(-1))) + DPRMB*FKMB(-1))*KFKMB $
+FRML <_GJRD,JR,EXO> FKBB          =( (( ( FKZB*BKBBW )*(1+JRFKBB ))*(1-DFKBB)+ZFKBB*DFKBB)*(1+FKBB_JR ))*(1-FKBB_D)+FKBB_X*FKBB_D$
+FRML <_GJRD,JR,EXO> FKMB          =( (( ( FKZB*(1-BKBBW) )*(1+JRFKMB ))*(1-DFKMB)+ZFKMB*DFKMB)*(1+FKMB_JR ))*(1-FKMB_D)+FKMB_X*FKMB_D$
+FRML <_D> FIBB          = (((FKBB)-(FKBB(-1))) + DPRBB*FKBB(-1))*KFKBB $
+FRML <_D> BKBB          = FKBB/FKZB $
+FRML <_G> DTAB=EXP(LOG(DTAB(-1))+VTFPB/100 + (LOG(FKZB)-LOG(HQB))*((DTALFAB)-(DTALFAB(-1))))$
+FRML <_G> DTABF         = FYFB/( (HQB**DTALFAB) * (FKZB**(1-DTALFAB)) ) $
+FRML <_G> VTFPBF        = 100*(((LOG(DTABF))-(LOG(DTABF(-1))))-((LOG(FKZB)-LOG(HQB))*((DTALFAB)-(DTALFAB(-1))))) $
+FRML <_G> DTALFABF      = LB*HQB/(LB*HQB+PKMB*FKMB+PKBB*FKBB) $
+FRML <_SJRD,JR,EXO,DAMP> FIMA=( (( (EXP(LOG(FIMA(-1))+0.14574*(((LOG(PYFA/PYF))-(LOG(PYFA(-1)/PYF(-1))))
+                                  -(1/5*(((LOG(PYFA(-1)/PYF(-1)))-(LOG(PYFA(-2)/PYF(-2)))) + ((LOG(PYFA(-2)/PYF(-2)))-(LOG(PYFA(-3)/PYF(-3))))
+                                       + ((LOG(PYFA(-3)/PYF(-3)))-(LOG(PYFA(-4)/PYF(-4)))) + ((LOG(PYFA(-4)/PYF(-4)))-(LOG(PYFA(-5)/PYF(-5))))
+                                       + ((LOG(PYFA(-5)/PYF(-5)))-(LOG(PYFA(-6)/PYF(-6)))))))
+                               -2.90777*((IWBZ(-1))-(IWBZ(-2)))
+                               + ((LOG(FYFA))-(LOG(FYFA(-1))))))*(1+JRFIMA ))*(1-DFIMA)+ZFIMA*DFIMA)*(1+FIMA_JR ))*(1-FIMA_D)+FIMA_X*FIMA_D$
+FRML <_D> FKMA          = FKMA(-1) + FIMA/KFKMA - DPRMA*FKMA(-1) $
+FRML <_SJRD,JR,EXO,DAMP> FIBA=( (( (EXP(LOG(FIBA(-1))+0.75*((LOG(FIMA))-(LOG(FIMA(-1)))) + 0.25*((LOG(FIMA(-1)))-(LOG(FIMA(-2))))))*(1+JRFIBA ))*(1-DFIBA)+ZFIBA*DFIBA)*(1+FIBA_JR ))*(1-FIBA_D)+FIBA_X*FIBA_D$
+FRML <_D> FKBA          = FKBA(-1) + FIBA/KFKBA - DPRBA*FKBA(-1) $
+FRML <_GJRD,JR,EXO> FIME          =( (( ( KFIME*FYFE )*(1+JRFIME ))*(1-DFIME)+ZFIME*DFIME)*(1+FIME_JR ))*(1-FIME_D)+FIME_X*FIME_D$
+FRML <_D> FKME          = FKME(-1) + FIME/KFKME - DPRME*FKME(-1) $
+FRML <_GJRD,JR,EXO> FIBE          =( (( ( KFIBE*FYFE )*(1+JRFIBE ))*(1-DFIBE)+ZFIBE*DFIBE)*(1+FIBE_JR ))*(1-FIBE_D)+FIBE_X*FIBE_D$
+FRML <_D> FKBE          = FKBE(-1) + FIBE/KFKBE - DPRBE*FKBE(-1) $
+FRML <_GJRD,JR,EXO> FIMN          =( (( ( KFIMN*FYFN )*(1+JRFIMN ))*(1-DFIMN)+ZFIMN*DFIMN)*(1+FIMN_JR ))*(1-FIMN_D)+FIMN_X*FIMN_D$
+FRML <_D> FKMN          = FKMN(-1) + FIMN/KFKMN - DPRMN*FKMN(-1) $
+FRML <_GJRD,JR,EXO> FIBN          =( (( ( KFIBN*FYFN )*(1+JRFIBN ))*(1-DFIBN)+ZFIBN*DFIBN)*(1+FIBN_JR ))*(1-FIBN_D)+FIBN_X*FIBN_D$
+FRML <_D> FKBN          = FKBN(-1) + FIBN/KFKBN - DPRBN*FKBN(-1) $
+FRML <_GJRD,JR,EXO> FIMS          =( (( ( KFIMS*FYFS )*(1+JRFIMS ))*(1-DFIMS)+ZFIMS*DFIMS)*(1+FIMS_JR ))*(1-FIMS_D)+FIMS_X*FIMS_D$
+FRML <_D> FKMS          = FKMS(-1) + FIMS/KFKMS - DPRMS*FKMS(-1) $
+FRML <_GJRD,JR,EXO> FIBS          =( (( ( KFIBS*FYFS )*(1+JRFIBS ))*(1-DFIBS)+ZFIBS*DFIBS)*(1+FIBS_JR ))*(1-FIBS_D)+FIBS_X*FIBS_D$
+FRML <_D> FKBS          = FKBS(-1) + FIBS/KFKBS - DPRBS*FKBS(-1) $
+FRML <_G> FIMXO         = KFIMO*FIMXOS $
+FRML <_G> FIMO          = KFIMO*FIMOS $
+FRML <_D> FKMO          = FKMO(-1) + FIMO/KFKMO - DPRMO*FKMO(-1) $
+FRML <_G> FIBO          = KFIBO*FIBOS $
+FRML <_D> FKBO          = FKBO(-1) + FIBO/KFKBO - DPRBO*FKBO(-1) $
+FRML <_I> IL            = FILA*PXA + FILN*PXN + FILE*PXE + FILI*PXI + FILT*PXT +
+                               FILME*PME + FILMI*PMI + FILSV*PSIV $
+FRML <_I> FIL           = IL/PIL $
+FRML <_I> FIBPS         = (FIB*PIB(-1)-FIBOS*PIBOS(-1)-FIBH*PIBH(-1))/PIBPS(-1) $
+FRML <_I> FIBPB         = FIBB+FIBI+FIBT $
+FRML <_I> FIB           = (FIBA+FIBPB+FIBN+FIBE+FIBH+FIBS+FIBO)*KFIB $
+FRML <_I> FIBXH         = (FIB*PIB(-1)-FIBH*PIBH(-1))/PIBXH(-1) $
+FRML <_I> PIBXH         = (FIB*PIB-FIBH*PIBH)/FIBXH $
+FRML <_I> IBXH          = FIBXH*PIBXH $
+FRML <_I> FKBPB         = (FKBI + FKBB + FKBT) $
+FRML <_I> FKB           = FKBPB + FKBA + FKBN + FKBE + FKBS + FKBH + FKBO $
+FRML <_I> FIMPS         = (FIMX*PIMX(-1)-FIMXOS*PIMXOS(-1))/PIMPS(-1) $
+FRML <_I> FIMPB         = FIMB+FIMI+FIMT $
+FRML <_I> FIMX          = (FIMA+FIMPB+FIMN+FIME+FIMS+FIMXO)*KFIMX $
+FRML <_I> FIM           = (FIMX*PIMX(-1)+FIOFU*PIOFU(-1))/PIM(-1) $
+FRML <_I> FKMPB         = (FKMI + FKMB + FKMT) $
+FRML <_I> FKPB          = FKMPB + FKBPB $
+FRML <_I> FKM           = FKMPB + FKMA + FKMN + FKME + FKMS+ FKMO $
+FRML <_I> FIF           = (FIM*PIM(-1)+FIB*PIB(-1))/PIF(-1) $
+FRML <_I> FIFPS         = (FIF*PIF(-1)-FIOS*PIOS(-1))/PIFPS(-1) $
+FRML <_I> PIFPS         = (FIF*PIF-FIOS*PIOS)/FIFPS $
+FRML <_I> IFPS          = PIFPS*FIFPS $
+FRML <_I> FI            = (FIF*PIF(-1)+FIL*PIL(-1))/PI(-1) $
+FRML <_I> FIV           = DPRMA*FKMA(-1) + DPRMI*FKMI(-1) + DPRMT*FKMT(-1) + DPRMB*FKMB(-1)
+                               +DPRME*FKME(-1) + DPRMS*FKMS(-1) + DPRMN*FKMN(-1) + DPRMO*FKMO(-1)
+                               +DPRBA*FKBA(-1) + DPRBI*FKBI(-1) + DPRBT*FKBT(-1) + DPRBB*FKBB(-1)
+                               +DPRBE*FKBE(-1) + DPRBS*FKBS(-1) + DPRBN*FKBN(-1) + DPRBO*FKBO(-1)
+                               +DPRBH*FKBH(-1)$
+FRML <_DJ_D,J,EXO> TSUIH         =(( TSK + TSS + TKS + JTSUIH)*(1-DTSUIH)+ZTSUIH*DTSUIH+TSUIH_J)*(1-TSUIH_D)+TSUIH_X*TSUIH_D$
+FRML <_GJRD,JR,EXO> BEJ           =( (( (  (1-TSUIH*DSE)*(SIQEJH/PHK)/(KFKBHE(-2)*FKBH(-2))
+                               + (TSUIH*TSDL+TQKEJ*KSSYEJ)*(0.5*PHV+ 0.5*PHV(-1))/PHK )*(1+JRBEJ ))*(1-DBEJ)+ZBEJ*DBEJ)*(1+BEJ_JR ))*(1-BEJ_D)+BEJ_X*BEJ_D$
+FRML <_D> UCOST         = IWBZ*(1-TSUIH) + BEJ$
+FRML <_D> GPCPE         = (1-DGPCPE)*( 0.5*GPCPE(-1) + 0.5*(PCP/PCP(-1)-1) + JGPCPE )
+                               + DGPCPE*ZGPCPE $
+FRML <_DJRD,JR,EXO> BFKBHW=( (( (EXP(-0.48078*LOG(PHK/PCP)
+                               -4.01561*LOG(1+UCOST+DPRBH-GPCPE)
+                               + KBFKBHW))*(1+JRBFKBHW ))*(1-DBFKBHW)+ZBFKBHW*DBFKBHW)*(1+BFKBHW_JR ))*(1-BFKBHW_D)+BFKBHW_X*BFKBHW_D$
+FRML <_SJRD,JR,EXO,DAMP> PHK=( (( (EXP(LOG(PHK(-1))+3.23685*((LOG(Q))-(LOG(Q(-1))))
+                               - 3.06451*((LOG(1+UCOST+DPRBH-GPCPE))-(LOG(1+UCOST(-1)+DPRBH(-1)-GPCPE(-1))))
+                               + 0.36172*((LOG(FKBH(-1)))-(LOG(FKBH(-2))))
+                               + GPHK
+                               - 0.36172*(LOG(FKBH(-1)/FYDL(-1))-LOG(BFKBHW(-1)))))*(1+JRPHK ))*(1-DPHK)+ZPHK*DPHK)*(1+PHK_JR ))*(1-PHK_D)+PHK_X*PHK_D$
+FRML <_GJR,JR> WBH           = ( ( PHK*FKBH*KFKBHE)*(1+JRWBH ))*(1+WBH_JR )$
+FRML <_D> TOBINQH       = PHK/(PIBH**0.7*PHGK**0.3) $
+FRML <_SJRD,JR,EXO,DAMP> FINBH         =( (( ( ( 0.04336*TOBINQH + 0.01448*D4879 - 0.03032 )*FKBH(-1) + 1.0446*NBS )*(1+JRFINBH ))*(1-DFINBH)+ZFINBH*DFINBH)*(1+FINBH_JR ))*(1-FINBH_D)+FINBH_X*FINBH_D$
+FRML <_I> FIBH          = FINBH + DPRBH*FKBH(-1)$
+FRML <_I> FKBH          = FKBH(-1) + FIBH/KFKBH - DPRBH*FKBH(-1) $
+FRML <_GJ> PHGK          = PHGK(-1)*PHK/PHK(-1) $
+FRML <_GJ> PHV           = 0.5*PHK + 0.5*PHK(-1) $
+FRML <_D> FAMI          = FAMI(-1)*(AMIA(-1)*FXA+AMIB(-1)*FXB+AMII(-1)*FXI+AMIT(-1)*FXT
+                                         +AMICV(-1)*FCV+AMIIM(-1)*FIMX+AMIEI(-1)*FEI)/FMZI(-1) $
+FRML <_DJRD,JR,EXO> PXMI          =( (( ( (PMI+TMI)/PXI )*(1+JRPXMI ))*(1-DPXMI)+ZPXMI*DPXMI)*(1+PXMI_JR ))*(1-PXMI_D)+PXMI_X*PXMI_D$
+FRML <_DJRD,JR,EXO> BFMZIW=( (( (EXP(-1.90233*LOG(PXMI) + KBFMZIW))*(1+JRBFMZIW ))*(1-DBFMZIW)+ZBFMZIW*DBFMZIW)*(1+BFMZIW_JR ))*(1-BFMZIW_D)+BFMZIW_X*BFMZIW_D$
+FRML <_SJRD,JR,EXO,DAMP> FMZI=( (( (EXP(LOG(FMZI(-1))+1.60218*((LOG(FAMI))-(LOG(FAMI(-1)))) - 0.7033*((LOG(PXMI))-(LOG(PXMI(-1)))) + GFMZI
+                               -0.14996*(LOG(FMZI(-1)/FAMI(-1))-LOG(BFMZIW(-1)))))*(1+JRFMZI ))*(1-DFMZI)+ZFMZI*DFMZI)*(1+FMZI_JR ))*(1-FMZI_D)+FMZI_X*FMZI_D$
+FRML <_D> FMI           = FMZI + AMIO*FXO + AMICB*FCB + FILMI $
+FRML <_G> KFMI          = (FMZI/FAMI)/(FMZI(-1)/FAMI(-1)) $
+FRML <_D> FAMSQ         = FAMSQ(-1)*( AMSQB(-1)*FXB+AMSQI(-1)*FXI+AMSQT(-1)*FXT
+                                          +AMSQCS(-1)*FCS+AMSQIM(-1)*FIMX+AMSQESQ(-1)*FESQ)/FMZSQ(-1) $
+FRML <_DJRD,JR,EXO> PXMSQ         =( (( ( PMSQ/PXT )*(1+JRPXMSQ ))*(1-DPXMSQ)+ZPXMSQ*DPXMSQ)*(1+PXMSQ_JR ))*(1-PXMSQ_D)+PXMSQ_X*PXMSQ_D$
+FRML <_DJRD,JR,EXO> BFMZSQW=( (( (EXP(-0.48934*LOG(PXMSQ) - 0.29826*D4803 + 0.02365*DTFMZSQ + KBFMZSQW))*(1+JRBFMZSQW ))*(1-DBFMZSQW)+ZBFMZSQW*DBFMZSQW)*(1+BFMZSQW_JR ))*(1-BFMZSQW_D)+BFMZSQW_X*BFMZSQW_D$
+FRML <_SJRD,JR,EXO,DAMP> FMZSQ=( (( (EXP(LOG(FMZSQ(-1))+0.66452*((LOG(FAMSQ))-(LOG(FAMSQ(-1)))) - 0.39677*((LOG(PXMSQ))-(LOG(PXMSQ(-1)))) + 0.01208*((DTFMZSQ)-(DTFMZSQ(-1))) + GFMZSQ
+                               -0.51089*(LOG(FMZSQ(-1)/FAMSQ(-1))-LOG(BFMZSQW(-1)))))*(1+JRFMZSQ ))*(1-DFMZSQ)+ZFMZSQ*DFMZSQ)*(1+FMZSQ_JR ))*(1-FMZSQ_D)+FMZSQ_X*FMZSQ_D$
+FRML <_D> FMSQ          = FMZSQ + AMSQO*FXO$
+FRML <_G> KFMSQ         = (FMZSQ/FAMSQ)/(FMZSQ(-1)/FAMSQ(-1))$
+FRML <_D> FME           = AMEE*FXE + AMET*FXT + AMES*FXS + AMECG*FCG + AMEEE*FEE + FILME$
+FRML <_I> FMT           = FCT$
+FRML <_D> FMSS          = AMSSS*FXS$
+FRML <_I> FMV           = (FME*PME(-1)+FMI*PMI(-1))/PMV(-1)$
+FRML <_I> FMS           = (FMSS*PMSS(-1)+FMSQ*PMSQ(-1))/PMS(-1)$
+FRML <_I> FMST          = (FMS*PMS(-1)+FMT*PMT(-1))/PMST(-1)$
+FRML <_I> FM            = (FMV*PMV(-1)+FMST*PMST(-1))/PM(-1)$
+FRML <_G> AMIA          = AMIA(-1)*KFMI + J0AMIA $
+FRML <_G> AMIB          = AMIB(-1)*KFMI + J0AMIB $
+FRML <_G> AMII          = AMII(-1)*KFMI + J0AMII $
+FRML <_G> AMIT          = AMIT(-1)*KFMI + J0AMIT $
+FRML <_G> AMICV         = AMICV(-1)*KFMI + J0AMICV $
+FRML <_G> AMIIM         = AMIIM(-1)*KFMI + J0AMIIM $
+FRML <_G> AMIEI         = AMIEI(-1)*KFMI + J0AMIEI $
+FRML <_G> AIA           = (AIA(-1)+JAIA) - (AMIA(-1)*(KFMI-1))*(PMI(-1)/PXI(-1)) $
+FRML <_G> AIB           = (AIB(-1)+JAIB) - (AMIB(-1)*(KFMI-1))*(PMI(-1)/PXI(-1)) $
+FRML <_G> AII           = (AII(-1)+JAII) - (AMII(-1)*(KFMI-1))*(PMI(-1)/PXI(-1)) $
+FRML <_G> AIT           = (AIT(-1)+JAIT) - (AMIT(-1)*(KFMI-1))*(PMI(-1)/PXI(-1)) $
+FRML <_G> AICV          = (AICV(-1)+JAICV) - (AMICV(-1)*(KFMI-1))*(PMI(-1)/PXI(-1)) $
+FRML <_G> AIIM          = (AIIM(-1)+JAIIM) - (AMIIM(-1)*(KFMI-1))*(PMI(-1)/PXI(-1)) $
+FRML <_G> AIEI          = (AIEI(-1)+JAIEI) - (AMIEI(-1)*(KFMI-1))*(PMI(-1)/PXI(-1)) $
+FRML <_G> AMSQB         = AMSQB(-1)*KFMSQ + J0AMSQB $
+FRML <_G> AMSQI         = AMSQI(-1)*KFMSQ + J0AMSQI $
+FRML <_G> AMSQT         = AMSQT(-1)*KFMSQ + J0AMSQT $
+FRML <_G> AMSQCS        = AMSQCS(-1)*KFMSQ + J0AMSQCS $
+FRML <_G> AMSQIM        = AMSQIM(-1)*KFMSQ + J0AMSQIM $
+FRML <_G> AMSQESQ       = AMSQESQ(-1)*KFMSQ + J0AMSQESQ $
+FRML <_G> ATB           = (ATB(-1)+JATB) - (AMSQB(-1)*(KFMSQ-1))*(PMSQ(-1)/PXT(-1)) $
+FRML <_G> ATI           = (ATI(-1)+JATI) - (AMSQI(-1)*(KFMSQ-1))*(PMSQ(-1)/PXT(-1)) $
+FRML <_G> ATT           = (ATT(-1)+JATT) - (AMSQT(-1)*(KFMSQ-1))*(PMSQ(-1)/PXT(-1)) $
+FRML <_G> ATCS          = (ATCS(-1)-((AOCS-AOCS(-1))*PXO(-1)+J0AMSQCS*PMSQ(-1)+JASVCS*PSIV(-1))/PXT(-1)-J0ATCS)
+                                - (AMSQCS(-1)*(KFMSQ-1))*(PMSQ(-1)/PXT(-1)) $
+FRML <_G> ATIM          = (ATIM(-1)-(JAIIM*PXI(-1)+J0AMIIM*PMI(-1)+J0AMSQIM*PMSQ(-1)+JASVIM*PSIV(-1))/PXT(-1)-J0ATIM)
+                                - (AMSQIM(-1)*(KFMSQ-1))*(PMSQ(-1)/PXT(-1)) $
+FRML <_G> ATESQ         = (ATESQ(-1)-(JABESQ*PXB(-1)+JAIESQ*PXI(-1)+J0AMSQESQ*PMSQ(-1)+JASVESQ*PSIV(-1))/PXT(-1)-J0ATESQ)
+                               - (AMSQESQ(-1)*(KFMSQ-1))*(PMSQ(-1)/PXT(-1)) $
+FRML <_G> AECE          = AECE(-1) + JAECE $
+FRML <_G> ATCE          = ATCE(-1) -(JAECE*PXE(-1)+JASVCE*PSIV(-1))/PXT(-1)-J0ATCE $
+FRML <_G> ASVCE         = ASVCE(-1) + JASVCE $
+FRML <_G> AECG          = AECG(-1) -(JATCG*PXT(-1)+JAMECG*PME(-1)+JASVCG*PSIV(-1))/PXE(-1)-J0AECG $
+FRML <_G> ATCG          = ATCG(-1) + JATCG $
+FRML <_G> AMECG         = AMECG(-1) + JAMECG $
+FRML <_G> ASVCG         = ASVCG(-1) + JASVCG $
+FRML <_G> AHCH          = AHCH(-1) + JAHCH $
+FRML <_G> ATCH          = ATCH(-1) -(JAHCH*PXH(-1)+JASVCH*PSIV(-1))/PXT(-1)-J0ATCH $
+FRML <_G> ASVCH         = ASVCH(-1) + JASVCH $
+FRML <_G> AACV          = AACV(-1) + JAACV $
+FRML <_G> ATCV          = ATCV(-1) -(JAACV*PXA(-1)+JAICV*PXI(-1)+J0AMICV*PMI(-1)+JASVCV*PSIV(-1))/PXT(-1)-J0ATCV $
+FRML <_G> ASVCV         = ASVCV(-1) + JASVCV $
+FRML <_G> ASVCS         = ASVCS(-1) + JASVCS $
+FRML <_G> ATCB          = ATCB(-1) -(JAMICB*PMI(-1)+JASVCB*PSIV(-1))/PXT(-1)-J0ATCB $
+FRML <_G> AMICB         = AMICB(-1) + JAMICB $
+FRML <_G> ASVCB         = ASVCB(-1) + JASVCB $
+FRML <_G> ATCO          = ATCO(-1) -(JAOCO*PXO(-1)+JASVCO*PSIV(-1))/PXT(-1)-J0ATCO $
+FRML <_G> AOCO          = AOCO(-1) + JAOCO $
+FRML <_G> ASVCO         = ASVCO(-1) + JASVCO $
+FRML <_G> ASVIM         = ASVIM(-1) + JASVIM $
+FRML <_G> ABIB          = ABIB(-1) + JABIB $
+FRML <_G> ATIB          = ATIB(-1) -(JABIB*PXB(-1)+JASVIB*PSIV(-1))/PXT(-1)-J0ATIB $
+FRML <_G> ASVIB         = ASVIB(-1) + JASVIB $
+FRML <_G> ANEE          = ANEE(-1) + JANEE $
+FRML <_G> AEEE          = AEEE(-1) -(JANEE*PXN(-1)+JAMEEE*PME(-1)+JASVEE*PSIV(-1))/PXE(-1)-J0AEEE $
+FRML <_G> AMEEE         = AMEEE(-1) + JAMEEE $
+FRML <_G> ASVEE         = ASVEE(-1) + JASVEE $
+FRML <_G> AAEI          = AAEI(-1) + JAAEI $
+FRML <_G> ATEI          = ATEI(-1) -(JAAEI*PXA(-1)+JAIEI*PXI(-1)+J0AMIEI*PMI(-1)+JASVEI*PSIV(-1))/PXI(-1)-J0ATEI $
+FRML <_G> ASVEI         = ASVEI(-1) + JASVEI $
+FRML <_G> ABESQ         = ABESQ(-1) + JABESQ $
+FRML <_G> AIESQ         = AIESQ(-1) + JAIESQ $
+FRML <_G> ASVESQ        = ASVESQ(-1) + JASVESQ $
+FRML <_G> AAA           = AAA(-1) + JAAA $
+FRML <_G> AEA           = AEA(-1) + JAEA $
+FRML <_G> ATA           = ATA(-1) + JATA $
+FRML <_G> ASVA          = ASVA(-1) + JASVA $
+FRML <_G> AYFA          = AYFA(-1) -(JAAA*PXA(-1)+JAEA*PXE(-1)+JAIA*PXI(-1)+JATA*PXT(-1)+J0AMIA*PMI(-1)+JASVA*PSIV(-1))/PYFA(-1)-J0AYFA $
+FRML <_G> AEB           = AEB(-1) + JAEB $
+FRML <_G> ASVB          = ASVB(-1) + JASVB $
+FRML <_G> AYFB          = AYFB(-1) -(JAEB*PXE(-1)+JAIB*PXI(-1)+JATB*PXT(-1)+J0AMIB*PMI(-1)+J0AMSQB*PMSQ(-1)+JASVB*PSIV(-1))/PYFB(-1)-J0AYFB $
+FRML <_G> ATN           = ATN(-1) + JATN $
+FRML <_G> ASVN          = ASVN(-1) + JASVN $
+FRML <_G> AYFN          = AYFN(-1) -(JATN*PXT(-1)+JASVN*PSIV(-1))/PYFN(-1)-J0AYFN $
+FRML <_G> AEE           = AEE(-1) + JAEE $
+FRML <_G> ATE           = ATE(-1) + JATE $
+FRML <_G> AMEE          = AMEE(-1) -((ANE-ANE(-1))*PXN(-1)+JAEE*PXE(-1)+JATE*PXT(-1)+JAYFE*PYFE(-1)+JASVE*PSIV(-1))/PME(-1)-J0AMEE $
+FRML <_G> ASVE          = ASVE(-1) + JASVE $
+FRML <_G> AYFE          = AYFE(-1) + JAYFE $
+FRML <_G> ABH           = ABH(-1) + JABH $
+FRML <_G> ATH           = ATH(-1) + JATH $
+FRML <_G> ASVH          = ASVH(-1) + JASVH $
+FRML <_G> AYFH          = AYFH(-1) -(JABH*PXB(-1)+JATH*PXT(-1)+JASVH*PSIV(-1))/PYFH(-1)-J0AYFH $
+FRML <_G> AAI           = AAI(-1) + JAAI $
+FRML <_G> AEI           = AEI(-1) + JAEI $
+FRML <_G> ASVI          = ASVI(-1) + JASVI $
+FRML <_G> AYFI          = AYFI(-1)-(JAAI*PXA(-1)+JAEI*PXE(-1)+JAII*PXI(-1)+JATI*PXT(-1)+J0AMII*PMI(-1)+J0AMSQI*PMSQ(-1)+JASVI*PSIV(-1))/PYFI(-1)-J0AYFI $
+FRML <_G> ABT           = ABT(-1) + JABT $
+FRML <_G> AET           = AET(-1) + JAET $
+FRML <_G> AMET          = AMET(-1) + JAMET $
+FRML <_G> ASVT          = ASVT(-1) + JASVT $
+FRML <_G> AYFT          = AYFT(-1) -(JABT*PXB(-1)+JAET*PXE(-1)+JAIT*PXI(-1)+JATT*PXT(-1)+(AST-AST(-1))*PXS(-1)+JAMET*PME(-1)+J0AMIT*PMI(-1)+J0AMSQT*PMSQ(-1)+JASVT*PSIV(-1))/PYFT(-1)-J0AYFT $
+FRML <_G> ATS           = ATS(-1) + JATS $
+FRML <_G> AMES          = AMES(-1) + JAMES $
+FRML <_G> AMSSS         = AMSSS(-1) + JAMSSS $
+FRML <_G> ASVS          = ASVS(-1) + JASVS $
+FRML <_G> AYFS          = AYFS(-1) -(JATS*PXT(-1)+JAMES*PME(-1)+JAMSSS*PMSS(-1)+JASVS*PSIV(-1))/PYFS(-1)-J0AYFS $
+FRML <_G> AEO           = AEO(-1) + JAEO $
+FRML <_G> ATO           = ATO(-1) -(JAEO*PXE(-1)+JAOO*PXO(-1)+JAMIO*PMI(-1)+JAMSQO*PMSQ(-1)+JASVO*PSIV(-1)+JAYFO*PYFO(-1))/PXT(-1)-J0ATO $
+FRML <_G> AOO           = AOO(-1) + JAOO $
+FRML <_G> AMIO          = AMIO(-1) + JAMIO $
+FRML <_G> AMSQO         = AMSQO(-1) + JAMSQO $
+FRML <_G> ASVO          = ASVO(-1) + JASVO $
+FRML <_G> AYFO          = AYFO(-1) + JAYFO $
+FRML <_G> AST           = (KFXS-1)*FESS/FXT $
+FRML <_G> ANE           = (FXN-FILN-ANEE*FEE)/FXE $
+FRML <_G> AOCS          = KOCS*FXO/FCS $
+FRML <_G> FXA           = (AAI*FXI + AACV*FCV + AAEI*FEI + FILA)/(1-AAA)$
+FRML <_G> FXB           = ABH*FXH + ABT*FXT + ABIB*FIB + ABESQ*FESQ$
+FRML <_G> FXE           = (AEA*FXA + AEB*FXB + AEI*FXI + AET*FXT + AEO*FXO + AECE*FCE + AECG*FCG + AEEE*FEE + FILE)/(1-AEE)$
+FRML <_G> FXH           = AHCH*FCH$
+FRML <_G> FXI           = (AIA*FXA + AIB*FXB + AIT*FXT + AICV*FCV + AIIM*FIMX + AIEI*FEI + AIESQ*FESQ + FILI)/(1-AII)$
+FRML <_G> FXT           = (ATA*FXA + ATB*FXB + ATN*FXN + ATE*FXE + ATH*FXH + ATI*FXI + ATS*FXS + ATO*FXO +
+                                ATCE*FCE + ATCG*FCG + ATCH*FCH + ATCV*FCV + ATCS*FCS + ATCB*FCB + ATCO*FCO +
+                                ATIM*FIMX + ATIB*FIB + ATEI*FEI + ATESQ*FESQ + FILT)
+                                /(1-ATT)$
+FRML <_G> FXS           = KFXS*FESS$
+FRML <_G> FYFA          = FXA*AYFA$
+FRML <_G> FYFB          = FXB*AYFB$
+FRML <_G> FYFN          = FXN*AYFN$
+FRML <_G> FYFE          = FXE*AYFE$
+FRML <_G> FYFH          = FXH*AYFH$
+FRML <_G> FYFI          = FXI*AYFI$
+FRML <_G> FYFT          = FXT*AYFT*KKF$
+FRML <_G> FYFS          = FXS*AYFS$
+FRML <_G> FVEA          = FXA*AEA$
+FRML <_G> FVEB          = FXB*AEB$
+FRML <_G> FVEE          = FXE*(ANE+AEE+AMEE)$
+FRML <_G> FVEI          = FXI*AEI$
+FRML <_G> FVET          = FXT*(AET+AMET)$
+FRML <_G> FVES          = FXS*AMES$
+FRML <_G> FVMA          = FXA*(AAA+AIA+ATA+AMIA+ASVA)$
+FRML <_G> FVMB          = FXB*(AIB+ATB+AMIB+AMSQB+ASVB)$
+FRML <_G> FVMN          = FXN*(ATN+ASVN)$
+FRML <_G> FVME          = FXE*(ATE+ASVE)$
+FRML <_G> FVMH          = FXH*(ABH+ATH+ASVH)$
+FRML <_G> FVMI          = FXI*(AAI+AII+ATI+AMII+AMSQI+ASVI)$
+FRML <_G> FVMT          = FXT*(ABT+AIT+ATT+AST+AMIT+AMSQT+ASVT)$
+FRML <_G> FVMS          = FXS*(ATS+AMSSS+ASVS)$
+FRML <_I> FXPB          = (FXB*PXB(-1)+FXI*PXI(-1)+FXT*PXT(-1))/PXPB(-1)$
+FRML <_I> PXPB          = XPB/FXPB$
+FRML <_I> FXPR          = (FXA*PXA(-1)+FXE*PXE(-1)+FXN*PXN(-1)+FXH*PXH(-1)+FXS*PXS(-1))/PXPR(-1)$
+FRML <_I> PXPR          = XPR/FXPR$
+FRML <_I> FXP           = (FXPB*PXPB(-1)+FXPR*PXPR(-1))/PXP(-1)$
+FRML <_I> PXP           = XP/FXP$
+FRML <_I> FX            = (FXP*PXP(-1)+FXO*PXO(-1))/PX(-1)$
+FRML <_I> FYFPB         = (FYFB*PYFB(-1)+FYFI*PYFI(-1)+FYFT*PYFT(-1))/PYFPB(-1)$
+FRML <_I> FYFPR         = (FYFA*PYFA(-1)+FYFE*PYFE(-1)+FYFN*PYFN(-1)+FYFH*PYFH(-1)+FYFS*PYFS(-1))/PYFPR(-1)$
+FRML <_I> PYFPR         = YFPR/FYFPR$
+FRML <_I> FYFR          = (FYFPR*PYFPR(-1)+FYFO*PYFO(-1))/PYFR(-1)$
+FRML <_I> FYFP          = (FYFPB*PYFPB(-1)+FYFPR*PYFPR(-1))/PYFP(-1)$
+FRML <_I> FYF           = (FYFP*PYFP(-1)+FYFO*PYFO(-1))/PYF(-1)$
+FRML <_I> FVEX          = FVEA + FVEB + FVEI + FVEE + FVET + FVES + FVEO$
+FRML <_I> FVX           = (FX*PX(-1)-FYF*PYF(-1))/PVX(-1)$
+FRML <_I> FSIV          = ASVA*FXA + ASVB*FXB + ASVN*FXN + ASVE*FXE + ASVH*FXH + ASVI*FXI + ASVT*FXT + ASVS*FXS + ASVO*FXO +
+                               ASVCE*FCE + ASVCG*FCG + ASVCH*FCH + ASVCV*FCV + ASVCS*FCS + ASVCB*FCB + ASVCO*FCO +
+                               ASVIM*FIMX + ASVIB*FIB + ASVEE*FEE + ASVEI*FEI + ASVESQ*FESQ + FILSV$
+FRML <_I> FAT           = (FYF*PYF(-1)+FM*PM(-1)+FSIV*PSIV(-1))/PAT(-1)$
+FRML <_I> FAI           = (FCP*PCP(-1)+FCO*PCO(-1)+FI*PI(-1))/PAI(-1)$
+FRML <_I> FAIPS         = (FAI*PAI(-1)-FCO*PCO(-1)-FIOS*PIOS(-1))/PAIPS(-1)$
+FRML <_I> FAE           = (FAI*PAI(-1)+FE*PE(-1))/PAE(-1)$
+FRML <_I> FY            = (FAE*PAE(-1)-FM*PM(-1))/PY(-1)$
+FRML <_G> KKF           = KKF + 1 - FAT/FAE$
+FRML <_GJRD,JR,EXO> HQIW=( (( (EXP((DTALFAI-1)*LOG((1-DTALFAI)/DTALFAI)
+                               + LOG(FYFI) - LOG(DTAI)
+                               + (DTALFAI-1)*(LOG(LI)-LOG(PKZI))))*(1+JRHQIW ))*(1-DHQIW)+ZHQIW*DHQIW)*(1+HQIW_JR ))*(1-HQIW_D)+HQIW_X*HQIW_D$
+FRML <_GJRD,JR,EXO> HQIN          =( (( ( EXP(-(1/DTALFAI)*LOG(DTAI)
+                                   +(1/DTALFAI)*LOG(FYFI)
+                                   -((1-DTALFAI)/DTALFAI)*LOG(FKZI)))*(1+JRHQIN ))*(1-DHQIN)+ZHQIN*DHQIN)*(1+HQIN_JR ))*(1-HQIN_D)+HQIN_X*HQIN_D$
+FRML <_S__D,EXO,DAMP> HQI=((EXP((1-DXVYFHI)*(0.50458*LOG(HQIN) + 0.49542*LOG(HQIN(-1)) + JRHQI)
+                                + DXVYFHI*LOG(FYFI/VYFHIX)))*(1-DHQI)+ZHQI*DHQI)*(1-HQI_D)+HQI_X*HQI_D$
+FRML <_GJRD,JR,EXO> HQTW=( (( (EXP((DTALFAT-1)*LOG((1-DTALFAT)/DTALFAT)
+                               + LOG(FYFT) - LOG(DTAT)
+                               + (DTALFAT-1)*(LOG(LT)-LOG(PKZT))))*(1+JRHQTW ))*(1-DHQTW)+ZHQTW*DHQTW)*(1+HQTW_JR ))*(1-HQTW_D)+HQTW_X*HQTW_D$
+FRML <_GJRD,JR,EXO> HQTN          =( (( ( EXP(-(1/DTALFAT)*LOG(DTAT)
+                                   +(1/DTALFAT)*LOG(FYFT)
+                                   -((1-DTALFAT)/DTALFAT)*LOG(FKZT)))*(1+JRHQTN ))*(1-DHQTN)+ZHQTN*DHQTN)*(1+HQTN_JR ))*(1-HQTN_D)+HQTN_X*HQTN_D$
+FRML <_S__D,EXO,DAMP> HQT=((EXP((1-DXVYFHT)*(0.61527*LOG(HQTN) + 0.38473*LOG(HQTN(-1)) + JRHQT)
+                               + DXVYFHT*LOG(FYFT/VYFHTX)))*(1-DHQT)+ZHQT*DHQT)*(1-HQT_D)+HQT_X*HQT_D$
+FRML <_GJRD,JR,EXO> HQBW=( (( (EXP((DTALFAB-1)*LOG((1-DTALFAB)/DTALFAB)
+                               + LOG(FYFB) - LOG(DTAB)
+                               + (DTALFAB-1)*(LOG(LB)-LOG(PKZB))))*(1+JRHQBW ))*(1-DHQBW)+ZHQBW*DHQBW)*(1+HQBW_JR ))*(1-HQBW_D)+HQBW_X*HQBW_D$
+FRML <_GJRD,JR,EXO> HQBN          =( (( ( EXP(-(1/DTALFAB)*LOG(DTAB)
+                                   +(1/DTALFAB)*LOG(FYFB)
+                                   -((1-DTALFAB)/DTALFAB)*LOG(FKZB)))*(1+JRHQBN ))*(1-DHQBN)+ZHQBN*DHQBN)*(1+HQBN_JR ))*(1-HQBN_D)+HQBN_X*HQBN_D$
+FRML <_S__D,EXO,DAMP> HQB=((EXP((1-DXVYFHB)*(0.80208*LOG(HQBN) + 0.19792*LOG(HQBN(-1)) + JRHQB)
+                                + DXVYFHB*LOG(FYFB/VYFHBX)))*(1-DHQB)+ZHQB*DHQB)*(1-HQB_D)+HQB_X*HQB_D$
+FRML <_G> HQA           = (1-DXVYFHA)*HQAX + DXVYFHA*FYFA/VYFHAX $
+FRML <_D> HQS           = QWS*HGS/1000 $
+FRML <_D> HQO           = QO*HGO/1000 $
+FRML <_D> HQPB          = HQT + HQI + HQB $
+FRML <_D> HQPR          = HQA + HQN + HQE + HQH + HQS $
+FRML <_D> HQR           = HQPR + HQO $
+FRML <_D> HQ            = HQPB + HQR $
+FRML <_D> QA            = HQA/HGA*1000 $
+FRML <_D> QSA           = BQSA*QA $
+FRML <_D> QWA           = QA-QSA $
+FRML <_D> QB            = HQB/HGB*1000 $
+FRML <_D> QSB           = BQSB*QB $
+FRML <_D> QWB           = QB-QSB $
+FRML <_D> QE            = HQE/HGE*1000 $
+FRML <_D> QSE           = BQSE*QE $
+FRML <_D> QWE           = QE-QSE $
+FRML <_D> QN            = HQN/HGN*1000 $
+FRML <_D> QSN           = BQSN*QN $
+FRML <_D> QWN           = QN-QSN $
+FRML <_D> QH            = HQH/HGH*1000 $
+FRML <_D> QSH           = BQSH*QH $
+FRML <_D> QWH           = QH-QSH $
+FRML <_D> QI            = HQI/HGI*1000 $
+FRML <_D> QSI           = BQSI*QI $
+FRML <_D> QWI           = QI-QSI $
+FRML <_D> QT            = HQT/HGT*1000 $
+FRML <_D> QST           = BQST*QT $
+FRML <_D> QWT           = QT-QST $
+FRML <_D> QWO           = QO - QSO $
+FRML <_D> QWP           = QWN + QWI + QWA + QWH + QWB + QWE + QWT + QWS $
+FRML <_D> QW            = QWP + QWO $
+FRML <_D> QPS           = Q - QOS $
+FRML <_D> QPB           = QI + QB + QT $
+FRML <_D> QS            = QSA + QSH + QSB + QSE + QSN + QSI + QST + QSO $
+FRML <_D> Q             = QW + QS $
+FRML <_GJ_D,J,EXO> QM=((QM(-1)+(((QMB + QMF + QMS + QMR)-(QMB(-1)+QMF(-1)+QMS(-1)+QMR(-1))))+ JQM)*(1-DQM)+ZQM*DQM+QM_J)*(1-QM_D)+QM_X*QM_D$
+FRML <_I> Q1            = Q + QM $
+FRML <_G> HGW           = KHGW*HA $
+FRML <_G> HGA           = KHGA*HGW $
+FRML <_G> HGB           = KHGB*HGW $
+FRML <_G> HGE           = KHGE*HGW $
+FRML <_G> HGH           = KHGH*HGW $
+FRML <_G> HGN           = KHGN*HGW $
+FRML <_G> HGI           = KHGI*HGW $
+FRML <_G> HGO           = KHGO*HGW $
+FRML <_G> HGT           = KHGT*HGW $
+FRML <_G> HGS           = KHGS*HGW $
+FRML <_D> HG            = HQ/Q*1000 $
+FRML <_D> VYFHB         = FYFB/HQB $
+FRML <_D> VYFHI         = FYFI/HQI $
+FRML <_D> VYFHT         = FYFT/HQT $
+FRML <_D> VYFHPB        = FYFPB/HQPB $
+FRML <_D> VYFHA         = FYFA/HQA $
+FRML <_D> VYFHE         = FYFE/HQE $
+FRML <_D> VYFHN         = FYFN/HQN $
+FRML <_D> VYFHH         = FYFH/HQH $
+FRML <_D> VYFHO         = FYFO/HQO $
+FRML <_D> VYFHR         = FYFR/HQR $
+FRML <_D> VYFH          = FYF/HQ $
+FRML <_D> UA            = UA_S + UA_K + JUA $
+FRML <_D> UL            = UA - Q $
+FRML <_G> ULU           = KULU*UL $
+FRML <_D> ULDP          = UL - ULU $
+FRML <_D> ULDPD         = ULDP - ULDPA $
+FRML <_D> ULBAK         = (UAKX+QLTJD)+BULBAK*(UKAK+QLTJK) $
+FRML <_D> ULB           = UL + ULBAK $
+FRML <_D> BUL           = UL/UA $
+FRML <_D> BUL_S         = UL_S/UA_S $
+FRML <_D> UAKX          = UAKX_S + UAKX_K $
+FRML <_D> UUXA          = UUXA_S + UUXA_K $
+FRML <_D> UKXA          = UKXA_S + UKXA_K $
+FRML <_D> UKAK          = UKAK_S + UKAK_K $
+FRML <_D> ULY           = ULY_S + ULY_K $
+FRML <_D> UPFO          = UPFO_S + UPFO_K $
+FRML <_D> UFO           = UPFO_S + QPFO_S + UPFO_K + QPFO_K $
+FRML <_D> UFP           = UPFP + QPFP $
+FRML <_D> USS           = UMS + QMS $
+FRML <_D> USB           = UMB + QMB $
+FRML <_D> UMJ           = UMJ_S + UMJ_K $
+FRML <_D> UR_S          = U-(UA_S+UB+USS+USB+USF+UMR+UFDP+UKXA_S+UPFO_S+UUXA_S+UEF+UOV+UFY+ULY_S+URY+UAKX_S+UKAK_S+UPFP+UPT+UMJ_S) $
+FRML <_D> UR_K          = -(UA_K+UUXA_K+UAKX_K+UKAK_K+UKXA_K+UPFO_K+ULY_K+UMJ_K) $
+FRML <_D> UR            = UR_S + UR_K - JUA $
+FRML <_G> QLTJD         = BQLTJD*(ULDP+ULDP(-1))/2 $
+FRML <_G> QLTJK         = BQLTJK*(ULU+ULU(-1))/2 $
+FRML <_G> QPFO_K        = -0.5*UPFO_K $
+FRML <_G> FXO           = (AOCO*FCO + FIOFU)/(1-AOO-KOCS) $
+FRML <_G> FYFO          = FXO*AYFO $
+FRML <_G> QO            = (FYFO-FIVO)/(KFYFO*HGO) $
+FRML <_G> QOS           = KQOS*QO $
+FRML <_G> FVEO          = FXO*AEO $
+FRML <_G> FVMO          = FXO*(ATO+AOO+AMIO+AMSQO+ASVO) $
+FRML <_G> FCOC          = KCOC*FCO $
+FRML <_G> FCOI          = (1-KCOC)*FCO $
+FRML <_GJR,JR> FCOGL         = ( ( FCOGL(-1)*(FCO/FCO(-1)) )*(1+JRFCOGL ))*(1+FCOGL_JR )$
+FRML <_D> PCOGL         = CO/FCOGL $
+FRML <_D> COZ           = CO - IVOS $
+FRML <_D> FCO           = (FCOZ*PCOZ(-1)+FIVOS*PIVOS(-1))/PCO(-1) $
+FRML <_D> PCOZ          = COZ/FCOZ $
+FRML <_D> FIVOS         = DXIVOS*(IVOS/PIVOS) + (1-DXIVOS)*KFIVOS*FIVO $
+FRML <_G> YFO           = YWO + IVOS*KIVO + SIQO $
+FRML <_G> VOS           = VO*KVOS $
+FRML <_G> YWOS          = YWO*KYWOS $
+FRML <_G> YFOS          = YWOS + IVOS + SIQO*KSIQOS $
+FRML <_D> XOS           = YFOS + VOS $
+FRML <_D> XO            = YFO + VO $
+FRML <_D> CO            = PCO*FCO $
+FRML <_G> COC           = KCOC*CO $
+FRML <_G> COI           = (1-KCOC)*CO $
+FRML <_G> VO            = FXO*(AEO*PXE + ATO*PXT + AOO*PXO + AMIO*(PMI+TMI) + AMSQO*PMSQ)*KPVO + SIPVO + SIGVO $
+FRML <_G> IOFU          = (1-DXIOFU)*(TIOFU*Y_S + JIOFU) + DXIOFU*IOFUX $
+FRML <_G> PIOFU         = PXO*KPIOFU $
+FRML <_D> FIOFU         = IOFU/PIOFU $
+FRML <_D> FIVO          = (DPRMO*FKMO(-1) + DPRBO*FKBO(-1)) $
+FRML <_G> IVOS          = DXIVOS*BIVOS*CO + (1-DXIVOS)*PIVOS*FIVOS $
+FRML <_D> FIOS          = (FIXOS*PIXOS(-1)+FIOFU*PIOFU(-1))/PIOS(-1) $
+FRML <_G> FIBOS         = BIBOS*FIXOS $
+FRML <_D> FIMXOS        = (FIXOS*PIXOS(-1)-FIBOS*PIBOS(-1))/PIMXOS(-1) $
+FRML <_D> FIMOS         = (FIMXOS*PIMXOS(-1)+FIOFU*PIOFU(-1))/PIMOS(-1) $
+FRML <_D> TFOPN         = TFOIP - TFOUP $
+FRML <_D> TFON          = TFOPN + TIION $
+FRML <_D> TFOIP         = SD + (SI-SIM-SISU) + SA + TFOIQ $
+FRML <_D> TFOIQ         = IVOS + TYPRI + TBPHO +  TIOV + TIOR + TEUR
+                              + TAPO + TAFO + TKPO + TKFO $
+FRML <_D> TFOUP         = CO + TY + IOS - SISUDK + TFOUQ $
+FRML <_D> TFOUQ         = TEUBZ + TAOP + TAOF + TKOP + TKOF $
+FRML <_D> TION          = TI_Z_O - TI_O_Z $
+FRML <_D> TIION         = TIR_Z_O - TI_O_Z $
+FRML <_D> TI_Z_O        = TIR_Z_O + TIOV + TIOR $
+FRML <_GJ_D,J,EXO> TIR_Z_O       =(( (IWB10YS+RPIW_Z_O)*W_Z_O(-1) + JTIR_Z_O)*(1-DTIR_Z_O)+ZTIR_Z_O*DTIR_Z_O+TIR_Z_O_J)*(1-TIR_Z_O_D)+TIR_Z_O_X*TIR_Z_O_D$
+FRML <_GJ_D,J,EXO> TI_O_Z        =(( (IWB10YS+RPIW_O_Z)*W_O_Z(-1) + JTI_O_Z)*(1-DTI_O_Z)+ZTI_O_Z*DTI_O_Z+TI_O_Z_J)*(1-TI_O_Z_D)+TI_O_Z_X*TI_O_Z_D$
+FRML <_D> TIOV          = TIOVR + TIOVN $
+FRML <_D> TIOR          = TIORR + TIORN + TIRO + TIRK $
+FRML <_G> W_Z_O         = (Y/Y(-1)-1)*W_Z_O(-1) + KW_Z_O + OW_Z_O+W_Z_O(-1) $
+FRML <_G> W_O_Z         = (((W_Z_O)-(W_Z_O(-1)))-OW_Z_O)-TFON + OW_O_Z+W_O_Z(-1) $
+FRML <_D> WN_O          = W_Z_O - W_O_Z $
+FRML <_GJ_,J> EMUGLD        = EMUGLD(-1) + ((W_O_Z)-(W_O_Z(-1))) - OW_O_Z + JEMUGLD+EMUGLD_J$
+FRML <_D> TY            = TYP + TYD + TYM + TYU + TYR $
+FRML <_D> TY_OFF10      = TY + TAOPI + TAOPY $
+FRML <_D> TYPFP         = PSRTY*TTYPFP*UFP*0.001 $
+FRML <_D> TYPFO         = PSRTY*TTYPFO*UFO*0.001 $
+FRML <_D> TYPE          = PSRTY*TTYPE*(UEF+UOV+UFY)*0.001 $
+FRML <_D> TYPR          = PSRTY*TYPRX $
+FRML <_D> TYP           = TYPFP + TYPFO + TYPE + TYPR + TYPFU $
+FRML <_D> TYDD          = PSRTY*TTYDD*ULDPD*0.001 $
+FRML <_D> TYDA          = PSRTY*TTYDA*ULDPA*0.001 $
+FRML <_D> TYD           = TYDD + TYDA $
+FRML <_D> TYMS          = PSRTY*TTYMS*USS*0.001 $
+FRML <_D> TYMB          = PSRTY*TTYMB*USB*0.001 $
+FRML <_D> TYMF          = PSRTY*TTYMF*USF*0.001 $
+FRML <_D> TYMR          = PSRTY*TTYMR*UMR*0.001 $
+FRML <_D> TYMFDP        = PSRTY*TTYMFDP*UFDP*0.001 $
+FRML <_D> TYM           = TYMS + TYMB + TYMF + TYMR + TYMFDP $
+FRML <_D> TYUAK         = PSRTY*TTYUAK*UAKX*0.001 $
+FRML <_D> TYUKAK        = PSRTY*TTYUKAK*UKAK*0.001 $
+FRML <_D> TYULY         = PSRTY*TTYULY*ULY*0.001 $
+FRML <_D> TYURY         = PSRTY*TTYURY*URY*0.001 $
+FRML <_D> TYUSU         = PSRTY*TTYUSU*USU*0.001 $
+FRML <_D> TYU           = TYULY + TYUAK + TYURY + TYUSU + TYUKAK $
+FRML <_D> TYKSL         = PSRTY*TTYKS*ULU*0.001 $
+FRML <_D> TYKSR         = PSRTY*TTYKS*UKXA*0.001 $
+FRML <_D> TYKS          = TYKSL + TYKSR $
+FRML <_D> TYRS          = PSRTY*TYRSX $
+FRML <_D> TYKR          = PSRTY*TYKRX $
+FRML <_D> TYRBF         = PTTYP*TTYRBF*UB*0.001 $
+FRML <_D> TYRGC         = TTYRGC*(U-UB)*0.001 $
+FRML <_D> TYRHS         = PSRTY*TYRHSX $
+FRML <_D> TYRHY         = PSRTY*TTYRHY*(UFP+UFO)*0.001 $
+FRML <_D> TYRRR         = PSRTY*TYRRRX $
+FRML <_D> TYRR          = TYKR + TYRBF + TYRHS + TYRHY + TYRRR + TYRGC $
+FRML <_D> TYR           = TYKS + TYRS + TYRR $
+FRML <_G> PSRTY         = DXPSRTY*PSRTYX + (1-DXPSRTY)*(PSRTY(-1)*
+                               (((LNAP(-2)*(1-SAP(-2))*HA(-2))/
+                               (LNAP(-3)*(1-SAP(-3))*HA(-3)))*
+                               (1-TSDA)/(1-TSDA(-1)) + JPSRTY)) $
+FRML <_G> PTTYP         = DXPTTYP*PTTYPX + (1-DXPTTYP)*PTTYP(-1)*(PCP(-2)/PCP(-3) + JPTTYP) $
+FRML <_GJ_D,J,EXO> TAOPI         =(( TAOPIX*PSRTY + JTAOPI)*(1-DTAOPI)+ZTAOPI*DTAOPI+TAOPI_J)*(1-TAOPI_D)+TAOPI_X*TAOPI_D$
+FRML <_GJ_D,J,EXO> TAOPY         =(( TAOPYX*PSRTY + JTAOPY)*(1-DTAOPY)+ZTAOPY*DTAOPY+TAOPY_J)*(1-TAOPY_D)+TAOPY_X*TAOPY_D$
+FRML <_GJ_D,J,EXO> TAOPM         =(( PSRTY*TTAOPM*BTAOPM*(UFP+UFO)*0.001+ JTAOPM)*(1-DTAOPM)+ZTAOPM*DTAOPM+TAOPM_J)*(1-TAOPM_D)+TAOPM_X*TAOPM_D$
+FRML <_GJ_D,J,EXO> TAOPR         =(( TTAOPR*Y_S + JTAOPR)*(1-DTAOPR)+ZTAOPR*DTAOPR+TAOPR_J)*(1-TAOPR_D)+TAOPR_X*TAOPR_D$
+FRML <_D> TAOP          = TAOPI + TAOPY + TAOPM + TAOPR $
+FRML <_GJ_D,J,EXO> TKOPEF        =(( PSRTY*TTKOPEF*BTKOPEF*(BTPEF*UA)*0.001 + JTKOPEF)*(1-DTKOPEF)+ZTKOPEF*DTKOPEF+TKOPEF_J)*(1-TKOPEF_D)+TKOPEF_X*TKOPEF_D$
+FRML <_GJ_D,J,EXO> TKOPR         =(( TTKOPR*Y_S + JTKOPR)*(1-DTKOPR)+ZTKOPR*DTKOPR+TKOPR_J)*(1-TKOPR_D)+TKOPR_X*TKOPR_D$
+FRML <_D> TKOP          = TKOPR + TKOPEF $
+FRML <_D> S             = SD + SI - SISU + SA $
+FRML <_D> SD            = SDK + SDV + SDU + SDA + SDP + SDS + SDR + SDM $
+FRML <_D> SDK           = SSY + SSFK $
+FRML <_D> SDP           = TSDPK*KSDP*TPPKU + SDPA $
+FRML <_GJ> TIPPPS        = -(IWBZ+IWBB)*WBH-BFISIM*YW1+(IWDEH+0.004)*YW1 $
+FRML <_G> YLWS          = SASO + TPAF + TPEF + KYLWS*PSRTY*Q $
+FRML <_G> YRPHS         = KYRPHS*TSDL*FKBH(-2)*PHV(-1) $
+FRML <_G> YSP           = KYSP*((YW1+TWEN-TYPRI) + (TY-TYRR-TYPFU) + (TPPLU-(TPPIL+TPPIK))) - SDA $
+FRML <_G> YS            = KYS*(YSP + YRPHS + TIPPPS) - YLWS $
+FRML <_D> BTIPPPS       = TIPPPS/YS $
+FRML <_GJ_D,J,EXO> BYSK          =(( BYSK_S + 0.11*(BTIPPPS-BTIPPPS_S) + JBYSK)*(1-DBYSK)+ZBYSK*DBYSK+BYSK_J)*(1-BYSK_D)+BYSK_X*BYSK_D$
+FRML <_GJ_D,J,EXO> BYSS          =(( BYSS_S + 0.11*(BTIPPPS-BTIPPPS_S) + JBYSS)*(1-DBYSS)+ZBYSS*DBYSS+BYSS_J)*(1-BYSS_D)+BYSS_X*BYSS_D$
+FRML <_DJ> TSSP0         = BYSB*TSB + BYSM*TSM + BYST*TST $
+FRML <_DJ> TSS0          = BYSK*TSK + BYSS*TSS $
+FRML <_GJ_D,J,EXO> SSYN          =(( (1-D4711)*(0.08-TSS)*BTIPPPSN*TIPPPS + JSSYN)*(1-DSSYN)+ZSSYN*DSSYN+SSYN_J)*(1-SSYN_D)+SSYN_X*SSYN_D$
+FRML <_G> SSYSP         = TSSP0*YSP*KSSYSP - SSYN $
+FRML <_G> SSYS          = TSS0*YS*KSSYS $
+FRML <_G> SSYEJ         = (1-DXSSYEJ)*(KSSYEJ*TQKEJ*PHV*(KFKBHE(-1)*FKBH(-1)/0.8)) + DXSSYEJ*SSYEJX $
+FRML <_GJ_D,J,EXO> SSYD          =(( TSSYD*Y_S + JSSYD)*(1-DSSYD)+ZSSYD*DSSYD+SSYD_J)*(1-SSYD_D)+SSYD_X*SSYD_D$
+FRML <_GJ_D,J,EXO> SSYA          =(( TSSYA*Y_S + JSSYA)*(1-DSSYA)+ZSSYA*DSSYA+SSYA_J)*(1-SSYA_D)+SSYA_X*SSYA_D$
+FRML <_GJ_D,J,EXO> SSYV          =(( TSSYV*Y_S + JSSYV)*(1-DSSYV)+ZSSYV*DSSYV+SSYV_J)*(1-SSYV_D)+SSYV_X*SSYV_D$
+FRML <_D> SSY           = SSYS + SSYSP + SSYD + SSYA + SSYEJ + SSYV $
+FRML <_G> SDV           = TSDV*FKCB(-1) $
+FRML <_D> SDU           = TSDU*QW $
+FRML <_G> YSDA          = KYSDA*(YW1-TYPRI) $
+FRML <_D> SDA           = TSDA*YSDA $
+FRML <_G> SDM           = KSDM*TSDM*PSRTY*(U-UB)*0.001 $
+FRML <_G> IVSPS         = (BIVM*PIMPS*FIMPS + BIVB*PIBPS*FIBPS)*KIVSPS $
+FRML <_GJ_D,J,EXO> TIPPS         =(( 0.1*TIIPQN + TTIPPS*Y_S + JTIPPS)*(1-DTIPPS)+ZTIPPS*DTIPPS+TIPPS_J)*(1-TIPPS_D)+TIPPS_X*TIPPS_D$
+FRML <_G> YSDSQ         = KYSDSQ*(YF-YW1-SIQ-IVOS-YRH) + TIPPS - 0.75*IVSPS $
+FRML <_GJ_D,J,EXO> SDSQ          =(( TSDS*YSDSQ + JSDSQ)*(1-DSDSQ)+ZSDSQ*DSDSQ+SDSQ_J)*(1-SDSQ_D)+SDSQ_X*SDSQ_D$
+FRML <_GJ_D,J,EXO> SN            =(( TSN*FXN*(PWOIL/80.07)*(VUSA/562.33963) + JSN)*(1-DSN)+ZSN*DSN+SN_J)*(1-SN_D)+SN_X*SN_D$
+FRML <_G> SDSN          = (1-KTIRO-KTIORN-KTIOVN-KTIRK)*SN $
+FRML <_G> SDS           = SDSQ + SDSN $
+FRML <_G> TIRO          = KTIRO*SN $
+FRML <_G> TIORN         = KTIORN*SN $
+FRML <_G> TIOVN         = KTIOVN*SN $
+FRML <_G> TIRK          = KTIRK*SN $
+FRML <_GJ_D,J,EXO> SDR           =(( (TSDR*BSDR*TIPPN + BSDR*TSDRA*OPP) + JSDR)*(1-DSDR)+ZSDR*DSDR+SDR_J)*(1-SDR_D)+SDR_X*SDR_D$
+FRML <_D> SI            = SIM + SIP + SIG + SIR + SIQ $
+FRML <_D> SIV           = SIM + SIP + SIG + SIR $
+FRML <_D> SIM           = FME*TME + FMI*TMI $
+FRML <_GJ_D,J,EXO> SIPAF_PSO     =(( KSIPPSO*( SIPPSO+SIQPSO)*1.04 + JSIPAF_PSO)*(1-DSIPAF_PSO)+ZSIPAF_PSO*DSIPAF_PSO+SIPAF_PSO_J)*(1-SIPAF_PSO_D)+SIPAF_PSO_X*SIPAF_PSO_D$
+FRML <_D> TPCE          = TPCEX  + (0.25*SIPPSO - 0.33*SIPAF_PSO )/FCE $
+FRML <_D> TPVEI         = TPVEIX + (0.25*SIPPSO - 0.33*SIPAF_PSO )/FVEI $
+FRML <_D> TPVET         = TPVETX + (0.25*SIPPSO - 0.33*SIPAF_PSO )/FVET $
+FRML <_D> SIP           = SIPV + SIPEF $
+FRML <_D> SIPEF         = (1-DXSIP)*(TPCE*FCE+TPCG*FCG)
+                               +DXSIP*(PNCP/PNCP(-1))*(TPCE*FCE+TPCG*FCG)
+                               +TPCB*FCB + TPCV*FCV + TPCH*FCH + TPCS*FCS
+                               +TPCO*FCO
+                               +TPIBPS*FIBPS + TPIMPS*FIMPS
+                               +TPIMOS*FIMXOS + TPIBOS*FIBOS
+                               +TPIBH*FIBH + TPIL*FIL
+                               + SIPEI + SIPUR $
+FRML <_D> SIPEI         = SIPEE + SIPEQ + .25*SIPPSO $
+FRML <_D> SIG           = SIGC + SIGIN + SIGV $
+FRML <_D> SIGC          = BTGCE*TG*FCE*(PCE/(1+BTGCE*TG)) +
+                               BTGCG*TG*FCG*(PCG/(1+BTGCG*TG)) +
+                               BTGCB*TG*FCB*(PCB/((1+TRCB)*(1+BTGCB*TG))) +
+                               BTGCV*TG*FCV*(PCV/(1+BTGCV*TG)) +
+                               BTGCH*TG*FCH*(PCH/(1+BTGCH*TG)) +
+                               BTGCS*TG*FCS*(PCS/(1+BTGCS*TG)) +
+                               BTGCO*TG*FCO*(PCO/(1+BTGCO*TG)) $
+FRML <_D> SIGIN         = BTGIBH*TG*FIBH*(PIBH/(1+BTGIBH*TG)) +
+                               BTGIMPS*TG*FIMPS*(PIMPS/((1+TRIMPS)*(1+BTGIMPS*TG))) +
+                               BTGIMOS*TG*FIMXOS*(PIMXOS/(1+BTGIMOS*TG)) +
+                               BTGIBOS*TG*FIBOS*(PIBOS/(1+BTGIBOS*TG)) +
+                               BTGIBPS*TG*FIBPS*(PIBPS/(1+BTGIBPS*TG)) +
+                               BTGIL*TG*FIL*(PIL/(1+BTGIL*TG)) $
+FRML <_D> SIR           = TRCB*FCB*(PCB/(1+TRCB)) + TRCO*FCO*(PCO/(1+TRCO)) + TRIMPS*FIMPS*(PIMPS/(1+TRIMPS)) $
+FRML <_D> SIQ           = SIQU + SIQAB + SIQEJ + SIQV + SIQAM + SIQCO2 + SIQR + SIQSU + JSIQ $
+FRML <_G> SIQU          = TQU*QW*0.001 $
+FRML <_G> SIQAB         = TQAB*KSIQAB*YW $
+FRML <_G> SIQAM         = KSIQAM*(YWT+YWH)$
+FRML <_G> SIQEJ         = (1-DXSIQEJ)*((TSIQEJ*KSIQEJ)*PHV(-1)) + DXSIQEJ*SIQEJX $
+FRML <_GJ_D,J,EXO> SIQV          =(( TSIQV*Y_S + JSIQV)*(1-DSIQV)+ZSIQV*DSIQV+SIQV_J)*(1-SIQV_D)+SIQV_X*SIQV_D$
+FRML <_D> SIQSU         = SIQSQ + SIQLT + SIQAA + SIQPSO $
+FRML <_GJ_D,J,EXO> SIQSH         =(( TSIQSH*Y_S + JSIQSH)*(1-DSIQSH)+ZSIQSH*DSIQSH+SIQSH_J)*(1-SIQSH_D)+SIQSH_X*SIQSH_D$
+FRML <_GJ_D,J,EXO> SIQSR         =(( TSIQSR*Y_S + JSIQSR)*(1-DSIQSR)+ZSIQSR*DSIQSR+SIQSR_J)*(1-SIQSR_D)+SIQSR_X*SIQSR_D$
+FRML <_GJ_D,J,EXO> SIQEUR        =(( TSIQEUR*Y_S + JSIQEUR)*(1-DSIQEUR)+ZSIQEUR*DSIQEUR+SIQEUR_J)*(1-SIQEUR_D)+SIQEUR_X*SIQEUR_D$
+FRML <_D> SIQSQ         = SIQSR + SIQSH + SIQEUR $
+FRML <_D> SIQLT         = PSRTY*TSIQLT*(QLTJD+QLTJK+QLTFS+UMJ)*0.001 $
+FRML <_GJ_D,J,EXO> SIPUR         =(( TSIPUR*Y_S + JSIPUR)*(1-DSIPUR)+ZSIPUR*DSIPUR+SIPUR_J)*(1-SIPUR_D)+SIPUR_X*SIPUR_D$
+FRML <_D> SIPSU         = SIPUR + (SIPAA + SIPSUER) + SIPEE + SIPPSO $
+FRML <_D> SISU          = SIPSU + SIQSU $
+FRML <_D> SISUDK        = (SIPUR + SIPPSO) + (SIQSH + SIQSR + SIQLT + SIQPSO) $
+FRML <_D> SISUEU        = (SIPEE + SIPAA + SIPSUER) + SIQEU $
+FRML <_D> SASO          = SAQWY + SAR $
+FRML <_GJ_D,J,EXO> SAQWY         =(( TAQWY*KAQWY*YSDA + JSAQWY)*(1-DSAQWY)+ZSAQWY*DSAQWY+SAQWY_J)*(1-SAQWY_D)+SAQWY_X*SAQWY_D$
+FRML <_GJ_D,J,EXO> SARTPT        =(( TSARTPT*Y_S+ JSARTPT)*(1-DSARTPT)+ZSARTPT*DSARTPT+SARTPT_J)*(1-SARTPT_D)+SARTPT_X*SARTPT_D$
+FRML <_GJ_D,J,EXO> SARR          =(( TSARR*Y_S+ JSARR)*(1-DSARR)+ZSARR*DSARR+SARR_J)*(1-SARR_D)+SARR_X*SARR_D$
+FRML <_D> SAR           = SARTPT + SARR$
+FRML <_GJ_D,J,EXO> SAK           =(( TSAK*Y_S + JSAK)*(1-DSAK)+ZSAK*DSAK+SAK_J)*(1-SAK_D)+SAK_X*SAK_D$
+FRML <_D> SA            = SAK + SASO $
+FRML <_D> SIPVEA        = (1-DXSIP)*TPVEA*FVEA+DXSIP*(PNCP/PNCP(-1))*TPVEA*FVEA $
+FRML <_D> SIPVMA        = TPVMA*FVMA $
+FRML <_D> SIPVA         = SIPVEA + SIPVMA + ((SIPAA+SIPSUER)-SIPEQ) $
+FRML <_D> SIPVEB        = (1-DXSIP)*TPVEB*FVEB+DXSIP*(PNCP/PNCP(-1))*TPVEB*FVEB $
+FRML <_D> SIPVMB        = TPVMB*FVMB $
+FRML <_D> SIPVB         = SIPVEB + SIPVMB $
+FRML <_D> SIPVEE        = (1-DXSIP)*TPVEE*FVEE+DXSIP*(PNCP/PNCP(-1))*TPVEE*FVEE $
+FRML <_D> SIPVME        = TPVME*FVME $
+FRML <_D> SIPVE         = SIPVEE + SIPVME $
+FRML <_D> SIPVMN        = (1-DXSIP)*TPVMN*FVMN+DXSIP*(PNCP/PNCP(-1))*TPVMN*FVMN $
+FRML <_D> SIPVN         = SIPVMN $
+FRML <_D> SIPVMH        = (1-DXSIP)*TPVMH*FVMH+DXSIP*(PNCP/PNCP(-1))*TPVMH*FVMH $
+FRML <_D> SIPVH         = SIPVMH $
+FRML <_D> SIPVEI        = (1-DXSIP)*TPVEI*FVEI+DXSIP*(PNCP/PNCP(-1))*TPVEI*FVEI $
+FRML <_D> SIPVMI        = TPVMI*FVMI $
+FRML <_D> SIPVI         = SIPVEI + SIPVMI $
+FRML <_D> SIPVET        = (1-DXSIP)*TPVET*FVET+DXSIP*(PNCP/PNCP(-1))*TPVET*FVET $
+FRML <_D> SIPVMT        = TPVMT*FVMT $
+FRML <_D> SIPVT         = SIPVET + SIPVMT $
+FRML <_D> SIPVES        = (1-DXSIP)*TPVES*FVES+DXSIP*(PNCP/PNCP(-1))*TPVES*FVES $
+FRML <_D> SIPVMS        = TPVMS*FVMS $
+FRML <_D> SIPVS         = SIPVES + SIPVMS $
+FRML <_D> SIPVEO        = (1-DXSIP)*TPVEO*FVEO+DXSIP*(PNCP/PNCP(-1))*TPVEO*FVEO $
+FRML <_D> SIPVMO        = TPVMO*FVMO $
+FRML <_D> SIPVO         = SIPVEO + SIPVMO $
+FRML <_D> SIPV          = SIPVA + SIPVH + SIPVB + SIPVE + SIPVN + SIPVI + SIPVT + SIPVS + SIPVO $
+FRML <_D> SIGVA         = BTGVA*TG*VA/(1+BTGVA*TG) $
+FRML <_D> SIGVB         = BTGVB*TG*VB/(1+BTGVB*TG) $
+FRML <_D> SIGVE         = BTGVE*TG*VE/(1+BTGVE*TG) $
+FRML <_D> SIGVH         = BTGVH*TG*VH/(1+BTGVH*TG) $
+FRML <_D> SIGVI         = BTGVI*TG*VI/(1+BTGVI*TG) $
+FRML <_D> SIGVN         = BTGVN*TG*VN/(1+BTGVN*TG) $
+FRML <_D> SIGVS         = BTGVS*TG*VS/(1+BTGVS*TG) $
+FRML <_D> SIGVT         = BTGVT*TG*VT/(1+BTGVT*TG) $
+FRML <_D> SIGVO         = BTGVO*TG*VO/(1+BTGVO*TG) $
+FRML <_D> SIGV          = SIGVA + SIGVH + SIGVB + SIGVE + SIGVI + SIGVN + SIGVT + SIGVS + SIGVO $
+FRML <_D> SIQW          = SIQU+SIQAB+SIQAM+SIQLT $
+FRML <_DJ_,J> SIQWA         = BSIQUA*SIQU + BSIQABA*SIQAB + BSIQAMA*SIQAM + BSIQLTA*SIQLT + JSIQWA+SIQWA_J$
+FRML <_DJ_,J> SIQWB         = BSIQUB*SIQU + BSIQABB*SIQAB + BSIQAMB*SIQAM + BSIQLTB*SIQLT + JSIQWB+SIQWB_J$
+FRML <_DJ_,J> SIQWN         = BSIQUN*SIQU + BSIQABN*SIQAB + BSIQAMN*SIQAM + BSIQLTN*SIQLT + JSIQWN+SIQWN_J$
+FRML <_DJ_,J> SIQWE         = BSIQUE*SIQU + BSIQABE*SIQAB + BSIQAME*SIQAM + BSIQLTE*SIQLT + JSIQWE+SIQWE_J$
+FRML <_DJ_,J> SIQWH         = BSIQUH*SIQU + BSIQABH*SIQAB + BSIQAMH*SIQAM + BSIQLTH*SIQLT + JSIQWH+SIQWH_J$
+FRML <_DJ_,J> SIQWI         = BSIQUI*SIQU + BSIQABI*SIQAB + BSIQAMI*SIQAM + BSIQLTI*SIQLT + JSIQWI+SIQWI_J$
+FRML <_DJ_,J> SIQWS         = BSIQUS*SIQU + BSIQABS*SIQAB + BSIQAMS*SIQAM + BSIQLTS*SIQLT + JSIQWS+SIQWS_J$
+FRML <_DJ_,J> SIQWO         = BSIQUO*SIQU + BSIQABO*SIQAB + BSIQAMO*SIQAM + BSIQLTO*SIQLT + JSIQWO+SIQWO_J$
+FRML <_I> SIQWT         = SIQW-(SIQWA+SIQWB+SIQWN+SIQWE+SIQWH+SIQWI+SIQWS+SIQWO) $
+FRML <_GJ_D,J,EXO> SIQEJH        =(( FKBH(-2)/(FKB(-2)-FKBO(-2))*SIQEJ + JSIQEJH)*(1-DSIQEJH)+ZSIQEJH*DSIQEJH+SIQEJH_J)*(1-SIQEJH_D)+SIQEJH_X*SIQEJH_D$
+FRML <_D> SIQEJXH       = SIQEJ-SIQEJH $
+FRML <_GJ_,J> SIQA          = SIQWA+BSIQEJA*SIQEJXH+BSIQVA*SIQV+BSIQCO2A*SIQCO2+BSIQRA*SIQR+BSIQSQA*SIQSQ+SIQAA  + JSIQA+SIQA_J$
+FRML <_GJ_,J> SIQB          = SIQWB+BSIQEJB*SIQEJXH+BSIQVB*SIQV+BSIQCO2B*SIQCO2+BSIQRB*SIQR+BSIQSQB*SIQSQ        + JSIQB+SIQB_J$
+FRML <_GJ_,J> SIQN          = SIQWN+BSIQEJN*SIQEJXH+BSIQVN*SIQV+BSIQCO2N*SIQCO2+BSIQRN*SIQR+BSIQSQN*SIQSQ        + JSIQN+SIQN_J$
+FRML <_GJ_,J> SIQE          = SIQWE+BSIQEJE*SIQEJXH+BSIQVE*SIQV+BSIQCO2E*SIQCO2+BSIQRE*SIQR+BSIQSQE*SIQSQ+SIQPSO + JSIQE+SIQE_J$
+FRML <_GJ_,J> SIQH          = SIQWH+BSIQEJH*SIQEJXH+BSIQVH*SIQV+BSIQCO2H*SIQCO2+BSIQRH*SIQR+BSIQSQH*SIQSQ+SIQEJH + JSIQH+SIQH_J$
+FRML <_GJ_,J> SIQI          = SIQWI+BSIQEJI*SIQEJXH+BSIQVI*SIQV+BSIQCO2I*SIQCO2+BSIQRI*SIQR+BSIQSQI*SIQSQ        + JSIQI+SIQI_J$
+FRML <_GJ_,J> SIQS          = SIQWS+BSIQEJS*SIQEJXH+BSIQVS*SIQV+BSIQCO2S*SIQCO2+BSIQRS*SIQR+BSIQSQS*SIQSQ        + JSIQS+SIQS_J$
+FRML <_GJ_,J> SIQO          = SIQWO+BSIQEJO*SIQEJXH+BSIQVO*SIQV+BSIQCO2O*SIQCO2+BSIQRO*SIQR+BSIQSQO*SIQSQ        + JSIQO+SIQO_J$
+FRML <_I> SIQT          = SIQ-(SIQA+SIQB+SIQN+SIQE+SIQH+SIQI+SIQS+SIQO) $
+FRML <_GJ> TYPRI         = TTYPRI*Y_S $
+FRML <_D> TAPO          = TAPOK + TAPOR $
+FRML <_GJ_D,J,EXO> TAPOR         =(( TTAPOR*Y_S + JTAPOR)*(1-DTAPOR)+ZTAPOR*DTAPOR+TAPOR_J)*(1-TAPOR_D)+TAPOR_X*TAPOR_D$
+FRML <_GJ_D,J,EXO> TAPOK         =(( TKS*BTAPOK*YS + JTAPOK)*(1-DTAPOK)+ZTAPOK*DTAPOK+TAPOK_J)*(1-TAPOK_D)+TAPOK_X*TAPOK_D$
+FRML <_GJ_D,J,EXO> TKPO          =(( TTKPO*Y_S + JTKPO)*(1-DTKPO)+ZTKPO*DTKPO+TKPO_J)*(1-TKPO_D)+TKPO_X*TKPO_D$
+FRML <_D> TBPHO         = TPAF + TPEF + TPR $
+FRML <_GJ_D,J,EXO> TPR           =(( TTPR*Y_S + JTPR)*(1-DTPR)+ZTPR*DTPR+TPR_J)*(1-TPR_D)+TPR_X*TPR_D$
+FRML <_D> TPAF          = TTPAF*PSRTY*UA*0.001 $
+FRML <_D> TPEF          = TTPEF*PSRTY*BTPEF*UA*0.001 $
+FRML <_GJ_D,J,EXO> TEUR          =(( TTEUR*Y_S + JTEUR)*(1-DTEUR)+ZTEUR*DTEUR+TEUR_J)*(1-TEUR_D)+TEUR_X*TEUR_D$
+FRML <_D> TFFN          =  ENVT + TIFN + TWEN + TEUN
+                                + TAFPN - TYPFU + (TAFO-TAOF) + TKFPN + (TKFO-TKOF) $
+FRML <_D> ENL           =  TFFN - TKFPN - (TKFO-TKOF) + ENLR $
+FRML <_D> ENVT          =  E - M $
+FRML <_D> TEUN          =  TEUR - TEUBZ - SIM - SISUEU $
+FRML <_GJ_D,J,EXO> TEUBZ         =((  TTEUBZ*Y_S + JTEUBZ)*(1-DTEUBZ)+ZTEUBZ*DTEUBZ+TEUBZ_J)*(1-TEUBZ_D)+TEUBZ_X*TEUBZ_D$
+FRML <_D> SIQEU         =  SIQAA + SIQEUR $
+FRML <_GJ_D,J,EXO> TAOFF         =((  TTAOFF*Y_S + JTAOFF)*(1-DTAOFF)+ZTAOFF*DTAOFF+TAOFF_J)*(1-TAOFF_D)+TAOFF_X*TAOFF_D$
+FRML <_GJ_D,J,EXO> TAOFG         =((  TTAOFG*Y_S + JTAOFG)*(1-DTAOFG)+ZTAOFG*DTAOFG+TAOFG_J)*(1-TAOFG_D)+TAOFG_X*TAOFG_D$
+FRML <_GJ_D,J,EXO> TAOFR         =((  TTAOFR*Y_S + JTAOFR)*(1-DTAOFR)+ZTAOFR*DTAOFR+TAOFR_J)*(1-TAOFR_D)+TAOFR_X*TAOFR_D$
+FRML <_G> TAOF          =  TAOFF + TAOFG + TAOFR $
+FRML <_GJ_D,J,EXO> TAFO          =((  TTAFO*Y_S + JTAFO)*(1-DTAFO)+ZTAFO*DTAFO+TAFO_J)*(1-TAFO_D)+TAFO_X*TAFO_D$
+FRML <_GJ_D,J,EXO> TKOF          =((  TTKOF*Y_S + JTKOF)*(1-DTKOF)+ZTKOF*DTKOF+TKOF_J)*(1-TKOF_D)+TKOF_X*TKOF_D$
+FRML <_GJ_D,J,EXO> TKFO          =((  TTKFO*Y_S + JTKFO)*(1-DTKFO)+ZTKFO*DTKFO+TKFO_J)*(1-TKFO_D)+TKFO_X*TKFO_D$
+FRML <_GJ_D,J,EXO> TWEN          =((  TTWEN*Y_S + JTWEN)*(1-DTWEN)+ZTWEN*DTWEN+TWEN_J)*(1-TWEN_D)+TWEN_X*TWEN_D$
+FRML <_GJ_D,J,EXO> TAFPN         =((  TTAFPN*Y_S + JTAFPN)*(1-DTAFPN)+ZTAFPN*DTAFPN+TAFPN_J)*(1-TAFPN_D)+TAFPN_X*TAFPN_D$
+FRML <_GJ_D,J,EXO> TKFPN         =((  TTKFPN*Y_S + JTKFPN)*(1-DTKFPN)+ZTKFPN*DTKFPN+TKFPN_J)*(1-TKFPN_D)+TKFPN_X*TKFPN_D$
+FRML <_G> WF            =  WF(-1) + TFFN + JWF $
+FRML <_G> WFI           =  KWFI*Y_S $
+FRML <_G> WFU           =  WFI-WF $
+FRML <_G> TIFN          =  IWI*WFI(-1) - IWU*WFU(-1) + JTIFN $
+FRML <_D> YD            = (YW-TYPRI) + (YR-IVOS) + TIPN + (TY-TYPFU) - SD$
+FRML <_D> YDNR          = YD + TWEN - SASO - TBPHO + TAOP - TAPO + TAFPN$
+FRML <_D> YDL_Y         = (YW-TYPRI) + (YR-YRO) + (TY-TYPFU) + TAFPN + TWEN + (TAOP-TAPOR) - (IV-IVOS*KIVO)$
+FRML <_D> YDL_S         = (SDK-(TSS0*KSSYS*KYS*TIPPPS-SSYN)
+                               -(TSS0*KSSYS*KYS*KYSP+TSSP0*KSSYSP*KYSP)*(TPPLU-(TPPIL+TPPIK))) +
+                                SDV + SDU + SDA + SDPA + (SDS-TSDS*TIPPS) + SA + SDM + TBPHO + TAPOK$
+FRML <_D> YDL           = YDL_Y - YDL_S$
+FRML <_D> YDK_Y         = (YW1-TYPRI) + (TY-TYPFU) + TIPPPS
+                               + (TPPLU+KTPPKU*(TPPUK + TPPUA)-TPPI) + TWEN + YRH$
+FRML <_D> YDK_S         = SDK + SDV + SDU + SDA + SDP + SASO + SDM + TBPHO + TAPOK$
+FRML <_D> YDK           = YDK_Y - YDK_S$
+FRML <_D> FYDL          = YDL/PCP$
+FRML <_D> FYDK          = YDK/PCP$
+FRML <_D> TIPN          = TIFN - TION$
+FRML <_D> TIIPN         = TIFN - TIION$
+FRML <_D> TIPQN         = TIPN - TIPPN$
+FRML <_D> TIIPQN        = TIIPN - TIPPN$
+FRML <_D> WCP           = KFKBHE*FKBH*PHK + (1-KFKBHE)*FKBH*PIBH + PCB*FKCB(-1)
+                               + (WPQ(-1)+WPQ)/2
+                               + ((1-TSDPK)*(WPPK(-1)+WPPK) + (1-(TSS0+TSSP0))*(WPPL(-1)+WPPL) + WPPA(-1)+WPPA)/2$
+FRML <_D> WP            = WF - WN_O$
+FRML <_D> WPQ           = WP - WPP$
+FRML <_D> TFPN          = TFFN - TFON$
+FRML <_D> TFPQN         = TFPN - TFPPN$
+FRML <_G> TPPIAF        = BTPPIAF*(1-TSDA)*YSDA$
+FRML <_G> TPPIAQ        = BTPPIAQ*(1-TSDA)*YSDA$
+FRML <_G> TPPIKF        = BTPPIKF*(1-TSDA)*YSDA$
+FRML <_G> TPPIKQ        = BTPPIKQ*(1-TSDA)*YSDA$
+FRML <_G> TPPILF        = BTPPILF*(1-TSDA)*YSDA  + TPPILFTY$
+FRML <_G> TPPILQ        = BTPPILQ*(1-TSDA)*YSDA$
+FRML <_G> TPPILFTY      = BTPPILFTY*(TYD+TYKS+TYM+TYPE+TYPFO+TYUAK+TYUKAK+TYULY+TYURY)$
+FRML <_G> TPPIA         = TPPIAF + TPPIAQ$
+FRML <_G> TPPIK         = TPPIKF + TPPIKQ$
+FRML <_G> TPPIL         = TPPILF + TPPILQ$
+FRML <_G> TPPI          = TPPIA + TPPIK + TPPIL$
+FRML <_G> TPPFI         = TPPIAF + TPPIKF + TPPILF$
+FRML <_G> TPPQI         = TPPIAQ + TPPIKQ + TPPILQ$
+FRML <_G> TPPUA         = BTPPUA*WPPA(-1)$
+FRML <_G> TPPUK         = BTPPUK*WPPK(-1)$
+FRML <_G> TPPUL         = BTPPUL*WPPL(-1)$
+FRML <_G> NTPPIA        = (TIPPN + OPP - SDR)*(WPPA(-1)/WPP(-1)) + JNTPPIA$
+FRML <_G> NTPPIK        = (TIPPN + OPP - SDR)*(WPPK(-1)/WPP(-1)) + JNTPPIK$
+FRML <_G> NTPPIL        = (TIPPN + OPP - SDR)*(WPPL(-1)/WPP(-1)) - (JNTPPIA+JNTPPIK)$
+FRML <_D> WPPA          = WPPA(-1) + NTPPIA + TPPIA - TPPUA$
+FRML <_D> WPPK          = WPPK(-1) + NTPPIK + TPPIK - TPPUK$
+FRML <_D> WPPL          = WPPL(-1) + NTPPIL + TPPIL - TPPUL$
+FRML <_D> WPP           = WPPA + WPPK + WPPL$
+FRML <_D> TPPU          = TPPUA + TPPUK + TPPUL$
+FRML <_D> TPPLU         = TPPUL$
+FRML <_D> TPPKU         = TPPUK$
+FRML <_D> BTPPFI        = TPPFI/((1-TSDA)*YSDA)$
+FRML <_G> TIPPN         =  IWPP*WPP(-1)$
+FRML <_D> TFPPN         =  TPPI - TPPU + TIPPN - SDR$
+FRML <_GJ_D,J,EXO> OPP           =(( WPP(-1)*(0.5*KWPP + 0.5*(0.15+0.85*((1+IWBZ)/(1+IWBZ(-1)))**(-10) -1 )) + JOPP)*(1-DOPP)+ZOPP*DOPP+OPP_J)*(1-OPP_D)+OPP_X*OPP_D$
+FRML <_GJ_D,J,EXO> SAP           =((  SAP(-1) + (BTPPFI - BTPPFI(-1))+ JSAP)*(1-DSAP)+ZSAP*DSAP+SAP_J)*(1-SAP_D)+SAP_X*SAP_D$
+FRML <_SJRD,JR,EXO,DAMP> LNAP          =( (( ( LNAP(-1)*EXP((1-0.375462)*(((LOG(PYFPBE))-(LOG(PYFPBE(-1))))+ ((LOG(VYFHPB_S))-(LOG(VYFHPB_S(-1)))))
+                                             + 0.375462 * ((LOG(LNAP(-1)))-(LOG(LNAP(-2))))
+                                             + 0.482800 *(((LOG(PYFPB))-(LOG(PYFPB(-1))))-((LOG(PYFPBE))-(LOG(PYFPBE(-1)))))
+                                             - 0.605341*0.5*((BUL-BUL_S)-(BUL(-1)-BUL_S(-1)))
+                                             + GLNAP
+                                             - 0.605341*(BUL(-1) - BUL_S(-1))
+                                             - 0.275272*(BYW1PB(-1) - BYW1PB_S)) )*(1+JRLNAP ))*(1-DLNAP)+ZLNAP*DLNAP)*(1+LNAP_JR ))*(1-LNAP_D)+LNAP_X*LNAP_D$
+FRML <_GJRD,JR,EXO> LOHKK=( (( (EXP(LOG(LOHKK(-1))+((LOG(LNAP))-(LOG(LNAP(-1))))))*(1+JRLOHKK ))*(1-DLOHKK)+ZLOHKK*DLOHKK)*(1+LOHKK_JR ))*(1-LOHKK_D)+LOHKK_X*LOHKK_D$
+FRML <_G> YWA           = KLA*(LNAP*HGA*QWA*0.001) $
+FRML <_G> YWB           = KLB*(LNAP*HGB*QWB*0.001) $
+FRML <_G> YWE           = KLE*(LNAP*HGE*QWE*0.001) $
+FRML <_G> YWH           = KLH*(LNAP*HGH*QWH*0.001) $
+FRML <_G> YWN           = KLN*(LNAP*HGN*QWN*0.001) $
+FRML <_G> YWI           = KLI*(LNAP*HGI*QWI*0.001) $
+FRML <_G> YWT           = KLT*(LNAP*HGT*QWT*0.001) $
+FRML <_G> YWS           = KLS*(LNAP*HGS*QWS*0.001) $
+FRML <_G> YWO           = LOHKK*HGO*QWO*.001 $
+FRML <_G> YW            = YWA+YWH+YWB+YWE+YWI+YWN+YWT+YWS+YWO $
+FRML <_D> BYW           = YW/YF $
+FRML <_D> BYWPS         = (YW-YWOS)/(YF-YFOS) $
+FRML <_D> BYWPB         = (YWI+YWB+YWT)/(YFI+YFB+YFT) $
+FRML <_G> YW1A          = KLA*LNAP*HQA $
+FRML <_G> YW1B          = KLB*LNAP*HQB $
+FRML <_G> YW1E          = KLE*LNAP*HQE $
+FRML <_G> YW1H          = KLH*LNAP*HQH $
+FRML <_G> YW1N          = KLN*LNAP*HQN $
+FRML <_G> YW1I          = KLI*LNAP*HQI $
+FRML <_G> YW1T          = KLT*LNAP*HQT $
+FRML <_G> YW1S          = KLS*LNAP*HQS $
+FRML <_G> YW1           = YW1A+YW1H+YW1B+YW1E+YW1I+YW1N+YW1T+YW1S+YWO $
+FRML <_G> BYW1          = YW1/YF $
+FRML <_G> BYW1P         = (YW1-YWO)/(YF-YFO) $
+FRML <_G> BYW1PS        = (YW1-YWOS)/(YF-YFOS) $
+FRML <_G> BYW1PB        = (YW1I+YW1B+YW1T)/(YFI+YFB+YFT) $
+FRML <_D> LA            = 1000*(YWA+SIQWA)/(QWA*HGA) $
+FRML <_D> LB            = 1000*(YWB+SIQWB)/(QWB*HGB) $
+FRML <_D> LE            = 1000*(YWE+SIQWE)/(QWE*HGE) $
+FRML <_D> LN            = 1000*(YWN+SIQWN)/(QWN*HGN) $
+FRML <_D> LH            = 1000*(YWH+SIQWH)/(QWH*HGH) $
+FRML <_D> LI            = 1000*(YWI+SIQWI)/(QWI*HGI) $
+FRML <_D> LT            = 1000*(YWT+SIQWT)/(QWT*HGT) $
+FRML <_D> LS            = 1000*(YWS+SIQWS)/(QWS*HGS) $
+FRML <_D> LO            = 1000*(YWO+SIQWO)/(QWO*HGO) $
+FRML <_DJRD,JR,EXO> PYFBW         =( (( (   (1/DTAB)*((LB/DTALFAB)**DTALFAB)*((PKZB/(1-DTALFAB))**(1-DTALFAB))
+                               + (SIQB-SIQWB)/FYFB )*(1+JRPYFBW ))*(1-DPYFBW)+ZPYFBW*DPYFBW)*(1+PYFBW_JR ))*(1-PYFBW_D)+PYFBW_X*PYFBW_D$
+FRML <_D> VLBNP         = ((LOG(LB))-(LOG(LB(-1))))-(VTFPB/DTALFAB/100) $
+FRML <_SJRD,JR,EXO,DAMP> PYFB=( (( (EXP(LOG(PYFB(-1))+0.93744*VLBNP
+                               - 0.25472*(LOG(PYFB(-1))-LOG(PYFBW(-1)))
+                               + GPYFB))*(1+JRPYFB ))*(1-DPYFB)+ZPYFB*DPYFB)*(1+PYFB_JR ))*(1-PYFB_D)+PYFB_X*PYFB_D$
+FRML <_DJRD,JR,EXO> PYFIW         =( (( (   (1/DTAI)*((LI/DTALFAI)**DTALFAI)*((PKZI/(1-DTALFAI))**(1-DTALFAI))
+                               + (SIQI-SIQWI)/FYFI )*(1+JRPYFIW ))*(1-DPYFIW)+ZPYFIW*DPYFIW)*(1+PYFIW_JR ))*(1-PYFIW_D)+PYFIW_X*PYFIW_D$
+FRML <_D> VLINP         = ((LOG(LI))-(LOG(LI(-1))))-(VTFPI/DTALFAI/100) $
+FRML <_SJRD,JR,EXO,DAMP> PYFI=( (( (EXP(LOG(PYFI(-1))+0.5414*VLINP + 0.17302*VLINP(-1)
+                               - 0.15*(LOG(PYFI(-1))-LOG(PYFIW(-1)))
+                               + GPYFI))*(1+JRPYFI ))*(1-DPYFI)+ZPYFI*DPYFI)*(1+PYFI_JR ))*(1-PYFI_D)+PYFI_X*PYFI_D$
+FRML <_DJRD,JR,EXO> PYFTW         =( (( (   (1/DTAT)*((LT/DTALFAT)**DTALFAT)*((PKZT/(1-DTALFAT))**(1-DTALFAT))
+                               + (SIQT-SIQWT)/FYFT)*(1+JRPYFTW ))*(1-DPYFTW)+ZPYFTW*DPYFTW)*(1+PYFTW_JR ))*(1-PYFTW_D)+PYFTW_X*PYFTW_D$
+FRML <_D> VLTNP         = ((LOG(LT))-(LOG(LT(-1))))-(VTFPT/DTALFAT/100) $
+FRML <_SJRD,JR,EXO,DAMP> PYFT=( (( (EXP(LOG(PYFT(-1))+0.57559*VLTNP + 0.25145*VLTNP(-1)
+                               - 0.1224*(LOG(PYFT(-1))-LOG(PYFTW(-1)))
+                               + GPYFT))*(1+JRPYFT ))*(1-DPYFT)+ZPYFT*DPYFT)*(1+PYFT_JR ))*(1-PYFT_D)+PYFT_X*PYFT_D$
+FRML <_G> PYFH          = EXP(LOG(PIB) - 0.1 + JPYFH)+SIQH/FYFH $
+FRML <_G> PYFA          = PYFAX - (SIPAA-SIPAAX+(SIPSUER-SIPSUERX))/FYFA $
+FRML <_D> PYFN          = YFN/FYFN $
+FRML <_D> PYFS          = YFS/FYFS $
+FRML <_D> PXA           = XA/FXA $
+FRML <_D> PXB           = XB/FXB $
+FRML <_D> PXN           = (PEE/KPEE - (AEEE*PXE + AMEEE*PME + ASVEE*PSIV))/ANEE $
+FRML <_D> PXE           = XE/FXE $
+FRML <_D> PXH           = XH/FXH $
+FRML <_D> PXI           = XI/FXI $
+FRML <_D> PXT           = XT/FXT $
+FRML <_D> PXS           = PMSS $
+FRML <_G> KKP           = KKP + 1 - (CP + CO + I + E - M - SIV)
+                                 /(YFA + YFH + YFB + YFN + YFE + YFI + YFT + YFS + YFO) $
+FRML <_G> PNCO          = (ATCO*PXT + AOCO*PXO)*KPNCO $
+FRML <_G> PNCE          = (AECE*PXE + ATCE*PXT)*KPNCE*KKP $
+FRML <_G> PNCG          = (AECG*PXE + ATCG*PXT + AMECG*(PME+TME))*KPNCG*KKP $
+FRML <_G> PNCH          = (AHCH*PXH + ATCH*PXT)*KPNCH*KKP $
+FRML <_G> PNCV          = (AACV*PXA + AICV*PXI + ATCV*PXT + AMICV*(PMI+TMI))*KPNCV*KKP $
+FRML <_G> PNCS          = (ATCS*PXT + AOCS*PXO + AMSQCS*PMSQ)*KPNCS*KKP $
+FRML <_G> PNCB          = (ATCB*PXT + AMICB*(PMI+TMI))*KPNCB*KKP $
+FRML <_G> PNIMX         = (AIIM*PXI + ATIM*PXT + AMIIM*(PMI+TMI) + AMSQIM*PMSQ)*KPNIMX $
+FRML <_G> PNIB          = (ABIB*PXB + ATIB*PXT)*KPNIB $
+FRML <_G> PNEI          = (AAEI*PXA + AIEI*PXI + ATEI*PXT + AMIEI*(PMI+TMI))*KPNEI $
+FRML <_D> PNCP          = ((FCE*PNCE+FCV*PNCV+PNCS*FCS+PCT*FCT+PNCB*FCB+
+                                 PNCG*FCG+PNCH*FCH-PET*FET)/FCP) $
+FRML <_G> PIL           = (0.1*PXE + 0.3*PXI + 0.2*PXT + 0.1*PME + 0.3*PMI)*KPIL*KKP $
+FRML <_D> PCO           = (1+BTGCO*TG)*PNCO*(1+TRCO) $
+FRML <_D> PCE           = (1+BTGCE*TG)*(PNCE+TPCE) $
+FRML <_D> PCG           = (1+BTGCG*TG)*(PNCG+TPCG) $
+FRML <_D> PCS           = (1+BTGCS*TG)*(PNCS+TPCS+SIPUR/FCS) $
+FRML <_D> PCT           = PMT $
+FRML <_D> PCV           = (1+BTGCV*TG)*(PNCV+TPCV) $
+FRML <_D> PCH           = (1+BTGCH*TG)*(PNCH+TPCH) $
+FRML <_D> PCB           = (1+BTGCB*TG)*(PNCB+TPCB)*(1+TRCB) $
+FRML <_D> PIBPS         = (1+BTGIBPS*TG)*(KPIBPS*PNIB+TPIBPS) $
+FRML <_D> PIBOS         = (1+BTGIBOS*TG)*(KPIBOS*PNIB+TPIBOS) $
+FRML <_D> PIBH          = (1+BTGIBH*TG)*(KPIBH*PNIB+TPIBH) $
+FRML <_D> PIMPS         = (1+BTGIMPS*TG)*(KPIMPS*PNIMX+TPIMPS)*(1+TRIMPS) $
+FRML <_D> PIMXOS        = (1+BTGIMOS*TG)*(KPIMXOS*PNIMX+TPIMOS) $
+FRML <_D> PIV           = KPIV*(0.50*PIM + 0.50*PIB) $
+FRML <_D> PIVOS         = KPIVOS*(0.5*PIMOS + 0.5*PIBOS) $
+FRML <_D> PEI           = PNEI + SIPEI/FEI $
+FRML <_D> PESQ          = (ABESQ*PXB + AIESQ*PXI + ATESQ*PXT + AMSQESQ*PMSQ)*KPESQ $
+FRML <_D> PESS          = PXS $
+FRML <_D> PET           = (0.1*PCE + 0.4*PCV + 0.5*PCS)*KPET $
+FRML <_DJRD,JR,EXO> PMEW=( (( (EXP(LOG(PWOIL*VUSA) + KPMEW))*(1+JRPMEW ))*(1-DPMEW)+ZPMEW*DPMEW)*(1+PMEW_JR ))*(1-PMEW_D)+PMEW_X*PMEW_D$
+FRML <_SJRD,JR,EXO,DAMP> PME=( (( (EXP(LOG(PME(-1))+0.77758*((LOG(PWOIL*VUSA))-(LOG(PWOIL(-1)*VUSA(-1)))) + GPME
+                               -0.1998*LOG(PME(-1)/PMEW(-1))))*(1+JRPME ))*(1-DPME)+ZPME*DPME)*(1+PME_JR ))*(1-PME_D)+PME_X*PME_D$
+FRML <_DJRD,JR,EXO> PEEW=( (( (EXP(LOG(PWOIL*VUSA) + KPEEW))*(1+JRPEEW ))*(1-DPEEW)+ZPEEW*DPEEW)*(1+PEEW_JR ))*(1-PEEW_D)+PEEW_X*PEEW_D$
+FRML <_SJRD,JR,EXO,DAMP> PEE=( (( (EXP(LOG(PEE(-1))+0.81594*((LOG(PWOIL*VUSA))-(LOG(PWOIL(-1)*VUSA(-1)))) + GPEE
+                               -0.30597*LOG(PEE(-1)/PEEW(-1))))*(1+JRPEE ))*(1-DPEE)+ZPEE*DPEE)*(1+PEE_JR ))*(1-PEE_D)+PEE_X*PEE_D$
+FRML <_D> PY            = 1*Y/FY $
+FRML <_D> PYF           = YF/FYF $
+FRML <_D> PYFP          = YFP/FYFP $
+FRML <_D> PYFPB         = (YFI + YFB + YFT)/FYFPB $
+FRML <_D> PYFO          = YFO/FYFO $
+FRML <_D> PYFR          = YFR/FYFR $
+FRML <_D> PX            = X/FX $
+FRML <_D> PXO           = XO/FXO $
+FRML <_D> PVX           = 1*VX/FVX $
+FRML <_D> PSIV          = SIV/FSIV $
+FRML <_D> PCP           = CP/FCP $
+FRML <_D> PIMOS         = IMOS/FIMOS $
+FRML <_D> PIXOS         = IXOS/FIXOS $
+FRML <_D> PIOS          = IOS/FIOS $
+FRML <_D> PIB           = (PIBPS*FIBPS + PIBH*FIBH + PIBOS*FIBOS)/FIB $
+FRML <_D> PIMX          = IMX/FIMX $
+FRML <_D> PIM           = IM/FIM $
+FRML <_D> PIF           = IF/FIF $
+FRML <_D> PI            = I/FI $
+FRML <_D> PAIPS         = AIPS/FAIPS $
+FRML <_D> PAI           = AI/FAI $
+FRML <_D> PEV           = EV/FEV $
+FRML <_D> PES           = ES/FES $
+FRML <_D> PEST          = EST/FEST $
+FRML <_D> PE            = E/FE $
+FRML <_D> PAE           = AE/FAE $
+FRML <_D> PM            = M/FM $
+FRML <_D> PMV           = MV/FMV $
+FRML <_D> PMS           = MS/FMS $
+FRML <_D> PMST          = MST/FMST $
+FRML <_D> PAT           = AT/FAT $
+FRML <_D> XA            = YFA + VA $
+FRML <_D> XB            = YFB + VB $
+FRML <_D> XN            = FXN*PXN $
+FRML <_D> XE            = YFE + VE $
+FRML <_D> XH            = YFH + VH $
+FRML <_D> XI            = YFI + VI $
+FRML <_D> XT            = YFT + VT $
+FRML <_D> XS            = FXS*PXS $
+FRML <_G> VA            = FXA*(AEA*PXE +
+                               AAA*PXA + AIA*PXI + ATA*PXT + AMIA*(PMI+TMI))*KPVA
+                               + SIPVA + SIGVA $
+FRML <_G> VB            = FXB*(AEB*PXE +
+                               AIB*PXI + ATB*PXT + AMIB*(PMI+TMI) + AMSQB*PMSQ)*KPVB
+                               + SIPVB + SIGVB $
+FRML <_G> VN            = FXN*(ATN*PXT)*KPVN
+                               + SIPVN + SIGVN $
+FRML <_G> VE            = FXE*(ANE*PXN + AEE*PXE + AMEE*(PME+TME) +
+                               ATE*PXT)*KPVE
+                               + SIPVE + SIGVE $
+FRML <_G> VH            = FXH*(ABH*PXB + ATH*PXT)*KPVH
+                               + SIPVH + SIGVH $
+FRML <_G> VI            = FXI*(AEI*PXE +
+                               AAI*PXA + AII*PXI + ATI*PXT + AMII*(PMI+TMI) + AMSQI*PMSQ)*KPVI
+                               + SIPVI + SIGVI $
+FRML <_G> VT            = FXT*(AET*PXE + AMET*(PME+TME) +
+                               ABT*PXB + AIT*PXI + ATT*PXT + AST*PXS + AMIT*(PMI+TMI) + AMSQT*PMSQ)*KPVT
+                               + SIPVT + SIGVT $
+FRML <_G> VS            = FXS*(AMES*(PME+TME) +
+                               ATS*PXT + AMSSS*PMSS)*KPVS
+                               + SIPVS + SIGVS $
+FRML <_D> YFA           = PYFA*FYFA $
+FRML <_D> YFB           = PYFB*FYFB $
+FRML <_D> YFN           = XN - VN $
+FRML <_D> YFE           = PYFE*FYFE $
+FRML <_D> YFH           = PYFH*FYFH $
+FRML <_D> YFI           = PYFI*FYFI $
+FRML <_D> YFT           = PYFT*FYFT $
+FRML <_D> YFS           = XS - VS $
+FRML <_D> YRI           = YFI - YWI - SIQI $
+FRML <_D> YRT           = YFT - YWT - SIQT $
+FRML <_D> YRE           = YFE - YWE - SIQE $
+FRML <_D> YRN           = YFN - YWN - SIQN $
+FRML <_D> YRB           = YFB - YWB - SIQB $
+FRML <_D> YRH           = YFH - YWH - SIQH $
+FRML <_D> YRA           = YFA - YWA - SIQA $
+FRML <_D> YRS           = YFS - YWS - SIQS $
+FRML <_D> YRO           = YFO - YWO - SIQO $
+FRML <_D> Y             = CP + CO + I - M + E $
+FRML <_D> YR            = YF - YW - SIQ $
+FRML <_D> YFPB          = YFB+YFI+YFT $
+FRML <_D> YFPR          = YFA+YFE+YFN+YFH+YFS $
+FRML <_D> YFR           = YFPR + YFO $
+FRML <_D> YFP           = YFPB+YFPR $
+FRML <_D> YF            = YFP + YFO $
+FRML <_D> XPB           = XB+XI+XT $
+FRML <_D> XPR           = XA+XN+XE+XH+XS $
+FRML <_D> XP            = XPB+XPR $
+FRML <_D> VX            = (VA + VB + VH + VI + VE + VN + VT + VS + VO) $
+FRML <_D> AT            = YF + M + SIV $
+FRML <_D> X             = YF + VX $
+FRML <_D> CA            = FCE*PCE + FCG*PCG + FCV*PCV + FCS*PCS + FCT*PCT + FCH*PCH - FET*PET $
+FRML <_D> CB            = FCB*PCB $
+FRML <_D> CP            = FCA*PCA + FCB*PCB $
+FRML <_D> IB            = PIB*FIB $
+FRML <_D> IBOS          = PIBOS*FIBOS $
+FRML <_D> IMX           = IMPS + IMXOS $
+FRML <_D> IM            = IMX + IOFU $
+FRML <_D> IMXOS         = PIMXOS*FIMXOS $
+FRML <_D> IMOS          = IMXOS + IOFU $
+FRML <_D> IXOS          = IBOS + IMXOS $
+FRML <_D> IOS           = IMOS + IBOS $
+FRML <_D> IMPS          = FIMPS*PIMPS $
+FRML <_D> IBPS          = FIBPS*PIBPS $
+FRML <_D> IBH           = FIBH*PIBH $
+FRML <_D> IF            = I - IL $
+FRML <_D> IV            = PIV*FIV $
+FRML <_D> I             = PIBH*FIBH +
+                               PIMPS*FIMPS + PIMXOS*FIMXOS + PIOFU*FIOFU +
+                               PIBOS*FIBOS + PIBPS*FIBPS +
+                               PIL*FIL $
+FRML <_D> ME            = PME*FME $
+FRML <_D> MI            = PMI*FMI $
+FRML <_D> MV            = ME + MI $
+FRML <_D> MT            = PMT*FMT $
+FRML <_D> MSS           = PMSS*FMSS $
+FRML <_D> MSQ           = PMSQ*FMSQ $
+FRML <_D> MS            = MSS + MSQ $
+FRML <_D> MST           = MS + MT $
+FRML <_D> M             = MV + MST $
+FRML <_D> EE            = PEE*FEE $
+FRML <_D> EI            = PEI*FEI $
+FRML <_D> EV            = EE + EI $
+FRML <_D> ESS           = PESS*FESS $
+FRML <_D> ESQ           = PESQ*FESQ $
+FRML <_D> ET            = PET*FET $
+FRML <_D> ES            = ESS + ESQ $
+FRML <_D> EST           = ES + ET $
+FRML <_D> E             = EV + EST $
+FRML <_D> AI            = CP+CO+I $
+FRML <_D> AIPS          = AI-CO-IOS $
+FRML <_D> AE            = CP+CO+I+E $
+FRML <_D> YI            = TWEN + TIFN - (SIPEE + SIPAA + SIPSUER + SIQEU) - (SIM + SIPEU) + Y $
+FRML <_GJ_D,J,EXO> IWBZ          =(( 0.2*IWBECB + 0.35*IWB10YS + 0*IWB10YSDEU +0.45*IWB30YR + RPIWBZ + JIWBZ)*(1-DIWBZ)+ZIWBZ*DIWBZ+IWBZ_J)*(1-IWBZ_D)+IWBZ_X*IWBZ_D$
+FRML <_GJ_D,J,EXO> IWLO          =(( 0.3*IWBECB + 0.7 *IWB10YS + 0*IWB10YSDEU +   0*IWB30YR + RPIWLO + JIWLO)*(1-DIWLO)+ZIWLO*DIWLO+IWLO_J)*(1-IWLO_D)+IWLO_X*IWLO_D$
+FRML <_GJ_D,J,EXO> IWDEH         =((     IWBECB                                             + RPIWDEH + JIWDEH)*(1-DIWDEH)+ZIWDEH*DIWDEH+IWDEH_J)*(1-IWDEH_D)+IWDEH_X*IWDEH_D$
+FRML <_GJ_D,J,EXO> IWI           =(( 0.5*IWI(-1)  + 0.5*(0.5*IWBECB + 0.5*IWB10YSDEU + RPIWI) + JIWI)*(1-DIWI)+ZIWI*DIWI+IWI_J)*(1-IWI_D)+IWI_X*IWI_D$
+FRML <_GJ_D,J,EXO> IWU           =(( 0.5*IWU(-1)  + 0.5*(0.5*IWBECB + 0.5*IWB10YS + RPIWU) + JIWU)*(1-DIWU)+ZIWU*DIWU+IWU_J)*(1-IWU_D)+IWU_X*IWU_D$
+FRML <_GJ_D,J,EXO> IWPP          =(( 0.5*IWPP(-1) + 0.5*(IWB30YR + RPIWPP) + JIWPP)*(1-DIWPP)+ZIWPP*DIWPP+IWPP_J)*(1-IWPP_D)+IWPP_X*IWPP_D$
+FRML <_GJRD,JR,EXO> EFFKR         =( (( ( EXP(- 0.089*((LOG(VGBR))-(LOG(VGBR(-1)))) - 0.059*((LOG(VJPN))-(LOG(VJPN(-1)))) - 0.172*((LOG(VUSA))-(LOG(VUSA(-1))))
+                                   - 0.065*((LOG(VNOR))-(LOG(VNOR(-1)))) - 0.104*((LOG(VSWE))-(LOG(VSWE(-1)))) - 0.511*((LOG(VDEU))-(LOG(VDEU(-1)))))*EFFKR(-1) )*(1+JREFFKR ))*(1-DEFFKR)+ZEFFKR*DEFFKR)*(1+EFFKR_JR ))*(1-EFFKR_D)+EFFKR_X*EFFKR_D$
+FRML <_D> Q_S           = UA_S - UL_S $
+FRML <_D> HQ_S          = (HG_S/1000)*Q_S $
+FRML <_D> HQR_S         = DXHQR_S*HQR + (1-DXHQR_S)*HQR_SX $
+FRML <_D> HQPB_S        = HQ_S-HQR_S $
+FRML <_D> KHGW          = DXHG*((((HQA/KHGA)+(HQB/KHGB)+(HQI/KHGI)+(HQT/KHGT)+(HQN/KHGN)+(HQE/KHGE)+(HQS/KHGS)+(HQH/KHGH)+(HQO/KHGO))
+                                 /HQ)*HG_S/HA)
+                               + (1-DXHG)*KHGWX $
+FRML <_D> VYFHR_S       = DXVYFHR_S*VYFHR + (1-DXVYFHR_S)*VYFHR_SX $
+FRML <_D> BPB_S         = DXBPB_S*((HQPB_S/HQ_S)*(PYFPB(-1)/PYF(-1))) + (1-DXBPB_S)*BPB_SX $
+FRML <_D> BR_S          = DXBR_S*((HQR_S/HQ_S)*(PYFR(-1)/PYF(-1))) + (1-DXBR_S)*BR_SX $
+FRML <_D> VYFHPB_S      = EXP(LOGTFP_S+(1-BYW1PB_S)*LOG(FKPB/HQPB_S)) $
+FRML <_D> TFPPB         = EXP(LOG(FYFPB)-(1-BYW1PB_S)*LOG(FKPB)-BYW1PB_S*LOG(HQPB)) $
+FRML <_D> VYFH_S        = BPB_S*VYFHPB_S + BR_S*VYFHR_S $
+FRML <_D> AFGIFT_S      = DXAFGIFT_S*(FY/FYF) + (1-DXAFGIFT_S)*AFGIFT_SX $
+FRML <_D> FYF_S         = VYFH_S*HQ_S $
+FRML <_D> FY_S          = FYF_S*AFGIFT_S $
+FRML <_D> PY_S          = DXPY_S*PY + (1-DXPY_S)*PY_SX $
+FRML <_D> Y_S           = PY_S*FY_S $
+FRML <_D> AFGIFT_GAP    = ((FY/FYF)-AFGIFT_S)/AFGIFT_S*100 $
+FRML <_D> TFP_GAP       = (LOG(TFPPB)-LOGTFP_S)*100 $
+FRML <_D> KL_GAP        = (LOG(FKPB/HQPB)-LOGKL_TR)*100 $
+FRML <_D> VYFHPB_GAP    = BPB_S*(VYFHPB-VYFHPB_S)/VYFHPB_S*100 $
+FRML <_D> VYFH_GAP      = (VYFH-VYFH_S)/VYFH_S*100 $
+FRML <_D> HG_GAP        = (HG-HG_S)/HG_S*100 $
+FRML <_D> UL_GAP        = ((UL/UA)-(UL_S/UA_S))*100 $
+FRML <_D> UA_GAP        = (UA-UA_S)/UA_S*100 $
+FRML <_D> Q_GAP         = (Q-Q_S)/Q_S*100 $
+FRML <_D> HQ_GAP        = (HQ-HQ_S)/HQ_S*100 $
+FRML <_D> FY_GAP        = (FY-FY_S)/FY_S*100 $
+FRML <_D> FYF_GAP       = (FYF-FYF_S)/FYF_S*100 $
+FRML <_D> Y_GAP         = (Y-Y_S)/Y_S*100 $
+FRML <_D> PY_GAP        = (PY-PY_S)/PY_S*100 $
+FRML <_D> VYFHPB_TR     = EXP(LOGTFP_S+(1-BYW1PB_S)*LOGKL_TR) $
+FRML <_D> FY_TR         = AFGIFT_S*(BPB_S*VYFHPB_TR+BR_S*VYFHR_S)*(HG_S/1000)*(1-(UL_S/UA_S))*UA_S $
