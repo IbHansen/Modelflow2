@@ -111,7 +111,7 @@ if not hasattr(pd.DataFrame,'mf'):
         
         def __call__(self,eq,start='',slut='',**kwargs):
     #        print({**kwargs,**{'start':start,'slut':slut}})
-            res = self._obj.mf(eq,**kwargs).solve(**{**kwargs,**{'start':start,'slut':slut}})
+            res = self._obj.mf(eq,**kwargs).solve(**{**kwargs,**{'start':start,'slut':slut,'silent':True}})
             return res
         
     @pd.api.extensions.register_dataframe_accessor("mfupdate")

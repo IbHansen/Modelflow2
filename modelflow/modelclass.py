@@ -1088,6 +1088,31 @@ class Model_help_Mixin():
            # print(var,op,value,arg,sep='|')
             update_var(df,var,op,value,*arg,create=True,lprint=0) 
         return df
+
+
+    def insertModelVar(self,dataframe, addmodel=[]):
+        """Inserts all variables from this model, not already in the dataframe.
+        If model is specified, the dataframw will contain all variables from this and model models.  
+        
+        also located at the module level for backward compability 
+        
+        """ 
+        if isinstance(addmodel,list):
+            moremodels=addmodel
+        else:
+            moremodels = [addmodel]
+        
+        imodel=[self]+moremodels
+        myList=[]
+        for item in imodel: 
+            myList.extend(item.allvar.keys())
+        manglervars = list(set(myList)-set(dataframe.columns))
+        if len(manglervars):
+            extradf = pd.DataFrame(0.0,index=dataframe.index,columns=manglervars).astype('float64')
+            data = pd.concat([dataframe,extradf],axis=1)        
+            return data
+        else:
+            return dataframe
     
          
 
@@ -2379,7 +2404,18 @@ class Json_Mixin():
     @classmethod   
     def modelload(cls,infile,funks=[],run=False):
         '''Loads a model and an solution '''
-        
+ 
+        def make_current_from_quarters(base,json_current_per):
+            ''' Handle json for quarterly data to recover the right date index'''
+            import datetime
+            start,end = json_current_per[[0,-1]]
+            start_per = datetime.datetime(start['qyear'], start['month'], start['day'])
+            end_per   = datetime.datetime(  end['qyear'],   end['month'],   end['day'])
+            current_dates = pd.period_range(start_per,end_per,freq=start['freqstr'])
+            base_dates = pd.period_range(base.index[0],base.index[-1],freq=start['freqstr'])
+            base.index = base_dates
+            return base,current_dates
+
         
         with open(infile,'rt') as f: 
             input = json.load(f)
@@ -2391,6 +2427,12 @@ class Json_Mixin():
         modelname = input['modelname']
         mmodel = cls(frml,modelname=modelname,funks=funks)
         mmodel.oldkwargs = input['oldkwargs']
+        mmodel.json_current_per = current_per
+        try:
+            lastdf,current_per = make_current_from_quarters(lastdf,current_per)
+        except:
+            pass
+        
         if run:
             res = mmodel(lastdf,current_per[0],current_per[-1])
             return mmodel,res

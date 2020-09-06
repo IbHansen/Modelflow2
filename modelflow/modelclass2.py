@@ -26,7 +26,6 @@ import time
 
 
 from modelclass import model 
-from modelclass import ttimer
 import modelclass as mc
 import modelpattern as pt
 
