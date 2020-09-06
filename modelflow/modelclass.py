@@ -3351,7 +3351,7 @@ class Solver_Mixin():
             if not silent: print(f'Creating new derivatives and new solver')
             self.old_stack_periode = sol_periode.copy()
         elif newton_reset or not all(self.old_stack_periode[[0,-1]] == sol_periode[[0,-1]]) :   
-            breakpoint()
+            # breakpoint()
             print(f'Creating new solver')
             diffcount += 1
             self.stacksolver = self.getsolver(databank)

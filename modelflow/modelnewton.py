@@ -209,7 +209,7 @@ class newton_diff():
                             # ud=str(kat.diff(sympify(rhv,md._clash)))
                             try:
                                 ud=str(kat.diff(sympify(rhv,clash)))
-                                ud = re.sub(pt.namepat+r'(?:(\()([0-9])(\)))',r'\g<1>\g<2>+\g<3>\g<4>',ud)
+                                ud = re.sub(pt.namepat+r'(?:(\()([0-9]*)(\)))',r'\g<1>\g<2>+\g<3>\g<4>',ud) 
                             except:
                                 ud = numdif(self.mmodel,v,rhv,silent=self.silent)
                                 
