@@ -6,26 +6,19 @@ Created on Fri Jun  7 00:04:29 2019
 """
 
 import pandas as pd
-from numba import jit
-import fnmatch 
-import numpy as np
-import os
-
 
 from modelclass import model
 import modelmf
 
 turbo = 0
 
-mfrbusmce,basedf = model.modelload('mfrbusmce.json')
-
+mfrbusmce,basedf = model.modelload('mfrbusmce.json',run=1)
 
 with model.timer('baseline newton all periods '):
-    baseres = mfrbusmce(basedf,'2020q1','2041q4',stats=0,max_iterations=70,silent=1,nchunk=50,newton_reset=0,
-                                  ljit=turbo,timeit=0,nonlin=10,newtonalfa = 1.0, newtonnodamp=20,forcenum=0)
+    baseres = mfrbusmce(basedf,stats=0)
 #%%
 mfrbusmce.keep_solutions = {}
-for shock in [0.0,-0.001]:
+for shock in [0.0, 0.01]:
     altdf = baseres.copy()
     altdf=altdf.mfcalc(f'''\
     rffintay_aerr = rffintay_aerr + {shock}
@@ -41,5 +34,5 @@ for shock in [0.0,-0.001]:
         
         
     with model.timer(f'newton all periods,shock {shock:9} '):
-        altres = mfrbusmce(altdf,keep=f'shock {shock:9}')
+        altres = mfrbusmce(altdf,keep=f'shock {shock}')
 mfrbusmce.keep_plot('rff',diff=1);

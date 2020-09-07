@@ -2402,11 +2402,13 @@ class Json_Mixin():
            return json.dumps(dumpjson)
            
     @classmethod   
-    def modelload(cls,infile,funks=[],run=False):
+    def modelload(cls,infile,funks=[],run=False,keep=False):
         '''Loads a model and an solution '''
  
         def make_current_from_quarters(base,json_current_per):
-            ''' Handle json for quarterly data to recover the right date index'''
+            ''' Handle json for quarterly data to recover the right date index
+            
+            '''
             import datetime
             start,end = json_current_per[[0,-1]]
             start_per = datetime.datetime(start['qyear'], start['month'], start['day'])
@@ -2428,6 +2430,9 @@ class Json_Mixin():
         mmodel = cls(frml,modelname=modelname,funks=funks)
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
+        if keep:
+            mmodel.json_keep = input
+            
         try:
             lastdf,current_per = make_current_from_quarters(lastdf,current_per)
         except:
