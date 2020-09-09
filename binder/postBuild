@@ -1,1 +1,3 @@
- 
+#!/bin/bash
+conda install modelflow -c ibh
+exec "$@"
