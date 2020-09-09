@@ -3,4 +3,5 @@ channels:
   - ibh  
   - conda-forge
 dependencies:
-  - modelflow
+  - python 
+#  - modelflow
