@@ -1,6 +1,7 @@
 name: base
 channels:
-  - ibh  
+  - ibh 
+  - default
   - conda-forge
 dependencies:
   - pandas
