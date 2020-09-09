@@ -2361,7 +2361,7 @@ class Display_Mixin():
               figs =  self.keep_plot(' '.join(vars),diff=0,legend=1,dec='0')
                
        show = interactive(explain,
-               smpl  = IntRangeSlider(value=[self.current_per[0],200],min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
+               smpl = IntRangeSlider(value=[self.current_per[0],200],min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
                vars  = SelectMultiple(value = defaultvar,options=sorted(self.endogene)
                                          ,layout=Layout(width='50%', height='200px'),
                                           description='One or more'))
