@@ -3,4 +3,4 @@ channels:
   - ibh  
   - conda-forge
 dependencies:
-  - modelflow
+  - modelflow=1.0.02
