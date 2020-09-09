@@ -1086,7 +1086,7 @@ class Model_help_Mixin():
             else:
                 arg = type(df.index[0])(arg[0]),type(df.index[0])(arg[1])
            # print(var,op,value,arg,sep='|')
-            update_var(df,var,op,value,*arg,create=True,lprint=0) 
+            update_var(df,var.upper(),op,value,*arg,create=True,lprint=0) 
         return df
 
 
@@ -2368,6 +2368,29 @@ class Display_Mixin():
        
        display(show)
        return
+   
+    @staticmethod
+    def display_toc(text='**Jupyter notebooks in this and all subfolders**'):
+        '''In a jupyter notebook this function displays a clickable table of content of all 
+        jupyter notebooks in this and sub folders'''
+        
+        from IPython.display  import display, Markdown, HTML
+        from pathlib import Path
+        
+        display(Markdown(text))
+        for dir in sorted(Path('.').glob('**')):
+            if len(dir.parts) and str(dir.parts[-1]).startswith('.'): continue
+            for i,notebook in enumerate(sorted(dir.glob('*.ipynb'))):
+                if i == 0:
+                    blanks = ''.join(['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))
+                    if len(dir.parts):
+                        display(HTML(f'{blanks}<b>{str(dir)}</b>'))
+                    else:     
+                        display(HTML(f'{blanks}<b>{str(Path.cwd().parts[-1])} (.)</b>'))
+    
+                name = notebook.name.split('.')[0]
+                display(HTML(f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>')) 
+            
 
 from pathlib import Path
 import json
