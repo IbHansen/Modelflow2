@@ -4,6 +4,7 @@ channels:
   - default
   - conda-forge
 dependencies:
+  - ModelFlow
   - pandas
   - scipy 
   - numexpr
