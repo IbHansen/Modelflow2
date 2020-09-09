@@ -1,31 +1,29 @@
 name: base
 channels:
-  - ibh 
   - default
-  - conda-forge
 dependencies:
-  - ModelFlow
+#  - ModelFlow
   - pandas
-  - scipy 
-  - numexpr
-  - bottleneck
-  - XLsxWriter
-  - pyarrow
-  - tabulate
-  - xlrd
-  - xlwt
-  - zlib 
-  - xarray  
-  - setuptools
-  - wheel  
-  - matplotlib
-  - seaborn
-  - numpy >=1.19.1
-  - sympy 
-  - cvxopt
-  - graphviz
-  - qgrid
-  - jupyter 
-  - networkx
-  - numba
-  - jupyter_contrib_nbextensions
+#  - scipy 
+#  - numexpr
+# - bottleneck
+# - XLsxWriter
+# - pyarrow
+# - tabulate
+# - xlrd
+# - xlwt
+# - zlib 
+# - xarray  
+# - setuptools
+# - wheel  
+# - matplotlib
+# - seaborn
+# - numpy >=1.19.1
+# - sympy 
+# - cvxopt
+# - graphviz
+# - qgrid
+# - jupyter 
+# - networkx
+# - numba
+# - jupyter_contrib_nbextensions
