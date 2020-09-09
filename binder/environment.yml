@@ -3,7 +3,7 @@ channels:
   - default
 dependencies:
 #  - ModelFlow
-  - pandas
+#  - pandas
 #  - scipy 
 #  - numexpr
 # - bottleneck
