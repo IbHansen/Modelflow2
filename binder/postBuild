@@ -1,4 +1,3 @@
 #!/bin/bash 
-conda update conda --y
 conda install modelflow -c ibh --y
 exec "$@"
