@@ -1,7 +1,7 @@
 # ModelFlow
 A Python toolkit to manage models
 
-The easy way to start is here [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/IbHansen/modelflow/master). 
+The easy way to start is here [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Ibhansen/modelflow2/master).
 
 This will start **ModelFlow** as an online Jupyter notebook. Select one of the notebooks (files with the extension .ipynb). Some of the 
 notebooks are ModelFlow related. Other implement different model 
