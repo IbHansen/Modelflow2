@@ -3953,7 +3953,7 @@ class Solver_Mixin():
                  use_index=True,title=f'Iterations in {per_} ',sharey=0)
             fig = axes.flatten()[0].get_figure()
             fig.tight_layout()
-            fig.subplots_adjust(top=0.97)
+            fig.subplots_adjust(top=0.91)
             return fig
         except:
             print('No iteration dump' )
