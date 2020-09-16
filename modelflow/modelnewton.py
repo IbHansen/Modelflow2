@@ -255,8 +255,7 @@ class newton_diff():
             udtryk=r'\frac{\partial '+ mj.an_expression_to_latex(v)+'}{\partial '+mj.an_expression_to_latex(k)+'}'
             return udtryk
          
-        if not hasattr(self,'diffvalues'):
-            _ = self.get_diff_values_all()
+        _ = self.get_diff_values_all()
             
         
         for v in  [var for  p in pat.split() for var in fnmatch.filter(self.declared_endo_set,p)]:
@@ -328,6 +327,7 @@ class newton_diff():
             _per = [_per_first]
             
         _df = self.df if type(df)  != pd.DataFrame else df  
+        self.df = _df
         _df = _df.pipe(lambda df0: df0.rename(columns={c: c.upper() for c in df0.columns}))
    
         self.diff_model.current_per = _per     
