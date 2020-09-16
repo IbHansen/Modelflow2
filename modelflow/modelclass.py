@@ -2390,7 +2390,33 @@ class Display_Mixin():
     
                 name = notebook.name.split('.')[0]
                 display(HTML(f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>')) 
-            
+    
+    @staticmethod
+    def modelflow_auto(run=True):
+        '''In a jupyter notebook this function activate autorun of the notebook. 
+        
+        The function should be run before the notebook is saved, and the output should not be cleared
+        '''
+        if not run:
+            return 
+        try:
+            from IPython.display import HTML,display
+            display(HTML("""\
+            <script>
+                // AUTORUN ALL CELLS ON NOTEBOOK-LOAD!
+                require(
+                    ['base/js/namespace', 'jquery'], 
+                    function(jupyter, $) {
+                        $(jupyter.events).on('kernel_ready.Kernel', function () {
+                            console.log('Auto-running all cells-below...');
+                            jupyter.actions.call('jupyter-notebook:run-all-cells-below');
+                            jupyter.actions.call('jupyter-notebook:save-notebook');
+                        });
+                    }
+                );
+            </script>"""))
+        except:
+            print('modelflow_auto not run')
 
 from pathlib import Path
 import json
