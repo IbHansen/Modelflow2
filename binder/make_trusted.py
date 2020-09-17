@@ -16,5 +16,5 @@ conda install modelflow -c ibh --y --no-deps
         if len(dir.parts) and str(dir.parts[-1]).startswith('.'): continue
         for notebook in dir.glob('*.ipynb'):
             n = PurePosixPath(notebook)
-            f.write(f"jupyter trust {str(n).split('/',1)[1]}\n")
+            f.write(f'jupyter trust "{str(n).split("/",1)[1]}"\n')
     f.write('exec "$@"')

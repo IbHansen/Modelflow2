@@ -1,24 +1,24 @@
 #!/bin/bash 
 conda install modelflow -c ibh --y --no-deps
-jupyter trust Examples/Overview.ipynb
-jupyter trust Examples/ADAM/ADAM - create the model and run.ipynb
-jupyter trust Examples/ADAM/ADAM.ipynb
-jupyter trust Examples/corona/Corona experiments with probability of transmission.ipynb
-jupyter trust Examples/corona/Corona specify model and make eksperiments.ipynb
-jupyter trust Examples/corona/Corona_ a simpel model.ipynb
-jupyter trust Examples/corona/Corone_ a model with age.ipynb
-jupyter trust Examples/equilibrium/demand_supply.ipynb
-jupyter trust Examples/Federal Reserve Board - US model/FRBUS - example - VAR.ipynb
-jupyter trust Examples/Federal Reserve Board - US model/FRBUS model consistent expectations.ipynb
-jupyter trust Examples/Federal Reserve Board - US model/FRBUS.ipynb
-jupyter trust Examples/Federal Reserve Board - US model/Untitled.ipynb
-jupyter trust Examples/solow/solow.ipynb
-jupyter trust modelflow/doc/Abstract ModelFlow a Python library to manage and solve economic models.ipynb
-jupyter trust modelflow/doc/modefflow diff.ipynb
-jupyter trust modelflow/doc/ModelFlow transpiler demonstrator.ipynb
-jupyter trust modelflow/doc/ModelFlow, extend DataFrame.ipynb
-jupyter trust modelflow/doc/modelflow-gauss.ipynb
-jupyter trust modelflow/doc/supply_demand.ipynb
-jupyter trust modelflow/doc/wp/ModelFlow-wp.ipynb
-jupyter trust modelflow/experiments/Untitled.ipynb
+jupyter trust "Examples/Overview.ipynb"
+jupyter trust "Examples/ADAM/ADAM - create the model and run.ipynb"
+jupyter trust "Examples/ADAM/ADAM.ipynb"
+jupyter trust "Examples/corona/Corona experiments with probability of transmission.ipynb"
+jupyter trust "Examples/corona/Corona specify model and make eksperiments.ipynb"
+jupyter trust "Examples/corona/Corona_ a simpel model.ipynb"
+jupyter trust "Examples/corona/Corone_ a model with age.ipynb"
+jupyter trust "Examples/equilibrium/demand_supply.ipynb"
+jupyter trust "Examples/Federal Reserve Board - US model/FRBUS - example - VAR.ipynb"
+jupyter trust "Examples/Federal Reserve Board - US model/FRBUS model consistent expectations.ipynb"
+jupyter trust "Examples/Federal Reserve Board - US model/FRBUS.ipynb"
+jupyter trust "Examples/Federal Reserve Board - US model/Untitled.ipynb"
+jupyter trust "Examples/solow/solow.ipynb"
+jupyter trust "modelflow/doc/Abstract ModelFlow a Python library to manage and solve economic models.ipynb"
+jupyter trust "modelflow/doc/modefflow diff.ipynb"
+jupyter trust "modelflow/doc/ModelFlow transpiler demonstrator.ipynb"
+jupyter trust "modelflow/doc/ModelFlow, extend DataFrame.ipynb"
+jupyter trust "modelflow/doc/modelflow-gauss.ipynb"
+jupyter trust "modelflow/doc/supply_demand.ipynb"
+jupyter trust "modelflow/doc/wp/ModelFlow-wp.ipynb"
+jupyter trust "modelflow/experiments/Untitled.ipynb"
 exec "$@"
