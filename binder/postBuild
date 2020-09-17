@@ -1,3 +1,4 @@
 #!/bin/bash 
 conda install modelflow -c ibh --y --no-deps
+jupyter trust Examples/Overwiew.ipynb
 exec "$@"
