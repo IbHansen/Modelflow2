@@ -1,5 +1,6 @@
 #!/bin/bash 
-conda install modelflow -c ibh --y --no-depsjupyter trust Examples/Overview.ipynb
+conda install modelflow -c ibh --y --no-deps
+jupyter trust Examples/Overview.ipynb
 jupyter trust Examples/ADAM/ADAM - create the model and run.ipynb
 jupyter trust Examples/ADAM/ADAM.ipynb
 jupyter trust Examples/corona/Corona experiments with probability of transmission.ipynb
