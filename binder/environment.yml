@@ -28,5 +28,5 @@ dependencies:
   - networkx
   - numba
   - tqdm
-  - jupyter_contrib_nbextensions
+#  - jupyter_contrib_nbextensions
 #  - conda-build
