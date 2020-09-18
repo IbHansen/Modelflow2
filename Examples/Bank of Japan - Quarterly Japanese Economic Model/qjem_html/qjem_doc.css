@@ -1,0 +1,177 @@
+#breadcrumbs {
+font-size:90%;
+}
+
+#breadcrumbs + h1 {
+margin-top:0;
+}
+
+#sec2 {
+page-break-before:always;
+}
+
+#sec4 {
+page-break-before:always;
+}
+
+.eqbody {
+background:#FFF;
+line-height:1.2;
+margin:0 0 0 0.5em;
+}
+
+.equation {
+line-height:1.4;
+margin:0 0 0 1em;
+}
+
+.note {
+line-height:1.3em;
+margin-left:0;
+padding-left:1.5em;
+}
+
+.ref {
+margin :1em 0 0 0;
+padding:0 0 0 0;
+}
+
+.varunit {
+page-break-inside:avoid;
+}
+
+
+a.linkdetail,a.eq {
+text-decoration:none;
+}
+
+a.vdef {
+color:Green;
+text-decoration:none;
+}
+
+a:hover,a:focus,a:active {
+color:red;
+}
+
+body {
+background:#FFF;
+font-family:Meiryo, sans-serif;
+line-height:1.5;
+margin:5%;
+}
+
+h1 {
+font-size:2em;
+page-break-after:avoid;
+}
+
+h2 {
+background-color:#99F;
+border-color:#FFF;
+border-width:thin;
+clear:both;
+font-size:1.5em;
+margin:2em 0 0;
+padding:0.2em 0.5em;
+page-break-after:avoid;
+}
+
+h3 {
+border-color:#99F;
+border-style:solid;
+border-width:0 0 0 20px;
+font-size:1.5em;
+margin:1em 0 0;
+padding:0.2em 0.5em;
+page-break-after:avoid;
+}
+
+h4 {
+border-color:#99F;
+border-style:solid;
+border-width:0 0 1px;
+font-size:1.2em;
+margin:1em 0 0.3em;
+page-break-after:avoid;
+}
+
+hr {
+clear:both;
+margin-top:15px;
+}
+
+li {
+margin:0.1em;
+padding:0.1em;
+}
+
+li.ref{
+margin :0.5em 0 0.5em 1.1em;
+list-style-type:disc;
+list-style-position:outside;
+}
+
+span.coef {
+color:#FF1493;
+}
+
+span.core {
+color:#3c3c3c;
+}
+
+span.sub {
+font-size:0.75em;
+vertical-align:sub;
+}
+
+table.tabledetail {
+border:none;
+font-size:90%;
+margin:50px auto;
+word-break:break-all;
+}
+
+table.tabledetail th,table.tabledetail td {
+padding:3px 4px;
+}
+
+table.tabledetail thead th {
+background-color:#a9a9a9;
+}
+
+table.tabledetail tr.even {
+background-color:#f5f5f5;
+}
+
+table.tabledetail tr.odd {
+background-color:#dcdcdc;
+}
+
+td,th {
+text-align:center;
+}
+
+tr {
+text-align:center;
+page-break-inside:avoid;
+}
+
+td.lm {
+text-align:left;
+vertical-align:middle;
+}
+
+ul {
+list-style-type:none;
+margin :0.8em 0 0 0;
+padding:0.3em 0 0 0;
+}
+
+
+@media print {
+  body {
+  margin:0;
+  }
+}
+

@@ -1,0 +1,2 @@
+endo2exog=['FXYEN']
+exog2endo=['V_FXYEN']
