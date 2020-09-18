@@ -22,8 +22,8 @@ dependencies:
   - sympy 
   - cvxopt
   - graphviz
-#  - qgrid
-#  - rise
+  - qgrid
+  - rise
 #  - jupyter 
   - networkx
   - numba
