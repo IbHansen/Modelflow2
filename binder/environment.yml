@@ -30,5 +30,5 @@ dependencies:
   - tqdm
 #  - pip:
 #    - jupyter-contrib-nbextensions
-#  - jupyter_contrib_nbextensions
+  - jupyter_contrib_nbextensions
 #  - conda-build
