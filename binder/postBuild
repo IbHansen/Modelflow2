@@ -1,5 +1,5 @@
 #!/bin/bash 
-conda install -c conda-forge jupyter_contrib_nbextensions
+conda install -c ibh modelflow
 jupyter trust "Examples/Abstract ModelFlow a Python library to manage and solve economic models.ipynb"
 jupyter trust "Examples/Overview.ipynb"
 jupyter trust "Examples/ADAM/ADAM - create the model and run.ipynb"
