@@ -24,7 +24,7 @@ dependencies:
   - graphviz
   - qgrid
   - rise
-#  - jupyter 
+  - jupyter 
   - networkx
   - numba
   - tqdm
