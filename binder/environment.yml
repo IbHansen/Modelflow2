@@ -1,7 +1,7 @@
 name: base
 channels:
-  - conda-forge
   - defaults
+  - conda-forge
 dependencies:
   - pandas
   - scipy 
@@ -22,11 +22,13 @@ dependencies:
   - sympy 
   - cvxopt
   - graphviz
-#  - qgrid
-#  - rise
-#  - jupyter 
+  - qgrid
+  - rise
+  - jupyter 
   - networkx
   - numba
   - tqdm
-#  - jupyter_contrib_nbextensions
+#  - pip:
+#    - jupyter-contrib-nbextensions
+  - jupyter_contrib_nbextensions
 #  - conda-build
