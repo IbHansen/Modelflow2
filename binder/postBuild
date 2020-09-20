@@ -1,10 +1,11 @@
 #!/bin/bash 
-conda install -c ibh modelflow 
+conda install modelflow -c ibh --y  #  --no-deps
 jupyter trust "Examples/Abstract ModelFlow a Python library to manage and solve economic models.ipynb"
 jupyter trust "Examples/Overview.ipynb"
 jupyter trust "Examples/ADAM/ADAM - create the model and run.ipynb"
 jupyter trust "Examples/ADAM/ADAM.ipynb"
 jupyter trust "Examples/Bank of Japan - Quarterly Japanese Economic Model/Q-JEM experiments.ipynb"
+jupyter trust "Examples/corona/Corona experiments with policy - interactive slideshow .ipynb"
 jupyter trust "Examples/corona/Corona experiments with probability of transmission.ipynb"
 jupyter trust "Examples/corona/Corona specify model and make eksperiments.ipynb"
 jupyter trust "Examples/corona/Corona_ a simpel model.ipynb"
