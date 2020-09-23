@@ -2348,7 +2348,7 @@ class Display_Mixin():
          except ZeroDivisionError:
              print('no keept solution')
              
-    def keep_viz(self,pat='*'):
+    def keep_vizold(self,pat='*'):
        '''A utility function which shows selected variables over a selected timespan'''
        from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider,SelectMultiple, Layout
        from ipywidgets import interactive
@@ -2366,6 +2366,51 @@ class Display_Mixin():
                                          ,layout=Layout(width='50%', height='200px'),
                                           description='One or more'))
        
+       display(show)
+       return
+   
+    def keep_viz(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec='0'):
+       """
+        Plots the keept dataframes
+
+        Args:
+            pat (str, optional): a string of variables to select pr default. Defaults to '*'.
+            smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
+            selectfrom (list, optional): the variables to select from, Defaults to [] -> all endogeneous variables .
+            legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
+            dec (string, optional): decimals on the y-axis. Defaults to '0'.
+
+        Returns:
+            None.
+            
+        self.keep_wiz_figs is set to a dictionary contraining the figures. Can be used to produce publication
+        quality files. 
+
+       """
+        
+       from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider,SelectMultiple, Layout
+       from ipywidgets import interactive, ToggleButtons,SelectionRangeSlider
+       
+       minper = self.lastdf.index[0]
+       maxper = self.lastdf.index[-1]
+       options = [(ind,nr) for nr,ind in enumerate(self.lastdf.index)]
+       with self.set_smpl(*smpl):
+           show_per =  self.current_per[:]
+       defaultvar = self.vlist(pat)
+       _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(self.endogene)
+       def explain(smpl ,vars,diff,showtype,scale,legend):
+           with self.set_smpl(*smpl):
+              self.keep_wiz_figs =  self.keep_plot(' '.join(vars),diff=diff,scale=scale,showtype=showtype,legend=legend,dec=dec)
+               
+       show = interactive(explain,
+               smpl = SelectionRangeSlider(value=[show_per[0],show_per[-1]],continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
+               vars  = SelectMultiple(value = defaultvar,options=_selectfrom
+                                         ,layout=Layout(width='50%', height='200px'),
+                                          description='One or more'),
+               diff = ToggleButtons(options=[('No',False),('Yes',True)], description = 'Difference to first experiment',value=False),
+               showtype = ToggleButtons(options=[('Level','level'),('Growth','growth')], description = 'Data type',value='level'),
+               scale = ToggleButtons(options=[('Linear','linear'),('Log','log')], description = 'Y-scale',value='linear'),
+               legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1) )
        display(show)
        return
    
