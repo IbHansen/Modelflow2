@@ -161,7 +161,7 @@ class targets_instruments_delayed():
     '''
     
     def __init__(self,databank,targets,instruments,model,DefaultImpuls=0.01,defaultconv=0.01, 
-                 nonlin=False,silent = True, maxiter=30,solveopt={},delay=0):
+                 nonlin=False,silent = True, maxiter=30,solveopt={}):
 
         self.model = model
         self.df = model.lastdf
@@ -183,16 +183,16 @@ class targets_instruments_delayed():
             name = f'Instrument_{inumber}' if len(name)>500 else name 
             self.instruments[inumber] = {'name':name , 'vars': xx,  }
         self.DefaultImpuls = DefaultImpuls
-        self.delay = delay
+
         
     def jacobi(self,per,delay=None):
         ''' Calculates a jecobi matrix of derivatives based on the instruments and targets 
         
         returns a dataframe '''
         # breakpoint()
-        idelay = self.delay if type(delay)==type(None) else delay
+        
         iper = self.df.index.get_loc(per)
-        iper_delayed = iper-idelay
+        iper_delayed = iper-delay
         per_delayed = self.df.index[iper_delayed]
         
         
@@ -200,7 +200,7 @@ class targets_instruments_delayed():
         with self.model.set_smpl(per_delayed,per):
             mul = self.model(self.df,setlast=False,silent=self.silent, **self.solveopt)           # start point for this quarter 
         basis = mul.copy(deep=True)  # make a reference point for the calculation the derivatives. 
-        if not self.silent: print(f'Update jacobi: {per}')
+        if not self.silent: print(f'Update jacobi: {per} effects from {per_delayed}')
         for instrument in self.instruments.values():
      #       print('instrument: ',instrument['name'])
 # set the instrument            
@@ -220,12 +220,12 @@ class targets_instruments_delayed():
 
         return jac
     
-    def invjacobi(self,per,diag=False):
+    def invjacobi(self,per,diag=False,delay=0):
         ''' Calculates the inverted jacobi matrix
         
         returns a dataframe '''
         
-        x = self.jacobi(per)
+        x = self.jacobi(per,delay=delay)
 #        print(x)
         if diag:
             out = pd.DataFrame(np.diag(1.0/x.values.diagonal()),x.columns,x.index)
@@ -233,19 +233,26 @@ class targets_instruments_delayed():
             out= pd.DataFrame(np.linalg.inv(x),x.columns,x.index)
         return out
     
-    def targetseek(self,databank=None,shortfall=False,**kwargs):
+    def targetseek(self,databank=None,shortfall=False,delay=0,**kwargs):
         ''' Calculates the instruments as a function of targets '''
         silent =  kwargs.get('silent',self.silent)
         self.maxiter = kwargs.get('maxiter',self.maxiter)
         self.nonlin = kwargs.get('nonlin',self.nonlin)
+ 
         tindex = self.model.current_per.copy()
         res    = self.databank 
 #        self.inv  = inv  = self.invjacobi(self.targets.index[0])
-        self.inv  = inv  = self.invjacobi(self.targets.index[0],diag=shortfall) 
+        self.inv  = inv  = self.invjacobi(self.targets.index[0],diag=shortfall,delay=delay) 
 
         self.conv = pd.Series([self.targetconv[v] for v in self.targetvars],self.targetvars)
 #        print(inv)
         for per in self.targets.index:
+            
+            iper = self.df.index.get_loc(per)
+            iper_delayed = iper-delay
+            per_delayed = self.df.index[iper_delayed]
+
+
             if not silent: print('Period:',per)
             res = self.model(res,per ,per ,setlast=False,silent=self.silent, **self.solveopt)
             orgdistance = self.targets.loc[per,self.targetvars] - res.loc[per,self.targetvars]
