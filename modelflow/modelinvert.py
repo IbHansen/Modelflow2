@@ -169,7 +169,7 @@ class targets_instruments_delayed():
         self.targetconv  = {t: defaultconv for t in self.targetvars} # make sure there is a convergence criteria ]
         self.targets    = targets
         self.instruments = {}
-        self.solveopt = solveopt 
+        self.solveopt = {**solveopt, **{'keep':''}}
         self.silent = silent 
         self.debug=False
         self.maxiter = maxiter
@@ -209,7 +209,7 @@ class targets_instruments_delayed():
 # calculate the effect 
             with self.model.set_smpl(per_delayed,per):
 
-                res = self.model(mul,setlast=False,silent=self.silent, **self.solveopt) #antal=600,first_test=20,ljit=1)        # solve model 
+                res = self.model(mul,save=False,silent=self.silent, **self.solveopt) #antal=600,first_test=20,ljit=1)        # solve model 
             
             # breakpoint()
             jac.loc[self.targetvars,instrument['name']] = res.loc[per,self.targetvars]-basis.loc[per,self.targetvars] # store difference in original bank 
@@ -254,7 +254,7 @@ class targets_instruments_delayed():
 
 
             if not silent: print('Period:',per)
-            res = self.model(res,per ,per ,setlast=False,silent=self.silent, **self.solveopt)
+            res = self.model(res,per_delayed ,per ,save=False,silent=self.silent, **self.solveopt)
             orgdistance = self.targets.loc[per,self.targetvars] - res.loc[per,self.targetvars]
             shortfallvar = (orgdistance >= 0)
             for iterations in range(self.maxiter):
@@ -264,13 +264,13 @@ class targets_instruments_delayed():
                 if self.debug: print(f'Distance    :{startdistance}\nOrgDistance :{distance}')
                 if (distance.abs()>=self.conv).any():
                     if self.nonlin:
-                         self.inv  = inv  = self.invjacobi(per,diag=shortfall)
+                         self.inv  = inv  = self.invjacobi(per,diag=shortfall,delay=delay)
                     update = inv.dot(distance)
                     if self.debug : print(update)
                     for instrument in self.instruments.values():
                         for var,impuls in instrument['vars']:
-                            res.loc[per,var]    =   res.loc[per,var] + update[instrument['name']] * impuls  # increase loan growth
-                    res = self.model(res,per ,per ,setlast=False,silent=self.silent, **self.solveopt)
+                            res.loc[per_delayed:,var]    =   res.loc[per_delayed:,var] + update[instrument['name']] * impuls  # increase loan growth
+                    res = self.model(res,per_delayed ,per ,setlast=False,silent=self.silent, **self.solveopt)
                 else:
                     break
         self.model.lastdf = res
