@@ -201,6 +201,7 @@ class targets_instruments_delayed():
             mul = self.model(self.df,setlast=False,silent=self.silent, **self.solveopt)           # start point for this quarter 
         basis = mul.copy(deep=True)  # make a reference point for the calculation the derivatives. 
         if not self.silent: print(f'Update jacobi: {per} effects from {per_delayed}')
+        oldsave = self.model.save
         for instrument in self.instruments.values():
      #       print('instrument: ',instrument['name'])
 # set the instrument            
@@ -216,7 +217,8 @@ class targets_instruments_delayed():
 # reset the instrument 
             for var,impuls in instrument['vars']:
                 mul.loc[per_delayed:,var]=basis.loc[per_delayed:,var]
-        self.model.oldkwargs = self.savesolvearg 
+        self.model.oldkwargs = self.savesolvearg
+        self.model.save = oldsave
 
         return jac
     
@@ -246,6 +248,7 @@ class targets_instruments_delayed():
 
         self.conv = pd.Series([self.targetconv[v] for v in self.targetvars],self.targetvars)
 #        print(inv)
+        oldsave = self.model.save
         for per in self.targets.index:
             
             iper = self.df.index.get_loc(per)
@@ -275,6 +278,7 @@ class targets_instruments_delayed():
                     break
         self.model.lastdf = res
         self.model.oldkwargs = self.savesolvearg 
+        self.model.save = oldsave
         self.model.current_per = tindex
 
         return res

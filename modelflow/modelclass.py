@@ -2249,6 +2249,7 @@ class Display_Mixin():
             ax.spines['right'].set_visible(False)
         
         index_len = len(df.index)
+        xlabel__ = xlabel if xlabel or df.index.name==None else df.index.name
         
         if 0:
             #df.set_index(pd.date_range('2020-1-1',periods = index_len,freq = 'q'))
@@ -2273,7 +2274,7 @@ class Display_Mixin():
         # ax.xaxis.set_minor_locator(ticker.MultipleLocator(years))
         # breakpoint()
         ax.set_yscale(scale)
-        ax.set_xlabel(f'{xlabel}', fontsize=15)
+        ax.set_xlabel(f'{xlabel__}', fontsize=15)
         ax.set_ylabel(f'{ylabel}', fontsize=15,rotation='horizontal', ha='left',va='baseline')
         xdec =  str(dec) if dec else finddec(df)
         ax.yaxis.set_label_coords(-0.1,1.02)
@@ -2343,7 +2344,7 @@ class Display_Mixin():
                 title=f'Difference to "{df.columns[0]}" for {dftype}:' if diff else f'{dftype}:',
                 yunit = yunit,
                 ylabel = 'Percent' if showtype == 'growth' else ylabel,
-                xlabel = 'Day',
+                xlabel = '',
                 dec = 2 if showtype == 'growth' and not dec else dec) 
                  for v,df in dfsres.items()}
              return figs
