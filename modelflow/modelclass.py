@@ -2351,6 +2351,16 @@ class Display_Mixin():
          except ZeroDivisionError:
              print('no keept solution')
              
+    @staticmethod         
+    def keep_add_vline(figs,time,text='  Calibration time' ):
+        ''' adds a vertical line with text to figs a dict with matplotlib figures) from keep_plot'''
+        for keep,fig in figs.items():
+            ymax = fig.axes[0].get_ylim()[1]
+            fig.axes[0].annotate('  Calibration time',xy=(time,ymax),fontsize = 13,va='top')
+            fig.axes[0].axvline(0,linewidth=3, color='r',ls='dashed')
+
+            
+
     def keep_vizold(self,pat='*'):
        '''A utility function which shows selected variables over a selected timespan'''
        from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider,SelectMultiple, Layout
