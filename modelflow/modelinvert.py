@@ -17,7 +17,7 @@ import numpy as np
 from modelhelp import update_var
 
 
-class targets_instruments():
+class targets_instruments_old():
     ''' Class to handle general target/instrument problems. 
     Number of targets should be equal to number of instruments 
     an instrument can comprice of severeral variables 
@@ -142,7 +142,7 @@ class targets_instruments():
         return self.targetseek( *args, **kwargs)
         
             
-class targets_instruments_delayed():
+class targets_instruments():
     ''' Class to handle general target/instrument problems. where the responce is delayed
     Number of targets should be equal to number of instruments 
     an instrument can comprice of severeral variables 

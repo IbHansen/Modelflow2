@@ -14,7 +14,7 @@ import os
 import pandas as pd
 
 from modelclass import model
-from modelinvert import targets_instruments_delayed
+from modelinvert import targets_instruments
 
 #%% load and run
 mcorona,df  = model.modelload('coronatest.json')  # Get the model and data, saved in "Corona specify model and make eksperiments.ipynb"
@@ -23,7 +23,7 @@ df.index.name = 'Day'
 res = mcorona(df,keep='Basis',silent=1)
 
 #%% find jacobi   
-ti = targets_instruments_delayed(databank=res,model=mcorona,targets=['DEAD_GROWTH','HOSPITAL_GROWTH','INFECTIOUS_GROWTH'],instruments= [('PROBABILITY_TRANSMISION',0.01)])
+ti = targets_instruments(databank=res,model=mcorona,targets=['DEAD_GROWTH','HOSPITAL_GROWTH','INFECTIOUS_GROWTH'],instruments= [('PROBABILITY_TRANSMISION',0.01)])
 ti.instruments
 ti.jacobi(0,delay=20)
 os.environ['PYTHONBREAKPOINT'] = ''
@@ -35,7 +35,7 @@ def ti_calibrate(mmodel,instrument,target,value,time,delay=0,silent=1,show=1):
     mmodel.keep_solutions['Before calibration'] = mmodel.lastdf.copy(deep=True)
     
     targetdf=pd.DataFrame(value,index=[time],columns=[target])
-    ti = targets_instruments_delayed(databank=mmodel.lastdf,model=mmodel,targets=targetdf,instruments= [instrument])
+    ti = targets_instruments(databank=mmodel.lastdf,model=mmodel,targets=targetdf,instruments= [instrument])
     
     res = ti(mmodel.lastdf,delay=delay,silent=1,debug=1)
     res2 = mmodel(res,silent=silent,keep='After calibration')
@@ -63,7 +63,7 @@ if 0:
 #%%    
     targetdf=pd.DataFrame(2,index=[0],columns=['INFECTIOUS_GROWTH'])
     
-    ti_growth = targets_instruments_delayed(databank=res,model=mcorona,targets=targetdf,instruments= [('PROBABILITY_TRANSMISION',0.01)])
+    ti_growth = targets_instruments(databank=res,model=mcorona,targets=targetdf,instruments= [('PROBABILITY_TRANSMISION',0.01)])
     # ti_growth.jacobi(120,delay=10)
     res = ti_growth(res,delay=10,silent=1,debug=1)
     res2 = mcorona(res,silent=0,keep='After calibration')
