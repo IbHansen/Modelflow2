@@ -1036,6 +1036,7 @@ class Model_help_Mixin():
         None.
     
         '''
+        import time
         class xtime(): 
             '''A help class to retrieve the time outside the with statement'''
             
@@ -1045,7 +1046,7 @@ class Model_help_Mixin():
                 
             def show(self):
                 print(self.__repr__(),flush=True)
-
+    
             
             def __repr__(self):
                 minutes = self.seconds/60. 
@@ -1058,22 +1059,27 @@ class Model_help_Mixin():
                     afterdec= 1 if minutes >= 10 else 4
                     width = (10 + afterdec)
                     return f'{self.input} took       : {minutes:>{width},.{afterdec}f} Minutes'
-
+    
         
         cxtime = xtime(input)
         start = time.time()
         if show and not short: print(f'{input} started at : {time.strftime("%H:%M:%S"):>{15}} ',flush=True)
         try:
+            error = False
             yield cxtime
-            
+        except BaseException as e:
+            print(f'Failed: {e}:')
+            error = e
         finally:
             end = time.time()
             cxtime.seconds = (end - start)
             
             if show:
                 cxtime.show()
+            if error:
+                raise error
             return 
-
+    
     @staticmethod
     def update_from_list(indf,basis):
         df = indf.copy(deep=True)
@@ -4205,8 +4211,10 @@ def join_name_lag(df):
 
    
 @contextmanager
-def timer(input='test',show=True,short=False):
+def timer_old(input='test',show=True,short=False):
     '''
+    does not catch exceptrions use model.timer
+    
     A timer context manager, implemented using a
     generator function. This one will report time even if an exception occurs"""    
 
