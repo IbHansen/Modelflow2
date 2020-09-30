@@ -161,9 +161,16 @@ class vis():
          muldf = self.thisdf * other 
          return vis(model=self.model,df=muldf,pat=self.__pat__)
      
-     def rename(self,other):
+     def rename(self,other=None):
          ''' rename columns '''
-         muldf = self.thisdf.rename(columns=other) 
+         if type(other) == type(None):
+             if hasattr(self.model,'var_description'):
+                 vtrans = self.model.var_description
+             else:
+                 vtrans = {}
+         else:
+             vtrans = other
+         muldf = self.thisdf.rename(columns=vtrans) 
          return vis(model=self.model,df=muldf,pat=self.__pat__)
 
      def mul(self,other):

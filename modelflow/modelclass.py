@@ -111,6 +111,7 @@ class BaseModel():
             else:
                 self.use_preorder = False 
             self.keep_solutions = {}
+            self.var_description = {}
         return 
 
     @classmethod 
@@ -1119,8 +1120,16 @@ class Model_help_Mixin():
             return data
         else:
             return dataframe
-    
-         
+    @staticmethod
+    def in_notebook():
+        try:
+            from IPython import get_ipython
+            if 'IPythonKernel' not in str(get_ipython().kernel):  # pragma: no cover
+                return False
+        except ImportError:
+            return False
+        return True
+             
 
 class Dekomp_Mixin():
     '''This class defines methods and properties related to equation attribution analyses (dekomp)
@@ -2504,7 +2513,9 @@ class Json_Mixin():
            'lastdf' : self.lastdf.to_json(),
            'current_per':pd.Series(self.current_per).to_json(),
            'modelname' : self.name,
-           'oldkwargs' : self.oldkwargs}  
+           'oldkwargs' : self.oldkwargs,
+           'var_description' : self.var_description
+           }  
      
         if outfile != '':
            pathname = Path(outfile)
@@ -2543,6 +2554,7 @@ class Json_Mixin():
         mmodel = cls(frml,modelname=modelname,funks=funks)
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
+        mmodel.var_description = input.get('var_description',{}) 
         if keep:
             mmodel.json_keep = input
             
