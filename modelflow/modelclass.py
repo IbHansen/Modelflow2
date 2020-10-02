@@ -92,7 +92,8 @@ class BaseModel():
     """ 
 
     def __init__(self, i_eq='', modelname='testmodel',silent=False,straight = False,funks=[],
-                 tabcomplete=True,previousbase=False,use_preorder=True,normalized=True, **kwargs):
+                 tabcomplete=True,previousbase=False,use_preorder=True,normalized=True, 
+                 var_description = {},**kwargs):
         ''' initialize a model'''
         if i_eq !='':
             self.funks = funks 
@@ -111,7 +112,7 @@ class BaseModel():
             else:
                 self.use_preorder = False 
             self.keep_solutions = {}
-            self.var_description = {}
+            self.set_var_description(var_description)
         return 
 
     @classmethod 
@@ -343,8 +344,9 @@ class BaseModel():
         
         self.current_per = old_current_per 
                 
+    def set_var_description(self,a_dict):        
+        self.var_description = self.defsub(a_dict)
         
-
     @property
     def endograph(self) :
         ''' Dependencygraph for currrent periode endogeneous variable, used for reorder the equations'''
@@ -1129,6 +1131,15 @@ class Model_help_Mixin():
         except ImportError:
             return False
         return True
+    @staticmethod
+    class defsub(dict):
+        '''A subclass of dict.
+        if a *defsub* is indexed by a nonexisting keyword it just return the keyword '''
+        
+        def __missing__(self, key):
+            return key 
+    
+    
              
 
 class Dekomp_Mixin():
@@ -1907,17 +1918,9 @@ class Graph_Draw_Mixin():
         
         
         invisible = kwargs.get('invisible',set())
-        labelsdic = kwargs.get('labels',{})
         size=kwargs.get('size',(6,6))
         
-        class defsub(dict):
-            '''A subclass of dict.
-            if a *defsub* is indexed by a nonexisting keyword it just return the keyword '''
-            
-            def __missing__(self, key):
-                return key 
         #%
-        labels = defsub(labelsdic)
         
         def stylefunk(n1=None,n2=None,invisible=set()):
             if n1 in invisible or n2 in invisible:
@@ -1942,13 +1945,21 @@ class Graph_Draw_Mixin():
             alllinks = (node(x.lev,self.trans(x.parent,navn,self.transdic)     ,self.trans(x.child,navn,self.transdic))  for x in alledges)
         else:
             alllinks = alledges 
-            
+
+        labelsdic = kwargs.get('labels',{})
+        labels = self.defsub(labelsdic)
+
      
         ibh  = {node(0,x.parent,x.child) for x in alllinks}  # To weed out multible  links 
     #
         nodelist = {n for nodes in ibh for n in (nodes.parent,nodes.child)}
 #        print(nodelist)
         def makenode(v):
+            var_name = v.split("(")[0]
+            des = self.var_description[var_name]
+            # des = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
+            des = des.replace('<','&lt;').replace('>','&gt;')
+            tip = f'tooltip="{v}:{des}" href="bogus"'
             if kwargs.get('last',False) or kwargs.get('all',False):
                 try:
                     t = pt.udtryk_parse(v,funks=[])
@@ -1964,7 +1975,7 @@ class Graph_Draw_Mixin():
                     dif    = "<TR><TD ALIGN='LEFT'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '  
                     out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
-                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)} > <TR><TD COLSPAN ='{len(lvalues)+1}'>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
+                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {tip}>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
                     pass 
 
                 except:
@@ -1972,7 +1983,7 @@ class Graph_Draw_Mixin():
                     f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{labels[v]}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
             else:
                 out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
-                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD>{labels[v]}</TD></TR> </TABLE>> ]")
+                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {tip}>{labels[v]}</TD></TR> </TABLE>> ]")
             return out    
         
         pre   = 'Digraph TD {rankdir ="HR" \n' if kwargs.get('HR',True) else 'Digraph TD { rankdir ="LR" \n'
@@ -2019,10 +2030,11 @@ class Graph_Draw_Mixin():
        # run('dot -Tpdf  -Gsize=9,9\! -o'+pdfname+' "'+filename+'"',shell=True) # creates the drawing  
        # run('dot -Teps  -Gsize=9,9\! -o'+epsname+' "'+filename+'"',shell=True) # creates the drawing  
 
-        if 'svg' in kwargs:
-            display(SVG(filename=svgname[1:-1]))
-        else:            
+        if kwargs.get('png',False):            
             display(Image(filename=pngname[1:-1]))
+        else:
+            display(SVG(filename=svgname[1:-1]))
+            
         if browser: wb.open(svgname,new=2)
         if kwargs.get('pdf',False)     : os.system(pdfname)
 
@@ -2554,7 +2566,7 @@ class Json_Mixin():
         mmodel = cls(frml,modelname=modelname,funks=funks)
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
-        mmodel.var_description = input.get('var_description',{}) 
+        mmodel.var_description = mmodel.set_var_description(input.get('var_description',{})) 
         if keep:
             mmodel.json_keep = input
             
@@ -4398,16 +4410,20 @@ if __name__ == '__main__' :
         b = mx.res(df)
     with model.timer('dddd') as t:
         u=2*2
-    
+#%% test
+   
     smallmodel      = '''
 frml <> a = c(-1) + b $ 
 frml <> d1 = x + 3 * a(-1)+ c **2 +a  $ 
 frml <> d3 = x + 3 * a(-1)+c **3 $  
 Frml <> x = 0.5 * c +a(+1)$'''
-    mmodel = model(smallmodel)
-    mmodel.drawendo()
-    mmodel.drawendo_lag_lead()
-    mmodel.drawmodel()
+    des = {'A':'Bruttonationalprodukt i faste priser',
+           'X': 'Eksport <>;',
+           'C': 'Forbrug'}
+    mmodel = model(smallmodel,var_description=des)
+    # mmodel.drawendo()
+    # mmodel.drawendo_lag_lead()
+    mmodel.drawmodel(png=0)
 #%%
     print(list(m2test.current_per))
     with m2test.set_smpl(0,0):
