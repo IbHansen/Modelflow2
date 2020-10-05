@@ -2409,41 +2409,46 @@ class Display_Mixin():
        display(show)
        return
    
-    def keep_viz(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec='0'):
+    def keep_viz(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec=''):
        """
         Plots the keept dataframes
-
+    
         Args:
             pat (str, optional): a string of variables to select pr default. Defaults to '*'.
             smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
             selectfrom (list, optional): the variables to select from, Defaults to [] -> all endogeneous variables .
             legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
             dec (string, optional): decimals on the y-axis. Defaults to '0'.
-
+    
         Returns:
             None.
-            
+    
         self.keep_wiz_figs is set to a dictionary contraining the figures. Can be used to produce publication
         quality files. 
-
+    
        """
-        
+    
        from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider,SelectMultiple, Layout
        from ipywidgets import interactive, ToggleButtons,SelectionRangeSlider
-       
+    
        minper = self.lastdf.index[0]
        maxper = self.lastdf.index[-1]
        options = [(ind,nr) for nr,ind in enumerate(self.lastdf.index)]
        with self.set_smpl(*smpl):
            show_per =  self.current_per[:]
+       init_start = self.lastdf.index.get_loc(show_per[0])
+       init_end   = self.lastdf.index.get_loc(show_per[-1])
        defaultvar = self.vlist(pat)
        _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(self.endogene)
-       def explain(smpl ,vars,diff,showtype,scale,legend):
+       def explain(i_smpl ,vars,diff,showtype,scale,legend):
+           smpl = (self.lastdf.index[i_smpl[0]],self.lastdf.index[i_smpl[1]])
            with self.set_smpl(*smpl):
               self.keep_wiz_figs =  self.keep_plot(' '.join(vars),diff=diff,scale=scale,showtype=showtype,legend=legend,dec=dec)
-               
+    
+       #breakpoint() 
        show = interactive(explain,
-               smpl = SelectionRangeSlider(value=[show_per[0],show_per[-1]],continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
+    #          smpl = SelectionRangeSlider(continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
+               i_smpl = SelectionRangeSlider(value=[init_start,init_end],continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
                vars  = SelectMultiple(value = defaultvar,options=_selectfrom
                                          ,layout=Layout(width='50%', height='200px'),
                                           description='One or more'),
@@ -2452,8 +2457,7 @@ class Display_Mixin():
                scale = ToggleButtons(options=[('Linear','linear'),('Log','log')], description = 'Y-scale',value='linear'),
                legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1) )
        display(show)
-       return
-   
+       return   
     @staticmethod
     def display_toc(text='**Jupyter notebooks in this and all subfolders**'):
         '''In a jupyter notebook this function displays a clickable table of content of all 
@@ -2566,7 +2570,7 @@ class Json_Mixin():
         mmodel = cls(frml,modelname=modelname,funks=funks)
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
-        mmodel.var_description = mmodel.set_var_description(input.get('var_description',{})) 
+        mmodel.set_var_description(input.get('var_description',{})) 
         if keep:
             mmodel.json_keep = input
             
