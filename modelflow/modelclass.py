@@ -1958,8 +1958,13 @@ class Graph_Draw_Mixin():
             var_name = v.split("(")[0]
             des = self.var_description[var_name]
             # des = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
-            des = des.replace('<','&lt;').replace('>','&gt;')
-            tip = f'tooltip="{v}:{des}" href="bogus"'
+            des = (des.replace('<','&lt;').replace('>','&gt;')
+                   .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
+                   .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
+                   )
+            tiphtml = f'tooltip="{v}:{des}" href="bogus"'
+              
+            tip = f'tooltip="{des}"'
             if kwargs.get('last',False) or kwargs.get('all',False):
                 try:
                     t = pt.udtryk_parse(v,funks=[])
@@ -1974,15 +1979,15 @@ class Graph_Draw_Mixin():
                     last   = "<TR><TD ALIGN='LEFT'>Last</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>' if kwargs.get('last',False) or kwargs.get('all',False) else ''    
                     dif    = "<TR><TD ALIGN='LEFT'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '  
-                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
+                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {tip1} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
                     f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {tip}>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
                     pass 
 
                 except:
-                   out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
+                   out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {tip1} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
                     f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{labels[v]}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
             else:
-                out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
+                out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {tip}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
                 f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {tip}>{labels[v]}</TD></TR> </TABLE>> ]")
             return out    
         
@@ -2033,7 +2038,11 @@ class Graph_Draw_Mixin():
         if kwargs.get('png',False):            
             display(Image(filename=pngname[1:-1]))
         else:
-            display(SVG(filename=svgname[1:-1]))
+            try:
+                display(SVG(filename=svgname[1:-1]))
+            except:
+                display(Image(filename=pngname[1:-1]))
+
             
         if browser: wb.open(svgname,new=2)
         if kwargs.get('pdf',False)     : os.system(pdfname)
@@ -4088,6 +4097,9 @@ class model(Zip_Mixin,Json_Mixin,Model_help_Mixin,Solver_Mixin,Display_Mixin,Gra
        
 
 # wrapper 
+
+def ttimer(*args,**kwargs):
+    return model.timer(*args,**kwargs)
     
 def create_model(navn, hist=0, name='',new=True,finished=False,xmodel=model,straight=False,funks=[]):
     '''Creates either a model instance or a model and a historic model from formulars. \n
@@ -4421,13 +4433,13 @@ frml <> a = c(-1) + b $
 frml <> d1 = x + 3 * a(-1)+ c **2 +a  $ 
 frml <> d3 = x + 3 * a(-1)+c **3 $  
 Frml <> x = 0.5 * c +a(+1)$'''
-    des = {'A':'Bruttonationalprodukt i faste priser',
-           'X': 'Eksport <>;',
+    des = {'A':'Bruttonationalprodukt i faste  priser',
+           'X': 'Eksport <æøåÆØÅ>;',
            'C': 'Forbrug'}
-    mmodel = model(smallmodel,var_description=des)
+    mmodel = model(smallmodel,var_description=des,svg=1,browser=1)
     # mmodel.drawendo()
-    # mmodel.drawendo_lag_lead()
-    mmodel.drawmodel(png=0)
+    mmodel.drawendo_lag_lead(browser=1)
+    mmodel.drawmodel(svg=1,browser=1)
 #%%
     print(list(m2test.current_per))
     with m2test.set_smpl(0,0):

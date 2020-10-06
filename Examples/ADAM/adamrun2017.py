@@ -14,10 +14,18 @@ if not 'madam' in locals():
     fadam = open('adam/jul17x.txt','rt').read()
     madam = model(fadam)    
     madam.use_preorder = True
+#%%
+    with open('adam/varlist.txt','rt') as f:
+        des = f.read()
+    
+    var_description  = {var.split('\n')[1].upper(): var.split('\n')[2] for i,var in enumerate(des.split('----------')) if 3 <= len(var.split('\n'))}
+    madam.set_var_description(var_description)
     #%%   
-
+assert 1==1
 grund = madam(bank,2018,2030,conv='YR UL',max_iterations=100,alfa=0.4,stats=0,ljit=0,chunk=30,
               sim2= 0,debug=1)
+
+madam.modeldump('adam/jul17x.pcim')
 mulstart =grund.copy()
 mulstart.TG = grund.TG+0.02
 mulstart.TFN_O = grund.TFN_O - 10
