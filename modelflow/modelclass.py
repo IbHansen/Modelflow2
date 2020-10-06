@@ -1954,7 +1954,9 @@ class Graph_Draw_Mixin():
     #
         nodelist = {n for nodes in ibh for n in (nodes.parent,nodes.child)}
 #        print(nodelist)
-        def makenode(v):
+        def maketip(v,html=False):
+            '''
+            Return a tooltip for variable v. if html==True it can be incorporated into html string'''
             var_name = v.split("(")[0]
             des = self.var_description[var_name]
             # des = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
@@ -1962,9 +1964,12 @@ class Graph_Draw_Mixin():
                    .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
                    .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
                    )
-            tiphtml = f'tooltip="{v}:{des}" href="bogus"'
-              
-            tip = f'tooltip="{des}"'
+            if html:
+                return f'TOOLTIP="{v}:{des}" href="bogus"'
+            else:  
+                return f'tooltip="{des}"'
+
+        def makenode(v):
             if kwargs.get('last',False) or kwargs.get('all',False):
                 try:
                     t = pt.udtryk_parse(v,funks=[])
@@ -1979,16 +1984,26 @@ class Graph_Draw_Mixin():
                     last   = "<TR><TD ALIGN='LEFT'>Last</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>' if kwargs.get('last',False) or kwargs.get('all',False) else ''    
                     dif    = "<TR><TD ALIGN='LEFT'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '  
-                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {tip1} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
-                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {tip}>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
+                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
+                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)} > <TR><TD COLSPAN ='{len(lvalues)+1}'>{labels[v]} {maketip(v,True)}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
                     pass 
 
-                except:
-                   out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {tip1} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
+                except Exception as inst:
+                   print(v)
+                   print()
+                   print(maketip(v,True))
+                   print('type:',type(inst))    # the exception instance
+                   print(inst.args)     # arguments stored in .args
+                   print(inst)          # __str__ allows args to be printed directly,
+                   print("Unexpected error:", sys.exc_info()[0])
+                   
+                   # raise
+                   # print(f'Failed: {e}:')
+                   out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
                     f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{labels[v]}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
             else:
-                out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {tip}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
-                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {tip}>{labels[v]}</TD></TR> </TABLE>> ]")
+                out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
+                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {maketip(v)}>{labels[v]}</TD></TR> </TABLE>> ]")
             return out    
         
         pre   = 'Digraph TD {rankdir ="HR" \n' if kwargs.get('HR',True) else 'Digraph TD { rankdir ="LR" \n'
@@ -4437,9 +4452,10 @@ Frml <> x = 0.5 * c +a(+1)$'''
            'X': 'Eksport <æøåÆØÅ>;',
            'C': 'Forbrug'}
     mmodel = model(smallmodel,var_description=des,svg=1,browser=1)
+    xx = mmodel(df)
     # mmodel.drawendo()
     mmodel.drawendo_lag_lead(browser=1)
-    mmodel.drawmodel(svg=1,browser=1)
+    mmodel.drawmodel(svg=1,last=True,browser=1)
 #%%
     print(list(m2test.current_per))
     with m2test.set_smpl(0,0):
