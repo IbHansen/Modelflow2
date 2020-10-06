@@ -1801,31 +1801,32 @@ class Graph_Draw_Mixin():
         nodelist = {n for nodes in ibh for n in (nodes.parent,nodes.child)}
         
         def dftotable(df,dec=0):
-             xx = '\n'.join([f"<TR><TD ALIGN='LEFT'>{row[0]}</TD>"+
+             xx = '\n'.join([f"<TR {self.maketip(row[0],True)}><TD ALIGN='LEFT' {self.maketip(row[0],True)}>{row[0]}</TD>"+
                              ''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() 
                                     for b in row[1:]])+'</TR>' for row in df.itertuples()])
-             return xx               
+             return xx   
+
+            
         def makenode(v):
 #            tip= f'{pt.split_frml(self.allvar[v]["frml"])[3][:-1]}' if v in self.endogene else f'{v}'   
-            tip = v 
             if showatt:
                 dfval = values_dic[v]
                 dflen = len(dfval.columns)
                 lper = "<TR><TD ALIGN='LEFT'>Per</TD>"+''.join([ '<TD>'+(f'{p}'.strip()+'</TD>').strip() for p in dfval.columns])+'</TR>'
-                hval = f"<TR><TD COLSPAN = '{dflen+1}'>{tip}</TD></TR>" 
+                hval = f"<TR><TD COLSPAN = '{dflen+1}' {self.maketip(v,True)}>{v}</TD></TR>" 
                 lval   = dftotable(dfval,dec)
                 try:                    
                     latt =  f"<TR><TD COLSPAN = '{dflen+1}'> % Explained by</TD></TR>{dftotable(att_dic[v],dec)}" if len(att_dic[v]) else ''
                 except: 
                     latt = ''
-                    
+                # breakpoint()    
                 linesout=hval+lper+lval+latt   
                 out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} margin=0.025 fontcolor=blue style=filled  '+ (
                 f" label=<<TABLE BORDER='1' CELLBORDER = '1'  > {linesout} </TABLE>> ]")
                 pass
             else:
                 out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} margin=0.025 fontcolor=blue style=filled  '+ (
-                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {tip} > <TR><TD>{v}</TD></TR> </TABLE>> ]")
+                f" label=<<TABLE BORDER='0' CELLBORDER = '0'  > <TR><TD>{v}</TD></TR> </TABLE>> ]")
             return out    
         
         pre   = 'Digraph TD { rankdir ="HR" \n' if kwargs.get('HR',False) else 'Digraph TD { rankdir ="LR" \n'
@@ -1853,39 +1854,41 @@ class Graph_Draw_Mixin():
         post  = '\n}' 
 
         out   = pre+nodes+links+psink+psource+ptitle+post 
-        tpath=os.path.join(os.getcwd(),'graph')
-        if not os.path.isdir(tpath):
-            try:
-                os.mkdir(tpath)
-            except: 
-                print("ModelFlow: Can't create folder for graphs")
-                return 
-    #    filename = os.path.join(r'graph',navn+'.gv')
-        filename = os.path.join(tpath,fname+'.gv')
-        pngname  = '"'+os.path.join(tpath,fname+'.png')+'"'
-        svgname  = '"'+os.path.join(tpath,fname+'.svg')+'"'
-        pdfname  = '"'+os.path.join(tpath,fname+'.pdf')+'"'
-        epsname  = '"'+os.path.join(tpath,fname+'.eps')+'"'
+        self.display_graph(out,fname,browser,kwargs)
 
-        with open(filename,'w') as f:
-            f.write(out)
-#        run('dot -Tsvg  -Gsize=19,19\! -o'+svgname+' "'+filename+'"',shell=True) # creates the drawing  
-#        run('dot -Tpng  -Gsize=9,9\! -o'+pngname+' "'+filename+'"',shell=True) # creates the drawing  
-#        run('dot -Tpdf  -Gsize=9,9\! -o'+pdfname+' "'+filename+'"',shell=True) # creates the drawing  
-        run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}\! -o{svgname} "{filename}"',shell=True) # creates the drawing  
-        run(f'dot -Tpng  -Gsize={size[0]},{size[1]}\! -o{pngname} "{filename}"',shell=True) # creates the drawing  
-        run(f'dot -Tpdf  -Gsize={size[0]},{size[1]}\! -o{pdfname} "{filename}"',shell=True) # creates the drawing  
+        # tpath=os.path.join(os.getcwd(),'graph')
+#         if not os.path.isdir(tpath):
+#             try:
+#                 os.mkdir(tpath)
+#             except: 
+#                 print("ModelFlow: Can't create folder for graphs")
+#                 return 
+#     #    filename = os.path.join(r'graph',navn+'.gv')
+#          filename = os.path.join(tpath,fname+'.gv')
+#         pngname  = '"'+os.path.join(tpath,fname+'.png')+'"'
+#         svgname  = '"'+os.path.join(tpath,fname+'.svg')+'"'
+#         pdfname  = '"'+os.path.join(tpath,fname+'.pdf')+'"'
+#         epsname  = '"'+os.path.join(tpath,fname+'.eps')+'"'
 
-#        run('dot -Teps  -Gsize=9,9\! -o'+epsname+' "'+filename+'"',shell=True) # creates the drawing  
-        if 'svg' in kwargs:
-            display(SVG(filename=svgname[1:-1]))
-        else:            
-            display(Image(filename=pngname[1:-1]))
+#         with open(filename,'w') as f:
+#             f.write(out)
+# #        run('dot -Tsvg  -Gsize=19,19\! -o'+svgname+' "'+filename+'"',shell=True) # creates the drawing  
+# #        run('dot -Tpng  -Gsize=9,9\! -o'+pngname+' "'+filename+'"',shell=True) # creates the drawing  
+# #        run('dot -Tpdf  -Gsize=9,9\! -o'+pdfname+' "'+filename+'"',shell=True) # creates the drawing  
+#         run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}\! -o{svgname} "{filename}"',shell=True) # creates the drawing  
+#         run(f'dot -Tpng  -Gsize={size[0]},{size[1]}\! -o{pngname} "{filename}"',shell=True) # creates the drawing  
+#         run(f'dot -Tpdf  -Gsize={size[0]},{size[1]}\! -o{pdfname} "{filename}"',shell=True) # creates the drawing  
+
+# #        run('dot -Teps  -Gsize=9,9\! -o'+epsname+' "'+filename+'"',shell=True) # creates the drawing  
+#         if 'svg' in kwargs:
+#             display(SVG(filename=svgname[1:-1]))
+#         else:            
+#             display(Image(filename=pngname[1:-1]))
             
-        if kwargs.get('pdf',False)     : os.system(pdfname)
-        if kwargs.get('browser',False) : wb.open(svgname,new=2)
+#         if kwargs.get('pdf',False)     : os.system(pdfname)
+#         if kwargs.get('browser',False) : wb.open(svgname,new=2)
         
-        return 
+#         return 
                     
     def gdraw(self,g,**kwargs):
         '''draws a graph of of the whole model''' 
@@ -1894,7 +1897,13 @@ class Graph_Draw_Mixin():
     
     def maketip(self,v,html=False):
         '''
-        Return a tooltip for variable v. if html==True it can be incorporated into html string'''
+        Return a tooltip for variable v. 
+        
+        For use when generating .dot files for Graphviz
+        
+        If html==True it can be incorporated into html string'''
+        
+        
         var_name = v.split("(")[0]
         des = self.var_description[var_name]
         # des = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
@@ -1934,7 +1943,6 @@ class Graph_Draw_Mixin():
         
         
         invisible = kwargs.get('invisible',set())
-        size=kwargs.get('size',(6,6))
         
         #%
         
@@ -1981,25 +1989,15 @@ class Graph_Draw_Mixin():
                     lvalues = [float(get_a_value(self.lastdf,per,var,lag)) for per in self.current_per] if kwargs.get('last',False) or kwargs.get('all',False)  else 0
                     dvalues = [float(get_a_value(self.lastdf,per,var,lag)-get_a_value(self.basedf,per,var,lag)) for per in self.current_per] if kwargs.get('all',False) else 0 
                     per   = "<TR><TD ALIGN='LEFT'>Per</TD>"+''.join([ '<TD>'+(f'{p}'.strip()+'</TD>').strip() for p in self.current_per])+'</TR>'  
-                    base   = "<TR><TD ALIGN='LEFT'>Base</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>' if kwargs.get('all',False) else ''    
-                    last   = "<TR><TD ALIGN='LEFT'>Last</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>' if kwargs.get('last',False) or kwargs.get('all',False) else ''    
-                    dif    = "<TR><TD ALIGN='LEFT'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
+                    base   = "<TR><TD ALIGN='LEFT' TOOLTIP='Baseline values' href='bogus'>Base</TD>"+''.join([ "<TD ALIGN='RIGHT'  TOOLTIP='Baseline values' href='bogus' >"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>' if kwargs.get('all',False) else ''    
+                    last   = "<TR><TD ALIGN='LEFT' TOOLTIP='Latest run values' href='bogus'>Last</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>' if kwargs.get('last',False) or kwargs.get('all',False) else ''    
+                    dif    = "<TR><TD ALIGN='LEFT' TOOLTIP='Difference between baseline and latest run' href='bogus'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '  
                     out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
                     f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
                     pass 
 
                 except Exception as inst:
-                   # print(v)
-                   # print()
-                   # print(self.maketip(v,True))
-                   # print('type:',type(inst))    # the exception instance
-                   # print(inst.args)     # arguments stored in .args
-                   # print(inst)          # __str__ allows args to be printed directly,
-                   # print("Unexpected error:", sys.exc_info()[0])
-                   
-                   # # raise
-                   # # print(f'Failed: {e}:')
                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
                     f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{labels[v]}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
             else:
@@ -2025,8 +2023,14 @@ class Graph_Draw_Mixin():
         fname = kwargs.get('saveas',navn if navn else "A_model_graph")  
         ptitle = '\n label = "'+kwargs.get('title',fname)+'";'
         post  = '\n}' 
-
         out   = pre+nodes+links+psink+psource+clusterout+ptitle+post 
+        self.display_graph(out,fname,browser,kwargs)
+
+        # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing 
+        return 
+    def display_graph(self,out,fname,browser,kwargs):
+        size=kwargs.get('size',(6,6))
+
         tpath=os.path.join(os.getcwd(),'graph')
         if not os.path.isdir(tpath):
             try:
@@ -2063,8 +2067,6 @@ class Graph_Draw_Mixin():
         if browser: wb.open(svgname,new=2)
         if kwargs.get('pdf',False)     : os.system(pdfname)
 
-       # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing 
-        return 
 
       
 class Display_Mixin():
@@ -4445,18 +4447,23 @@ if __name__ == '__main__' :
 #%% test
    
     smallmodel      = '''
-frml <> a = c(-1) + b $ 
+frml <> a = c + b $ 
 frml <> d1 = x + 3 * a(-1)+ c **2 +a  $ 
 frml <> d3 = x + 3 * a(-1)+c **3 $  
-Frml <> x = 0.5 * c +a(+1)$'''
+Frml <> x = 0.5 * c +a$'''
     des = {'A':'Bruttonationalprodukt i faste  priser',
            'X': 'Eksport <æøåÆØÅ>;',
            'C': 'Forbrug'}
     mmodel = model(smallmodel,var_description=des,svg=1,browser=1)
+    df = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[0.,0.] , 'R':[1.,0.4] , 'P':[0.,0.4]})
+    df2 = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[10.,10.] , 'R':[1.,0.4] , 'P':[0.,0.4]})
+
     xx = mmodel(df)
+    yy = mmodel(df2)
     # mmodel.drawendo()
     mmodel.drawendo_lag_lead(browser=1)
-    mmodel.drawmodel(svg=1,last=True,browser=1)
+    mmodel.drawmodel(svg=1,all=True,browser=1)
+    mmodel.explain('X',up=1,browser=1)
 #%%
     print(list(m2test.current_per))
     with m2test.set_smpl(0,0):
