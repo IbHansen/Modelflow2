@@ -1891,6 +1891,22 @@ class Graph_Draw_Mixin():
         '''draws a graph of of the whole model''' 
         out=self.todot(g,**kwargs)
         return out
+    
+    def maketip(self,v,html=False):
+        '''
+        Return a tooltip for variable v. if html==True it can be incorporated into html string'''
+        var_name = v.split("(")[0]
+        des = self.var_description[var_name]
+        # des = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
+        des = (des.replace('<','&lt;').replace('>','&gt;')
+               .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
+               .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
+               )
+        if html:
+            return f'TOOLTIP="{des}" href="bogus"'
+        else:  
+            return f'tooltip="{des}"'
+
 
 
     def todot2(self,alledges,navn='',browser=False,**kwargs):
@@ -1954,21 +1970,6 @@ class Graph_Draw_Mixin():
     #
         nodelist = {n for nodes in ibh for n in (nodes.parent,nodes.child)}
 #        print(nodelist)
-        def maketip(v,html=False):
-            '''
-            Return a tooltip for variable v. if html==True it can be incorporated into html string'''
-            var_name = v.split("(")[0]
-            des = self.var_description[var_name]
-            # des = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
-            des = (des.replace('<','&lt;').replace('>','&gt;')
-                   .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
-                   .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
-                   )
-            if html:
-                return f'TOOLTIP="{des}" href="bogus"'
-            else:  
-                return f'tooltip="{des}"'
-
         def makenode(v):
             if kwargs.get('last',False) or kwargs.get('all',False):
                 try:
@@ -1985,25 +1986,25 @@ class Graph_Draw_Mixin():
                     dif    = "<TR><TD ALIGN='LEFT'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '  
                     out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
-                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {maketip(v,True)}>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
+                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
                     pass 
 
                 except Exception as inst:
-                   print(v)
-                   print()
-                   print(maketip(v,True))
-                   print('type:',type(inst))    # the exception instance
-                   print(inst.args)     # arguments stored in .args
-                   print(inst)          # __str__ allows args to be printed directly,
-                   print("Unexpected error:", sys.exc_info()[0])
+                   # print(v)
+                   # print()
+                   # print(self.maketip(v,True))
+                   # print('type:',type(inst))    # the exception instance
+                   # print(inst.args)     # arguments stored in .args
+                   # print(inst)          # __str__ allows args to be printed directly,
+                   # print("Unexpected error:", sys.exc_info()[0])
                    
-                   # raise
-                   # print(f'Failed: {e}:')
-                   out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
+                   # # raise
+                   # # print(f'Failed: {e}:')
+                   out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
                     f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{labels[v]}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
             else:
-                out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
-                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {maketip(v)}>{labels[v]}</TD></TR> </TABLE>> ]")
+                out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
+                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {self.maketip(v)}>{labels[v]}</TD></TR> </TABLE>> ]")
             return out    
         
         pre   = 'Digraph TD {rankdir ="HR" \n' if kwargs.get('HR',True) else 'Digraph TD { rankdir ="LR" \n'
