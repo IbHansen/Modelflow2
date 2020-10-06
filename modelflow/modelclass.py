@@ -1855,40 +1855,6 @@ class Graph_Draw_Mixin():
 
         out   = pre+nodes+links+psink+psource+ptitle+post 
         self.display_graph(out,fname,browser,kwargs)
-
-        # tpath=os.path.join(os.getcwd(),'graph')
-#         if not os.path.isdir(tpath):
-#             try:
-#                 os.mkdir(tpath)
-#             except: 
-#                 print("ModelFlow: Can't create folder for graphs")
-#                 return 
-#     #    filename = os.path.join(r'graph',navn+'.gv')
-#          filename = os.path.join(tpath,fname+'.gv')
-#         pngname  = '"'+os.path.join(tpath,fname+'.png')+'"'
-#         svgname  = '"'+os.path.join(tpath,fname+'.svg')+'"'
-#         pdfname  = '"'+os.path.join(tpath,fname+'.pdf')+'"'
-#         epsname  = '"'+os.path.join(tpath,fname+'.eps')+'"'
-
-#         with open(filename,'w') as f:
-#             f.write(out)
-# #        run('dot -Tsvg  -Gsize=19,19\! -o'+svgname+' "'+filename+'"',shell=True) # creates the drawing  
-# #        run('dot -Tpng  -Gsize=9,9\! -o'+pngname+' "'+filename+'"',shell=True) # creates the drawing  
-# #        run('dot -Tpdf  -Gsize=9,9\! -o'+pdfname+' "'+filename+'"',shell=True) # creates the drawing  
-#         run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}\! -o{svgname} "{filename}"',shell=True) # creates the drawing  
-#         run(f'dot -Tpng  -Gsize={size[0]},{size[1]}\! -o{pngname} "{filename}"',shell=True) # creates the drawing  
-#         run(f'dot -Tpdf  -Gsize={size[0]},{size[1]}\! -o{pdfname} "{filename}"',shell=True) # creates the drawing  
-
-# #        run('dot -Teps  -Gsize=9,9\! -o'+epsname+' "'+filename+'"',shell=True) # creates the drawing  
-#         if 'svg' in kwargs:
-#             display(SVG(filename=svgname[1:-1]))
-#         else:            
-#             display(Image(filename=pngname[1:-1]))
-            
-#         if kwargs.get('pdf',False)     : os.system(pdfname)
-#         if kwargs.get('browser',False) : wb.open(svgname,new=2)
-        
-#         return 
                     
     def gdraw(self,g,**kwargs):
         '''draws a graph of of the whole model''' 
