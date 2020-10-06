@@ -1965,7 +1965,7 @@ class Graph_Draw_Mixin():
                    .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
                    )
             if html:
-                return f'TOOLTIP="{v}:{des}" href="bogus"'
+                return f'TOOLTIP="{des}" href="bogus"'
             else:  
                 return f'tooltip="{des}"'
 
@@ -1985,7 +1985,7 @@ class Graph_Draw_Mixin():
                     dif    = "<TR><TD ALIGN='LEFT'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '  
                     out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
-                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)} > <TR><TD COLSPAN ='{len(lvalues)+1}'>{labels[v]} {maketip(v,True)}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
+                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {maketip(v,True)}>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
                     pass 
 
                 except Exception as inst:
