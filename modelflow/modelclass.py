@@ -2506,7 +2506,7 @@ class Display_Mixin():
                 div#menubar-container     { width: 65%; }
                 div#maintoolbar-container { width: 99%; }
             </style>
-            """))
+            """)) 
             display(HTML("""\
             <script>
                 // AUTORUN ALL CELLS ON NOTEBOOK-LOAD!
