@@ -229,7 +229,7 @@ class BaseModel():
         self.exogene_true= {v for v in self.exogene if not v+'___RES' in self.endogene}
         # breakpoint()
         self.normalized = not all((v.endswith('___RES') for v in self.endogene))
-        
+        self.endogene_true = self.endogene if self.normalized else {v for v in self.exogene if v+'___RES' in self.endogene}
         
 
 #        # the order as in the equations 
@@ -2358,9 +2358,9 @@ class Display_Mixin():
                  dfsres = dfs
          
         
-
+             xtrans = trans if trans else self.var_description
              figs = {v:self.plot_basis(v,(df.iloc[:,1:] if diff else df)*mul,legend=legend,
-                                       scale=scale,trans=trans,
+                                       scale=scale,trans=xtrans,
                 title=f'Difference to "{df.columns[0]}" for {dftype}:' if diff else f'{dftype}:',
                 yunit = yunit,
                 ylabel = 'Percent' if showtype == 'growth' else ylabel,
@@ -2402,7 +2402,7 @@ class Display_Mixin():
        display(show)
        return
    
-    def keep_viz(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec=''):
+    def keep_viz(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec='',use_descriptions=True,select_width='', select_height='200px'):
        """
         Plots the keept dataframes
     
@@ -2410,8 +2410,9 @@ class Display_Mixin():
             pat (str, optional): a string of variables to select pr default. Defaults to '*'.
             smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
             selectfrom (list, optional): the variables to select from, Defaults to [] -> all endogeneous variables .
-            legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
+            legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
             dec (string, optional): decimals on the y-axis. Defaults to '0'.
+            use_des : Use the variable descriptions from the model 
     
         Returns:
             None.
@@ -2432,23 +2433,36 @@ class Display_Mixin():
        init_start = self.lastdf.index.get_loc(show_per[0])
        init_end   = self.lastdf.index.get_loc(show_per[-1])
        defaultvar = self.vlist(pat)
-       _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(self.endogene)
-       def explain(i_smpl ,vars,diff,showtype,scale,legend):
+       _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(self.endogene_true)
+       var_maxlen = max(len(v) for v in _selectfrom)
+       
+       if use_descriptions and self.var_description:
+           select_display = [f'{v:{var_maxlen}} :{self.var_description[v]}' for v in _selectfrom]
+           defaultvar     = [f'{v:{var_maxlen}} :{self.var_description[v]}' for v in self.vlist(pat)] 
+           width = select_width if select_width else '90%'
+       else:
+           select_display = [f'{v:{var_maxlen}}' for v in _selectfrom]
+           defaultvar     = [f'{v:{var_maxlen}}' for v in self.vlist(pat)] 
+           width = select_width if select_width else '40%'
+
+
+       def explain(i_smpl ,selected_vars,diff,showtype,scale,legend):
+           vars = ' '.join(v.split(' ',1)[0] for v in selected_vars)
            smpl = (self.lastdf.index[i_smpl[0]],self.lastdf.index[i_smpl[1]])
            with self.set_smpl(*smpl):
-              self.keep_wiz_figs =  self.keep_plot(' '.join(vars),diff=diff,scale=scale,showtype=showtype,legend=legend,dec=dec)
-    
+              self.keep_wiz_figs =  self.keep_plot(vars,diff=diff,scale=scale,showtype=showtype,legend=legend,dec=dec)
+       description_width ='20%'
        #breakpoint() 
        show = interactive(explain,
     #          smpl = SelectionRangeSlider(continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
                i_smpl = SelectionRangeSlider(value=[init_start,init_end],continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
-               vars  = SelectMultiple(value = defaultvar,options=_selectfrom
-                                         ,layout=Layout(width='50%', height='200px'),
-                                          description='One or more'),
-               diff = ToggleButtons(options=[('No',False),('Yes',True)], description = 'Difference to first experiment',value=False),
-               showtype = ToggleButtons(options=[('Level','level'),('Growth','growth')], description = 'Data type',value='level'),
-               scale = ToggleButtons(options=[('Linear','linear'),('Log','log')], description = 'Y-scale',value='linear'),
-               legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1) )
+               selected_vars  = SelectMultiple(value = defaultvar,options=select_display
+                                         ,layout=Layout(width=width, height=select_height),
+                                          description='Select one or more',style={'description_width': description_width}),
+               diff = ToggleButtons(options=[('No',False),('Yes',True)], description = 'Difference to first experiment',value=False,style={'description_width': description_width}),
+               showtype = ToggleButtons(options=[('Level','level'),('Growth','growth')], description = 'Data type',value='level',style={'description_width': description_width}),
+               scale = ToggleButtons(options=[('Linear','linear'),('Log','log')], description = 'Y-scale',value='linear',style={'description_width': description_width}),
+               legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width}) )
        display(show)
        return   
     @staticmethod
@@ -2461,7 +2475,8 @@ class Display_Mixin():
         
         display(Markdown(text))
         for dir in sorted(Path('.').glob('**')):
-            if len(dir.parts) and str(dir.parts[-1]).startswith('.'): continue
+            if len(dir.parts) and str(dir.parts[-1]).startswith('.'): 
+                continue
             for i,notebook in enumerate(sorted(dir.glob('*.ipynb'))):
                 if i == 0:
                     blanks = ''.join(['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))
@@ -2477,12 +2492,21 @@ class Display_Mixin():
     def modelflow_auto(run=True):
         '''In a jupyter notebook this function activate autorun of the notebook. 
         
+        Also it makes Jupyter use a larger portion of the browser width
+        
         The function should be run before the notebook is saved, and the output should not be cleared
         '''
         if not run:
             return 
         try:
             from IPython.display import HTML,display
+            display(HTML(data="""
+            <style>
+                div#notebook-container    { width: 95%; }
+                div#menubar-container     { width: 65%; }
+                div#maintoolbar-container { width: 99%; }
+            </style>
+            """))
             display(HTML("""\
             <script>
                 // AUTORUN ALL CELLS ON NOTEBOOK-LOAD!
@@ -2497,6 +2521,8 @@ class Display_Mixin():
                     }
                 );
             </script>"""))
+            
+            
         except:
             print('modelflow_auto not run')
 
