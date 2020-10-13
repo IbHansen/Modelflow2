@@ -2411,8 +2411,9 @@ class Display_Mixin():
             smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
             selectfrom (list, optional): the variables to select from, Defaults to [] -> all endogeneous variables .
             legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
-            dec (string, optional): decimals on the y-axis. Defaults to '0'.
-            use_des : Use the variable descriptions from the model 
+            dec (string, optional): decimals on the y-axis. Defaults to '', which gives automatic decimals
+            .
+            use_descriptions : Use the variable descriptions from the model 
     
         Returns:
             None.
@@ -2445,25 +2446,87 @@ class Display_Mixin():
            defaultvar     = [f'{v:{var_maxlen}}' for v in self.vlist(pat)] 
            width = select_width if select_width else '40%'
 
+    def keep_viznew(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec='',use_descriptions=True,select_width='', select_height='200px'):
+       """
+        Plots the keept dataframes
+    
+        Args:
+            pat (str, optional): a string of variables to select pr default. Defaults to '*'.
+            smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
+            selectfrom (list, optional): the variables to select from, Defaults to [] -> all endogeneous variables .
+            legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
+            dec (string, optional): decimals on the y-axis. Defaults to '0'.
+            use_descriptions : Use the variable descriptions from the model 
+    
+        Returns:
+            None.
+    
+        self.keep_wiz_figs is set to a dictionary contraining the figures. Can be used to produce publication
+        quality files. 
+    
+       """
+    
+       from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider,SelectMultiple, Layout
+       from ipywidgets import interactive, ToggleButtons,SelectionRangeSlider,RadioButtons
+       from ipywidgets import interactive_output, HBox, VBox,link,Dropdown
+    
+       minper = self.lastdf.index[0]
+       maxper = self.lastdf.index[-1]
+       options = [(ind,nr) for nr,ind in enumerate(self.lastdf.index)]
+       with self.set_smpl(*smpl):
+           show_per =  self.current_per[:]
+       init_start = self.lastdf.index.get_loc(show_per[0])
+       init_end   = self.lastdf.index.get_loc(show_per[-1])
+       defaultvar = self.vlist(pat)
+       _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(self.endogene_true)
+       var_maxlen = max(len(v) for v in _selectfrom)
+       
+       if use_descriptions and self.var_description:
+           select_display = [f'{v:{var_maxlen}} :{self.var_description[v]}' for v in _selectfrom]
+           defaultvar     = [f'{v:{var_maxlen}} :{self.var_description[v]}' for v in self.vlist(pat)] 
+           width = select_width if select_width else '90%'
+       else:
+           select_display = [fr'{v:{var_maxlen}}' for v in _selectfrom]
+           defaultvar     = [fr'{v:{var_maxlen}}' for v in self.vlist(pat)] 
+           width = select_width if select_width else '50%'
+
 
        def explain(i_smpl ,selected_vars,diff,showtype,scale,legend):
            vars = ' '.join(v.split(' ',1)[0] for v in selected_vars)
            smpl = (self.lastdf.index[i_smpl[0]],self.lastdf.index[i_smpl[1]])
            with self.set_smpl(*smpl):
               self.keep_wiz_figs =  self.keep_plot(vars,diff=diff,scale=scale,showtype=showtype,legend=legend,dec=dec)
-       description_width ='20%'
+       description_width ='initial'
+       description_width_long ='initial'
+       keep_keys = list(self.keep_solutions.keys())
+       keep_first = keep_keys[0]
        #breakpoint() 
-       show = interactive(explain,
+       i_smpl = SelectionRangeSlider(value=[init_start,init_end],continuous_update=False,options=options, min = minper, 
+                                     max=maxper,layout=Layout(width='75%'),description='Show interval')
+       selected_vars  = SelectMultiple(value = defaultvar,options=select_display
+                                   ,layout=Layout(width=width, height=select_height),
+                                    description='Select one or more',style={'description_width': description_width})
+       selected_vars2  = SelectMultiple(value = defaultvar,options=select_display
+                                   ,layout=Layout(width=width, height=select_height),
+                                    description='Select one or more',style={'description_width': description_width})
+       diff = RadioButtons(options=[('No',False),('Yes',True)], description = fr'\(\Delta\) to "{keep_first}"',value=False,style={'description_width': description_width_long})
+       diff_select = Dropdown(options=keep_keys,value=keep_first)
+       showtype = RadioButtons(options=[('Level','level'),('Growth','growth')], description = 'Data type',value='level',style={'description_width': description_width})
+       scale = RadioButtons(options=[('Linear','linear'),('Log','log')], description = 'Y-scale',value='linear',style={'description_width': description_width})
+       # legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width}) 
+       legend = RadioButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width}) 
+       # breakpoint()
+       l = link((selected_vars,'value'),(selected_vars2,'value')) # not used
+       select = HBox([selected_vars])
+       options1 = HBox([diff])
+       options2 = HBox([scale,legend,showtype])
+       ui = VBox([select,options1,options2,i_smpl])
+        
+        
+       show = interactive_output(explain,{'i_smpl':i_smpl,'selected_vars':selected_vars,'diff':diff,'showtype':showtype,
+                                          'scale':scale,'legend':legend})
     #          smpl = SelectionRangeSlider(continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
-               i_smpl = SelectionRangeSlider(value=[init_start,init_end],continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
-               selected_vars  = SelectMultiple(value = defaultvar,options=select_display
-                                         ,layout=Layout(width=width, height=select_height),
-                                          description='Select one or more',style={'description_width': description_width}),
-               diff = ToggleButtons(options=[('No',False),('Yes',True)], description = 'Difference to first experiment',value=False,style={'description_width': description_width}),
-               showtype = ToggleButtons(options=[('Level','level'),('Growth','growth')], description = 'Data type',value='level',style={'description_width': description_width}),
-               scale = ToggleButtons(options=[('Linear','linear'),('Log','log')], description = 'Y-scale',value='linear',style={'description_width': description_width}),
-               legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width}) )
-       display(show)
+       display(ui,show)
        return   
     @staticmethod
     def display_toc(text='**Jupyter notebooks in this and all subfolders**'):
@@ -2507,6 +2570,7 @@ class Display_Mixin():
                 div#maintoolbar-container { width: 99%; }
             </style>
             """)) 
+            
             display(HTML("""\
             <script>
                 // AUTORUN ALL CELLS ON NOTEBOOK-LOAD!
