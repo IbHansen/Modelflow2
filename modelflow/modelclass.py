@@ -2509,8 +2509,8 @@ class Display_Mixin():
        selected_vars2  = SelectMultiple(value = defaultvar,options=select_display
                                    ,layout=Layout(width=width, height=select_height),
                                     description='Select one or more',style={'description_width': description_width})
-       diff = RadioButtons(options=[('No',False),('Yes',True)], description = fr'\(\Delta\) to "{keep_first}"',value=False,style={'description_width': description_width_long})
-       diff_select = Dropdown(options=keep_keys,value=keep_first)
+       diff = RadioButtons(options=[('No',False),('Yes',True)], description = fr'Difference',value=False)
+       diff_select = Dropdown(options=keep_keys,value=keep_first, description = fr'to:')
        showtype = RadioButtons(options=[('Level','level'),('Growth','growth')], description = 'Data type',value='level',style={'description_width': description_width})
        scale = RadioButtons(options=[('Linear','linear'),('Log','log')], description = 'Y-scale',value='linear',style={'description_width': description_width})
        # legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width}) 
@@ -2518,7 +2518,7 @@ class Display_Mixin():
        # breakpoint()
        l = link((selected_vars,'value'),(selected_vars2,'value')) # not used
        select = HBox([selected_vars])
-       options1 = HBox([diff])
+       options1 = HBox([diff,diff_select])
        options2 = HBox([scale,legend,showtype])
        ui = VBox([select,options1,options2,i_smpl])
         
