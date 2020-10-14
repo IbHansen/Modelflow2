@@ -2446,7 +2446,7 @@ class Display_Mixin():
            defaultvar     = [f'{v:{var_maxlen}}' for v in self.vlist(pat)] 
            width = select_width if select_width else '40%'
 
-    def keep_viznew(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec='',use_descriptions=True,select_width='', select_height='200px'):
+    def keep_viz(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec='',use_descriptions=True,select_width='', select_height='200px'):
        """
         Plots the keept dataframes
     
@@ -2482,12 +2482,12 @@ class Display_Mixin():
        var_maxlen = max(len(v) for v in _selectfrom)
        
        if use_descriptions and self.var_description:
-           select_display = [f'{v:{var_maxlen}} :{self.var_description[v]}' for v in _selectfrom]
-           defaultvar     = [f'{v:{var_maxlen}} :{self.var_description[v]}' for v in self.vlist(pat)] 
+           select_display = [f'{v}  :{self.var_description[v]}' for v in _selectfrom]
+           defaultvar     = [f'{v}  :{self.var_description[v]}' for v in self.vlist(pat)] 
            width = select_width if select_width else '90%'
        else:
-           select_display = [fr'{v:{var_maxlen}}' for v in _selectfrom]
-           defaultvar     = [fr'{v:{var_maxlen}}' for v in self.vlist(pat)] 
+           select_display = [fr'{v}' for v in _selectfrom]
+           defaultvar     = [fr'{v}' for v in self.vlist(pat)] 
            width = select_width if select_width else '50%'
 
 
@@ -2504,13 +2504,14 @@ class Display_Mixin():
        i_smpl = SelectionRangeSlider(value=[init_start,init_end],continuous_update=False,options=options, min = minper, 
                                      max=maxper,layout=Layout(width='75%'),description='Show interval')
        selected_vars  = SelectMultiple(value = defaultvar,options=select_display
-                                   ,layout=Layout(width=width, height=select_height),
+                                   ,layout=Layout(width=width, height=select_height,font="monospace"),
                                     description='Select one or more',style={'description_width': description_width})
        selected_vars2  = SelectMultiple(value = defaultvar,options=select_display
                                    ,layout=Layout(width=width, height=select_height),
                                     description='Select one or more',style={'description_width': description_width})
-       diff = RadioButtons(options=[('No',False),('Yes',True)], description = fr'Difference',value=False)
-       diff_select = Dropdown(options=keep_keys,value=keep_first, description = fr'to:')
+       diff = RadioButtons(options=[('No',False),('Yes',True)], description = fr'Difference to: "{keep_first}"',
+                           value=False,style={'description_width':'auto'} ,layout=Layout(width='auto'))
+       # diff_select = Dropdown(options=keep_keys,value=keep_first, description = fr'to:')
        showtype = RadioButtons(options=[('Level','level'),('Growth','growth')], description = 'Data type',value='level',style={'description_width': description_width})
        scale = RadioButtons(options=[('Linear','linear'),('Log','log')], description = 'Y-scale',value='linear',style={'description_width': description_width})
        # legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width}) 
@@ -2518,7 +2519,7 @@ class Display_Mixin():
        # breakpoint()
        l = link((selected_vars,'value'),(selected_vars2,'value')) # not used
        select = HBox([selected_vars])
-       options1 = HBox([diff,diff_select])
+       options1 = diff
        options2 = HBox([scale,legend,showtype])
        ui = VBox([select,options1,options2,i_smpl])
         
