@@ -4525,9 +4525,9 @@ Frml <> x = 0.5 * c +a$'''
     xx = mmodel(df)
     yy = mmodel(df2)
     # mmodel.drawendo()
-    mmodel.drawendo_lag_lead(browser=1)
-    mmodel.drawmodel(svg=1,all=True,browser=1)
-    mmodel.explain('X',up=1,browser=1)
+    # mmodel.drawendo_lag_lead(browser=1)
+    # mmodel.drawmodel(svg=1,all=True,browser=1)
+    # mmodel.explain('X',up=1,browser=1)
 #%%
     print(list(m2test.current_per))
     with m2test.set_smpl(0,0):

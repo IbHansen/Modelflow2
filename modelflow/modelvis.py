@@ -262,11 +262,18 @@ class varvis():
      def dekomp(self,**kwargs):
          x = self.model.dekomp(self.var,**kwargs)
          return x
+     
+     def var_des(self,var):
+         des = self.model.var_description[var]
+         return des if des != var else ''
          
      def _showall(self,all=1,dif=0,last=0):
             if self.endo:
+                rhs_var  = sorted([start for start,this  in self.model.totgraph_nolag.in_edges(self.var) if self.var_des(start) if self.var_des(start)])
+                maxlen = max(len(v) for v in rhs_var) if len(rhs_var) else 10
+                des_string = '\n'.join(f'{rhs:{maxlen}}: {self.var_des(rhs)}'  for rhs in rhs_var)
                 out1,out2 = '',''
-                out0   = f'Endogeneous: {self.var} \nFormular: {self.model.allvar[self.var]["frml"]}'
+                out0   = f'Endogeneous: {self.var}: {self.var_des(self.var)} \nFormular: {self.model.allvar[self.var]["frml"]}\n{des_string}'
                 try:
                     if all:
                         out0 = out0+f'\nValues : \n{self.model.get_values(self.var)}\n' 
@@ -281,9 +288,11 @@ class varvis():
                     pass 
                 out=out0+out1+out2
             else: 
-                out   = f'Exogeneous : {self.var} \n Values : \n{self.model.get_values(self.var)}\n' 
+                out   = f'Exogeneous : {self.var}: {self.var_des(self.var)}  \n Values : \n{self.model.get_values(self.var)}\n' 
             return out
-
+    
+     
+    
      @property
      def show(self):
          out = self._showall(all=1)
