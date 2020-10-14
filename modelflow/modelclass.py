@@ -1833,6 +1833,7 @@ class Graph_Draw_Mixin():
         nodes = '{node  [margin=0.025 fontcolor=blue style=filled ] \n '+ '\n'.join([makenode(v) for v in nodelist])+' \n} \n'
         
         def getpw(v):
+            '''Define pennwidth based on explanation in the last period ''' 
             try:
                return max(0.5,min(5.,abs(g[v.child][v.parent]['att'].iloc[0,-1])/20.))
             except:
@@ -1861,6 +1862,15 @@ class Graph_Draw_Mixin():
         out=self.todot(g,**kwargs)
         return out
     
+    @staticmethod
+    def html_replace(ind):
+        '''Replace special characters in html '''
+        out =  (ind.replace('<','&lt;').replace('>','&gt;')
+               .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
+               .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
+               )
+        return out
+    
     def maketip(self,v,html=False):
         '''
         Return a tooltip for variable v. 
@@ -1871,12 +1881,9 @@ class Graph_Draw_Mixin():
         
         
         var_name = v.split("(")[0]
-        des = self.var_description[var_name]
+        des0 = self.var_description[var_name]
         # des = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
-        des = (des.replace('<','&lt;').replace('>','&gt;')
-               .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
-               .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
-               )
+        des = self.html_replace(des0)
         if html:
             return f'TOOLTIP="{des}" href="bogus"'
         else:  
@@ -2029,7 +2036,7 @@ class Graph_Draw_Mixin():
             except:
                 display(Image(filename=pngname[1:-1]))
 
-            
+        # breakpoint()    
         if browser: wb.open(svgname,new=2)
         if kwargs.get('pdf',False)     : os.system(pdfname)
 
