@@ -344,8 +344,6 @@ class BaseModel():
         
         self.current_per = old_current_per 
                 
-    def set_var_description(self,a_dict):        
-        self.var_description = self.defsub(a_dict)
         
     @property
     def endograph(self) :
@@ -1312,7 +1310,47 @@ class Dekomp_Mixin():
             del self.totdekomp 
             return 'Nothing to attribute'
         
+class Description_Mixin():
+    '''This Class defines description related methods and properties
+    ''' 
+    def set_var_description(self,a_dict):        
+        self.var_description = self.defsub(a_dict)
     
+    @staticmethod
+    def html_replace(ind):
+        '''Replace special characters in html '''
+        out =  (ind.replace('<','&lt;').replace('>','&gt;')
+               .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
+               .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
+               )
+        return out
+       
+    def var_des(self,var):
+        '''Returns blank if no description'''
+        # breakpoint()
+        des = self.var_description[var.split('(')[0]]
+        return des if des != var else ''
+    
+    def get_eq_des(self,var,show_all=False):
+        '''Returns a string of descriptions for all variables in an equation:'''
+        if var in self.endogene:
+            rhs_var  = sorted([start for start,this  in self.totgraph_nolag.in_edges(var) if self.var_des(start) or show_all])
+            all_var  = [var] + rhs_var 
+            maxlen = max(len(v) for v in all_var) if len(all_var) else 10
+            return '\n'.join(f'{rhs:{maxlen}}: {self.var_des(rhs)}'  for rhs in all_var)
+        else:
+            return ''
+        
+    def get_des_html(self,var,show=1):
+        
+        if show: 
+            out = f'{var}:{self.var_des(var)}'
+            # breakpoint()
+            return f'{self.html_replace(out)}'
+        else:
+            return f'{var}'
+        
+            
     
 class Graph_Mixin():
     '''This class defines graph related methods and properties
@@ -1862,14 +1900,6 @@ class Graph_Draw_Mixin():
         out=self.todot(g,**kwargs)
         return out
     
-    @staticmethod
-    def html_replace(ind):
-        '''Replace special characters in html '''
-        out =  (ind.replace('<','&lt;').replace('>','&gt;')
-               .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
-               .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
-               )
-        return out
     
     def maketip(self,v,html=False):
         '''
@@ -1910,12 +1940,16 @@ class Graph_Draw_Mixin():
         :transdic: dict of translations for consolidation of nodes {'SHOCK[_A-Z]*__J':'SHOCK__J','DEV__[_A-Z]*':'DEV'}
         :dec: decimal places in numbers
         :HR: horisontal orientation default = False 
+        :des: inject variable descriptions 
       
         
 ''' 
         
         
         invisible = kwargs.get('invisible',set())
+        
+        des = kwargs.get('des',True)
+
         
         #%
         
@@ -1967,15 +2001,15 @@ class Graph_Draw_Mixin():
                     dif    = "<TR><TD ALIGN='LEFT' TOOLTIP='Difference between baseline and latest run' href='bogus'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '  
                     out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
-                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{labels[v]}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
+                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
                     pass 
 
                 except Exception as inst:
                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
-                    f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{labels[v]}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
+                    f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{self.get_des_html(v)}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
             else:
-                out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
-                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {self.maketip(v)}>{labels[v]}</TD></TR> </TABLE>> ]")
+                out = f'"{v}" [ shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
+                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {self.maketip(v)}>{self.get_des_html(v,des)}</TD></TR> </TABLE>> ]")
             return out    
         
         pre   = 'Digraph TD {rankdir ="HR" \n' if kwargs.get('HR',True) else 'Digraph TD { rankdir ="LR" \n'
@@ -2038,7 +2072,10 @@ class Graph_Draw_Mixin():
 
         # breakpoint()    
         if browser: wb.open(svgname,new=2)
-        if kwargs.get('pdf',False)     : os.system(pdfname)
+        # breakpoint()
+        if kwargs.get('pdf',False)     :
+            print('close PDF file before continue')
+            os.system(pdfname)
 
 
       
@@ -4170,7 +4207,8 @@ class Solver_Mixin():
 
       
 
-class model(Zip_Mixin,Json_Mixin,Model_help_Mixin,Solver_Mixin,Display_Mixin,Graph_Draw_Mixin,Graph_Mixin,Dekomp_Mixin,Org_model_Mixin,BaseModel):
+class model(Zip_Mixin,Json_Mixin,Model_help_Mixin,Solver_Mixin,Display_Mixin,Graph_Draw_Mixin,Graph_Mixin,
+            Dekomp_Mixin,Org_model_Mixin,BaseModel,Description_Mixin):
     pass
         
 
@@ -4526,9 +4564,10 @@ Frml <> x = 0.5 * c +a$'''
     yy = mmodel(df2)
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
-    # mmodel.drawmodel(svg=1,all=True,browser=1)
+    mmodel.drawmodel(svg=1,all=False,browser=0,pdf=1,des=False)
     # mmodel.explain('X',up=1,browser=1)
-#%%
+    print(mmodel.get_eq_des('A'))
+          #%%
     print(list(m2test.current_per))
     with m2test.set_smpl(0,0):
          print(list(m2test.current_per))

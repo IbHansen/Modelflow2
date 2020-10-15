@@ -267,11 +267,9 @@ class varvis():
          des = self.model.var_description[var]
          return des if des != var else ''
          
-     def _showall(self,all=1,dif=0,last=0):
+     def _showall(self,all=1,dif=0,last=0,show_all=False):
             if self.endo:
-                rhs_var  = sorted([start for start,this  in self.model.totgraph_nolag.in_edges(self.var) if self.var_des(start) if self.var_des(start)])
-                maxlen = max(len(v) for v in rhs_var) if len(rhs_var) else 10
-                des_string = '\n'.join(f'{rhs:{maxlen}}: {self.var_des(rhs)}'  for rhs in rhs_var)
+                des_string = self.model.get_eq_des(self.var,show_all)
                 out1,out2 = '',''
                 out0   = f'Endogeneous: {self.var}: {self.var_des(self.var)} \nFormular: {self.model.allvar[self.var]["frml"]}\n{des_string}'
                 try:
