@@ -271,7 +271,7 @@ class varvis():
             if self.endo:
                 des_string = self.model.get_eq_des(self.var,show_all)
                 out1,out2 = '',''
-                out0   = f'Endogeneous: {self.var}: {self.var_des(self.var)} \nFormular: {self.model.allvar[self.var]["frml"]}\n{des_string}'
+                out0   = f'Endogeneous: {self.var}: {self.var_des(self.var)} \nFormular: {self.model.allvar[self.var]["frml"]}\n\n{des_string}\n'
                 try:
                     if all:
                         out0 = out0+f'\nValues : \n{self.model.get_values(self.var)}\n' 
