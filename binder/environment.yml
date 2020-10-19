@@ -2,4 +2,4 @@ name: base
 channels:
   - ibh
 dependencies:
-  - modelflow
+  - modelflow 
