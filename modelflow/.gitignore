@@ -24,3 +24,8 @@ graph/
 *.egg-info/
 build/
 dist/
+
+# LaTeX temporary files
+*.aux
+*.log
+*.toc
