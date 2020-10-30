@@ -529,7 +529,8 @@ class newton_diff():
                          shape=(len(self.declared_endo_list), len(self.declared_endo_list)))
                     
                     if asdf: 
-                        outdic[date]['endo'][f'lag={lag}'] = pd.DataFrame(this.toarray(), columns=self.declared_endo_list,index=self.declared_endo_list)
+                        outdic[date]['endo'][f'lag={lag}'] = pd.DataFrame(this.toarray(), 
+            columns=self.declared_endo_list,index=self.declared_endo_list)
                     else:
                         outdic[date]['endo'][f'lag={lag}'] = this
                 else:
@@ -602,18 +603,34 @@ class newton_diff():
             eig_dic =  {date : calc_eig_reserve(comp)[0] for date,comp in comp_dic.items()} 
         # return A_dic, AINV_dic, C_dic, xlags,bottom_dic,comp_dic,eig_dic
         return eig_dic
- 
-    def eigplot(self,eig_dic,size=(4,3)):
-        first_key = list(eig_dic.keys())[0]
+    
+    @staticmethod
+    def eigplot(eig_dic,per=None,size=(4,3),top=0.9):
+        import matplotlib.pyplot as plt
+        if type(per) == type(None):
+            first_key = list(eig_dic.keys())[0]
+        else: 
+            first_key = per
+    
         w = eig_dic[first_key]
-
+    
         fig, ax = plt.subplots(figsize=size,subplot_kw={'projection': 'polar'})  #A4 
-        ax.set_title(f'Eigen vec.{first_key}',va='bottom')
+        fig.suptitle(f'Eigen vectors in {first_key}\n',fontsize=20)
+    
         for x in w:
             ax.plot([0,np.angle(x)],[0,np.abs(x)],marker='o')
-        ax.set_rticks([0.5, 1, 1.5])    
+        ax.set_rticks([0.5, 1, 1.5])   
+        fig.subplots_adjust(top=0.8)
         return fig
-    
+
+    @staticmethod  
+    def get_feedback(eig_dic,per=None):
+        '''Returns a dict of max abs eigenvector and the sign '''
+        
+        return {per: max(abs(eigen_vector)) * (-1 if sum(abs(eigen_vector.imag)) else 1) 
+         for per,eigen_vector in eig_dic.items()}
+        
+        
     def eigplot_all0(self,eig_dic,size=(4,3)):
         colrows = 4
         ncols = min(colrows,len(eig_dic))

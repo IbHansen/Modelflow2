@@ -2670,7 +2670,7 @@ class Json_Mixin():
            return json.dumps(dumpjson)
            
     @classmethod   
-    def modelload(cls,infile,funks=[],run=False,keep=False):
+    def modelload(cls,infile,funks=[],run=False,keep=False,**kwargs):
         '''Loads a model and an solution '''
  
         def make_current_from_quarters(base,json_current_per):
@@ -2708,7 +2708,7 @@ class Json_Mixin():
             pass
         
         if run:
-            res = mmodel(lastdf,current_per[0],current_per[-1])
+            res = mmodel(lastdf,current_per[0],current_per[-1],**kwargs)
             return mmodel,res
         else:
             return mmodel,lastdf 

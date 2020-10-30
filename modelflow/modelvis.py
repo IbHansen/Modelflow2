@@ -311,7 +311,9 @@ class varvis():
      
      def __repr__(self):
              
-            return self._showall(all=0,last=1)
+            out = self._showall(all=0,last=1)
+            return out
+            
 
         
 def vis_alt(grund,mul,title='Show variables'):

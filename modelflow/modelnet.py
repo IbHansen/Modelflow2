@@ -47,22 +47,22 @@ def draw_adjacency_matrix(G, node_order=None, partitions=None,type=False,title='
     if partitions: 
         for i,module in enumerate(partitions):
             if type:
-                if type[i].startswith('Simultaneous'):
+                if len(type[i]) and type[i].startswith('Simultaneous'):
                     ax.add_patch(patches.Rectangle((current_idx, current_idx),
                                           len(module), # Width
                                           len(module), # Height
                                           facecolor=[1.,0,0,0.5]))
-                elif type[i] == 'Recursiv':
+                elif len(type[i]) and  type[i] == 'Recursiv':
                     ax.add_patch(patches.Polygon([(current_idx, current_idx),
                                           (current_idx, current_idx+len(module)),
                                           (current_idx+len(module), current_idx+len(module))],
                                           facecolor=[0,1,0,0.5]))
-                elif type[i] == 'Endogeneous':
+                elif len(type[i]) and type[i] == 'Endogeneous':
                     ax.add_patch(patches.Rectangle((current_idx, current_idx),
                                           len(module), # Width
                                           len(module), # Height
                                           facecolor=[1.,0,0,0.5]))
-                elif type[i] == 'Exogeneous':
+                elif len(type[i]) and type[i] == 'Exogeneous':
                     ax.add_patch(patches.Rectangle(( current_idx,0),
                                           len(module), # Width
                                           current_idx, # Height
