@@ -778,7 +778,7 @@ class BaseModel():
         res_calc = make(funks=self.funks) # using the factory create the function 
         return res_calc
     
-    def base_res(self,databank,start='',slut='',silent=1):
+    def base_res(self,databank,start='',slut='',silent=1,**kwargs):
         ''' calculates a model with data from a databank
         Used for check wether each equation gives the same result as in the original databank'
         '''
@@ -1082,7 +1082,7 @@ class Model_help_Mixin():
             return 
     
     @staticmethod
-    def update_from_list(indf,basis):
+    def update_from_list(indf,basis,lprint=False):
         df = indf.copy(deep=True)
         for l in basis.split('\n'):
             if len(l.strip()) == 0: continue
@@ -1093,7 +1093,7 @@ class Model_help_Mixin():
             else:
                 arg = type(df.index[0])(arg[0]),type(df.index[0])(arg[1])
            # print(var,op,value,arg,sep='|')
-            update_var(df,var.upper(),op,value,*arg,create=True,lprint=0) 
+            update_var(df,var.upper(),op,value,*arg,create=True,lprint=lprint) 
         return df
 
 
@@ -2596,6 +2596,20 @@ class Display_Mixin():
                 name = notebook.name.split('.')[0]
                 display(HTML(f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>')) 
     
+    @staticmethod  
+    def widescreen():
+        '''Makes a jupyter notebook use all the avaiable real estate
+        ''' 
+        from IPython.display import HTML,display
+        display(HTML(data="""
+        <style>
+            div#notebook-container    { width: 95%; }
+            div#menubar-container     { width: 65%; }
+            div#maintoolbar-container { width: 99%; }
+        </style>
+        """)) 
+
+
     @staticmethod
     def modelflow_auto(run=True):
         '''In a jupyter notebook this function activate autorun of the notebook. 

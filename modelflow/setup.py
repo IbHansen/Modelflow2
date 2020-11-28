@@ -15,7 +15,7 @@ modulelist = [m.replace('\\','/')[:-3] for m in glob.glob('*.py')]
 assert 1==1
 setuptools.setup(
   name="ModelFlow",
-  version="1.0.06",
+  version="1.0.8",
   author="Ib Hansen",
   author_email="Ib.Hansen.Iv@gmail.com",
   description="A tool to solve and manage dynamic economic models",
@@ -33,7 +33,7 @@ setuptools.setup(
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
   ],
- # python_requires='>=3.7',
+ python_requires='>=3.7',
   # install_requires=["pandas", "matplotlib",'Seaborn','sympy','jupyter','ipywidgets',
   #                   'numpy','networkx'],
 

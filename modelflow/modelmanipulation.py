@@ -527,9 +527,10 @@ def kaedeunroll(in_equations,funks=[]):
                 forkaede,kaedeudtryk,efterkaede=find_arg('MOVAVG',udtryk)
                 arg=kaedeudtryk.split(',',1)
                 avg='(('
-                term=arg[1]
+                term=arg[0]
                 #print(arg,len(arg)/2)
-                antal=int(arg[0])
+                # breakpoint()
+                antal=int(arg[1])
                 for i in range(antal):
                     avg=avg[:]+term[:]+'+'
                     term=lagone(term,funks=funks)
