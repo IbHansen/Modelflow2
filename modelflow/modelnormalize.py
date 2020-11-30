@@ -49,7 +49,22 @@ def funk_in(funk,a_string):
     if found returns a match object where the group 2 is the interesting stuff used in funk_find_arg
     '''
     return re.search(fr'([^A-Z0-9_{{}}]|^)({funk})\(',a_string.upper(),re.MULTILINE) 
+#%%
+def funk_replace(funk1,funk2,a_string):
+    '''
+    replace funk1 with funk2 
+    '''
+    return re.sub(fr'([^A-Z0-9_{{}}]|^)({funk1})\(',fr'\1{funk2.upper()}(',a_string.upper(),re.MULTILINE) 
 
+def funk_replace_list(replacelist,a_string):
+    out_string = a_string[:]
+    for funk1,funk2 in replacelist:
+        out_string = funk_replace(funk1,funk2,out_string)
+    return out_string 
+        
+    
+funk_replace_list([('@D','DIFF'),('DLOG','DXLOG')],'d(a) = @d(v) x = dlog(y)')
+#%%
 funk_in('D','+d(b)'.upper())
 
 def funk_find_arg(funk_match, streng):
