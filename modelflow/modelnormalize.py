@@ -54,7 +54,7 @@ def funk_replace(funk1,funk2,a_string):
     '''
     replace funk1 with funk2 
     '''
-    return re.sub(fr'([^A-Z0-9_{{}}]|^)({funk1})\(',fr'\1{funk2.upper()}(',a_string.upper(),re.MULTILINE) 
+    return re.sub(fr'([^A-Z0-9_{{}}]|^)({funk1.upper())})\(',fr'\1{funk2.upper()}(',a_string.upper(),re.MULTILINE) 
 
 def funk_replace_list(replacelist,a_string):
     out_string = a_string[:]
