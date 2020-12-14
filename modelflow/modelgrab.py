@@ -4,7 +4,7 @@ Created on Mon Jun 10 21:11:08 2019
 
 @author: hanseni
 
-  - grap a eviews model for China and transform it to Business logic
+  - grap a eviews model  and transform it to Business logic
   - Create a normalized model, add dampning for the stocastic equations 
   - Add add-factors to the stocastic equations 
   - Generate BL for a model which calculates add-factors so a solution will match teh existing values 
@@ -35,15 +35,15 @@ assert 1==1
 
 
 @dataclass
-class GrapModel():
+class GrapWbModel():
     '''This class takes a world bank model specification, variable data and variable description
     and transform it to ModelFlow business language'''
     
     
-    frml      : str ='model/identities2.txt'            # path to model 
-    data      : str  = 'data/chnsoln.xlsx'               # path to data 
-    des       : str ='data/CHNGlossary.xlsx'             # path to descriptions
-    modelname : str = 'World bank China model'           # modelname
+    frml      : str =''            # path to model 
+    data      : str  = ''          # path to data 
+    des       : str =''            # path to descriptions
+    modelname : str = ''           # modelname
     start     : int = 2017
     end       : int = 2030 
     country_trans   : any = lambda x:x    # function which transform model specification
@@ -202,15 +202,3 @@ class GrapModel():
                     print(f'{check}')
                     print(f'\nValues: \n {self.mmodel.get_eq_values(v,showvar=1)} \n')
         self.mmodel.oldkwargs = {}
-    
-if __name__ == '__main__':
-
-    cchn = GrapModel( frml      ='model/identities2.txt',        # path to model 
-                    data      = 'data/chnsoln.xlsx',               # path to data 
-                    des       ='data/CHNGlossary.xlsx',             # path to descriptions
-                    modelname = 'World bank China model',           # modelname
-                    start     = 2017,
-                    end       = 2030 
-                                    )
-    assert 1==1
-    mchn,base = cchn()
