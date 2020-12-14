@@ -66,7 +66,7 @@ class GrapWbModel():
         # powers
         rawmodel2 = rawmodel1.replace('^','**').replace('""',' ').\
             replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg') \
-            .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PC','PCT')    
+            .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PC','PCT_GROWTH')    
         # @ELEM and @DURING 
         # @ELEM and @DURING 
         rawmodel3 = re.sub(r'@ELEM\(([A-Z][A-Z_0-9]+) *, *([0-9]+) *\)', r'\1_value_\2',rawmodel2) 

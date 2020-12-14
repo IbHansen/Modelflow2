@@ -133,7 +133,7 @@ def preprocess(udtryk,funks=[]):
          avg=avg[:-1]+')/'+str(antal)+'.0)'
          udtryk_up=forkaede+avg+efterkaede 
      
-    while  pct_match := funk_in('PCT',udtryk_up):
+    while  pct_match := funk_in('PCT_GROWTH',udtryk_up):
         forpc,pcudtryk,efterpc=funk_find_arg(pct_match,udtryk_up)
         udtryk_up=f'{forpc} (100 * ( ({pcudtryk}) / ({lagone(pcudtryk,funks=funks)}) -1)) {efterpc}'           
          
