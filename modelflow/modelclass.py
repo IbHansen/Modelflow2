@@ -941,7 +941,7 @@ class Org_model_Mixin():
         return out 
 
 
-    def get_values(self,v): 
+    def get_values(self,v,pct=False): 
         ''' returns a dataframe with the data points for a node,  including lags ''' 
         t = pt.udtryk_parse(v,funks=[])
         var=t[0].var
@@ -949,7 +949,11 @@ class Org_model_Mixin():
         bvalues = [float(get_a_value(self.basedf,per,var,lag)) for per in self.current_per] 
         lvalues = [float(get_a_value(self.lastdf,per,var,lag)) for per in self.current_per] 
         dvalues = [float(get_a_value(self.lastdf,per,var,lag)-get_a_value(self.basedf,per,var,lag)) for per in self.current_per] 
-        df = pd.DataFrame([bvalues,lvalues,dvalues],index=['Base','Last','Diff'],columns=self.current_per)
+        if pct:
+            pvalues = [(100*d/b if b != 0.0 else np.NAN) for b,d in zip(bvalues,dvalues)]
+            df = pd.DataFrame([bvalues,lvalues,dvalues,pvalues],index=['Base','Last','Diff','Pct'],columns=self.current_per)
+        else: 
+            df = pd.DataFrame([bvalues,lvalues,dvalues],index=['Base','Last','Diff'],columns=self.current_per)
         return df 
     
     def __getitem__(self, name):
