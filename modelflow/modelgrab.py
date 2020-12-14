@@ -4,7 +4,9 @@ Created on Mon Jun 10 21:11:08 2019
 
 @author: hanseni
 
-  - grap a eviews model  and transform it to Business logic
+    modules to grab models with different specifications and make them ModelFlow conforme 
+
+   **GrabWbModel** will take a eviews model  and transform it to Business logic
   - Create a normalized model, add dampning for the stocastic equations 
   - Add add-factors to the stocastic equations 
   - Generate BL for a model which calculates add-factors so a solution will match teh existing values 

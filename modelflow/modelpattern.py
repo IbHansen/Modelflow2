@@ -37,7 +37,7 @@ except:
 BLfunk = [o.upper() for o,t in inspect.getmembers(modelBLfunk) if not o.startswith('__')  ]
 classfunk = modelBLfunk.classfunk   
 # Operators 
-funkname    = 'DLOG SUM_EXCEL DIFF MIN MAX FLOAT NORM.CDF NORM.PPF ABS MOVAVG PCT'.split() + BLfunk+ userfunk + classfunk
+funkname    = 'DLOG SUM_EXCEL DIFF MIN MAX FLOAT NORM.CDF NORM.PPF ABS MOVAVG PCT_GROWTH'.split() + BLfunk+ userfunk + classfunk
 funkname2   = [i+r'(?=\()' for i in funkname]               # a function is followed by a (
 opname      = r'\*\*  != >=  <=  ==  [=+-/*@|()$><,.\]\[]'.split() # list of ordinary operators 
 oppat       = '('+'|'.join(['(?:' + i + ')' for i in funkname2+opname])+')'
@@ -70,7 +70,7 @@ nterm = namedtuple('nterm', ['number', 'op', 'var', 'lag'])
 def udtrykre(funks=[]):
     global funkname
     newfunks = [f.__name__.upper() for f in funks]
-    funkname    = 'DLOG SUM_EXCEL DIFF MIN MAX FLOAT NORM.CDF NORM.PPF ABS MOVAVG PCT'.split() + BLfunk+ userfunk + classfunk + newfunks
+    funkname    = 'DLOG SUM_EXCEL DIFF MIN MAX FLOAT NORM.CDF NORM.PPF ABS MOVAVG PCT_GROWTH'.split() + BLfunk+ userfunk + classfunk + newfunks
 #    print(funkname)
     funkname2   = [i+r'(?=\()' for i in funkname]               # a function is followed by a (
     opname      = r'\*\*  != >=  <=  ==  [=+-/*@|()$><,.\]\[]'.split() # list of ordinary operators 
