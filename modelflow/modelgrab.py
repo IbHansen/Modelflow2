@@ -26,6 +26,7 @@ import pandas as pd
 import re
 from dataclasses import dataclass
 import functools
+from tqdm import tqdm 
 
 
 from modelclass import model 
@@ -45,45 +46,20 @@ class GrapWbModel():
     frml      : str =''            # path to model 
     data      : str  = ''          # path to data 
     des       : str =''            # path to descriptions
-    modelname : str = ''           # modelname
+    modelname : str = 'No Name'           # modelname
     start     : int = 2017
     end       : int = 2030 
-    country_trans   : any = lambda x:x    # function which transform model specification
-    coutry_df_trans : any = lambda x:x    # function which transforms initial dataframe 
+    country_trans   : any = lambda x:x[:]    # function which transform model specification
+    country_df_trans : any = lambda x:x    # function which transforms initial dataframe 
     
     
     def __post_init__(self):
-        from tqdm import tqdm
         # breakpoint()
+        
+        print(f'\nProcessing the model:{self.modelname}',flush=True)
         self.rawmodel_org = open(self.frml).read()
-        if type(self.country_trans) != type(None):
-            self.rawmodel = self.country_trans(self.rawmodel_org)
-        else:
-            self.rawmodel = self.rawmodel_org 
-        rawmodel0 = '\n'.join(l for l in self.rawmodel.split('\n') if len(l.strip()) >=2)
-        # trailing and leading "
-        rawmodel1 = '\n'.join(l[1:-1] if l.startswith('"') else l for l in rawmodel0.split('\n'))
-        # powers
-        rawmodel2 = rawmodel1.replace('^','**').replace('""',' ').\
-            replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg') \
-            .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PC','PCT_GROWTH')    
-        # @ELEM and @DURING 
-        # @ELEM and @DURING 
-        rawmodel3 = re.sub(r'@ELEM\(([A-Z][A-Z_0-9]+) *, *([0-9]+) *\)', r'\1_value_\2',rawmodel2) 
-        rawmodel4 = re.sub(r'@DURING\( *([0-9]+) *\)', r'during_\1',rawmodel3) 
-        rawmodel5 = re.sub(r'@DURING\( *([0-9]+) *([0-9]+) *\)', r'during_\1_\2',rawmodel4) 
-        
-        # during check 
-        ldur = '\n'.join(l for l in rawmodel5.split('\n') if '@DURING' in l)
-        ldur2 = '\n'.join(l for l in rawmodel5.split('\n') if 'during' in l)
-        
-        # check D( 
-        ld  = '\n'.join(l for l in rawmodel5.split('\n') if re.search(r'([^A-Z]|^)D\(',l) )
-        ld1  = '\n'.join(l for l in rawmodel5.split('\n') if re.search(r'([^A-Z0-9_]|^)D\(',l) )
-        # breakpoint()
-        rawmodel6 = nz.funk_replace('D','DIFF',rawmodel5) 
-        # did we get all the lines 
-        ldif = '\n'.join(l for l in rawmodel6.split('\n') if 'DIFF(' in l )
+        self.rawmodel = self.country_trans(self.rawmodel_org)
+        rawmodel6 = self.trans_eviews(self.rawmodel)
         line_type = []
         line =[] 
         # breakpoint()
@@ -110,6 +86,38 @@ class GrapWbModel():
         
         self.fmodel = mp.explode('\n'.join(self.rorg))
         self.fres =   mp.explode('\n'.join(self.rres))
+        self.mmodel = model(self.fmodel,modelname = self.modelname)
+        self.mmodel.set_var_description(self.var_description)
+        self.mres = model(self.fres,modelname = f'Adjustment factors for {self.modelname}')
+        self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
+        
+    @staticmethod
+    def trans_eviews(rawmodel):
+        rawmodel0 = '\n'.join(l for l in rawmodel.upper().split('\n') if len(l.strip()) >=2)
+        # trailing and leading "
+        rawmodel1 = '\n'.join(l[1:-1] if l.startswith('"') else l for l in rawmodel0.split('\n'))
+        # powers
+        rawmodel2 = rawmodel1.replace('^','**').replace('""',' ').\
+            replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg') \
+            .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PC','PCT_GROWTH')    
+        # @ELEM and @DURING 
+        # @ELEM and @DURING 
+        rawmodel3 = re.sub(r'@ELEM\(([A-Z][A-Z_0-9]+) *, *([0-9]+) *\)', r'\1_value_\2',rawmodel2) 
+        rawmodel4 = re.sub(r'@DURING\( *([0-9]+) *\)', r'during_\1',rawmodel3) 
+        rawmodel5 = re.sub(r'@DURING\( *([0-9]+) *([0-9]+) *\)', r'during_\1_\2',rawmodel4) 
+        
+        # during check 
+        ldur = '\n'.join(l for l in rawmodel5.split('\n') if '@DURING' in l)
+        ldur2 = '\n'.join(l for l in rawmodel5.split('\n') if 'during' in l)
+        
+        # check D( 
+        ld  = '\n'.join(l for l in rawmodel5.split('\n') if re.search(r'([^A-Z]|^)D\(',l) )
+        ld1  = '\n'.join(l for l in rawmodel5.split('\n') if re.search(r'([^A-Z0-9_]|^)D\(',l) )
+        # breakpoint()
+        rawmodel6 = nz.funk_replace('D','DIFF',rawmodel5) 
+        # did we get all the lines 
+        ldif = '\n'.join(l for l in rawmodel6.split('\n') if 'DIFF(' in l )
+        return rawmodel6
     
     @property 
     def var_description(self):
@@ -119,12 +127,14 @@ class GrapWbModel():
             trans0 = pd.read_excel(self.des).loc[:,['mnem','Excel']].set_index('mnem').to_dict(orient = 'dict')['Excel']
             var_description = {str(k) : str(v) for k,v in trans0.items() if 'nan' != str(v)}
         except:
-            print('*** No variable description')
+            print('*** No variable description',flush=True)
             var_description = {}
         return var_description    
     
     @functools.cached_property
     def dfmodel(self):
+        '''The original input data enriched with during variablees, variables containing 
+        values for specific historic years and model specific transformation '''
         # Now the data 
         df = (pd.read_excel(self.data).
               pipe( lambda df : df.rename(columns={c:c.upper() for c in df.columns})).
@@ -149,18 +159,14 @@ class GrapWbModel():
             else:
                 df.loc[int(pers[0]):int(pers[1]),var]=1.
         self.showduringvars = df[during_vars] 
-        df_out = self.mmodel.insertModelVar(df).pipe(self.coutry_df_trans)
+        df_out = self.mmodel.insertModelVar(df).pipe(self.country_df_trans)
         return df_out
     
     def __call__(self):
-        self.mmodel = model(self.fmodel,modelname = self.modelname)
-        self.mmodel.set_var_description(self.var_description)
-        self.mres = model(self.fres)
-        self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
 
         return self.mmodel,self.base_input
     
-    def test_model(self,df,start=None,end=None,maxvar=1_000_000, maxerr=100,tol=0.0001,showall=False):
+    def test_model(self,start=None,end=None,maxvar=1_000_000, maxerr=100,tol=0.0001,showall=False):
         '''
         Compares a straight calculation with the input dataframe. 
         
@@ -182,7 +188,7 @@ class GrapWbModel():
         _start = start if start else self.start
         _end    = end if end else self.end
     
-        resresult = self.mmodel(df,_start,_end,reset_options=True,solver='base_res')
+        resresult = self.mmodel(self.base_input,_start,_end,reset_options=True,solver='base_res')
         self.mmodel.basedf = self.dfmodel
         pd.options.display.float_format = '{:.10f}'.format
         err=0

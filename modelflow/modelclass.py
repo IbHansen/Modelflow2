@@ -1086,7 +1086,7 @@ class Model_help_Mixin():
             return 
     
     @staticmethod
-    def update_from_list(indf,basis,lprint=False):
+    def update_from_list_old(indf,basis,lprint=False):
         df = indf.copy(deep=True)
         for l in basis.split('\n'):
             if len(l.strip()) == 0: continue
@@ -1099,7 +1099,19 @@ class Model_help_Mixin():
            # print(var,op,value,arg,sep='|')
             update_var(df,var.upper(),op,value,*arg,create=True,lprint=lprint) 
         return df
-
+    
+    @staticmethod
+    def update_from_list(indf,basis,lprint=False):
+        df = indf.copy(deep=True)
+        for l in basis.split('\n'):
+            if len(l.strip()) == 0: continue
+            #print(f'line:{l}:')
+            var,op,*value,arg1,arg2 = l.split()
+            istart,islut = df.index.slice_locs(arg1,arg2,kind='loc')                
+            arg = df.index[istart],df.index[islut]
+           # print(var,op,value,arg,sep='|')
+            update_var(df,var.upper(),op,value,*arg,create=True,lprint=lprint) 
+        return df
 
     def insertModelVar(self,dataframe, addmodel=[]):
         """Inserts all variables from this model, not already in the dataframe.
@@ -1141,7 +1153,55 @@ class Model_help_Mixin():
         def __missing__(self, key):
             return key 
     
+    def test_model(self,base_input,start=None,end=None,maxvar=1_000_000, maxerr=100,tol=0.0001,showall=False,dec=8,width=30,ref_df=None):
+        '''
+        Compares a straight calculation with the input dataframe. 
+        
+        shows which variables dont have the same value 
+        
+        Very useful when implementing a model where the results are known 
     
+        Args:
+            df (DataFrame): dataframe to run.
+            start (index, optional): start period. Defaults to None.
+            end (index, optional): end period. Defaults to None.
+            maxvar (int, optional): how many variables are to be chekked. Defaults to 1_000_000.
+            maxerr (int, optional): how many errors to check Defaults to 100.
+            tol (float, optional): check for absolute value of difference. Defaults to 0.0001.
+            showall (bolean, optional): show more . Defaults to False.
+            ref_df (DataFrame, optional): this dataframe is used for reference, used if adjustment terms has been calculated 
+    
+        Returns:
+            None.
+    
+        '''
+        _start = start if start else self.current_per[0]
+        _end    = end if end else self.current_per[-1]
+        
+        self.basedf = ref_df if type(ref_df) == type(pd.DataFrame) else  base_input 
+        resresult = self(base_input,_start,_end,reset_options=True,solver='base_res')
+    
+        pd.options.display.float_format = f'{{:.{dec}f}}'.format
+        err=0
+        print(f'\nChekking residuals for {self.name} {_start} to {_end}')
+        for i,v in enumerate(self.solveorder):
+            if i > maxvar : break
+            if err > maxerr : break
+            check = self.get_values(v,pct=True).T 
+            check.columns = ['Before check','After calculation','Difference','Pct']
+            # breakpoint()
+            if (check.Difference.abs() >= tol).any():                
+                err=err+1
+                maxdiff = check.Difference.abs().max()
+                maxpct  = check.Pct.abs().max()
+                # breakpoint()
+                print(f"{v}, Max difference:{maxdiff:{width}.{dec}f} Max Pct {maxpct:{width}.{dec}f}% It is number {i} in the solveorder and error number {err}")
+                if showall:
+                    print(f'\n{self.allvar[v]["frml"]}')
+                    print(f'{check}')
+                    print(f'\nValues: \n {self.get_eq_values(v,showvar=1)} \n')
+        self.oldkwargs = {}
+        
              
 
 class Dekomp_Mixin():
@@ -3684,7 +3744,7 @@ class Solver_Mixin():
             with self.timer(f'\nNewton it:{iteration}',timeit) as xxtt:
                 before = values[self.stackrowindex,self.stackcolindex]
                 with self.timer('calculate new solution',timeit) as t2:                
-                    for row in self.stackrows:
+                    for self.periode,row in zip(sol_periode,self.stackrows):
                         self.pronew2d(values, outvalues, row ,  alfa )
                         self.solvenew2d(values, outvalues, row ,  alfa )
                         self.epinew2d(values, outvalues, row ,  alfa )
@@ -3992,7 +4052,7 @@ class Solver_Mixin():
             with self.timer(f'\nNewton it:{iteration}',timeit) as xxtt:
                 before = values[self.stackrowindex,self.stackcolindex_endo]
                 with self.timer('calculate new solution',timeit) as t2:                
-                    for row in self.stackrows:
+                    for self.periode,row in zip(sol_periode,self.stackrows):
                         self.pronew2d(values, outvalues, row ,  alfa )
                         self.solvenew2d(values, outvalues, row ,  alfa )
                         self.epinew2d(values, outvalues, row ,  alfa )

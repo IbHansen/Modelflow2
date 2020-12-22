@@ -14,11 +14,13 @@ import pandas as pd
 import numpy as np
 import time
 from contextlib import contextmanager
+import sys
 
 
 
 
 def update_var(databank,var,operator='=',inputval=0,start='',slut='',create=1, lprint=False,scale=1.0):
+    
         """Updates a variable in the databank. Possible update choices are: 
         \n \= : val = inputval 
         \n \+ : val = val + inputval 
@@ -30,10 +32,12 @@ def update_var(databank,var,operator='=',inputval=0,start='',slut='',create=1, l
         \n scale scales the input variables default =1.0 
         
         """ 
+        import sys 
+        import numpy as np 
         if var not in databank: 
             if not create:
                 print('** Error, variable not found:',var)
-                print('** Update =',var,'Data=',inputdata)
+                print('** Update =',var,'Data=',inputval)
                 print('Create=True if you want to create the variable in the databank')
                 sys.exit()
             else:
@@ -41,9 +45,10 @@ def update_var(databank,var,operator='=',inputval=0,start='',slut='',create=1, l
                     print('Variable not in databank, created ',var)
                 databank[var]=0.0
 
-        orgdata=pd.Series(databank.loc[start:slut,var]).copy(deep=True)
-        current_per = databank.index[databank.index.get_loc(start):databank.index.get_loc(slut)+1]
+        current_per = databank.index[databank.index.get_loc(start):databank.index.get_loc(slut)]
+        orgdata=pd.Series(databank.loc[current_per,var]).copy(deep=True)
         antalper=len(current_per)
+        # breakpoint()
         if isinstance(inputval,float) or isinstance(inputval,int) :
             inputliste=[float(inputval)]
         elif isinstance(inputval,str):
@@ -59,7 +64,8 @@ def update_var(databank,var,operator='=',inputval=0,start='',slut='',create=1, l
 
         if len(inputdata) != antalper :
             print('** Error, There should be',antalper,'values. There is:',len(inputdata))
-            print('** Update =',var,'Data=',inputdata)
+            print('** Update =',var,'Data=',inputdata,start,slut)
+            sys.exit()
         else:     
             inputserie=pd.Series(inputdata,current_per)*scale            
 #            print(' Variabel------>',var)
@@ -82,15 +88,16 @@ def update_var(databank,var,operator='=',inputval=0,start='',slut='',create=1, l
                 print('Illegal operator in update:',operator,'Variable:',var)
                 outputserie=pd.Series(np.NaN,current_per) 
             outputserie.name=var
-            databank.loc[start:slut,var]=outputserie
+            databank.loc[current_per,var]=outputserie
             if lprint:
-                print('Update',operator,inputdata)
+                print('Update',operator,inputdata,start,slut)
                 forspalte=str(max(6,len(var)))
                 print(('{:<'+forspalte+'} {:>20} {:>20} {:>20}').format(var,'Before', 'After', 'Diff'))
                 newdata=databank.loc[current_per,var]
                 diff=newdata-orgdata
                 for i in current_per:
                     print(('{:<'+forspalte+'} {:>20.4f} {:>20.4f} {:>20.4f}').format(str(i),orgdata[i],newdata[i],diff[i]))                
+
 
 def tovarlag(var,lag):
     ''' creates a stringof var(lag) if lag else just lag '''

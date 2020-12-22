@@ -53,14 +53,13 @@ def funk_in(funk,a_string):
     if found returns a match object where the group 2 is the interesting stuff used in funk_find_arg
     '''
     return re.search(fr'([^A-Z0-9_{{}}]|^)({funk})\(',a_string.upper(),re.MULTILINE) 
-#%%
 def funk_replace(funk1,funk2,a_string):
     '''
     replace funk1( with funk2(
         
     takes care that funk1 embedded in variable name is not replaced
     '''
-    return re.sub(fr'([^A-Z0-9_{{}}]|^)({funk1.upper()})\(',
+    return re.sub(fr'(^|[^A-Z0-9_{{}}])({funk1.upper()})\(',
                   fr'\1{funk2.upper()}(',a_string.upper(),
                   re.MULTILINE) 
 
@@ -144,7 +143,7 @@ def preprocess(udtryk,funks=[]):
     return udtryk_up         
  
         
-def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True):
+def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A'):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
     
@@ -179,7 +178,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True):
         
         endo_name = the_endo.upper() if the_endo else endovar(lhs)
         endo = sympify(endo_name,clash)
-        a_name = f'{endo_name}_A' if add_adjust else ''
+        a_name = f'{endo_name}{add_suffix}' if add_adjust else ''
         kat=sympify(f'Eq({lhs},__rhs__ {"+" if add_adjust else ""}{a_name})',clash)  
         
         endo_frml  = solve(kat,endo  ,simplify=False,rational=False)
@@ -199,7 +198,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True):
         return result
     else: # no need to normalize  this equation 
         if add_adjust:
-            result = Normalized_frml(ind_o,preprocessed,f'{lhs} = {rhs} + {lhs}_A', f'{lhs}_A = ({lhs}) - ({rhs})')
+            result = Normalized_frml(ind_o,preprocessed,f'{lhs} = {rhs} + {lhs}{add_suffix}', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})')
         else:
             result = Normalized_frml(ind_o,preprocessed,f'{lhs} = {rhs}')
         return result
@@ -208,11 +207,11 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True):
 if __name__ == '__main__':
 
     
-    normal('dlog  ( a) = 42 * b',add_adjust=1).fprint
+    normal('DELRFF=RFF-RFF(-1)',add_adjust=1,add_suffix= '_AERR').fprint
     normal('a = n(-1)',add_adjust=0).fprint
-    normal('PCT(a) = n(-1)',add_adjust=0).fprint
+    normal('PCT_growth(a) = n(-1)',add_adjust=0).fprint
     normal('a = movavg(pct(b),2)',add_adjust=0).fprint
-    normal('pct(c) = z+pct(b) + pct(e)').fprint
-    normal('a = pct(b)',add_adjust=0).fprint
+    normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
+    normal('a = pct_growth(b)',add_adjust=0).fprint
     normal("DLOG(SAUNECONGOVTXN) =-0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
     normal("DLOG(a) = b").fprint
