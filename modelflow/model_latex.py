@@ -173,13 +173,14 @@ def doable(ind,show=False):
     return out
         
 
-def latextotxt(input,dynare=False):
+def latextotxt(input,dynare=False,bankadd=False):
     '''
     Translates a latex input to a BL output 
     
     '''
+    # breakpoint()
     ex12 = re.findall(r'\\label\{eq:(.*?)\}\n(.*?)\\end\{',input,re.DOTALL) # select the relevant equations 
-    org  = [(name,eq) for name,ex in ex12 for eq in ex.splitlines() if 2 == len(eq.split('='))]
+    org  = [(name,eq.replace('\n','')) for name,ex in ex12 for eq in ex.split('\\\\') if 2 == len(eq.split('='))]
 #    ex15 = [('frml '+name+'  '+eq) for (name,ex) in ex12 for eq in ex.splitlines()]
     ex15 = [eq.strip() for (name,eq) in org]
     temp = '\n'.join(ex15)
@@ -193,7 +194,9 @@ def latextotxt(input,dynare=False):
            r']':')',
            r'&':'',
            r'\nonumber'  : '',
+           r'\_'      : '_',
            r'{n}'      : '__{n}',
+           r'_{t}'      : '',
            r'{n,s}'      : '__{n}__{s}',
            r'{n,s,t}'    : '__{n}__{s}__{t}',
            r'N^{-1}'     : 'NORM.PPF' , 
@@ -206,10 +209,12 @@ def latextotxt(input,dynare=False):
            }
     regtrans = {
            r'\\Delta ([A-Za-z_][\w{},\^]*)':r'diff(\1)', # \Delta xy => diff(xy)
-           r'\^([\w])'                   : r'_\1',      # ^x        => _x
-           r'\^\{([\w]+)\}(\w)'          : r'_\1_\2',   # ^{xx}y    => _xx_y
-           r'\^\{([\w]+)\}'              : r'_\1',      # ^{xx}     => _xx
-           r'\^\{([\w]+),([\w]+)\}'      : r'_\1_2',    # ^{xx,yy}     => _xx_yy
+           r'_{t-([1-9])}'                   : r'(-\1)',      # _{t-x}        => (-x)
+
+           # r'\^([\w])'                   : r'_\1',      # ^x        => _x
+           # r'\^\{([\w]+)\}(\w)'          : r'_\1_\2',   # ^{xx}y    => _xx_y
+           r'\^\{([\w]+)\}'              : r'_{\1}',      # ^{xx}     => _xx
+           r'\^\{([\w]+),([\w]+)\}'      : r'_{\1}_{\2}',    # ^{xx,yy}     => _xx_yy
            r'\s*\\times\s*':'*' ,
            r'N\('         : 'NORM.CDF('
             }
@@ -220,16 +225,18 @@ def latextotxt(input,dynare=False):
     for before,to in regtrans.items():
         temp = re.sub(before,to,temp)
     temp = debrace(temp)
-    temp = defrack(temp) 
-    temp = rebank(temp)
+    temp = defrack(temp)
+    if bankadd:
+        temp = rebank(temp)
     
-    
+    # breakpoint()
     temp = re.sub(r'sum\(n,s,t\)'+(pt.namepat),r'sum(n_{bank},sum(s,sum(t,\1)))',temp)
     temp = re.sub(r'sum\(n\)sum\(s\)sum\(t\)'+(pt.namepat),r'sum(n_{bank},sum(s,sum(t,\1)))',temp)
     temp = re.sub(r'sum\(n\)'+(pt.namepat),r'sum(n_{bank},\1)',temp)
+    temp = re.sub(fr'sum\({pt.namepat}\)\(',r'sum(\1,',temp)
     
     ltemp  = [b.strip().split('=') for b in temp.splitlines()] # remove blanks in the ends and split each line at =   
-    ltemp  = [lhs + ' = '+  rhs.replace(' ','*') for lhs,rhs in ltemp]      # change ' ' to * on the rhs. 
+    ltemp  = [lhs + ' = '+  rhs.replace(' ','') for lhs,rhs in ltemp]      # change ' ' to * on the rhs. 
     ltemp  = ['Frml '+fname + ' ' + eq + ' $ 'for eq,(fname,__) in zip(ltemp,org)]
     
     ltemp  = [doable(l) for l in ltemp]
@@ -328,51 +335,7 @@ def get_latex_model(dir,name,title = 'My model',finished=False):
 
 
 if __name__ == '__main__'  :
-    path = r'P:\ECB business areas\DGMF\STM\MST\Dynare'
-    mnii = get_latex_model(path,'NII_S_20180723_original_content.tex',title='NII')    
-    mcr  = get_latex_model(path,'CR_M_S_C_20180724_original_content.tex',title='NII')    
-    mvar = get_latex_model(path,'VAR_20180724_original_content.tex',title='Macro')
-    
-    scr  = mcr.strongfrml   
-    snii = mnii.strongfrml
-    svar = mvar.strongfrml
-    
-    if 0:
-        # read from the P: drive and save to local else read from local drive (just to work if not on the network) 
-        try:
-            lbl = open(r'P:\ECB business areas\DGMF\STM\TOOLS\Satellite Model Tools\STAR_dev\BBS_Business_Logic\BLogic2.tex').read()  # read the template model 
-            with open(r'latex\BLogic.tex','w') as f:
-                f.write(lbl)
-        except:
-            with open(r'latex\BLogic.tex') as f:
-                lbl = f.read()
-        try:
-            with open(r'P:\ECB business areas\DGMF\STM\TOOLS\Satellite Model Tools\STAR_dev\BBS_Business_Logic\testlists.txt') as f:  # read the template model 
-                tlist=f.read() 
-            with open(r'latex\testlists.txt','w') as f:
-                f.write(tlist)
-        except:
-            with open(r'latex\testlists.txt') as f:
-                tlist = f.read()
-                
-        tbl = latextotxt(lbl)
-    
-        try:
-            with open(r'P:\ECB business areas\DGMF\STM\TOOLS\Satellite Model Tools\STAR_dev\BBS_Business_Logic\BLogic.frm','w') as f:  # read the template model 
-                f.write(tbl)
-        except:
-            print('not written to network')        
-        with open(r'latex\BLogic.frm','w') as f:
-            f.write(tbl)
-    
-        tmodel = tlist+tbl 
-        fmodel = mp.explode(tmodel)
-        
-        try:
-            with open(r'P:\ECB business areas\DGMF\STM\TOOLS\Satellite Model Tools\STAR_dev\BBS_Business_Logic\BLogic.fru','w') as f:  # read the template model 
-                f.write(fmodel)
-        except:
-            print('not written to network')        
-        with open(r'latex\BLogic.fru','w') as f:
-            f.write(fmodel)
-        
+    #%%
+    eq = r'F(k) = 3*4^5'   
+    # display(Latex(eq))
+    display(Image(latex_to_png(eq)))

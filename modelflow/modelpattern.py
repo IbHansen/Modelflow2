@@ -32,7 +32,7 @@ try: # import the names of functions defined in modeluserfunk
     import modeluserfunk
     userfunk = [o.upper() for o,t in inspect.getmembers(modeluserfunk) if not o.startswith('__')]
 except: 
-    userfunk = ''
+    userfunk = []
 
 BLfunk = [o.upper() for o,t in inspect.getmembers(modelBLfunk) if not o.startswith('__')  ]
 classfunk = modelBLfunk.classfunk   
