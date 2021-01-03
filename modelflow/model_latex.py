@@ -171,8 +171,29 @@ def doable(ind,show=False):
     else:
         out=ind
     return out
-        
+def findlists(input):
+    '''extracte liste from latex'''
+    relevant = re.findall(r'LIST \s*\$[^$]*\$',input.upper())  
+    temp1 = [l.replace('$','').replace('\\','').replace(',',' ') 
+         .replace('{','').replace('}','')                                 
+         for l in relevant]
+    temp2 = [l.split('=')[0]+' = '
+           + l.split('=')[0][4:]
+           +' : '+ l.split('=')[1]+'$' for l in temp1]
+    return temp2
 
+if 0:
+    listtest='''      
+    List $stage=\{stage1, stage2,stage3\}$
+    
+    List $stage\_from=\{stage1, stage2,stage3\}$
+    
+    List $stage\_to=\{stage1, stage2,stage3\}$
+    
+    List $stage\_to2=\{stage1, stage2,stage3\}$
+    '''
+    print(findlists(listtest))
+#%%
 def latextotxt(input,dynare=False,bankadd=False):
     '''
     Translates a latex input to a BL output 
@@ -241,7 +262,8 @@ def latextotxt(input,dynare=False,bankadd=False):
     
     ltemp  = [doable(l) for l in ltemp]
     
-    out = '\n'.join(ltemp) 
+    
+    out = '\n'.join(ltemp+findlists(input))
     return out
 def dynlatextotxt(input,show=False):
     '''
@@ -325,7 +347,61 @@ def dynlatextotxt(input,show=False):
     out = '\n'.join(ltemp) 
     return out
 
+from IPython.core.magic import register_line_magic, register_cell_magic
+@register_cell_magic
+def latexflow(line, cell):
+    '''Creates a ModelFlow model from a Latex document'''
+    if line: 
+        args = line.split()
+        name= args[0]
+    else:
+        name = 'Testmodel'
+        args=[]
+        
+    lmodel = cell
+    display(Markdown(f'# Now creating the model {name}'))
+    display(Markdown(cell))
+    lmodel = latextotxt(cell)
+    globals()[f'l{name}'] = lmodel
+    display(Markdown(f'# Creating this Template model'))
+    print(lmodel)
+    globals()[f'f{name}'] = cell
+    mmodel  = model.from_eq(globals()[f'l{name}'])
+    globals()[f'm{name}'] = mmodel
+    display(Markdown(f'# And this Business Logic Language  model'))
+    print(mmodel.equations)
 
+    return
+
+def ibmelt(df,prefix='',per=1):
+        temp= df.reset_index().rename(columns={'index':'row'}).melt(id_vars='row',var_name='column')\
+        .assign(var_name=lambda x: prefix+x.row+'_'+x.column)\
+        .loc[:,['value','var_name']].set_index('var_name').rename(columns={'value':per})
+        return temp
+
+@register_cell_magic
+def csv(line, cell):
+    '''Creates a ModelFlow model from a Latex document'''
+    if line: 
+        args = line.split()
+        name= args[0]
+    else:
+        name = 'testdf'
+        args=[]
+        
+        
+    trans = any('--t' in a for a in args)    
+    noprefix = any('--noprefix' in a for a in args) 
+    prefix = '' if noprefix else name
+    xtrans = (lambda xx:xx.T) if trans else (lambda xx:xx)
+    sio = StringIO(cell)
+    df = pd.read_table(sio,sep=r"\s+").pipe(xtrans)
+    df_melted = ibmelt(df,prefix=prefix)
+    if any('--show' in a for a in args): 
+        
+        display(df)
+        display(df_melted)
+    return 
 def get_latex_model(dir,name,title = 'My model',finished=False):
     latex = open(os.path.join(dir,name)).read()  # read the template model 
     input=latex
