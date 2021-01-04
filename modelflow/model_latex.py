@@ -347,67 +347,67 @@ def dynlatextotxt(input,show=False):
     out = '\n'.join(ltemp) 
     return out
 
-from IPython.core.magic import register_line_magic, register_cell_magic
-@register_cell_magic
-def latexflow(line, cell):
-    '''Creates a ModelFlow model from a Latex document'''
-    if line: 
-        args = line.split()
-        name= args[0]
-    else:
-        name = 'Testmodel'
-        args=[]
+# from IPython.core.magic import register_line_magic, register_cell_magic
+# @register_cell_magic
+# def latexflow(line, cell):
+#     '''Creates a ModelFlow model from a Latex document'''
+#     if line: 
+#         args = line.split()
+#         name= args[0]
+#     else:
+#         name = 'Testmodel'
+#         args=[]
         
-    lmodel = cell
-    display(Markdown(f'# Now creating the model {name}'))
-    display(Markdown(cell))
-    lmodel = latextotxt(cell)
-    globals()[f'l{name}'] = lmodel
-    display(Markdown(f'# Creating this Template model'))
-    print(lmodel)
-    globals()[f'f{name}'] = cell
-    mmodel  = model.from_eq(globals()[f'l{name}'])
-    globals()[f'm{name}'] = mmodel
-    display(Markdown(f'# And this Business Logic Language  model'))
-    print(mmodel.equations)
+#     lmodel = cell
+#     display(Markdown(f'# Now creating the model {name}'))
+#     display(Markdown(cell))
+#     lmodel = latextotxt(cell)
+#     globals()[f'l{name}'] = lmodel
+#     display(Markdown(f'# Creating this Template model'))
+#     print(lmodel)
+#     globals()[f'f{name}'] = cell
+#     mmodel  = model.from_eq(globals()[f'l{name}'])
+#     globals()[f'm{name}'] = mmodel
+#     display(Markdown(f'# And this Business Logic Language  model'))
+#     print(mmodel.equations)
 
-    return
+#     return
 
-def ibmelt(df,prefix='',per=1):
-        temp= df.reset_index().rename(columns={'index':'row'}).melt(id_vars='row',var_name='column')\
-        .assign(var_name=lambda x: prefix+x.row+'_'+x.column)\
-        .loc[:,['value','var_name']].set_index('var_name').rename(columns={'value':per})
-        return temp
+# def ibmelt(df,prefix='',per=1):
+#         temp= df.reset_index().rename(columns={'index':'row'}).melt(id_vars='row',var_name='column')\
+#         .assign(var_name=lambda x: prefix+x.row+'_'+x.column)\
+#         .loc[:,['value','var_name']].set_index('var_name').rename(columns={'value':per})
+#         return temp
 
-@register_cell_magic
-def csv(line, cell):
-    '''Creates a ModelFlow model from a Latex document'''
-    if line: 
-        args = line.split()
-        name= args[0]
-    else:
-        name = 'testdf'
-        args=[]
+# @register_cell_magic
+# def csv(line, cell):
+#     '''Creates a ModelFlow model from a Latex document'''
+#     if line: 
+#         args = line.split()
+#         name= args[0]
+#     else:
+#         name = 'testdf'
+#         args=[]
         
         
-    trans = any('--t' in a for a in args)    
-    noprefix = any('--noprefix' in a for a in args) 
-    prefix = '' if noprefix else name
-    xtrans = (lambda xx:xx.T) if trans else (lambda xx:xx)
-    sio = StringIO(cell)
-    df = pd.read_table(sio,sep=r"\s+").pipe(xtrans)
-    df_melted = ibmelt(df,prefix=prefix)
-    if any('--show' in a for a in args): 
+#     trans = any('--t' in a for a in args)    
+#     noprefix = any('--noprefix' in a for a in args) 
+#     prefix = '' if noprefix else name
+#     xtrans = (lambda xx:xx.T) if trans else (lambda xx:xx)
+#     sio = StringIO(cell)
+#     df = pd.read_table(sio,sep=r"\s+").pipe(xtrans)
+#     df_melted = ibmelt(df,prefix=prefix)
+#     if any('--show' in a for a in args): 
         
-        display(df)
-        display(df_melted)
-    return 
-def get_latex_model(dir,name,title = 'My model',finished=False):
-    latex = open(os.path.join(dir,name)).read()  # read the template model 
-    input=latex
-    formulas = dynlatextotxt(latex).upper()
-    model = mc.create_model(formulas,name = title,finished=finished)
-    return model 
+#         display(df)
+#         display(df_melted)
+#     return 
+# def get_latex_model(dir,name,title = 'My model',finished=False):
+#     latex = open(os.path.join(dir,name)).read()  # read the template model 
+#     input=latex
+#     formulas = dynlatextotxt(latex).upper()
+#     model = mc.create_model(formulas,name = title,finished=finished)
+#     return model 
 
 
 if __name__ == '__main__'  :
