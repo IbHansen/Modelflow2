@@ -7,13 +7,20 @@ Created on Fri Mar  2 14:50:18 2018
 
 @author: hanseni
 """
-from numba import jit
 
-@jit("f8(b1,f8,f8)")
-def recode(condition,yes,no):
-    '''Function which recreates the functionality of @recode from eviews ''' 
-    return yes if condition else no
-
+try:
+    from numba import jit
+    
+    @jit("f8(b1,f8,f8)")
+    def recode(condition,yes,no):
+        '''Function which recreates the functionality of @recode from eviews ''' 
+        return yes if condition else no
+except:
+    print(' Import of numba failed ')
+    def recode(condition,yes,no):
+        '''Function which recreates the functionality of @recode from eviews ''' 
+        return yes if condition else no
+    
 
 try:
     from stem import ste 

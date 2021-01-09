@@ -1762,8 +1762,10 @@ class Graph_Draw_Mixin():
                     self.treewalk(graph,navn.upper(),maxlevel=down,lpre=False))
        alllinks  = chain(uplinks,downlinks)
        return self.todot2(alllinks,navn=navn.upper(),down=down,up=up,**kwargs) 
-   
-    
+
+       
+       
+       
     def trans(self,ind,root,transdic=None,debug=False):
         ''' as there are many variable starting with SHOCK, the can renamed to save nodes'''
         if debug:    print('>',ind)
@@ -1985,7 +1987,7 @@ class Graph_Draw_Mixin():
 
 
 
-    def todot2(self,alledges,navn='',browser=False,**kwargs):
+    def todot2(self,alledges,navn='',**kwargs):
         ''' makes a drawing of all edges in list alledges
         all is the edges
         
@@ -2095,11 +2097,11 @@ class Graph_Draw_Mixin():
         ptitle = '\n label = "'+kwargs.get('title',fname)+'";'
         post  = '\n}' 
         out   = pre+nodes+links+psink+psource+clusterout+ptitle+post 
-        self.display_graph(out,fname,browser,kwargs)
+        self.display_graph(out,fname,kwargs)
 
         # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing 
         return 
-    def display_graph(self,out,fname,browser,kwargs):
+    def display_graph_old(self,out,fname,browser,kwargs):
         size=kwargs.get('size',(6,6))
 
         tpath=os.path.join(os.getcwd(),'graph')
@@ -2141,7 +2143,68 @@ class Graph_Draw_Mixin():
             print('close PDF file before continue')
             os.system(pdfname)
 
-
+    @staticmethod
+    def display_graph(out,fname,kwargs):
+        '''Generates a graphviz file from the commands in out. 
+        
+        The file is placed in cwd/graph
+        
+        A png and a svg file is generated, and displayes
+        
+        options pdf and eps determins if a pdf and an eps file is genrated.
+    
+        option browser determins if a seperate browser window is open'''
+        
+        
+        from IPython.core.magic import register_line_magic, register_cell_magic
+        from pathlib import Path
+        import webbrowser as wb
+        from subprocess import run 
+    
+    
+        
+        size     = kwargs.get('size',(6,6))
+        lpdf     = kwargs.get('pdf',False)
+        lpng     = kwargs.get('png',False)
+        leps     = kwargs.get('eps',False) 
+        browser = kwargs.get('browser',False) 
+        warnings = "" if kwargs.get("warnings",False) else "-q"    
+    
+        path = Path.cwd() / 'graph' 
+        path.mkdir(parents=True, exist_ok=True)
+        filename = path / (fname + '.gv')
+        with open(filename,'w') as f:
+            f.write(out)  
+        
+        pngname  = filename.with_suffix('.png')
+        svgname  = filename.with_suffix('.svg')
+        pdfname  = filename.with_suffix('.pdf')
+        epsname  = filename.with_suffix('.eps')
+        
+        xx0 = run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}\! -o"{svgname}" "{filename}" -q  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
+        xx1 = run(f'dot -Tpng  -Gsize={size[0]},{size[1]}\! -Gdpi=300 -o"{pngname}" "{filename}"  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
+        xx2='' if not lpdf else run(f'dot -Tpdf  -Gsize={size[0]},{size[1]}\! -o"{pdfname}" "{filename}"  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
+        xx3='' if not leps else run(f'dot -Teps  -Gsize={size[0]},{size[1]}\! -o"{epsname}" "{filename}"  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
+        for x in [xx0,xx1,xx2,xx3]:
+            if x:
+                print(f'Error in generation graph picture:\n{x}')
+                return
+                
+        if lpng :            
+            display(Image(filename=pngname))
+        else:
+            try:
+                display(SVG(filename=svgname))
+            except Error as e:
+                display(Image(filename=pngname))
+    
+        if browser: wb.open(svgname,new=2)
+        if lpdf: 
+            wb.open(pdfname,new=2)
+            #display(IFrame(pdfname,width=500,height=500))
+            print('close PDF file before continue')
+           # os.system(pdfname)
+        return 
       
 class Display_Mixin():
     
