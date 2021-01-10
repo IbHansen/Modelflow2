@@ -33,7 +33,7 @@ from functools import partial
 
 
 import seaborn as sns 
-from IPython.display import SVG, display, Image
+from IPython.display import SVG, display, Image, IFrame
 import ipywidgets as ip
 
 try:
@@ -2152,6 +2152,8 @@ class Graph_Draw_Mixin():
         A png and a svg file is generated, and displayes
         
         options pdf and eps determins if a pdf and an eps file is genrated.
+        
+        option fpdf will cause the graph displayed in a seperate pdf window 
     
         option browser determins if a seperate browser window is open'''
         
@@ -2161,16 +2163,18 @@ class Graph_Draw_Mixin():
         import webbrowser as wb
         from subprocess import run 
     
-    
+        tsize = kwargs.get('size',(6,6))
+        size = tsize if type(tsize) == tuple else tuple(int(i) for i in tsize[1:-1].split(',')) # if size is a string  
         
-        size     = kwargs.get('size',(6,6))
         lpdf     = kwargs.get('pdf',False)
+        fpdf     = kwargs.get('fpdf',False)
         lpng     = kwargs.get('png',False)
         leps     = kwargs.get('eps',False) 
         browser = kwargs.get('browser',False) 
         warnings = "" if kwargs.get("warnings",False) else "-q"    
     
-        path = Path.cwd() / 'graph' 
+       # path = Path.cwd() / 'graph' 
+        path = Path('graph') 
         path.mkdir(parents=True, exist_ok=True)
         filename = path / (fname + '.gv')
         with open(filename,'w') as f:
@@ -2183,7 +2187,7 @@ class Graph_Draw_Mixin():
         
         xx0 = run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}\! -o"{svgname}" "{filename}" -q  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
         xx1 = run(f'dot -Tpng  -Gsize={size[0]},{size[1]}\! -Gdpi=300 -o"{pngname}" "{filename}"  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
-        xx2='' if not lpdf else run(f'dot -Tpdf  -Gsize={size[0]},{size[1]}\! -o"{pdfname}" "{filename}"  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
+        xx2='' if not (lpdf or fpdf) else run(f'dot -Tpdf  -Gsize={size[0]},{size[1]}\! -o"{pdfname}" "{filename}"  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
         xx3='' if not leps else run(f'dot -Teps  -Gsize={size[0]},{size[1]}\! -o"{epsname}" "{filename}"  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
         for x in [xx0,xx1,xx2,xx3]:
             if x:
@@ -2192,6 +2196,10 @@ class Graph_Draw_Mixin():
                 
         if lpng :            
             display(Image(filename=pngname))
+        elif lpdf: 
+            display(IFrame(pdfname,width=1000,height=500))
+        
+        
         else:
             try:
                 display(SVG(filename=svgname))
@@ -2199,10 +2207,8 @@ class Graph_Draw_Mixin():
                 display(Image(filename=pngname))
     
         if browser: wb.open(svgname,new=2)
-        if lpdf: 
-            wb.open(pdfname,new=2)
+        if fpdf: wb.open(pdfname,new=2)
             #display(IFrame(pdfname,width=500,height=500))
-            print('close PDF file before continue')
            # os.system(pdfname)
         return 
       
@@ -4705,7 +4711,7 @@ Frml <> x = 0.5 * c +a$'''
     yy = mmodel(df2)
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
-    mmodel.drawmodel(svg=1,all=False,browser=0,pdf=1,des=False)
+    mmodel.drawmodel(svg=1,all=False,browser=0,pdf=0,des=False)
     # mmodel.explain('X',up=1,browser=1)
     print(mmodel.get_eq_des('A'))
           #%%
