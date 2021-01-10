@@ -1959,7 +1959,7 @@ class Graph_Draw_Mixin():
         post  = '\n}' 
 
         out   = pre+nodes+links+psink+psource+ptitle+post 
-        self.display_graph(out,fname,browser,kwargs)
+        self.display_graph(out,fname,browser,**kwargs)
                     
     def gdraw(self,g,**kwargs):
         '''draws a graph of of the whole model''' 
@@ -2097,7 +2097,7 @@ class Graph_Draw_Mixin():
         ptitle = '\n label = "'+kwargs.get('title',fname)+'";'
         post  = '\n}' 
         out   = pre+nodes+links+psink+psource+clusterout+ptitle+post 
-        self.display_graph(out,fname,kwargs)
+        self.display_graph(out,fname,**kwargs)
 
         # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing 
         return 
@@ -2144,7 +2144,7 @@ class Graph_Draw_Mixin():
             os.system(pdfname)
 
     @staticmethod
-    def display_graph(out,fname,kwargs):
+    def display_graph(out,fname,**kwargs):
         '''Generates a graphviz file from the commands in out. 
         
         The file is placed in cwd/graph
@@ -2162,7 +2162,7 @@ class Graph_Draw_Mixin():
         from pathlib import Path
         import webbrowser as wb
         from subprocess import run 
-    
+        # breakpoint() 
         tsize = kwargs.get('size',(6,6))
         size = tsize if type(tsize) == tuple else tuple(int(i) for i in tsize[1:-1].split(',')) # if size is a string  
         
@@ -2191,8 +2191,8 @@ class Graph_Draw_Mixin():
         xx3='' if not leps else run(f'dot -Teps  -Gsize={size[0]},{size[1]}\! -o"{epsname}" "{filename}"  {warnings} ',shell=True, capture_output=True, text=True).stderr  # creates the drawing  
         for x in [xx0,xx1,xx2,xx3]:
             if x:
-                print(f'Error in generation graph picture:\n{x}')
-                return
+                print(f'Error in generation graph picture:\n{x}\nPerhaps it is already open - then close the application')
+                # return
                 
         if lpng :            
             display(Image(filename=pngname))
@@ -2742,7 +2742,32 @@ class Display_Mixin():
         </style>
         """)) 
 
-
+    @staticmethod 
+    def togle_inputcells():
+        display(HTML("""\
+        <script>
+        function toggler(){
+        if(window.already_toggling){
+            // Don't add multiple buttons.
+            return 0
+        }
+        let btn = $('.input').append('<button>Toggle Code</button>')
+            .children('button');
+        btn.on('click', function(e){
+            let tgt = e.currentTarget;
+            $(tgt).parent().children('.inner_cell').toggle()
+        })
+        window.already_toggling = true;
+        }
+        // Since javascript cells are executed as soon as we load
+        // the notebook (if it's trusted), and this cell might be at the
+        // top of the notebook (so is executed first), we need to
+        // allow time for all of the other code cells to load before
+        // running. Let's give it 5 seconds.
+        
+        setTimeout(toggler, 5000);
+        """ ))
+    
     @staticmethod
     def modelflow_auto(run=True):
         '''In a jupyter notebook this function activate autorun of the notebook. 
