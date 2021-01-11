@@ -63,6 +63,10 @@ def latexflow(line, cell):
     globals()[f'l{name}'] = cell
     globals()[f'm{name}'] = mmodel
     globals()[f'f{name}'] = fmodel
+    ia = get_ipython()
+    ia.push(f'l{name}',interactive=True)
+    ia.push(f'm{name}',interactive=True)
+    ia.push(f'f{name}',interactive=True)
     
     display(Markdown('## The model'))
     display(Markdown(cell))
@@ -102,6 +106,9 @@ def dataframe(line, cell):
     df_melted = ibmelt(df,prefix=prefix.upper(),per=periods)
     globals()[f'{name}'] = df
     globals()[f'{name}_melted'] = df_melted
+    ia = get_ipython()
+    ia.push(f'{name}',interactive=True)
+    ia.push(f'{name}_melted',interactive=True)
     display(Markdown(f'## Created the dataframes: {name} and {name}_melted'))
     if options.get('show',False):         
         display(df)
