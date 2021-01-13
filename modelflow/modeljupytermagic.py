@@ -49,31 +49,24 @@ def latexflow(line, cell):
     lmodel = cell
     
     
-    display(Markdown(f'# Now creating the model m{name}'))
-    display(Markdown(f'''    These variables are created: 
-    
-     - l{name} - Original latex model
-     - f{name} - Template Business logic specification
-     - m{name} - Model instance 
-    '''))
+    display(Markdown(f'# Now creating the model **{name}**'))
     
     fmodel = latextotxt(cell)
     mmodel  = model.from_eq(fmodel)
+    mmodel.equations_latex = cell
+
     
-    globals()[f'l{name}'] = cell
-    globals()[f'm{name}'] = mmodel
-    globals()[f'f{name}'] = fmodel
+    globals()[f'{name}'] = mmodel
+    
     ia = get_ipython()
-    ia.push(f'l{name}',interactive=True)
-    ia.push(f'm{name}',interactive=True)
-    ia.push(f'f{name}',interactive=True)
+    ia.push(f'{name}',interactive=True)
     
     display(Markdown('## The model'))
     display(Markdown(cell))
     if options.get('display',False):
-        display(Markdown(f'# Creating this Template model'))
-        print(fmodel)
-        display(Markdown(f'# And this Business Logic Language  model'))
+        display(Markdown('# Creating this Template model'))
+        print(mmodel.equations_original)
+        display(Markdown('# And this Business Logic Language  model'))
         print(mmodel.equations)
 
     return
@@ -88,7 +81,14 @@ def ibmelt(df,prefix='',per=3):
 
 @register_cell_magic
 def dataframe(line, cell):
-    '''Creates a ModelFlow model from a Latex document'''
+    '''Converts this cell to a dataframe. and create a melted dataframe
+   
+    options can be added to the inpput line
+    - t transposes the dataframe
+    - periods=<number> repeats the melted datframe 
+    - prefix=<a string> prefix  columns in the melted dataframe
+    - show will show the resulting dataframes''' 
+    
     name,options = get_options(line,'Testgraph')    
         
     trans = options.get('t',False )    

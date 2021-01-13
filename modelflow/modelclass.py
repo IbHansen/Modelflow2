@@ -146,8 +146,9 @@ class BaseModel():
         
         udrullet = mp.explode(equations,norm=norm,sym=sym,funks=funks,sep=sep)
         pt.check_syntax_model(udrullet)
-        return cls(udrullet,modelname,silent=silent,straight=straight,funks=funks,tabcomplete=tabcomplete,previousbase=previousbase,normalized=normalized,**kwargs)
-
+        mmodel = cls(udrullet,modelname,silent=silent,straight=straight,funks=funks,tabcomplete=tabcomplete,previousbase=previousbase,normalized=normalized,**kwargs)
+        mmodel.equations_original = equations
+        return mmodel
 
     def get_histmodel(self):
         """ return a model instance with a model which generates historic values for equations 
