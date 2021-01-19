@@ -193,7 +193,7 @@ if 0:
     List $stage\_to2=\{stage1, stage2,stage3\}$
     '''
     print(findlists(listtest))
-#%%
+
 def latextotxt(input,dynare=False,bankadd=False):
     '''
     Translates a latex input to a BL output 
@@ -221,6 +221,7 @@ def latextotxt(input,dynare=False,bankadd=False):
            r'{n,s}'      : '__{n}__{s}',
            r'{n,s,t}'    : '__{n}__{s}__{t}',
            r'N^{-1}'     : 'NORM.PPF' , 
+           'logit^{-1}' : 'logit_inverse',
           
            }
     ftrans = {       
@@ -239,6 +240,7 @@ def latextotxt(input,dynare=False,bankadd=False):
            r'\s*\\times\s*':'*' ,
            r'N\('         : 'NORM.CDF('
             }
+   # breakpoint()
     for before,to in ftrans.items():
          temp = defunk(before,to,temp)
     for before,to in trans.items():
@@ -257,6 +259,7 @@ def latextotxt(input,dynare=False,bankadd=False):
     temp = re.sub(fr'sum\({pt.namepat}\)\(',r'sum(\1,',temp)
     
     ltemp  = [b.strip().split('=') for b in temp.splitlines()] # remove blanks in the ends and split each line at =   
+    # breakpoint()
     ltemp  = [lhs + ' = '+  rhs.replace(' ','') for lhs,rhs in ltemp]      # change ' ' to * on the rhs. 
     ltemp  = ['Frml '+fname + ' ' + eq + ' $ 'for eq,(fname,__) in zip(ltemp,org)]
     
@@ -347,71 +350,27 @@ def dynlatextotxt(input,show=False):
     out = '\n'.join(ltemp) 
     return out
 
-# from IPython.core.magic import register_line_magic, register_cell_magic
-# @register_cell_magic
-# def latexflow(line, cell):
-#     '''Creates a ModelFlow model from a Latex document'''
-#     if line: 
-#         args = line.split()
-#         name= args[0]
-#     else:
-#         name = 'Testmodel'
-#         args=[]
-        
-#     lmodel = cell
-#     display(Markdown(f'# Now creating the model {name}'))
-#     display(Markdown(cell))
-#     lmodel = latextotxt(cell)
-#     globals()[f'l{name}'] = lmodel
-#     display(Markdown(f'# Creating this Template model'))
-#     print(lmodel)
-#     globals()[f'f{name}'] = cell
-#     mmodel  = model.from_eq(globals()[f'l{name}'])
-#     globals()[f'm{name}'] = mmodel
-#     display(Markdown(f'# And this Business Logic Language  model'))
-#     print(mmodel.equations)
-
-#     return
-
-# def ibmelt(df,prefix='',per=1):
-#         temp= df.reset_index().rename(columns={'index':'row'}).melt(id_vars='row',var_name='column')\
-#         .assign(var_name=lambda x: prefix+x.row+'_'+x.column)\
-#         .loc[:,['value','var_name']].set_index('var_name').rename(columns={'value':per})
-#         return temp
-
-# @register_cell_magic
-# def csv(line, cell):
-#     '''Creates a ModelFlow model from a Latex document'''
-#     if line: 
-#         args = line.split()
-#         name= args[0]
-#     else:
-#         name = 'testdf'
-#         args=[]
-        
-        
-#     trans = any('--t' in a for a in args)    
-#     noprefix = any('--noprefix' in a for a in args) 
-#     prefix = '' if noprefix else name
-#     xtrans = (lambda xx:xx.T) if trans else (lambda xx:xx)
-#     sio = StringIO(cell)
-#     df = pd.read_table(sio,sep=r"\s+").pipe(xtrans)
-#     df_melted = ibmelt(df,prefix=prefix)
-#     if any('--show' in a for a in args): 
-        
-#         display(df)
-#         display(df_melted)
-#     return 
-# def get_latex_model(dir,name,title = 'My model',finished=False):
-#     latex = open(os.path.join(dir,name)).read()  # read the template model 
-#     input=latex
-#     formulas = dynlatextotxt(latex).upper()
-#     model = mc.create_model(formulas,name = title,finished=finished)
-#     return model 
-
 
 if __name__ == '__main__'  :
-    #%%
-    eq = r'F(k) = 3*4^5'   
-    # display(Latex(eq))
-    display(Image(latex_to_png(eq)))
+     test = r'''\
+Loans can be in 3 stages, 1,2 3. 
+New loans will be generated and loans will mature. 
+
+
+\begin{equation}
+\label{eq:Norm}
+TR^{stage\_from,stage} =  \frac{TR\_U^{stage\_from,stage}}{1+0*\sum_{stage\_from2}(TR\_U^{stage\_from2,stage})}
+\times(1-M^{stage}-WRO^{stage})
+\end{equation}
+
+List $stage=\{s1, s2,s3\}$
+
+List $stage\_from=\{s1, s2,s3\}$
+
+List $stage\_from2=\{s1, s2,s3\}$
+
+List $stage\_to=\{s1, s2,s3\}$
+
+'''
+     res = latextotxt(test)    
+     

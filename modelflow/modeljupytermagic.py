@@ -95,22 +95,27 @@ def dataframe(line, cell):
     
     prefix = options.get('prefix','') 
     periods = int(options.get('periods','1'))
+    melt = options.get('melt',False)
+    ia = get_ipython()
     
     xtrans = (lambda xx:xx.T) if trans else (lambda xx:xx)
     xcell= cell.replace('%','')
     mul = 0.01 if '%' in cell else 1.
     sio = StringIO(xcell)
     
-    df = pd.read_csv(sio,sep=r"\s+|\t+|\s+\t+|\t+\s+",engine='python').pipe(xtrans)            .pipe(lambda xx:xx.rename(index = {i:i.upper() for i in xx.index},columns={c:c.upper() for c in xx.columns}))            *mul
-
-    df_melted = ibmelt(df,prefix=prefix.upper(),per=periods)
+    df = pd.read_csv(sio,sep=r"\s+|\t+|\s+\t+|\t+\s+",engine='python')\
+        .pipe(xtrans)\
+        .pipe(lambda xx:xx.rename(index = {i:i.upper() if type(i) == str else i for i in xx.index}
+                                  ,columns={c:c.upper() for c in xx.columns}))            *mul
     globals()[f'{name}'] = df
-    globals()[f'{name}_melted'] = df_melted
-    ia = get_ipython()
     ia.push(f'{name}',interactive=True)
-    ia.push(f'{name}_melted',interactive=True)
-    display(Markdown(f'## Created the dataframes: {name} and {name}_melted'))
+    if melt:
+        df_melted = ibmelt(df,prefix=prefix.upper(),per=periods)
+        globals()[f'{name}_melted'] = df_melted
+        ia.push(f'{name}_melted',interactive=True)
+    display(Markdown(f'## Created the dataframes: {name}'))
+    if melt: display(Markdown(f'## and {name}_melted'))
     if options.get('show',False):         
         display(df)
-        display(df_melted)
+        if melt: display(df_melted)
     return 

@@ -29,6 +29,11 @@ def logit(number):
     ''' A function which returns the logit of a number 
     '''
     return(-log(1.0/number-1.0)) 
+
+def logit_inverse(number):
+    ''' A function which returns the logit of a number 
+    '''
+    return 1/(1+exp(-number))
     
 def normcdf(input,mu=0.0,sigma=1.0):
     return norm.cdf(input,mu,sigma)    
