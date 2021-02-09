@@ -33,7 +33,7 @@ from functools import partial
 
 
 import seaborn as sns 
-from IPython.display import SVG, display, Image, IFrame
+from IPython.display import SVG, display, Image, IFrame, HTML
 import ipywidgets as ip
 
 try:
@@ -2831,7 +2831,8 @@ class Json_Mixin():
            'current_per':pd.Series(self.current_per).to_json(),
            'modelname' : self.name,
            'oldkwargs' : self.oldkwargs,
-           'var_description' : self.var_description
+           'var_description' : self.var_description,
+           'equations_latex' : self.equations_latex if hasattr(self,'equations_latex') else ''
            }  
      
         if outfile != '':
@@ -2872,6 +2873,8 @@ class Json_Mixin():
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description',{})) 
+        if input['equations_latex']:
+            mmodel.equations_latex = input['equations_latex']
         if keep:
             mmodel.json_keep = input
             

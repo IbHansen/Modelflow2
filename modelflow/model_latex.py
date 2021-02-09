@@ -209,6 +209,7 @@ def latextotxt(input,dynare=False,bankadd=False):
            r'\right':'',
            r'\min':'min',
            r'\max':'max',   
+           r'\rho':'rho',   
            r'&':'',
            r'\\':'',
            r'[':'(',
@@ -227,7 +228,8 @@ def latextotxt(input,dynare=False,bankadd=False):
     ftrans = {       
            r'\sqrt':'sqrt',
            r'\Delta':'diff',
-           r'\sum_':'sum'
+           r'\sum_':'sum',
+           r'\Phi':'NORM.CDF'
            }
     regtrans = {
            r'\\Delta ([A-Za-z_][\w{},\^]*)':r'diff(\1)', # \Delta xy => diff(xy)

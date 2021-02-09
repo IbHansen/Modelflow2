@@ -261,11 +261,11 @@ class varvis():
 
      def tracedep(self,down=1,**kwargs):
        '''Trace dependensies of name down to level down'''
-       self.model.draw(self.var,down=down,up=0,**kwargs)
+       self.model.draw(self.var,down=down,up=0,source=self.var,**kwargs)
        
      def tracepre(self,up=1,**kwargs):
        '''Trace dependensies of name down to level down'''
-       self.model.draw(self.var,down=0,up=up,**kwargs)
+       self.model.draw(self.var,down=0,up=up,sink=self.var,**kwargs)
 
 
          

@@ -7,7 +7,7 @@ Created on Fri Mar  2 17:01:49 2018
 Functions placed here are included in the Pyfs business language 
 
 """
-from math import exp, log
+from math import exp, log, sqrt
 from numpy import transpose , array
 from scipy.stats import norm
 import inspect 
