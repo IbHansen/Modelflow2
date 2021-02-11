@@ -2967,7 +2967,7 @@ class Solver_Mixin():
             # breakpoint()
             outdf = self.model_solver(*args, **newkwargs )   
 
-            if newkwargs.get('keep',''):
+            if newkwargs.get('keep','') and self.save:
                 if newkwargs.get('keep_variables',''):                
                     keepvar = self.vlist(newkwargs.get('keep_variables',''))
                     self.keep_solutions[newkwargs.get('keep','')] = outdf.loc[:,keepvar].copy()
