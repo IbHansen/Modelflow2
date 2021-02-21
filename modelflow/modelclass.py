@@ -1960,7 +1960,7 @@ class Graph_Draw_Mixin():
         post  = '\n}' 
 
         out   = pre+nodes+links+psink+psource+ptitle+post 
-        self.display_graph(out,fname,browser,**kwargs)
+        self.display_graph(out,fname,**kwargs)
                     
     def gdraw(self,g,**kwargs):
         '''draws a graph of of the whole model''' 
@@ -2873,8 +2873,7 @@ class Json_Mixin():
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description',{})) 
-        if input['equations_latex']:
-            mmodel.equations_latex = input['equations_latex']
+        mmodel.equations_latex = input.get('equations_latex',None)
         if keep:
             mmodel.json_keep = input
             

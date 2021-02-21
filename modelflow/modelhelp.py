@@ -203,7 +203,12 @@ def insertModelVar(dataframe, model=None):
         return data
     else:
         return dataframe
-    
+  
+def df_extend(df,add=5):
+    '''Extends a Dataframe, assumes that the indes is of period_range type'''
+    newindex = pd.period_range(df.index[0], periods=len(df)+add, freq=df.index.freq)
+    return df.reindex(newindex,method='ffill')    
+  
 if __name__ == '__main__':
     
     with ttimer('test'):

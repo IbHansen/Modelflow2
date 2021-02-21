@@ -171,6 +171,7 @@ def doable(ind,show=False):
     else:
         out=ind
     return out
+
 def findlists(input):
     '''extracte liste from latex'''
     relevant = re.findall(r'LIST \s*\$[^$]*\$',input.upper())  
@@ -201,7 +202,8 @@ def latextotxt(input,dynare=False,bankadd=False):
     '''
     # breakpoint()
     ex12 = re.findall(r'\\label\{eq:(.*?)\}\n(.*?)\\end\{',input,re.DOTALL) # select the relevant equations 
-    org  = [(name,eq.replace('\n','')) for name,ex in ex12 for eq in ex.split('\\\\') if 2 == len(eq.split('='))]
+    org  = [(name,eq.replace('\n','')) for name,ex in ex12 for eq in ex.split('\\\\')
+            if 2 == len(eq.split('='))]
 #    ex15 = [('frml '+name+'  '+eq) for (name,ex) in ex12 for eq in ex.splitlines()]
     ex15 = [eq.strip() for (name,eq) in org]
     temp = '\n'.join(ex15)
