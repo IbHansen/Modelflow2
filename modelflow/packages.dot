@@ -1,0 +1,15 @@
+digraph "packages" {
+charset="utf-8"
+rankdir=BT
+"0" [label="modelclass", shape="box"];
+"1" [label="modelinvert", shape="box"];
+"2" [label="modelmanipulation", shape="box"];
+"3" [label="modelnewton", shape="box"];
+"4" [label="modelvis", shape="box"];
+"0" -> "1" [arrowhead="open", arrowtail="none"];
+"0" -> "2" [arrowhead="open", arrowtail="none"];
+"0" -> "3" [arrowhead="open", arrowtail="none"];
+"0" -> "4" [arrowhead="open", arrowtail="none"];
+"3" -> "0" [arrowhead="open", arrowtail="none"];
+"3" -> "2" [arrowhead="open", arrowtail="none"];
+}

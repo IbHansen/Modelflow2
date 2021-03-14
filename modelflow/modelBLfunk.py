@@ -20,6 +20,10 @@ except:
     print('ModelFlow info: CVXopt not installed. Only matters if you are incorporating optimization')
     pass
 
+from numpy import array
+
+from model_financial_stability import lifetime_credit_loss
+
 def sum_excel(*arg):
     ''' a functions which sums the arguments used in models franslated from excel 
     '''

@@ -66,7 +66,7 @@ class GrapWbModel():
         bars = '{desc}: {percentage:3.0f}%|{bar}|{n_fmt}/{total_fmt}'
         with tqdm(total=len(rawmodel6.split('\n')),desc='Reading original model',bar_format=bars) as pbar:
             for l in rawmodel6.split('\n'):
-                if '*******' in l and 'IDEN' in l:
+                if ('*******' in l or '----------' in l)  and 'IDEN' in l.upper():
                     sec='iden'
                     #print(l)
                 elif '*******' in l and 'STOC' in l:
@@ -89,6 +89,7 @@ class GrapWbModel():
         self.mmodel = model(self.fmodel,modelname = self.modelname)
         self.mmodel.set_var_description(self.var_description)
         self.mres = model(self.fres,modelname = f'Adjustment factors for {self.modelname}')
+        # return
         self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
         
     @staticmethod
@@ -97,8 +98,8 @@ class GrapWbModel():
         # trailing and leading "
         rawmodel1 = '\n'.join(l[1:-1] if l.startswith('"') else l for l in rawmodel0.split('\n'))
         # powers
-        rawmodel2 = rawmodel1.replace('^','**').replace('""',' ').\
-            replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg') \
+        rawmodel2 = rawmodel1.replace('^','**').replace('""',' ').replace('"',' ').\
+            replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg').replace('@LOGIT(','LOGIT(') \
             .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PC','PCT_GROWTH')    
         # @ELEM and @DURING 
         # @ELEM and @DURING 
@@ -138,6 +139,7 @@ class GrapWbModel():
         # Now the data 
         df = (pd.read_excel(self.data).
               pipe( lambda df : df.rename(columns={c:c.upper() for c in df.columns})).
+              pipe( lambda df : df.rename(columns={'_DATE_':'DATEID'})).
               pipe( lambda df : df.set_index('DATEID'))
               )
         df.index = [int(i.year) for i in df.index]
@@ -204,9 +206,10 @@ class GrapWbModel():
                 maxdiff = check.Difference.abs().max()
                 maxpct  = check.Pct.abs().max()
                 # breakpoint()
+                print('\nVariable with residuals above threshold')
                 print(f"{v}, Max difference:{maxdiff:15.8f} Max Pct {maxpct:15.10f}% It is number {i} in the solveorder and error number {err}")
                 if showall:
                     print(f'\n{self.mmodel.allvar[v]["frml"]}')
-                    print(f'{check}')
-                    print(f'\nValues: \n {self.mmodel.get_eq_values(v,showvar=1)} \n')
+                    print(f'\nResult of equation \n {check}')
+                    print(f'\nEquation values before calculations: \n {self.mmodel.get_eq_values(v,last=False,showvar=1)} \n')
         self.mmodel.oldkwargs = {}

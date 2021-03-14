@@ -8,7 +8,7 @@ Created on Sun Feb 21 16:59:39 2021
 import pandas as pd
 import numpy as np 
 
-def lifetime_credit_loss(maturity,discount_rate,_lgd,_pd,debug=False):
+def lifetime_credit_loss(maturity,discount_rate,lgd,PDefault,debug=False):
     '''
     
 
@@ -18,16 +18,16 @@ def lifetime_credit_loss(maturity,discount_rate,_lgd,_pd,debug=False):
         maturity over which the exposure is amortised - by equal instalments.
     discount_rate : float
         discount rate 
-    _lgd : array of float 
+    lgd : array of float 
         list of loss given default
-    _pd : array of float
+    PDefault : array of float
         propability of defaults 
     debug : bool, optional
         calculate a intermidiately dataframes . The default is False.
 
     Returns
     -------
-    float the long term credit loss
+    float the long term credit loss in percent 
         
 
     '''
@@ -50,8 +50,8 @@ def lifetime_credit_loss(maturity,discount_rate,_lgd,_pd,debug=False):
     assert cashflow.sum() != startstock,'Amortisation does not match outstanding '
     discount_series = pd.Series([1./(discount_rate+1)**t for t in time],index=time,name='discount')
 
-    lgd_series = pd.Series(_lgd[:len(cashflow)] if type(_lgd) == np.ndarray else _lgd,index = time,name='lgd')
-    pd_series  = pd.Series(_pd[:len(cashflow)]  if type(_pd)  == np.ndarray else _pd, index=time,name='pd')
+    lgd_series = pd.Series(lgd[:len(cashflow)] if type(lgd) == np.ndarray else lgd,index = time,name='lgd')
+    pd_series  = pd.Series(PDefault[:len(cashflow)]  if type(PDefault)  == np.ndarray else PDefault, index=time,name='pd')
     pd_series[0] = 0.0
     # breakpoint()
     
@@ -81,5 +81,8 @@ def lifetime_credit_loss(maturity,discount_rate,_lgd,_pd,debug=False):
 if __name__ == '__main__':
     pd_fut = np.append([0],np.full(20,0.006831))
     lgd_fut = np.full(20,0.2)
-    xx = lt_ifrs9(maturity=5,discount_rate=0.015,_lgd=lgd_fut,_pd=pd_fut,debug=1)
-    yy = lt_ifrs9(maturity=5,discount_rate=0.015,_lgd=0.2,    _pd=0.006831,debug=1)
+    
+    pd_ser = pd.Series(pd_fut)
+    xx = lifetime_credit_loss(maturity=5,discount_rate=0.015,lgd=lgd_fut,PDefault=pd_fut,debug=1)
+    yy = lifetime_credit_loss(maturity=5,discount_rate=0.015,lgd=0.2,    PDefault=0.006831,debug=1)
+    zz = lifetime_credit_loss(maturity=5,discount_rate=0.015,lgd=0.2,    PDefault=pd_ser,debug=1)

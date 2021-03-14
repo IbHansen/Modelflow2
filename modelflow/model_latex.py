@@ -125,7 +125,7 @@ def debrace(streng):
                 open = (open + 1) if match2[index2] == '{' else (open - 1)
             if not open:
                 break
-        tstreng = tstreng[:start]+ '('+ match[:index1] +')'+ match2[index2+1:]    
+        tstreng = tstreng[:start]+ ''+ match[:index1] +''+ match2[index2+1:]    
     return tstreng
 
 def defunk(funk, subs , streng,startp='{',slutp='}'):
@@ -223,15 +223,18 @@ def latextotxt(input,dynare=False,bankadd=False):
            r'_{t}'      : '',
            r'{n,s}'      : '__{n}__{s}',
            r'{n,s,t}'    : '__{n}__{s}__{t}',
-           r'N^{-1}'     : 'NORM.PPF' , 
            'logit^{-1}' : 'logit_inverse',
+           r'\{'      : '{',
+           r'\}'      : '}',
+
           
            }
     ftrans = {       
            r'\sqrt':'sqrt',
            r'\Delta':'diff',
            r'\sum_':'sum',
-           r'\Phi':'NORM.CDF'
+           r'\Phi':'NORM.CDF',
+           r'\Phi^{-1}':'NORM.PDF'
            }
     regtrans = {
            r'\\Delta ([A-Za-z_][\w{},\^]*)':r'diff(\1)', # \Delta xy => diff(xy)
@@ -242,7 +245,6 @@ def latextotxt(input,dynare=False,bankadd=False):
            r'\^\{([\w]+)\}'              : r'_{\1}',      # ^{xx}     => _xx
            r'\^\{([\w]+),([\w]+)\}'      : r'_{\1}_{\2}',    # ^{xx,yy}     => _xx_yy
            r'\s*\\times\s*':'*' ,
-           r'N\('         : 'NORM.CDF('
             }
    # breakpoint()
     for before,to in ftrans.items():

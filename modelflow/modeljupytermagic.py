@@ -76,11 +76,12 @@ def latexflow(line, cell):
 
 
 def ibmelt(df,prefix='',per=3):
-        temp= df.reset_index().rename(columns={'index':'row'}).melt(id_vars='row',var_name='column')        .assign(var_name=lambda x: prefix+x.row+'_'+x.column)        .loc[:,['value','var_name']].set_index('var_name')
-        newdf = pd.concat([temp]*per,axis=1).T
-        newdf.index = range(per)
-        newdf.index.name = 'Year'
-        return newdf
+    # breakpoint()
+    temp= df.reset_index().rename(columns={'index':'row'}).melt(id_vars='row',var_name='column').assign(var_name=lambda x: prefix+x.row+'_'+x.column)        .loc[:,['value','var_name']].set_index('var_name')
+    newdf = pd.concat([temp]*per,axis=1).T
+    newdf.index = range(per)
+    newdf.index.name = 'Year'
+    return newdf
 
 @register_cell_magic
 def dataframe(line, cell):
@@ -101,6 +102,7 @@ def dataframe(line, cell):
     prefix = options.get('prefix','') 
     periods = int(options.get('periods','1'))
     melt = options.get('melt',False)
+    start = int(options.get('start','2021'))
     silent =  options.get('silent',True)
     ia = get_ipython()
     
@@ -113,14 +115,20 @@ def dataframe(line, cell):
         .pipe(xtrans)\
         .pipe(lambda xx:xx.rename(index = {i:i.upper() if type(i) == str else i for i in xx.index}
                                   ,columns={c:c.upper() for c in xx.columns}))            *mul
-    if periods != 1 and not melt: 
-        df= pd.concat([df]*periods,axis=0)
-        df.index = range(periods)
-        df.index.name = 'Year'
+    # breakpoint()    
+    if not melt: 
+        df= pd.concat([df]*periods,axis=0)            
+        df.index = pd.period_range(start=start,freq = 'Y',periods=len(df))
+        df.index.name = 'index'
+        
+    
     globals()[f'{name}'] = df
     ia.push(f'{name}',interactive=True)
     if melt:
         df_melted = ibmelt(df,prefix=prefix.upper(),per=periods)
+        df_melted.index = pd.period_range(start=start,freq = 'Y',periods=len(df_melted))
+        df_melted.index.name = 'index'
+
         globals()[f'{name}_melted'] = df_melted
         ia.push(f'{name}_melted',interactive=True)
     if not silent:

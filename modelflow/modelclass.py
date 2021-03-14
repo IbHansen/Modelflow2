@@ -3039,6 +3039,7 @@ class Solver_Mixin():
             if newdata or transpile_reset or not hasattr(self,f'pro_{nojitname}'):
                 if not silent: print(f'now makelos makes a {solvename} solvefunction')
                 make_los_text =  solveout()
+                self.make_los_text = make_los_text
                 exec(make_los_text,globals())  # creates the los function
                 pro,core,epi  = make_los(self.funks,self.errfunk)
                 setattr(self, f'pro_{nojitname}', pro)

@@ -369,7 +369,7 @@ def lagarray_unroll(in_equations,funks=[]):
                 forlag, lagudtryk, efterlag = find_arg('LAG_ARRAY', value.upper())
                 lagnumber, lagled = lagudtryk.split(',', 1)
                 ibsud = lag_n_tup(lagled,int(lagnumber),funks=funks)
-                value = forlag + '(' + ibsud + ')' + efterlag
+                value = forlag + 'ARRAY([' + ibsud + '])' + efterlag
             nymodel.append(command + ' ' + value)
     equations = '\n'.join(nymodel)
     return equations
@@ -694,6 +694,7 @@ def explode(model,norm=True,sym=False,funks=[],sep='\n'):
     udrullet=tofrml(model,sep=sep) 
     modellist = list_extract(udrullet) 
     if norm : udrullet = normalize(udrullet,sym,funks=funks ) # to save time if we know that normalization is not needed 
+    udrullet = lagarray_unroll(udrullet,funks=funks )
     udrullet = exounroll(udrullet)    # finaly the exogeneous and adjustment terms - if present -  are handled 
     udrullet = dounloop(udrullet,listin=modellist)        #  we unroll the do loops 
     udrullet = sumunroll(udrullet,listin=modellist)    # then we unroll the sum 
@@ -754,7 +755,7 @@ def modelprint(ind, title=' A model', udfil='', short=0):
                 
                 
      
-def lagone(ind,funks=[]):
+def lagone(ind,funks=[],laglead=-1):
     ''' All variables in a string i
     s lagged one more time '''
     nt=udtryk_parse(ind,funks=funks)
@@ -767,30 +768,30 @@ def lagone(ind,funks=[]):
         elif t.var:
             lag=t.lag if t.lag else '0'
             org_lag = int(lag)
-            new_lag = org_lag-1
-            if lag=='+1':
+            new_lag = org_lag+laglead
+            if new_lag == 0:
                 ud = t.var
             else:    
                 ud= t.var+ f'({new_lag:+})'           
         fib.append(ud)
     return ''.join(fib)
 
-def lag_n(udtryk,n=1,funks=[]):
+def lag_n(udtryk,n=1,funks=[],laglead=-1):
     new=udtryk
     for i in range(n):
-        new=lagone(new,funks=funks)
+        new=lagone(new,funks=funks,laglead=laglead)
     return f'({new})'
-lag_n('a+b',n=3)
+lag_n('a+b',n=3,laglead=1)
 
-def lag_n_tup(udtryk,n=1,funks=[]):
+def lag_n_tup(udtryk,n=-1,funks=[]):
     ''' return a tuppel og lagged expressions from lag = 0 to lag = n)'''
     new=udtryk.upper()
-    res=new
-    for i in range(n):
-        new=lagone(new,funks=funks)
-        res = res + ',' + new
-    return f'({res })'
-lag_n_tup('a',n=3)
+    res=''
+    for i in range(abs(n)):
+        new=lagone(new,funks=funks,laglead=-1 if n < 0 else 1 )
+        res = res  + new +','
+    return f'{res[:-1]}'
+lag_n_tup('a',n=-3)
 
 
  
@@ -1076,6 +1077,8 @@ if __name__ == '__main__' and 1 :
     (exounroll('frml <j> ib=x+y $ frml <jr> ib=x+y $ frml <j,jr'))
     find_arg('log','x=log(a+b)+77')
     find_arg('log','x=log(a+log(b))+77')
+    
+    kaedeunroll('FRML <res=x> ib    =x+y+lAG_ARRAY(v,3) $')
 #%%
     x= (dounloop(
               '''list bankdic = bank : Danske , Nordea /
@@ -1212,7 +1215,7 @@ d = x + 3 * a(-1)
                     
     do banklist $
     ! kkdddk
-        frml <> profit_{bank} = revenue_{bank} - lag_manual(lag_array(3,expenses_{bank}),(1,2,3,4,3,2,1)) $
+        frml <> profit_{bank} = revenue_{bank} - lag_array(-3,expenses_{bank}) $
         frml <> expenses_{bank} = factor_{country} * revenue_{bank} $
     enddo $ 
     '''
