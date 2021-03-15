@@ -2334,7 +2334,8 @@ class Display_Mixin():
                 
             
             
-    def keep_plot(self,pat='*',start='',slut='',start_ofset=0,slut_ofset=0,title='Show variables',trans={},legend=True,showfig=False,diff=True):
+    def keep_plot(self,pat='*',start='',slut='',start_ofset=0,slut_ofset=0,title='Show variables',trans={},legend=True,
+                  showfig=False,diff=True):
         '''Plots variables from experiments'''
         
         try:
