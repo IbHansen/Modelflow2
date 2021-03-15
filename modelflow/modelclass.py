@@ -3104,7 +3104,7 @@ class Solver_Mixin():
         convplace=[databank.columns.get_loc(c) for c in convvar] # this is how convergence is measured  
         convergence = True
         endoplace = [databank.columns.get_loc(c) for c in list(self.endogene)]
-  
+        # breakpoint() 
         if ldumpvar:
             self.dumplist = []
             self.dump = self.list_names(self.coreorder,dumpvar)  
