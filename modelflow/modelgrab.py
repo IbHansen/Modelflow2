@@ -34,6 +34,7 @@ import modelmf
 import modelmanipulation as mp 
 
 import modelnormalize as nz
+
 assert 1==1
 
 
@@ -103,7 +104,7 @@ class GrapWbModel():
             .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PC','PCT_GROWTH')    
         # @ELEM and @DURING 
         # @ELEM and @DURING 
-        rawmodel3 = re.sub(r'@ELEM\(([A-Z][A-Z_0-9]+) *, *([0-9]+) *\)', r'\1_value_\2',rawmodel2) 
+        rawmodel3 = nz.elem_trans(rawmodel2) 
         rawmodel4 = re.sub(r'@DURING\( *([0-9]+) *\)', r'during_\1',rawmodel3) 
         rawmodel5 = re.sub(r'@DURING\( *([0-9]+) *([0-9]+) *\)', r'during_\1_\2',rawmodel4) 
         
@@ -161,6 +162,7 @@ class GrapWbModel():
             else:
                 df.loc[int(pers[0]):int(pers[1]),var]=1.
         self.showduringvars = df[during_vars] 
+        # breakpoint()
         df_out = self.mmodel.insertModelVar(df).pipe(self.country_df_trans)
         return df_out
     

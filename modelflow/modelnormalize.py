@@ -231,7 +231,7 @@ def elem_trans(udtryk, df=None):
         
         return strout 
     
-    udtryk_up = udtryk.upper().replace(' ','')
+    udtryk_up = udtryk.upper()
     while  elem_match := funk_in('@ELEM',udtryk_up):
          forelem,elemudtryk_up,efterelem=funk_find_arg(elem_match,udtryk_up)
          elemtext,elemnumber = elemudtryk_up.split(',')
