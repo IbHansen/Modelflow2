@@ -1087,7 +1087,7 @@ class Model_help_Mixin():
             return 
     
     @staticmethod
-    def update_from_list_old(indf,basis,lprint=False):
+    def update_from_list(indf,basis,lprint=False):
         df = indf.copy(deep=True)
         for l in basis.split('\n'):
             if len(l.strip()) == 0: continue
@@ -1095,6 +1095,8 @@ class Model_help_Mixin():
             var,op,value,*arg = l.split()
             if len(arg)==0:
                 arg = df.index[0],df.index[-1]
+            elif len(arg) == 1: 
+                arg = type(df.index[0])(arg[0]),type(df.index[0]+1)(arg[0])
             else:
                 arg = type(df.index[0])(arg[0]),type(df.index[0])(arg[1])
            # print(var,op,value,arg,sep='|')
@@ -1102,7 +1104,7 @@ class Model_help_Mixin():
         return df
     
     @staticmethod
-    def update_from_list(indf,basis,lprint=False):
+    def update_from_list_new(indf,basis,lprint=False):
         df = indf.copy(deep=True)
         for l in basis.split('\n'):
             if len(l.strip()) == 0: continue

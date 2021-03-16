@@ -18,7 +18,7 @@ from dataclasses import dataclass, field, asdict
 
 
 from modelmanipulation import lagone, find_arg
-from modelpattern import udtryk_parse
+from modelpattern import udtryk_parse, namepat
 #%%
 @dataclass
 class Normalized_frml:
@@ -203,7 +203,41 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
             result = Normalized_frml(ind_o,preprocessed,f'{lhs} = {rhs}')
         return result
         
+def elem_trans(udtryk, df=None):
+    '''Handeles expression with @elem ''' 
+    from modelpattern import namepat
+
+    def trans_elem(input,number):
+        ''' changes @elem( ot elem of parts  '''
+        def sub_elem(matchobj):
+                variable  = str(matchobj.group(1))
+                out = f'{variable}_value_{number}'
+                return out
+            
+        strout = re.sub(namepat,sub_elem,input)
         
+        return strout
+    
+    def sub_elem(input,number):
+        ''' changes @elem( ot elem of parts 
+        still work in progress this is for pluggin in the actual value from the database '''
+        def sub_elem(matchobj):
+                variable  = str(matchobj.group(1))
+                value = df.loc[number,variable]
+                out = f'{value}'
+                return out
+            
+        strout = re.sub(namepat,sub_elem,input)
+        
+        return strout 
+    
+    udtryk_up = udtryk.upper().replace(' ','')
+    while  elem_match := funk_in('@ELEM',udtryk_up):
+         forelem,elemudtryk_up,efterelem=funk_find_arg(elem_match,udtryk_up)
+         elemtext,elemnumber = elemudtryk_up.split(',')
+         udtryk_up = f'{forelem}({trans_elem(elemtext,elemnumber)}){efterelem}'
+         
+    return udtryk_up            
 if __name__ == '__main__':
 
     
@@ -215,3 +249,6 @@ if __name__ == '__main__':
     normal('a = pct_growth(b)',add_adjust=0).fprint
     normal("DLOG(SAUNECONGOVTXN) =-0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
     normal("DLOG(a) = b").fprint
+#%%
+
+elem_trans('DLOG(PAKNVRENPRODXN)=DLOG((WLDHYDROPOWER*PAKPANUSATLS)/(@ELEM(WLDHYDROPOWER,2011)*@ELEM(PAKPANUSATLS,2011)))-0.00421833463034*DUMH')
