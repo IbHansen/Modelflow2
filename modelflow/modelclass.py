@@ -2493,7 +2493,8 @@ class Display_Mixin():
                   diff = False ,mul=1.0,
                   title='Show variables',legend=True,scale='linear',yunit='',ylabel='',dec='',
                   trans = {},
-                  showfig=False):
+                  showfig=False,
+                  vline=[]):
          """
         
 
@@ -2514,6 +2515,7 @@ class Display_Mixin():
             dec (TYPE, optional): decimals if '' automated. Defaults to ''.
             trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
             showfig (TYPE, optional): Time will come . Defaults to False.
+            vline (list of tupels, optional): list of (time,text) for vertical lines 
 
         Returns:
             figs (dict): dict of the generated figures. 
@@ -2548,6 +2550,10 @@ class Display_Mixin():
                 xlabel = '',
                 dec = 2 if showtype == 'growth' and not dec else dec) 
                  for v,df in dfsres.items()}
+             
+             if vline:
+                 for xtime,text in vline:
+                     model.keep_add_vline(figs,xtime,text)
              return figs
          except ZeroDivisionError:
              print('no keept solution')
