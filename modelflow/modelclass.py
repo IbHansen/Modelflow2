@@ -2292,6 +2292,8 @@ class Display_Mixin():
         for v in self.solveorder:
             self.print_eq_values(v,databank,dec=dec)
             
+            
+            
     
         
     def print_eq_mul(self, varnavn, grund='',mul='', start='', slut='',impact=False):
