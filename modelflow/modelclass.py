@@ -2515,7 +2515,7 @@ class Display_Mixin():
             dec (TYPE, optional): decimals if '' automated. Defaults to ''.
             trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
             showfig (TYPE, optional): Time will come . Defaults to False.
-            vline (list of tupels, optional): list of (time,text) for vertical lines 
+            vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
 
         Returns:
             figs (dict): dict of the generated figures. 
@@ -2551,9 +2551,15 @@ class Display_Mixin():
                 dec = 2 if showtype == 'growth' and not dec else dec) 
                  for v,df in dfsres.items()}
              
-             if vline:
-                 for xtime,text in vline:
-                     model.keep_add_vline(figs,xtime,text)
+             if type(vline)==type(None):  # to delete vline 
+                  if hasattr(self,'vline'):
+                       del self.vline
+             else: 
+                 if vline or hasattr(self,'vline'):
+                     if vline: 
+                         self.vline = vline
+                     for xtime,text in self.vline:
+                         model.keep_add_vline(figs,xtime,text)
              return figs
          except ZeroDivisionError:
              print('no keept solution')
@@ -2633,7 +2639,8 @@ class Display_Mixin():
            defaultvar     = [f'{v:{var_maxlen}}' for v in self.vlist(pat)] 
            width = select_width if select_width else '40%'
 
-    def keep_viz(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec='',use_descriptions=True,select_width='', select_height='200px'):
+    def keep_viz(self,pat='*',smpl=('',''),selectfrom={},legend=1,dec='',use_descriptions=True,
+                 select_width='', select_height='200px',vline=[]):
        """
         Plots the keept dataframes
     
@@ -2682,7 +2689,8 @@ class Display_Mixin():
            vars = ' '.join(v.split(' ',1)[0] for v in selected_vars)
            smpl = (self.lastdf.index[i_smpl[0]],self.lastdf.index[i_smpl[1]])
            with self.set_smpl(*smpl):
-              self.keep_wiz_figs =  self.keep_plot(vars,diff=diff,scale=scale,showtype=showtype,legend=legend,dec=dec)
+              self.keep_wiz_figs =  self.keep_plot(vars,diff=diff,scale=scale,showtype=showtype,
+                                                   legend=legend,dec=dec,vline=vline)
        description_width ='initial'
        description_width_long ='initial'
        keep_keys = list(self.keep_solutions.keys())
