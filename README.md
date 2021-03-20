@@ -97,7 +97,7 @@ Also bear in mind that ModelFlow is experimental. It is provided ”as is”, wi
 
 ## Getting started
 
-You need Python 3.7+ with asssociated libraries. The easy way is to install Anaconda Python is to download the distribution from [https://www.anaconda.com/distribution](https://www.anaconda.com/distribution)
+You need Python 3.8+ with asssociated libraries. The easy way is to install Anaconda Python is to download the distribution from [https://www.anaconda.com/distribution](https://www.anaconda.com/distribution)
 
 Now you can install ModelFlow by running a command window from the Anaconda prompt and execute theese commands 
 ```
