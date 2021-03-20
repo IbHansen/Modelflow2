@@ -19,7 +19,7 @@ from dataclasses import dataclass, field, asdict
 
 from modelmanipulation import lagone, find_arg
 from modelpattern import udtryk_parse, namepat
-#%%
+
 @dataclass
 class Normalized_frml:
     ''' class defining result from normalization of expression'''
@@ -53,6 +53,7 @@ def funk_in(funk,a_string):
     if found returns a match object where the group 2 is the interesting stuff used in funk_find_arg
     '''
     return re.search(fr'([^A-Z0-9_{{}}]|^)({funk})\(',a_string.upper(),re.MULTILINE) 
+
 def funk_replace(funk1,funk2,a_string):
     '''
     replace funk1( with funk2(

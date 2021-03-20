@@ -85,7 +85,7 @@ class GrapWbModel():
                 
         self.rres = [f.calc_adjustment for f in self.all_frml if len(f.calc_adjustment)]
         
-        self.fmodel = ('\n'.join(self.rorg))
+        self.fmodel = mp.exounroll(mp.tofrml ('\n'.join(self.rorg)))
         self.fres =   ('\n'.join(self.rres))
         self.mmodel = model(self.fmodel,modelname = self.modelname)
         self.mmodel.set_var_description(self.var_description)
