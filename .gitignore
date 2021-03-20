@@ -20,6 +20,7 @@ graph/
 
 # spyder project 
 .spyproject/
+.pylint*/
 
 *.egg-info/
 build/
