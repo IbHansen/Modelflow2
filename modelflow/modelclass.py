@@ -2496,7 +2496,7 @@ class Display_Mixin():
                   title='Show variables',legend=True,scale='linear',yunit='',ylabel='',dec='',
                   trans = {},
                   showfig=False,
-                  vline=[]):
+                  vline=[],savefig=''):
          """
         
 
@@ -2518,7 +2518,7 @@ class Display_Mixin():
             trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
             showfig (TYPE, optional): Time will come . Defaults to False.
             vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
-
+            savefig (string,optional): name of location to save figures in 
         Returns:
             figs (dict): dict of the generated figures. 
 
@@ -2562,6 +2562,18 @@ class Display_Mixin():
                          self.vline = vline
                      for xtime,text in self.vline:
                          model.keep_add_vline(figs,xtime,text)
+             if savefig:
+                figpath = Path(savefig)
+                suffix = figpath.suffix if figpath.suffix else '.png'
+                stem = figpath.stem
+                parent = figpath.parent
+                parent.mkdir(parents=True,exist_ok = True)
+                for v,f in figs.items():
+                    # breakpoint()
+                    location = parent / f'{stem}_{v}{suffix}'
+                    f.savefig(location)
+                
+               
              return figs
          except ZeroDivisionError:
              print('no keept solution')

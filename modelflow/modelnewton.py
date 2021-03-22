@@ -274,6 +274,7 @@ class newton_diff():
             
             
             if show_values:
+                # breakpoint()
                 resdf = pd.concat([row for row in self.diffvalues[thisvar].values()]).iloc[:,:maxper]
                 resdf.index = ['$'+partial_to_latex(thisvar,k)+'$' for k in self.diffvalues[thisvar].keys()]
                 markout = resdf.iloc[:,:].to_markdown()
@@ -311,8 +312,8 @@ class newton_diff():
         
         def get_lagnr(l):
             ''' extract lag/lead from variable name and returns a signed lag (leads are positive'''
-            #breakpoint()
-            return int('-'*(l.split('___')[0]=='LAG') + l.split('___')[1])
+            # breakpoint()
+            return int('-'*(l.split('___')[0]=='AG') + l.split('___')[1])
         
         
         def get_elm(vartuples,i):
@@ -338,8 +339,8 @@ class newton_diff():
         
             cname = namedtuple('cname','var,pvar,lag')
             self.coltup = [cname(i.rsplit('__P__',1)[0], 
-                            i.rsplit('__P__',1)[1].split('___',1)[0],
-                  get_lagnr(i.rsplit('__P__',1)[1].split('___',1)[1])) 
+                            i.rsplit('__P__',1)[1].split('___L',1)[0],
+                  get_lagnr(i.rsplit('__P__',1)[1].split('___L',1)[1])) 
                    for i in self.difres.columns]
             # breakpoint()
             self.coltupnum = [(self.placdic[var],self.placdic[pvar+'___RES' if (pvar+'___RES' in self.mmodel.endogene) else pvar],lag) 
@@ -469,7 +470,7 @@ class newton_diff():
             def get_lagnr(l):
                 ''' extract lag/lead from variable name and returns a signed lag (leads are positive'''
                 #breakpoint()
-                return int('-'*(l.split('___')[0]=='LAG') + l.split('___')[1])
+                return int('-'*(l.split('___')[0]=='AG') + l.split('___')[1])
             
             
             def get_elm(vartuples,i):
@@ -492,8 +493,8 @@ class newton_diff():
                   
             cname = namedtuple('cname','var,pvar,lag')
             col_vars = [cname(i.rsplit('__P__',1)[0], 
-                            i.rsplit('__P__',1)[1].split('___',1)[0],
-                  get_lagnr(i.rsplit('__P__',1)[1].split('___',1)[1])) 
+                            i.rsplit('__P__',1)[1].split('___L',1)[0],
+                  get_lagnr(i.rsplit('__P__',1)[1].split('___L',1)[1])) 
                    for i in difres.columns]
             
             col_ident = [diff_value_col(**i._asdict(), var_plac=self.placdic[i.var],

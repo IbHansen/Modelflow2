@@ -396,7 +396,7 @@ def heatshow(df,name='',cmap="Reds",mul=1.,annot=False,size=(11.69,8.27),dec=0,c
     return fig
 ##%%
 def attshow(df,treshold=False,head=5000,tail=0,t=True,annot=False,showsum=False,sort=True,size=(11.69,8.27),title='',
-            tshow=True,dec=0,cbar=True,cmap='jet',save=''):
+            tshow=True,dec=0,cbar=True,cmap='jet',savefig=''):
     '''Shows heatmap of impacts of exogeneous variables
     :df: Dataframe with impact 
     :treshold: Take exogeneous variables with max impact of treshold or larger
@@ -431,8 +431,8 @@ def attshow(df,treshold=False,head=5000,tail=0,t=True,annot=False,showsum=False,
         txt= '' 
     f=heatshow(yy2,cmap=cmap,name=title+txt ,annot=annot,mul=1.,size=size,dec=dec,cbar=cbar)
     f.subplots_adjust(bottom=0.16) 
-    if save:
-        f.savefig(save+'.png')
+    if savefig:
+        f.savefig(savefig)
     return yy2
 
 
