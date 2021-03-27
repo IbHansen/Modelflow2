@@ -2581,11 +2581,16 @@ class Display_Mixin():
     @staticmethod         
     def keep_add_vline(figs,time,text='  Calibration time' ):
         ''' adds a vertical line with text to figs a dict with matplotlib figures) from keep_plot'''
+        # breakpoint()
         for keep,fig in figs.items():
             ymax = fig.axes[0].get_ylim()[1]
-            fig.axes[0].annotate(text,xy=(time,ymax),fontsize = 13,va='top')
-            fig.axes[0].axvline(time,linewidth=3, color='r',ls='dashed')
-
+            try:
+                fig.axes[0].axvline(time,linewidth=3, color='r',ls='dashed')
+                fig.axes[0].annotate(text,xy=(time,ymax),fontsize = 13,va='top')
+            except:
+                fig.axes[0].axvline(pd.to_datetime(time),linewidth=3, color='r',ls='dashed')
+                fig.axes[0].annotate(text,xy=(pd.to_datetime(time),ymax),fontsize = 13,va='top')
+                
             
 
     def keep_vizold(self,pat='*'):

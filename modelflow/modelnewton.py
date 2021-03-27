@@ -25,7 +25,7 @@ import ipywidgets as ip
 import inspect 
 from itertools import chain, zip_longest
 import fnmatch 
-from IPython.display import  display,Latex, Markdown
+from IPython.display import  display,Latex, Markdown, HTML
 from itertools import chain, zip_longest
 
 
@@ -244,7 +244,57 @@ class newton_diff():
                 print(f'& = & {self.diffvalues[thisvar][e].iloc[:,:3]}')
                 print(' ')
 
+    def show_stacked_diff(self,time=None, lhs='',rhs='',dec=2,show=True):
+        '''
+        
 
+        Parameters
+        ----------
+        time : list, optional
+            DESCRIPTION. The default is None. Time for which to retrieve stacked jacobi
+        lhs : string, optional
+            DESCRIPTION. The default is ''. Left hand side variables 
+        rhs : TYPE, optional
+            DESCRIPTION. The default is ''. Right hand side variabnles 
+        dec : TYPE, optional
+            DESCRIPTION. The default is 2.
+        show : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        selected rows and columns of stacked jacobi as dataframe .
+
+        '''
+        
+        idx = pd.IndexSlice
+
+        stacked_df_all = self.get_diff_df_tot()
+        if type(time)== type(None) :
+            perslice =  slice(None) # [stacked_df_all.index[0][0],stacked_df_all.index[0][-1]]
+        else:
+            perslice =  time
+            
+        if lhs:
+            lhsslice = lhs.upper().split()
+        else: 
+            lhsslice =slice(None) #  [stacked_df_all.index[0][1],stacked_df_all.index[0][-1]]
+
+        if rhs:
+            rhsslice = rhs.upper().split()
+        else: 
+            rhsslice =slice(None) #  [stacked_df_all.index[0][1],stacked_df_all.index[0][-1]]
+ 
+        
+ # breakpoint() 
+        # slices = idx[perslice,varslice]
+        stacked_df = stacked_df_all.loc[(perslice,lhsslice),
+                                        (perslice,rhsslice)]    
+        
+        if show:
+            sdec = str(dec)
+            display( HTML(stacked_df.applymap(lambda x:f'{x:,.{sdec}f}' if x != 0.0 else '        ').to_html()))
+        return stacked_df
                 
     def show_diff_latex(self,pat='*',show_expression=True,show_values=True,maxper=5):
         varpat = r'(?P<var>[a-zA-Z_]\w*)\((?P<lag>[+-][0-9]+)\)'
@@ -275,10 +325,11 @@ class newton_diff():
             
             if show_values:
                 # breakpoint()
-                resdf = pd.concat([row for row in self.diffvalues[thisvar].values()]).iloc[:,:maxper]
-                resdf.index = ['$'+partial_to_latex(thisvar,k)+'$' for k in self.diffvalues[thisvar].keys()]
-                markout = resdf.iloc[:,:].to_markdown()
-                display(Markdown(markout))     
+                if len(self.diffvalues[thisvar].values()):
+                    resdf = pd.concat([row for row in self.diffvalues[thisvar].values()]).iloc[:,:maxper]
+                    resdf.index = ['$'+partial_to_latex(thisvar,k)+'$' for k in self.diffvalues[thisvar].keys()]
+                    markout = resdf.iloc[:,:].to_markdown()
+                    display(Markdown(markout))     
          #  print(       (r'\begin{eqnarray}'+ud+r'\end{eqnarray} '))
 
     def get_diffmodel(self):
@@ -603,17 +654,45 @@ class newton_diff():
         except:            
             eig_dic =  {date : calc_eig_reserve(comp)[0] for date,comp in comp_dic.items()} 
         # return A_dic, AINV_dic, C_dic, xlags,bottom_dic,comp_dic,eig_dic
+        self.eig_dic = eig_dic
         return eig_dic
     
-    @staticmethod
-    def eigplot(eig_dic,per=None,size=(4,3),top=0.9):
+    
+    def eigplot(self, eig_dic=None,per=None,size=(4,3),top=0.9):
         import matplotlib.pyplot as plt
+        
+        if type(eig_dic) == type(None):
+            this_eig_dic = self.eig_dic 
+        else:
+            this_eig_dic = eig_dic
+        # breakpoint()    
         if type(per) == type(None):
-            first_key = list(eig_dic.keys())[0]
+            first_key = list(this_eig_dic.keys())[0]
         else: 
             first_key = per
     
-        w = eig_dic[first_key]
+        w = this_eig_dic[first_key]
+    
+        fig, ax = plt.subplots(figsize=size,subplot_kw={'projection': 'polar'})  #A4 
+        fig.suptitle(f'Eigen vectors in {first_key}\n',fontsize=20)
+    
+        for x in w:
+            ax.plot([0,np.angle(x)],[0,np.abs(x)],marker='o')
+        ax.set_rticks([0.5, 1, 1.5])   
+        fig.subplots_adjust(top=0.8)
+        return fig
+    
+    def eigenvector_plot(self,per=None,size=(4,3),top=0.9):
+        import matplotlib.pyplot as plt
+        
+        this_eig_dic = self.eig_dic 
+        # breakpoint()    
+        if type(per) == type(None):
+            first_key = list(this_eig_dic.keys())[0]
+        else: 
+            first_key = per
+    
+        w = this_eig_dic[first_key]
     
         fig, ax = plt.subplots(figsize=size,subplot_kw={'projection': 'polar'})  #A4 
         fig.suptitle(f'Eigen vectors in {first_key}\n',fontsize=20)
@@ -651,11 +730,11 @@ class newton_diff():
     
     def eigplot_all(self,eig_dic,size=(4,3),maxfig=6):
         maxaxes = min(maxfig,len(eig_dic))
-        colrow = 4
+        colrow = 2
         ncols = min(colrow,maxaxes)
         nrows=-((-maxaxes)//ncols)
          
-        fig  = plt.figure(figsize=(3*ncols,3*nrows),constrained_layout=True)
+        fig  = plt.figure(figsize=(9*ncols,10*nrows),constrained_layout=True)
         spec = mpl.gridspec.GridSpec(ncols=ncols,nrows=nrows,figure=fig)
         # breakpoint()
         fig.suptitle('Eigenvalues',fontsize=20)
