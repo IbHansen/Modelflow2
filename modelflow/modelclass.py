@@ -2880,7 +2880,7 @@ class Json_Mixin():
            return json.dumps(dumpjson)
            
     @classmethod   
-    def modelload(cls,infile,funks=[],run=False,keep=False,**kwargs):
+    def modelload(cls,infile,funks=[],run=False,keep_json=False,**kwargs):
         '''Loads a model and an solution '''
  
         def make_current_from_quarters(base,json_current_per):
@@ -2910,7 +2910,7 @@ class Json_Mixin():
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description',{})) 
         mmodel.equations_latex = input.get('equations_latex',None)
-        if keep:
+        if keep_json:
             mmodel.json_keep = input
             
         try:

@@ -127,7 +127,7 @@ def model_parse(equations,funks=[]):
      The purpose of this function is to make model analysis faster. this is 20 times faster than looping over espressions in a model
      '''
     fatoms = namedtuple('fatoms', 'whole, frml ,frmlname, expression')
-    nterm = namedtuple('nterm', [ 'number', 'op', 'var', 'lag'])
+    # nterm = namedtuple('nterm', [ 'number', 'op', 'var', 'lag'])
     expressionre= udtrykre(funks)
     ibh = [(fatoms(*c),[nterm(*t) for t in expressionre.findall(c[3])])  for c in (split_frml(f)  for f in find_frml(equations.upper()) )]
     return ibh
