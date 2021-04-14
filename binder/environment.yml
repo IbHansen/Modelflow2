@@ -3,4 +3,4 @@ channels:
   - ibh
 dependencies:
   - python=3.8
-  - modelflow
+  - modelflow=1.5
