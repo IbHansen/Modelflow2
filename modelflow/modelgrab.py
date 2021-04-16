@@ -44,9 +44,10 @@ class GrapWbModel():
     and transform it to ModelFlow business language'''
     
     
-    frml      : str =''            # path to model 
-    data      : str  = ''          # path to data 
-    des       : str =''            # path to descriptions
+    frml      : str = ''            # path to model 
+    data      : str = ''          # path to data 
+    des       : any = ''            # path to descriptions
+    scalars   : str = ''           # path to scalars 
     modelname : str = 'No Name'           # modelname
     start     : int = 2017
     end       : int = 2030 
@@ -125,6 +126,10 @@ class GrapWbModel():
     def var_description(self):
         '''
         '''
+        
+        if isinstance(self.des,dict):
+            return self.des
+        
         try:
             trans0 = pd.read_excel(self.des).loc[:,['mnem','Excel']].set_index('mnem').to_dict(orient = 'dict')['Excel']
             var_description = {str(k) : str(v) for k,v in trans0.items() if 'nan' != str(v)}
@@ -145,6 +150,14 @@ class GrapWbModel():
               )
         df.index = [int(i.year) for i in df.index]
         
+        try:
+            sca = pd.read_excel(self.scalars ,index_col=0,header=None).T.pipe(
+                lambda _df : _df.loc[_df.index.repeat(len(df.index)),:]).\
+                set_index(df.index)
+            df= pd.concat([df,sca],axis=1)    
+        except: 
+            print(f'{self.modelname} no Scalars prowided ')
+            
         #% Now set the vars with fixedvalues 
         value_vars = self.mmodel.vlist('*_value_*')
         for var,val,year in (v.rsplit('_',2) for v in value_vars) : 

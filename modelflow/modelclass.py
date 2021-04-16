@@ -31,10 +31,7 @@ import matplotlib.pyplot as plt
 import zipfile
 from functools import partial
 
-try:
-    import xlwings as xw
-except:
-    ...
+
     
 import seaborn as sns 
 from IPython.display import SVG, display, Image, IFrame, HTML
@@ -1940,7 +1937,7 @@ class Graph_Draw_Mixin():
                 f" label=<<TABLE BORDER='0' CELLBORDER = '0'  > <TR><TD>{v}</TD></TR> </TABLE>> ]")
             return out    
         
-        pre   = 'Digraph TD { rankdir ="HR" \n' if kwargs.get('HR',False) else 'Digraph TD { rankdir ="LR" \n'
+        pre   = 'digraph TD { rankdir ="HR" \n' if kwargs.get('HR',False) else 'digraph TD { rankdir ="LR" \n'
         nodes = '{node  [margin=0.025 fontcolor=blue style=filled ] \n '+ '\n'.join([makenode(v) for v in nodelist])+' \n} \n'
         
         def getpw(v):
@@ -2085,7 +2082,7 @@ class Graph_Draw_Mixin():
                 f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {self.maketip(v)}>{self.get_des_html(v,des)}</TD></TR> </TABLE>> ]")
             return out    
         
-        pre   = 'Digraph TD {rankdir ="HR" \n' if kwargs.get('HR',True) else 'Digraph TD { rankdir ="LR" \n'
+        pre   = 'digraph TD {rankdir ="HR" \n' if kwargs.get('HR',True) else 'digraph TD { rankdir ="LR" \n'
         nodes = '{node  [margin=0.025 fontcolor=blue style=filled ] \n '+ '\n'.join([makenode(v) for v in nodelist])+' \n} \n'
  
         links = '\n'.join(['"'+v.child+'" -> "'+v.parent+'"' + f'[ {stylefunk(v.child,v.parent,invisible=invisible)}   ]'    for v in ibh ])
@@ -2927,78 +2924,18 @@ class Json_Mixin():
             return mmodel,res
         else:
             return mmodel,lastdf 
-        
-class excel_Mixin():
-    
-    @staticmethod
-    def indextrans(index):
-        '''
-        Transforms a period index to excel acceptable datatype 
-        
-        
-        '''    
-        out = [i.year if type(index) == pd.core.indexes.period.PeriodIndex 
-                         else int(i) for i in index]
-        return out 
-    
-    @staticmethod        
-    def df_to_sheet(name,df,wb,after=None):
-        try:
-            wb.sheets[name].delete()
-        except:
-            pass  
-        
-        try:
-            sht = wb.sheets.add(name,after=after)
-        except Exception as e :
-            print('no sheet added',str(e))
-        df_ = df.copy()
-        df_.index = excel_Mixin.indextrans(df.index)
-        sht.range('A1').value = df_.T
-        active_window = wb.app.api.ActiveWindow
-        active_window.FreezePanes = False
-        active_window.SplitColumn = 1
-        active_window.SplitRow = 1
-        active_window.FreezePanes = True
-        sht.autofit(axis="columns")
-        sht[(2,25)].select()
-        return sht
 
-    @staticmethod    
-    def obj_to_sheet(name,obj,wb,after=None):
-        # breakpoint()
-        try:
-            wb.sheets[name].delete()
-        except:
-            pass
-        
-        try:
-            sht = wb.sheets.add(name,after=after)
-        except Exception as e:
-            print(str(e))
-            print('no sheet added ')
-        sht.range('A1').value=obj
-        
 
-    @staticmethod    
-    def sheet_to_df(wb,name):
-        df = wb.sheets[name].range('A1').options(pd.DataFrame, expand='table').value.T
-        df.index = excel_Mixin.indextrans(df.index)
-        return df 
+try:
+    import xlwings as xw
+except:
+    ...
     
-    @staticmethod    
-    def sheet_to_dict(wb,name,integers=None):
-        ''' transform the named sheet to a python dict. If we need a integer it has to be in the integer set'''
+import model_Excel as me         
+     
         
-        integers_ = {'max_iterations'} if isinstance(None,type(None)) else integers 
-        try:
-            out = wb.sheets[name].range('A1').options(dict,expand='table').value
-            out2 = {k : int(v) if k in integers_ else v for k,v in out.items()}
-        except:
-            out2={}
-        return out2
-             
-        
+class Excel_Mixin():
+
     
     def modeldump_excel(self,file,fromfile = 'control.xlsm', keep_open=False):
         '''
@@ -3017,6 +2954,7 @@ class excel_Mixin():
             xlwings instance of workbook .
     
         '''
+            
         thispath = Path(file)
         # breakpoint()     
         if thispath.suffix.upper() =='.XLSM':
@@ -3028,15 +2966,15 @@ class excel_Mixin():
             
         wb.sheets.add()
         wb.app.screen_updating=1  
-        self.obj_to_sheet('frml',{v: self.allvar[v]['frml'] 
+        me.obj_to_sheet('frml',{v: self.allvar[v]['frml'] 
                 for v in sorted(self.allvar.keys()) if self.allvar[v]['endo']},wb)    
-        self.obj_to_sheet('var_description',dict(self.var_description) if len(self.var_description) else {'empty':'empty'},wb)
-        self.obj_to_sheet('oldkwargs',self.oldkwargs,wb)    
-        self.obj_to_sheet('modelname',{'name':self.name},wb)    
+        me.obj_to_sheet('var_description',dict(self.var_description) if len(self.var_description) else {'empty':'empty'},wb)
+        me.obj_to_sheet('oldkwargs',self.oldkwargs,wb)    
+        me.obj_to_sheet('modelname',{'name':self.name},wb)    
         if hasattr(self,'current_per'):
-            self.obj_to_sheet('current_per', self.indextrans(self.current_per), wb,after='frml')   
+            me.obj_to_sheet('current_per', me.indextrans(self.current_per), wb,after='frml')   
         if hasattr(self,'lastdf'):
-            self.df_to_sheet('lastdf', self.lastdf.loc[:,sorted(self.allvar)],wb,after='frml')
+            me.df_to_sheet('lastdf', self.lastdf.loc[:,sorted(self.allvar)],wb,after='frml')
         
         wb.app.screen_updating=1
         try:
@@ -3062,19 +3000,19 @@ class excel_Mixin():
             
         wb.app.screen_updating=0 
     
-        frml = '\n'.join(f for f in cls.sheet_to_dict(wb, 'frml').values())
-        modelname = cls.sheet_to_dict(wb, 'modelname')['name']
-        var_description = cls.sheet_to_dict(wb, 'var_description')
+        frml = '\n'.join(f for f in me.sheet_to_dict(wb, 'frml').values())
+        modelname = me.sheet_to_dict(wb, 'modelname')['name']
+        var_description = me.sheet_to_dict(wb, 'var_description')
         mmodel = cls(frml,modelname=modelname,funks=funks,var_description=var_description)
-        mmodel.oldkwargs = mmodel.sheet_to_dict(wb, 'oldkwargs')
+        mmodel.oldkwargs = me.sheet_to_dict(wb, 'oldkwargs')
         
         try:
-            mmodel.current_per = mmodel.sheet_to_df(wb, 'current_per').index
+            mmodel.current_per = me.sheet_to_df(wb, 'current_per').index
         except:
             pass
          
         try:
-            lastdf = mmodel.sheet_to_df(wb, 'lastdf')
+            lastdf = me.sheet_to_df(wb, 'lastdf')
         except: 
             lastdf = pd.DataFrame() 
             
@@ -4591,7 +4529,7 @@ class Solver_Mixin():
       
 
 class model(Zip_Mixin,Json_Mixin,Model_help_Mixin,Solver_Mixin,Display_Mixin,Graph_Draw_Mixin,Graph_Mixin,
-            Dekomp_Mixin,Org_model_Mixin,BaseModel,Description_Mixin,excel_Mixin):
+            Dekomp_Mixin,Org_model_Mixin,BaseModel,Description_Mixin,Excel_Mixin):
     pass
         
 

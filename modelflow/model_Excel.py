@@ -8,6 +8,8 @@ Takes all formula's  from a excel work book and translates each to the equivalen
 Openpyxl is the fastest library but it can not real all values. Therefor xlwings is also used. 
 But only to read repeated formula's which inly will show as '='
 
+also defines function used whenusing xlwings to automate excel 
+
 """
 import pandas as pd 
 import networkx as nx 
@@ -16,13 +18,17 @@ from openpyxl import load_workbook
 from openpyxl.formula import Tokenizer
 from openpyxl.utils import get_column_letter
 from openpyxl.utils import cols_from_range,rows_from_range
-import xlwings as xw 
+try:
+    import xlwings as xw
+except:
+    ...
 import networkx as nx
 
 import matplotlib.pylab  as plt 
 import seaborn as sns
 import os 
 import sys
+from pathlib import Path
 
 import modelclass as mc
 
@@ -53,8 +59,8 @@ def findequations(name):
     wb = load_workbook(name, read_only=True,data_only=False) # to read the spresdsheet first save as xml then write it again 
     wb2 = xw.Book(name)    # the same worksheet in xlwings
     
-    
-    allsheets = wb.get_sheet_names()
+    # breakpoint()
+    allsheets = wb.sheetnames
     for wsname in allsheets:
         ws=wb[wsname]
         ws2=wb2.sheets(wsname)   # the same sheet but in xlwings
@@ -95,7 +101,7 @@ def showcells(name):
     '''Finds values in a excel workbook with a value different from 0 
     '''
     wb = load_workbook(name, read_only=True,data_only=False) # to read the spresdsheet first save as xml then write it again 
-    allsheets = wb.get_sheet_names()
+    allsheets = wb.sheetnames
     for wsname in allsheets:
         ws=wb[wsname]
         for row in ws.rows:
@@ -108,7 +114,7 @@ def findvalues(name):
     '''Finds numerical values in a excel workbook with a value different from 0 
     '''
     wb = load_workbook(name, read_only=True,data_only=True) # to read the spresdsheet first save as xml then write it again 
-    allsheets = wb.get_sheet_names()
+    allsheets = wb.sheetnames
     values=[]
     for wsname in allsheets:
         ws=wb[wsname]
@@ -117,7 +123,6 @@ def findvalues(name):
            for row in ws.rows for c in row 
              if c.value != None and c.data_type == 'n' ]  
     return values 
-#%%
     
 def wstrans(wsname):
     res = '_'+wsname.replace("'","").replace(' - ','_').replace(' ','_').replace('-','_')+'_'
@@ -136,7 +141,7 @@ def findcoordinates(name):
         :rowdf: Dataframe with row with mapping between excel row and EBS data row_code
     '''
     wb = load_workbook(name, read_only=True,data_only=True) # to read the spresdsheet first save as xml then write it again 
-    allsheets = wb.get_sheet_names()
+    allsheets = wb.sheetnames
     
     colcodes=[]
     rowcodes=[]
@@ -162,7 +167,6 @@ def findcoordinates(name):
     rowdf = pd.DataFrame(rowcodes,columns=['sheet','rowcode','row'])
     return coldf,rowdf
 
-#%% 
 def getexcelmodel(name):
     ''' Creates a model instance from a excel sheet
     SUM is replaced by SUM_EXCEL which is a function in the modelclass 
@@ -177,26 +181,93 @@ def getexcelmodel(name):
         :para: A list of values in the sheet which matches exogeneous variables in the model 
 
     '''
+    modelname = Path(name).stem
     eqdic   = findequations(name)
     eqdic2  = {i : eq.replace('SUM(','SUM_EXCEL(')  for i,eq in eqdic.items()}                
     fdic    = {i : 'Frml xx '+eqdic2[i] + r' $ ' for i,eq in eqdic2.items()}                
     f       = '\n'.join([eq for i,eq in fdic.items()])                
-    _mmodel=mc.model(f)               
+    _mmodel=mc.model(f,modelname=modelname)               
     zz = findvalues(name)
     para = [z for z in zz if z[0] in _mmodel.exogene]   # find all values which match a exogeneous variable in model
     return _mmodel,para
+
+#%% now functions related to running xlsheets 
+
+
+def indextrans(index):
+    '''
+    Transforms a period index to excel acceptable datatype 
+    
+    
+    '''    
+    out = [i.year if type(index) == pd.core.indexes.period.PeriodIndex 
+                     else int(i) for i in index]
+    return out 
+
+def df_to_sheet(name,df,wb,after=None):
+    try:
+        wb.sheets[name].delete()
+    except:
+        pass  
+    
+    try:
+        sht = wb.sheets.add(name,after=after)
+    except Exception as e :
+        print('no sheet added',str(e))
+    df_ = df.copy()
+    df_.index = indextrans(df.index)
+    sht.range('A1').value = df_.T
+    active_window = wb.app.api.ActiveWindow
+    active_window.FreezePanes = False
+    active_window.SplitColumn = 1
+    active_window.SplitRow = 1
+    active_window.FreezePanes = True
+    sht.autofit(axis="columns")
+    sht[(2,25)].select()
+    return sht
+
+def obj_to_sheet(name,obj,wb,after=None):
+    # breakpoint()
+    try:
+        wb.sheets[name].delete()
+    except:
+        pass
+    
+    try:
+        sht = wb.sheets.add(name,after=after)
+    except Exception as e:
+        print(str(e))
+        print('no sheet added ')
+    sht.range('A1').value=obj
+    
+
+def sheet_to_df(wb,name):
+    df = wb.sheets[name].range('A1').options(pd.DataFrame, expand='table').value.T
+    df.index = indextrans(df.index)
+    return df 
+
+def sheet_to_dict(wb,name,integers=None):
+    ''' transform the named sheet to a python dict. If we need a integer it has to be in the integer set'''
+    
+    integers_ = {'max_iterations'} if isinstance(None,type(None)) else integers 
+    try:
+        out = wb.sheets[name].range('A1').options(dict,expand='table').value
+        out2 = {k : int(v) if k in integers_ else v for k,v in out.items()}
+    except:
+        out2={}
+    return out2
+         
+
+
+
     
 if __name__ == '__main__' and True:
-    testxls=os.getcwd()+r'\excel\lcrberegning2.xlsx'
+    testxls=Path('exceltest\lcrberegning2.xlsx')
     mmodel,para = getexcelmodel(testxls)
     eq=mmodel.equations
-    mmodel.drawdep('_LCR_C62',maxlevel=2)  # The LCR 
-    mmodel.impact('_LCR_C62',maxlevel=2)
-    mmodel.drawdep('_LCR_C25',maxlevel=2)  # liquid assets
-    mmodel.drawdep('_LCR_C10',maxlevel=2)  # Leel 1 covered bonds 
-    with open(r"excel\model.fru", "w") as text_file:
-       print(eq, file=text_file)
-
+    mmodel.draw('_LCR_C62',up=2,down=1)  # The LCR 
+    mmodel.draw('_LCR_C25',up=2,down=1)  # liquid assets
+    mmodel.draw('_LCR_C10',up=2)  # Leel 1 covered bonds 
     
     c,r = findcoordinates(testxls)
     xx = findequations(testxls)
