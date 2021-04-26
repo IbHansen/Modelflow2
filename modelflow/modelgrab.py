@@ -52,7 +52,7 @@ class GrapWbModel():
     start     : int = 2017
     end       : int = 2030 
     country_trans   : any = lambda x:x[:]    # function which transform model specification
-    country_df_trans : any = lambda x:x    # function which transforms initial dataframe 
+    country_df_trans : any = lambda x:x     # function which transforms initial dataframe 
     
     
     def __post_init__(self):
@@ -228,3 +228,6 @@ class GrapWbModel():
                     print(f'\nResult of equation \n {check}')
                     print(f'\nEquation values before calculations: \n {self.mmodel.get_eq_values(v,last=False,showvar=1)} \n')
         self.mmodel.oldkwargs = {}
+        
+        
+        
