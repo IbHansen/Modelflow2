@@ -50,7 +50,7 @@ class GrapWbModel():
     scalars   : str = ''           # path to scalars 
     modelname : str = 'No Name'           # modelname
     start     : int = 2017
-    end       : int = 2030 
+    end       : int = 2040 
     country_trans   : any = lambda x:x[:]    # function which transform model specification
     country_df_trans : any = lambda x:x     # function which transforms initial dataframe 
     
@@ -91,7 +91,7 @@ class GrapWbModel():
         self.mmodel = model(self.fmodel,modelname = self.modelname)
         self.mmodel.set_var_description(self.var_description)
         self.mres = model(self.fres,modelname = f'Adjustment factors for {self.modelname}')
-        # return
+        # breakpoint()
         self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
         
     @staticmethod
@@ -204,8 +204,9 @@ class GrapWbModel():
         '''
         _start = start if start else self.start
         _end    = end if end else self.end
+        # breakpoint()
     
-        resresult = self.mmodel(self.base_input,_start,_end,reset_options=True,solver='base_res')
+        resresult = self.mmodel(self.base_input,_start,_end,reset_options=True,silent=0,solver='base_res')
         self.mmodel.basedf = self.dfmodel
         pd.options.display.float_format = '{:.10f}'.format
         err=0
