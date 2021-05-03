@@ -1991,7 +1991,7 @@ class Graph_Draw_Mixin():
 
 
 
-    def todot2(self,alledges,navn='',**kwargs):
+    def makedot(self,alledges,navn='',**kwargs):
         ''' makes a drawing of all edges in list alledges
         all is the edges
         
@@ -2104,8 +2104,41 @@ class Graph_Draw_Mixin():
         self.display_graph(out,fname,**kwargs)
 
         # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing 
+        return out
+    def todot2(self,alledges,navn='',**kwargs):
+        ''' makes a drawing of all edges in list alledges
+        all is the edges
+        
+        
+        :all: show values for .dfbase and .dflaste
+        :last: show the values for .dflast 
+        :sink: variale to use as sink 
+        :source: variale to use as ssource 
+        :svg: Display the svg image in browser
+        :pdf: display the pdf result in acrobat reader 
+        :saveas: Save the drawing as name 
+        :size: figure size default (6,6)
+        :warnings: warnings displayed in command console, default =False 
+        :invisible: set of invisible nodes 
+        :labels: dict of labels for edges 
+        :transdic: dict of translations for consolidation of nodes {'SHOCK[_A-Z]*__J':'SHOCK__J','DEV__[_A-Z]*':'DEV'}
+        :dec: decimal places in numbers
+        :HR: horisontal orientation default = False 
+        :des: inject variable descriptions 
+      
+        
+''' 
+        
+        dot = self.makedot(alledges,navn='',**kwargs)
+       
+        fname = kwargs.get('saveas',navn if navn else "A_model_graph")
+        
+        if kwargs.get('dot',False):
+            return dot
+        self.display_graph(dot,fname,**kwargs)
         return 
-    def display_graph_old(self,out,fname,browser,kwargs):
+
+    def display_graph_old(self,dot,fname,browser,kwargs):
         size=kwargs.get('size',(6,6))
 
         tpath=os.path.join(os.getcwd(),'graph')
@@ -2123,7 +2156,7 @@ class Graph_Draw_Mixin():
         epsname  = '"'+os.path.join(tpath,fname+'.eps')+'"'
 
         with open(filename,'w') as f:
-            f.write(out)
+            f.write(dot)
         warnings = "" if kwargs.get("warnings",False) else "-q"    
 #        run('dot -Tsvg  -Gsize=9,9\! -o'+svgname+' "'+filename+'"',shell=True) # creates the drawing  
         run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}\! -o{svgname} "{filename}"   {warnings} ',shell=True) # creates the drawing  
