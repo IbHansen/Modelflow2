@@ -47,19 +47,6 @@ app.layout = html.Div(
         ),
         html.Div(
             [
-                html.H3("Selected element"),
-                html.Div(id="selected"),
-                
-                html.H3("Selected-var"),
-                html.Div(id="selected-var"),
-                
-                html.H3("Dot Source"),
-                dcc.Textarea(
-                    id="input",
-                    value=initial_dot_source,
-                    style=dict(flexGrow=1, position="relative"),
-                ),
-                
                
                 html.H3("var"),
                 dcc.Dropdown(id='var',value=sorted(mmodel.allvar.keys())[0],options=[
@@ -67,23 +54,16 @@ app.layout = html.Div(
                         for v in sorted(mmodel.allvar.keys())],
                 )
                  ,
-                # html.H3("Engine"),
-                # dcc.Dropdown(
-                #     id="engine",
-                #     value="dot",
-                #     options=[
-                #         dict(label=engine, value=engine)
-                #         for engine in [
-                #             "dot",
-                #             "fdp",
-                #             "neato",
-                #             "circo",
-                #             "osage",
-                #             "patchwork",
-                #             "twopi",
-                #         ]
-                #     ],
-                # ),
+                html.H3("Up"),
+                dcc.Dropdown(id="up",value="1",options=[
+                        dict(label=engine, value=engine)
+                        for engine in list(range(10))],
+                ),
+                html.H3("Downxxyyy"),
+                dcc.Dropdown(id="down",value="1",options=[
+                        dict(label=engine, value=engine)
+                        for engine in list(range(10))],
+                )
             ],
             style=dict(display="flex", flexDirection="column"),
         ),
@@ -93,34 +73,35 @@ app.layout = html.Div(
 
 
 @app.callback(
-    Output("gv", "dot_source"),
-    [Input("input", "value"), 
-     Input('var', "value"),Input('gv', "selected")],
+    [Output("gv", "dot_source"),Output('var', "value")],
+    [
+     Input('var', "value"),Input('gv', "selected_node"),Input('up', "value"),
+     Input('down', "value")],
 )
-def display_output(value0, var,select_var):
-    value=value0
+def display_output( var,select_var,up,down):
+    # value=mmodel.drawmodel(svg=1,all=True,browser=0,pdf=0,des=True,dot=True)
     ctx = dash.callback_context
+    outvar=var[:]
     if ctx.triggered:
         trigger = ctx.triggered[0]['prop_id'].split('.')[0]
-        if trigger == 'var':
-            print('kddddddddddddddkkddd')
-            value=mmodel.draw(var,dot=True)
+        if trigger in ['var','down','up']:
+            pass
+            # print('kddddddddddddddkkddd')
         elif trigger == 'gv':
             pass
-            if select_var in mmodel.endogene or select_var in mmodel.exogene:         
-                value = mmodel.draw(select_var,dot=True)
+            xvar= select_var.split('(')[0]
+            if xvar in mmodel.endogene or xvar in mmodel.exogene: 
+                outvar = xvar
+        value=mmodel.draw(outvar,dot=True,up=int(up),down=int(down))
         ctx_msg = json.dumps({
         'states': ctx.states,
         'triggered': ctx.triggered,
         'inputs': ctx.inputs
               }, indent=2)
         print(ctx_msg)
+         
     
-    
-        
-        
-    
-    return value
+    return value,outvar
 
 
 # @app.callback(Output("selected", "children"), [Input("gv", "selected")])
@@ -133,4 +114,4 @@ def display_output(value0, var,select_var):
 #     return html.Div(value)
 
 if __name__ == "__main__":
-    app.run_server(debug=False)
+    app.run_server(debug=False,port=5000)
