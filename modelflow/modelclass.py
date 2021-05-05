@@ -1786,8 +1786,9 @@ class Graph_Draw_Mixin():
         return ud    
          
     def color(self,v,navn=''):
+        # breakpoint()
         if navn == v:
-            out = 'Turquoise'
+            out = 'red'
             return out 
         if v in self.endogene:  
                 out = 'steelblue1' 
@@ -2011,6 +2012,7 @@ class Graph_Draw_Mixin():
         :dec: decimal places in numbers
         :HR: horisontal orientation default = False 
         :des: inject variable descriptions 
+        :fokus: Variable to get special colour
       
         
 ''' 
@@ -2019,6 +2021,8 @@ class Graph_Draw_Mixin():
         invisible = kwargs.get('invisible',set())
         
         des = kwargs.get('des',True)
+        
+        fokus = kwargs.get('fokus','')
 
         
         #%
@@ -2033,6 +2037,7 @@ class Graph_Draw_Mixin():
             else:
 #                return ''
                 return 'style = filled'
+            
         def stylefunkhtml(n1=None,invisible=set()):
 #            return ''
             if n1 in invisible:
@@ -2055,7 +2060,7 @@ class Graph_Draw_Mixin():
     #
         nodelist = {n for nodes in ibh for n in (nodes.parent,nodes.child)}
 #        print(nodelist)
-        def makenode(v):
+        def makenode(v,navn):
             if kwargs.get('last',False) or kwargs.get('all',False):
                 try:
                     t = pt.udtryk_parse(v,funks=[])
@@ -2083,7 +2088,7 @@ class Graph_Draw_Mixin():
             return out    
         
         pre   = 'digraph TD {rankdir ="HR" \n' if kwargs.get('HR',True) else 'digraph TD { rankdir ="LR" \n'
-        nodes = '{node  [margin=0.025 fontcolor=blue style=filled ] \n '+ '\n'.join([makenode(v) for v in nodelist])+' \n} \n'
+        nodes = '{node  [margin=0.025 fontcolor=blue style=filled ] \n '+ '\n'.join([makenode(v,navn) for v in nodelist])+' \n} \n'
  
         links = '\n'.join(['"'+v.child+'" -> "'+v.parent+'"' + f'[ {stylefunk(v.child,v.parent,invisible=invisible)}   ]'    for v in ibh ])
     
@@ -2129,7 +2134,7 @@ class Graph_Draw_Mixin():
         
 ''' 
         
-        dot = self.makedot(alledges,navn='',**kwargs)
+        dot = self.makedot(alledges,navn=navn,**kwargs)
        
         fname = kwargs.get('saveas',navn if navn else "A_model_graph")
         
