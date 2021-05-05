@@ -1982,7 +1982,7 @@ class Graph_Draw_Mixin():
         
         var_name = v.split("(")[0]
         des0 = self.var_description[var_name]
-        # des = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
+        des0 = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
         des = self.html_replace(des0)
         if html:
             return f'TOOLTIP="{des}" href="bogus"'

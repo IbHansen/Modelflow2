@@ -37,9 +37,8 @@ df2 = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[10.,10.] , 'R':[1.,0.4] , 'P':[0.,0.
 
 xx = mmodel(df)
 yy = mmodel(df2)
-initial_dot_source =     mmodel.drawmodel(svg=1,all=True,browser=0,pdf=0,des=True,dot=True)
 
-
+mmodel,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1)
 app.layout = html.Div(
     [
         html.Div(
@@ -64,6 +63,11 @@ app.layout = html.Div(
                 dcc.Dropdown(id="down",value="1",options=[
                         dict(label=engine, value=engine)
                         for engine in list(range(10))],
+                ),
+                html.H3("Data"),
+                dcc.Dropdown(id="data_show",value="last data",options=[
+                        dict(label=engine, value=engine)
+                        for engine in ['name','all data','last data']],
                 )
             ],
             style=dict(display="flex", flexDirection="column"),
@@ -74,35 +78,51 @@ app.layout = html.Div(
 
 
 @app.callback(
-    [Output("gv", "dot_source"),Output('var', "value")],
+    [Output("gv", "dot_source")], #,Output('var', "value")],
     [
      Input('var', "value"),Input('gv', "selected_node"),Input('up', "value"),
-     Input('down', "value")],
+     Input('down', "value"), Input('data_show', "value")],
 )
-def display_output( var,select_var,up,down):
+def display_output( var,select_var,up,down,data_show):
     # value=mmodel.drawmodel(svg=1,all=True,browser=0,pdf=0,des=True,dot=True)
     ctx = dash.callback_context
-    outvar=var[:]
+    try:
+        outvar=var[:]
+    except:
+        return dash.no_update
     if ctx.triggered:
         trigger = ctx.triggered[0]['prop_id'].split('.')[0]
-        if trigger in ['var','down','up']:
+        if trigger in ['var','down','up','data_show']:
             pass
             # print('kddddddddddddddkkddd')
         elif trigger == 'gv':
             pass
             xvar= select_var.split('(')[0]
             if xvar in mmodel.endogene or xvar in mmodel.exogene: 
-                outvar = xvar
-        value=mmodel.draw(outvar,dot=True,up=int(up),down=int(down))
+                outvar = xvar[:]
+                
+        # this is not elegant but works         
+        if data_show=='name':
+            value=mmodel.draw(outvar,dot=True,up=int(up),down=int(down),all=False)
+        elif data_show == 'all data':   
+            value=mmodel.draw(outvar,dot=True,up=int(up),down=int(down),all=True)
+        else:   
+            value=mmodel.draw(outvar,dot=True,up=int(up),down=int(down),last=True)
+        # else:     
+        #     value=mmodel.draw(outvar,dot=True,up=int(up),down=int(down),all=False)
+
         ctx_msg = json.dumps({
         'states': ctx.states,
         'triggered': ctx.triggered,
         'inputs': ctx.inputs
               }, indent=2)
-        print(ctx_msg)
+        # print(ctx_msg)
+        # print(f'{outvar=},{data_show=}')
+        # print(value)
+        
          
     
-    return value,outvar
+    return [value] # ,outvar
 
 
 # @app.callback(Output("selected", "children"), [Input("gv", "selected")])
