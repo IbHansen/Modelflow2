@@ -7,20 +7,21 @@ from modelclass import model
 
 
 #%%
-smallmodel      = '''
-frml <> a = c + b $ 
-frml <> d1 = x + 3 * a(-1)+ c **2 +a  $ 
-frml <> d3 = x + 3 * a(-1)+c **3 $  
-Frml <> x = 0.5 * c +a$'''
-des = {'A':'Bruttonationalprodukt i faste  priser',
-       'X': 'Eksport <æøåÆØÅ>;',
-       'C': 'Forbrug'}
-mmodel = model(smallmodel,var_description=des,svg=1,browser=1)
-df = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[0.,0.] , 'R':[1.,0.4] , 'P':[0.,0.4]})
-df2 = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[10.,10.] , 'R':[1.,0.4] , 'P':[0.,0.4]})
-
-xx = mmodel(df)
-yy = mmodel(df2)
+if 0:
+    smallmodel      = '''
+    frml <> a = c + b $ 
+    frml <> d1 = x + 3 * a(-1)+ c **2 +a  $ 
+    frml <> d3 = x + 3 * a(-1)+c **3 $  
+    Frml <> x = 0.5 * c +a$'''
+    des = {'A':'Bruttonationalprodukt i faste  priser',
+           'X': 'Eksport <æøåÆØÅ>;',
+           'C': 'Forbrug'}
+    mmodel = model(smallmodel,var_description=des,svg=1,browser=1)
+    df = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[0.,0.] , 'R':[1.,0.4] , 'P':[0.,0.4]})
+    df2 = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[10.,10.] , 'R':[1.,0.4] , 'P':[0.,0.4]})
+    
+    xx = mmodel(df)
+    yy = mmodel(df2)
     
 def modeldash(mmodel,debug=True): 
     import dash_interactive_graphviz
@@ -128,7 +129,7 @@ def modeldash(mmodel,debug=True):
             'triggered': ctx.triggered,
             'inputs': ctx.inputs
                   }, indent=2)
-            print(ctx_msg)
+            # print(ctx_msg)
             # print(f'{outvar=},{data_show=}')
             # print(value)
             
@@ -136,7 +137,10 @@ def modeldash(mmodel,debug=True):
         
         return [value] # ,outvar
     
+    def open_browser():
+    	webbrowser.open_new(f"http://localhost:{5000}")
     
+    Timer(1, open_browser).start()
     app.run_server(debug=False,port=5000)
     
 if not 'baseline' in locals():
