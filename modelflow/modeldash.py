@@ -23,8 +23,9 @@ if 0:
     xx = mmodel(df)
     yy = mmodel(df2)
     
-def modeldash(mmodel,debug=True): 
+def modeldash(mmodel,debug=True,jupyter=False): 
     import dash_interactive_graphviz
+    from jupyter_dash import JupyterDash
     import dash
     from dash.dependencies import Input, Output
     import dash_html_components as html
@@ -34,7 +35,10 @@ def modeldash(mmodel,debug=True):
     from threading import Timer
     
     import json
-    app = dash.Dash(__name__)
+    if jupyter: 
+        app = JupyterDash(__name__)
+    else:
+        app = dash.Dash(__name__)
 
     app.layout = html.Div(
         [
@@ -143,7 +147,11 @@ def modeldash(mmodel,debug=True):
     Timer(1, open_browser).start()
     app.run_server(debug=False,port=5000)
     
-if not 'baseline' in locals():
-    mmodel,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
-
-modeldash(mmodel)    
+    
+    
+if __name__ == "__main__":
+    
+    if not 'baseline' in locals():
+        mmodel,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
+    
+    modeldash(mmodel,jupyter=True)    
