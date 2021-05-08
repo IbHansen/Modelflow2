@@ -1211,6 +1211,9 @@ class Model_help_Mixin():
 class Dekomp_Mixin():
     '''This class defines methods and properties related to equation attribution analyses (dekomp)
     '''
+    from functools import lru_cache
+    
+    @lru_cache(maxsize=10000)
     def dekomp(self, varnavn, start='', end='',basedf=None,altdf=None,lprint=True):
         '''Print all variables that determines input variable (varnavn)
         optional -- enter period and databank to get var values for chosen period'''
@@ -1826,7 +1829,7 @@ class Graph_Draw_Mixin():
                     yield from self.upwalk(g,child, level + 1,navn, up,select,lpre)
 
 
-    def explain(self,var,up=1,start='',end='',select=False,showatt=True,lag=True,debug=0,**kwargs):
+    def explain(self,var,up=1,start='',end='',select=False,showatt=True,lag=True,debug=0,dot=False,**kwargs):
         ''' Walks a tree to explain the difference between basedf and lastdf
         
         Parameters:
@@ -1871,8 +1874,11 @@ class Graph_Draw_Mixin():
             self.newgraph = nx.DiGraph([(var,var)])
             nx.set_node_attributes(self.newgraph,{var:{'values':self.get_values(var)}})
             nx.set_node_attributes(self.newgraph,{var:{'att':self.get_att_pct(var,lag=lag,start=start,end=end)}})
-        self.gdraw(self.newgraph,navn=var,showatt=showatt,**kwargs)
-        return self.newgraph
+        if dot: 
+            return self.todot(self.newgraph,navn=var,showatt=showatt,dot=True,**kwargs)
+        else: 
+            self.gdraw(self.newgraph,navn=var,showatt=showatt,**kwargs)
+            return self.newgraph
 
 
 
@@ -1948,7 +1954,7 @@ class Graph_Draw_Mixin():
             except:
                return 0.5
            
-        if showatt:
+        if showatt or True:
             pw = [getpw(v) for v in ibh]
         else: 
             pw= [1 for v in ibh]
@@ -1964,6 +1970,8 @@ class Graph_Draw_Mixin():
         post  = '\n}' 
 
         out   = pre+nodes+links+psink+psource+ptitle+post 
+        if kwargs.get('dot',False):
+            return out 
         self.display_graph(out,fname,**kwargs)
                     
     def gdraw(self,g,**kwargs):
@@ -2106,7 +2114,7 @@ class Graph_Draw_Mixin():
         ptitle = '\n label = "'+kwargs.get('title',fname)+'";'
         post  = '\n}' 
         out   = pre+nodes+links+psink+psource+clusterout+ptitle+post 
-        self.display_graph(out,fname,**kwargs)
+        # self.display_graph(out,fname,**kwargs)
 
         # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing 
         return out
@@ -2140,6 +2148,7 @@ class Graph_Draw_Mixin():
         
         if kwargs.get('dot',False):
             return dot
+        
         self.display_graph(dot,fname,**kwargs)
         return 
 
@@ -4870,7 +4879,7 @@ if __name__ == '__main__' :
 #        m2.drawmodel()
         m2(df)
         m2(df2)
-        m2.Y.explain(select=True,showatt=True,HR=False,up=3)
+        xx = m2.Y.explain(select=True,showatt=True,HR=False,up=3,dot=False)
 #        g  = m2.ximpact('Y',select=True,showatt=True,lag=True,pdf=0)
         m2.Y.explain(select=0,up=4,pdf=1)
 #        m2.Y.dekomp(lprint=1)
@@ -4939,6 +4948,7 @@ Frml <> x = 0.5 * c +a$'''
     with m2test.set_smpl_relative(-333):
          print(list(m2test.current_per))
     print(list(m2test.current_per))
+    if 0:
+        m2test.modeldump_excel('graph/ib.xlsx')
+        m3test =  model.modelload_excel('graph/ib.xlsx')
     
-    m2test.modeldump_excel('graph/ib.xlsx')
-    m3test =  model.modelload_excel('graph/ib.xlsx')
