@@ -1881,6 +1881,11 @@ class Graph_Draw_Mixin():
             return self.newgraph
 
 
+    def dftodottable(self,df,dec=0):
+                 xx = '\n'.join([f"<TR {self.maketip(row[0],True)}><TD ALIGN='LEFT' {self.maketip(row[0],True)}>{row[0]}</TD>"+
+                                 ''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() 
+                                        for b in row[1:]])+'</TR>' for row in df.itertuples()])
+                 return xx   
 
     
     def todot(self,g,navn='',browser=False,**kwargs):

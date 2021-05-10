@@ -186,14 +186,14 @@ class Dash_Mixin():
             [  
                 html.Div(
                     dash_interactive_graphviz.DashInteractiveGraphviz(id="gv",engine='dot',
-                          dot_source = self.draw(selected_var,dot=True,up=0,down=1,
-                            last=0,all = 1 , HR=False)),
+                          dot_source =   self.explain(selected_var,up=1,select=False,showatt=False,lag=True,debug=0,dot=True,HR=True)
+,
+                            ),
                     style=dict(flexGrow=1, position="relative")
                                ,
-                ), 
-                
+                ),                
                  
-                html.H3("Variable"),
+                
                 
                 html.Div(
                     [
@@ -209,28 +209,26 @@ class Dash_Mixin():
                         )
                          ,
                         html.H3("Up, preceeding levels"),
-                        dcc.Dropdown(id="up",value=0,options=[
+                        dcc.Dropdown(id="up",value=1,options=[
                                 dict(label=engine, value=engine)
                                 for engine in list(range(10))],
                         ),
-                        html.H3("Down, dependent levels"),
-                        dcc.Dropdown(id="down",value=1,options=[
-                                dict(label=engine, value=engine)
-                                for engine in list(range(10))],
-                        ),
-                        html.H3("Data"),
-                        dcc.Dropdown(id="data_show",value=selected_data_show,options=[
-                                dict(label=engine, value=engine)
-                                for engine in ['Variable names','baseline+last run','last run']],
-                        ),
+                        html.H3("Show"),             
+                        dcc.RadioItems(id='data_show',
+                            options=[
+                                {'label': 'Variables', 'value': False},
+                                {'label': 'Attributions', 'value': True},
+                                 ],
+                             value=False
+                        ),     
                         html.H3("Graph orientation"),             
                         dcc.RadioItems(id='orient',
                             options=[
                                 {'label': 'Vertical', 'value': False},
                                 {'label': 'Horisontal', 'value': True},
                                  ],
-            value=False
-        )  
+                       value=False
+                       )  
         
                     ],
                     style=dict(display="flex", flexDirection="column"),
@@ -243,12 +241,12 @@ class Dash_Mixin():
         @app.callback(
             [Output("gv", "dot_source"),Output('outvar-state', "children")],
             [
-             Input('var', "value"),Input('gv', "selected_node"),Input('up', "value"),
-             Input('down', "value"), Input('data_show', "value"),
+             Input('var', "value"),Input('gv', "selected_node"),Input('gv', "selected_edge"),Input('up', "value"),
+             Input('data_show', "value"),
              Input('orient', "value")],
              State('outvar-state','children')
         )
-        def display_output( var,select_var,up,down,data_show,orient,outvar_state):
+        def display_output( var,select_var,select_node,up,data_show,orient,outvar_state):
             # value=self.drawmodel(svg=1,all=True,browser=0,pdf=0,des=True,dot=True)
             ctx = dash.callback_context
             if ctx.triggered:
@@ -261,22 +259,18 @@ class Dash_Mixin():
                         return [dash.no_update,dash.no_update]
                     
 
-                if trigger in ['down','up','data_show','orient']:
+                if trigger in ['up','data_show','orient']:
                         outvar=outvar_state
 
                 elif trigger == 'gv':
                     pass
-                    xvar= select_var.split('(')[0]
-                    if xvar in self.endogene or xvar in self.exogene: 
-                        outvar = xvar[:]
-                   
-                        
-                        
-                # value=self.draw(outvar,dot=True,up=int(up),down=int(down),
-                                  # last=data_show=='last run',all =data_show=='baseline+last run' ,
-                                  # HR=orient)
-                
-                value =  self.explain(outvar,up=up,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient)
+                    try:
+                        xvar= select_var.split('(')[0]
+                        if xvar in self.endogene or xvar in self.exogene: 
+                            outvar = xvar[:]
+                    except:
+                       outvar= select_node.split('->')[0]
+                value =  self.explain(outvar,up=up,select=False,showatt=data_show,lag=True,debug=0,dot=True,HR=orient)
                 # else:     
                 #     value=self.draw(outvar,dot=True,up=int(up),down=int(down),all=False)
                 if show_trigger:
@@ -296,8 +290,12 @@ class Dash_Mixin():
         def open_browser():
         	webbrowser.open_new(f"http://localhost:{5000}")
         
-        Timer(1, open_browser).start()
-        app.run_server(debug=False,port=5000)
+        
+        if jupyter:
+            app.run_server(debug=False,mode='inline')
+        else:     
+            Timer(1, open_browser).start()
+            app.run_server(debug=False,port=5000)
     
     
     
@@ -309,9 +307,10 @@ if __name__ == "__main__":
         
         ... 
         
-        
-    mmodel,baseline  = xmodel.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
-    scenarie = baseline.copy()
-    scenarie.TG = scenarie.TG + 0.05
-    _ = mmodel(scenarie)
-    mmodel.modeldash('FY',jupyter=False)    
+    if not  'baseline' in locals():    
+        mmodel,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
+        scenarie = baseline.copy()
+        scenarie.TG = scenarie.TG + 0.05
+        _ = mmodel(scenarie)
+    setattr(model, "modeldashexplain", Dash_Mixin.modeldashexplain)    
+    mmodel.modeldashexplain('FY',jupyter=False,show_trigger=True) 
