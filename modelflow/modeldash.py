@@ -1,3 +1,16 @@
+import dash_interactive_graphviz
+from jupyter_dash import JupyterDash
+import dash
+from dash.dependencies import Input, Output, State
+import dash_html_components as html
+import dash_core_components as dcc
+
+import webbrowser
+from threading import Timer
+
+import json
+
+
 
 from pathlib import Path
 import pandas as pd
@@ -47,10 +60,10 @@ class Dash_Mixin():
         
         app.layout = html.Div(
             [  
-                html.Div(
+                html.Div([
                     dash_interactive_graphviz.DashInteractiveGraphviz(id="gv",engine='dot',
                           dot_source = self.draw(selected_var,dot=True,up=0,down=1,
-                            last=0,all = 1 , HR=False)),
+                            last=0,all = 1 , HR=False))],
                     style=dict(flexGrow=1, position="relative")
                                ,
                 ), 
@@ -89,8 +102,8 @@ class Dash_Mixin():
                         html.H3("Graph orientation"),             
                         dcc.RadioItems(id='orient',
                             options=[
-                                {'label': 'Vertical', 'value': False},
-                                {'label': 'Horisontal', 'value': True},
+                                {'label': 'Vertical', 'value': 'False'},
+                                {'label': 'Horisontal', 'value': 'True'},
                                  ],
             value=False
         )  
@@ -161,20 +174,21 @@ class Dash_Mixin():
         Timer(1, open_browser).start()
         app.run_server(debug=False,port=5000)
         
+    def generate_table(self,dataframe, max_rows=10):
+        return html.Table([
+            html.Thead(
+                html.Tr([html.Th(col) for col in dataframe.columns])
+            ),
+            html.Tbody([
+                html.Tr([
+                    html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+                ]) for i in range(min(len(dataframe), max_rows))
+            ])
+        ])
         
-    def modeldashexplain(self,pre_var='',selected_data_show ='baseline+last run',debug=True,jupyter=False,show_trigger=False): 
-        import dash_interactive_graphviz
-        from jupyter_dash import JupyterDash
-        import dash
-        from dash.dependencies import Input, Output, State
-        import dash_html_components as html
-        import dash_core_components as dcc
-        
-        import webbrowser
-        from threading import Timer
-        
-        import json
-        
+    def modeldashexplain(self,pre_var='',selected_data_show ='baseline+last run',
+                         debug=True,jupyter=False,show_trigger=False,port=5000): 
+          
         if jupyter: 
             app = JupyterDash(__name__)
         else:
@@ -183,16 +197,14 @@ class Dash_Mixin():
         
         
         app.layout = html.Div(
-            [  
-                html.Div(
+              
+               [ 
+              html.Div([
                     dash_interactive_graphviz.DashInteractiveGraphviz(id="gv",engine='dot',
                           dot_source =   self.explain(selected_var,up=1,select=False,showatt=False,lag=True,debug=0,dot=True,HR=True)
-,
-                            ),
+                    )],
                     style=dict(flexGrow=1, position="relative")
-                               ,
-                ),                
-                 
+                 ),                
                 
                 
                 html.Div(
@@ -227,14 +239,20 @@ class Dash_Mixin():
                                 {'label': 'Vertical', 'value': False},
                                 {'label': 'Horisontal', 'value': True},
                                  ],
-                       value=False
+                       value=True
                        )  
         
                     ],
                     style=dict(display="flex", flexDirection="column"),
                 ),
+                
+                                 
+                
             ],
             style=dict(position="absolute", height="100%", width="100%", display="flex"),
+            
+            
+            
         )
         
         
@@ -287,15 +305,16 @@ class Dash_Mixin():
             
             return [value,outvar]
         
-        def open_browser():
-        	webbrowser.open_new(f"http://localhost:{5000}")
+        def open_browser(port=5000):
+        	webbrowser.open_new(f"http://localhost:{port}")
         
         
         if jupyter:
-            app.run_server(debug=False,mode='inline')
+            Timer(1, open_browser).start()            
+            app.run_server(debug=debug,port=port,mode='external')
         else:     
             Timer(1, open_browser).start()
-            app.run_server(debug=False,port=5000)
+            app.run_server(debug=debug,port=port)
     
     
     
@@ -313,4 +332,4 @@ if __name__ == "__main__":
         scenarie.TG = scenarie.TG + 0.05
         _ = mmodel(scenarie)
     setattr(model, "modeldashexplain", Dash_Mixin.modeldashexplain)    
-    mmodel.modeldashexplain('FY',jupyter=False,show_trigger=True) 
+    mmodel.modeldashexplain('FY',jupyter=False,show_trigger=True,debug=False) 

@@ -1858,6 +1858,7 @@ class Graph_Draw_Mixin():
             with self.timer('Dekomp',debug) as t: 
                 pctdic2 = {n : self.get_att_pct(n,lag=lag,start=start,end=end) for n in nodestodekomp }
             edges = {(r,n):{'att':df.loc[[r],:]} for n,df in pctdic2.items() for r in df.index}
+            
             self.localgraph  = nx.DiGraph()
             self.localgraph.add_edges_from([(v.child,v.parent) for v in edgelist])
             nx.set_edge_attributes(self.localgraph,edges)
