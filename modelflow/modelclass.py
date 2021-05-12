@@ -1921,6 +1921,7 @@ class Graph_Draw_Mixin():
         dec = kwargs.get('dec',0)
         nodelist = {n for nodes in ibh for n in (nodes.parent,nodes.child)}
         
+        
         def dftotable(df,dec=0):
              xx = '\n'.join([f"<TR {self.maketip(row[0],True)}><TD ALIGN='LEFT' {self.maketip(row[0],True)}>{row[0]}</TD>"+
                              ''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() 

@@ -4,19 +4,21 @@ import dash
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
+import plotly.graph_objs as go
+
 
 import webbrowser
 from threading import Timer
 
 import json
-
+import networkx as nx
 
 
 from pathlib import Path
 import pandas as pd
 
 from modelclass import model 
-
+from modelhelp import cutout
 
 
 #%%
@@ -63,7 +65,8 @@ class Dash_Mixin():
                 html.Div([
                     dash_interactive_graphviz.DashInteractiveGraphviz(id="gv",engine='dot',
                           dot_source = self.draw(selected_var,dot=True,up=0,down=1,
-                            last=0,all = 1 , HR=False))],
+                            last=0,all = 1 , HR=False)),
+                    html.Div("Variable ffffffffffffjjjfjfffffffffffff  fffffff")],
                     style=dict(flexGrow=1, position="relative")
                                ,
                 ), 
@@ -173,21 +176,40 @@ class Dash_Mixin():
         
         Timer(1, open_browser).start()
         app.run_server(debug=False,port=5000)
-        
-    def generate_table(self,dataframe, max_rows=10):
-        return html.Table([
-            html.Thead(
-                html.Tr([html.Th(col) for col in dataframe.columns])
-            ),
-            html.Tbody([
-                html.Tr([
-                    html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-                ]) for i in range(min(len(dataframe), max_rows))
-            ])
-        ])
-        
+          
     def modeldashexplain(self,pre_var='',selected_data_show ='baseline+last run',
                          debug=True,jupyter=False,show_trigger=False,port=5000): 
+        
+        def get_stack(df,v='Guess it',heading='Yes'):
+            pv = cutout(df,5. )
+            trace = [go.Bar(x=pv.columns, y=pv.loc[rowname,:], name=rowname,hovertemplate = '%{y:10.0f}%',) for rowname in pv.index]
+            out = { 'data': trace,
+            'layout':
+            go.Layout(title=f'{heading}', barmode='relative',legend_itemclick='toggleothers',
+                      yaxis = {'tickformat': ',.0','ticksuffix':'%'})
+            }
+            return out 
+        
+        def get_line(pv,v='Guess it',heading='Yes'):
+            trace = [go.Line(x=pv.columns, y=pv.loc[rowname,:], name=rowname) for rowname in pv.index]
+            out = { 'data': trace,
+            'layout':
+            go.Layout(title=f'{heading}')
+            }
+            return out 
+
+    
+        def generate_table(dataframe, max_rows=10):
+            return html.Table([
+                html.Thead(
+                    html.Tr([html.Th('var')]+[html.Th(col) for col in dataframe.columns])
+                ),
+                html.Tbody([
+                    html.Tr([html.Td(dataframe.index[i])]+[html.Td(f'{dataframe.iloc[i][col]:25.2f}') for col in dataframe.columns]) 
+                    for i in range(min(len(dataframe), max_rows))
+                ])
+            ])
+              
           
         if jupyter: 
             app = JupyterDash(__name__)
@@ -200,11 +222,17 @@ class Dash_Mixin():
               
                [ 
               html.Div([
-                    dash_interactive_graphviz.DashInteractiveGraphviz(id="gv",engine='dot',
-                          dot_source =   self.explain(selected_var,up=1,select=False,showatt=False,lag=True,debug=0,dot=True,HR=True)
-                    )],
-                    style=dict(flexGrow=1, position="relative")
-                 ),                
+                    
+                    html.Div(dash_interactive_graphviz.DashInteractiveGraphviz(id="gv",engine='dot',
+                          dot_source =   self.explain(selected_var,up=0,select=False,showatt=True,lag=True,debug=0,dot=True,HR=True))
+                     , style={'display': 'inline-block', 'vertical-align': 'bottom', 'margin-left': '3vw', 'margin-top': '3vw'}  ),                
+                    html.Div(dcc.Graph(
+                       id='graph',
+                       figure=get_stack(nx.get_node_attributes(self.newgraph,'att')[selected_var],selected_var,heading=f'{selected_var}'))
+                    , style={'display': 'inline-block', 'vertical-align': 'top', 'margin-left': '3vw', 'margin-top': '3vw'} )    ,
+
+                    ]
+                 , style=dict()),                
                 
                 
                 html.Div(
@@ -232,7 +260,17 @@ class Dash_Mixin():
                                 {'label': 'Attributions', 'value': True},
                                  ],
                              value=False
-                        ),     
+                        ),  
+
+                        dcc.RadioItems(id='graph_show',
+                            options=[
+                                {'label': 'Values', 'value': 'values'},
+                                {'label': 'Diff', 'value': 'diff'},
+                                 {'label': 'Attributions', 'value': 'att'},
+                                 ],
+                             value='values'
+                        ),  
+                        
                         html.H3("Graph orientation"),             
                         dcc.RadioItems(id='orient',
                             options=[
@@ -257,14 +295,14 @@ class Dash_Mixin():
         
         
         @app.callback(
-            [Output("gv", "dot_source"),Output('outvar-state', "children")],
+            [Output("gv", "dot_source"),Output('outvar-state', "children"),Output('graph', "figure")],
             [
              Input('var', "value"),Input('gv', "selected_node"),Input('gv', "selected_edge"),Input('up', "value"),
-             Input('data_show', "value"),
+             Input('data_show', "value"),Input('graph_show', "value"),
              Input('orient', "value")],
              State('outvar-state','children')
         )
-        def display_output( var,select_var,select_node,up,data_show,orient,outvar_state):
+        def display_output( var,select_var,select_node,up,data_show,figtype,orient,outvar_state):
             # value=self.drawmodel(svg=1,all=True,browser=0,pdf=0,des=True,dot=True)
             ctx = dash.callback_context
             if ctx.triggered:
@@ -274,12 +312,10 @@ class Dash_Mixin():
                     try:
                         outvar=var[:]
                     except:
-                        return [dash.no_update,dash.no_update]
+                        return [dash.no_update,dash.no_update,dash.no_update]
                     
 
-                if trigger in ['up','data_show','orient']:
-                        outvar=outvar_state
-
+              
                 elif trigger == 'gv':
                     pass
                     try:
@@ -288,7 +324,13 @@ class Dash_Mixin():
                             outvar = xvar[:]
                     except:
                        outvar= select_node.split('->')[0]
+                else:
+                     outvar=outvar_state
+                     
                 value =  self.explain(outvar,up=up,select=False,showatt=data_show,lag=True,debug=0,dot=True,HR=orient)
+            
+                
+                
                 # else:     
                 #     value=self.draw(outvar,dot=True,up=int(up),down=int(down),all=False)
                 if show_trigger:
@@ -301,9 +343,23 @@ class Dash_Mixin():
                     # print(f'{outvar=},{data_show=}')
                     # print(value)
                     
+            if outvar in self.endogene:         
+                if figtype == 'values':
+                    out_graph = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[:2,:],outvar,outvar)
+                elif figtype == 'diff':
+                    out_graph = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[[2],:],outvar,outvar)
+                elif figtype == 'att':
+                    out_graph = get_stack(nx.get_node_attributes(self.newgraph,'att')[outvar],outvar,outvar)
+                else:
+                    out_graph = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[[2],:],outvar,outvar)
+            else:
+                out_graph= dash.no_update
+                    
+            
+                   
                  
             
-            return [value,outvar]
+            return [value,outvar,out_graph]
         
         def open_browser(port=5000):
         	webbrowser.open_new(f"http://localhost:{port}")
@@ -333,3 +389,9 @@ if __name__ == "__main__":
         _ = mmodel(scenarie)
     setattr(model, "modeldashexplain", Dash_Mixin.modeldashexplain)    
     mmodel.modeldashexplain('FY',jupyter=False,show_trigger=True,debug=False) 
+#%%    
+    pd.options.plotting.backend = "plotly"
+    
+    df = pd.DataFrame(dict(a=[1,3,2], b=[3,2,1]))
+    fig = df.plot()
+    fig.show()
