@@ -4,6 +4,7 @@ import dash
 from dash.dependencies import Input, Output, State
 import dash_html_components as html
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 import plotly.graph_objs as go
 
 
@@ -65,8 +66,7 @@ class Dash_Mixin():
                 html.Div([
                     dash_interactive_graphviz.DashInteractiveGraphviz(id="gv",engine='dot',
                           dot_source = self.draw(selected_var,dot=True,up=0,down=1,
-                            last=0,all = 1 , HR=False)),
-                    html.Div("Variable ffffffffffffjjjfjfffffffffffff  fffffff")],
+                            last=0,all = 1 , HR=False)),],
                     style=dict(flexGrow=1, position="relative")
                                ,
                 ), 
@@ -229,7 +229,7 @@ class Dash_Mixin():
                     html.Div(dcc.Graph(
                        id='graph',
                        figure=get_stack(nx.get_node_attributes(self.newgraph,'att')[selected_var],selected_var,heading=f'{selected_var}'))
-                    , style={'display': 'inline-block', 'vertical-align': 'top', 'margin-left': '3vw', 'margin-top': '3vw'} )    ,
+                    , style={'display': 'inline-block', 'vertical-align': 'top', 'margin-left': '3vw','margin-right': '3vw', 'margin-top': '3vw'} )    ,
 
                     ]
                  , style=dict()),                
@@ -268,7 +268,7 @@ class Dash_Mixin():
                                 {'label': 'Diff', 'value': 'diff'},
                                  {'label': 'Attributions', 'value': 'att'},
                                  ],
-                             value='values'
+                             value='values',labelStyle={'display': 'block'}
                         ),  
                         
                         html.H3("Graph orientation"),             
