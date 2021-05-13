@@ -214,7 +214,7 @@ class Dash_Mixin():
         if jupyter: 
             app = JupyterDash(__name__)
         else:
-            app = dash.Dash(__name__)
+            app = dash.Dash(__name__,external_stylesheets = [dbc.themes.BOOTSTRAP])
         selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
         
         
@@ -388,10 +388,8 @@ if __name__ == "__main__":
         scenarie.TG = scenarie.TG + 0.05
         _ = mmodel(scenarie)
     setattr(model, "modeldashexplain", Dash_Mixin.modeldashexplain)    
-    mmodel.modeldashexplain('FY',jupyter=False,show_trigger=True,debug=False) 
-#%%    
-    pd.options.plotting.backend = "plotly"
+    setattr(model, "modeldash", Dash_Mixin.modeldash) 
     
-    df = pd.DataFrame(dict(a=[1,3,2], b=[3,2,1]))
-    fig = df.plot()
-    fig.show()
+    #mmodel.modeldashexplain('FY',jupyter=False,show_trigger=True,debug=False) 
+    mmodel.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
+#%% 
