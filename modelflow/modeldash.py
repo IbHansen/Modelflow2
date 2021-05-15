@@ -226,7 +226,7 @@ class Dash_Mixin():
             
             return [value,outvar,out_graph]
         
-        def open_browser(port=5000):
+        def open_browser(port=port):
         	webbrowser.open_new(f"http://localhost:{port}")
         
         
