@@ -246,9 +246,10 @@ class Dash_Mixin():
                         outvar= selected_edge.split('->')[0]
                 else:
                       outvar=outvar_state
-                     
-                dot_out =  self.explain(outvar,up=up,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
-            
+                try:     
+                    dot_out =  self.explain(outvar,up=up,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
+                except: 
+                    dot_out = f'digraph G {{ {outvar} -> exogen}}" '
                       
             if outvar in self.endogene:         
                 if plot_show == 'Values':
@@ -262,6 +263,9 @@ class Dash_Mixin():
                        plot_out = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[:2,:],outvar,outvar)
                 else:
                     plot_out = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[[2],:],outvar,outvar)
+             
+            else:
+                plot_out = ''
                 
                 
             return [dot_out,plot_out,outvar]
@@ -277,20 +281,6 @@ if __name__ == "__main__":
         scenarie.TG = scenarie.TG + 0.05
         _ = mmodel(scenarie)
         
-    # smallmodel      = '''
-    # frml <> FY = c + b $ 
-    # frml <> d1 = x + 3 * FY(-1)+ c **2 +a  $ 
-    # frml <> d3 = x + 3 * FY(-1)+c **3 $  
-    # Frml <> x = 0.5 * c +a$'''
-    # des = {'FY':'Bruttonationalprodukt i faste  priser',
-    #        'X': 'Eksport <æøåÆØÅ>;',
-    #        'C': 'Forbrug'}
-    # mmodel = model(smallmodel,var_description=des,svg=1,browser=1)
-    # df = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[0.,0.] , 'R':[1.,0.4] , 'P':[0.,0.4]})
-    # df2 = pd.DataFrame({'X' : [0.2,0.2] , 'C' :[10.,10.] , 'R':[1.,0.4] , 'P':[0.,0.4]})
-    
-    # xx = mmodel(df)
-    # yy = mmodel(df2)
-        
+   
     setattr(model, "modeldash", Dash_Mixin.modeldash)    
     mmodel.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
