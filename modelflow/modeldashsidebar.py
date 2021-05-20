@@ -283,4 +283,6 @@ if __name__ == "__main__":
         
    
     setattr(model, "modeldash", Dash_Mixin.modeldash)    
-    mmodel.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
+   # mmodel.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
+    mmodel.FY.draw(up=1, down=1,svg=1,browser=1)
+
