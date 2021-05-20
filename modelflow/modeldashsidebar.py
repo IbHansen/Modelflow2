@@ -158,6 +158,7 @@ class Dash_Mixin():
               dcc.RadioItems(id='orient',
               options=[
                   {'label': 'Vertical', 'value':'v'},
+                  
                   {'label': 'Horisontal', 'value': 'h'},
                   ],
             value='h',labelStyle={'display': 'block'}),

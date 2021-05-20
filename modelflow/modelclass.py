@@ -2376,7 +2376,7 @@ class Graph_Draw_Mixin():
         maxlevel = max([l for l, p, c in alllinks])
 
         if att:
-            to_att = {c for l, p, c in alllinks if l < maxlevel}
+            to_att = {p for l, p, c in alllinks }
             self.att_dic = {v: self.get_att_pct(
                 v.split('(')[0], lag=True, start='', end='') for v in to_att}
             
