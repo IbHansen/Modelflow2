@@ -133,7 +133,7 @@ class Dash_Mixin():
                   for engine in list(range(10))]),
 
               html.H3("Down levels"),
-              dcc.Dropdown(id="down",value=1,options=[
+              dcc.Dropdown(id="down",value=0,options=[
                   dict(label=engine, value=engine)
                   for engine in list(range(10))]),
              
@@ -179,7 +179,7 @@ class Dash_Mixin():
         )
         
         graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE, 
-                        dot_source =   self.draw(selected_var,up=1,down=1,select=False,showatt=False,lag=True,debug=0,dot=True,HR=True))
+                        dot_source =   self.draw(selected_var,up=1,down=0,select=False,showatt=False,lag=True,debug=0,dot=True,HR=True))
                                      
                          ,width={'size':12,'offset':1,'order':'last'})
         
