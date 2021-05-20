@@ -250,7 +250,7 @@ class Dash_Mixin():
                       
                 try:     
                     dot_out =  self.draw(outvar,up=up,down=down,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
-                    print('OKKKKKKK')
+                    print(f'OKKKKKKK {outvar}')
                 except: 
                     dot_out = f'digraph G {{ {outvar} -> exogen}}" '
                     print(dot_out)
