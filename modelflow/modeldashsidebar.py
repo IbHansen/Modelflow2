@@ -164,6 +164,15 @@ class Dash_Mixin():
                   {'label': 'Horisontal', 'value': 'h'},
                   ],
             value='h',labelStyle={'display': 'block'}),
+              
+              html.H3("Behavior when clicking on graph"),             
+              dcc.RadioItems(id='onclick',
+              options=[
+                  {'label': 'Center when click', 'value':'c'},                  
+                  {'label': 'Display when click', 'value': 'd'},
+                  ],
+            value='c',labelStyle={'display': 'block'}),
+                   
              
             ],
             style=SIDEBAR_STYLE,
@@ -177,7 +186,7 @@ class Dash_Mixin():
         top =   dbc.Col([html.P("This is column 1"),
                         dcc.Graph(
                         id='plot',
-                        figure=get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}'))
+                        figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
                          ],
                             width={'size':12,'offset':1,'order':'last'},
                             style={"height": "100%"})
@@ -204,7 +213,9 @@ class Dash_Mixin():
                   Input('up', "value"),Input('down', "value"),
                   Input('graph_show', "value"),
                    Input('plot_show', "value"),
-                  Input('orient', "value")
+                  Input('orient', "value"),
+                  Input('onclick','value')
+
                ]
                , State('outvar_state','children')
         )
@@ -214,6 +225,7 @@ class Dash_Mixin():
                               graph_show,
                                 plot_show,
                                orient,
+                               onclick,
                              outvar_state
                             ):
             ctx = dash.callback_context
@@ -244,17 +256,16 @@ class Dash_Mixin():
                         if xvar in self.endogene or xvar in self.exogene: 
                             outvar = xvar[:]
                     except:
-                        outvar= selected_edge.split('->')[0]
+                        outvar = selected_edge.split('->')[0]
                 else:
                     ...
                     
                     outvar=outvar_state
                       
-                try:     
+                if onclick == 'c'   
                     dot_out =  self.draw(outvar,up=up,down=down,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
-                except: 
-                    dot_out = f'digraph G {{ {outvar} -> exogen}}" '
-                    print(dot_out)
+                else:
+                    dot_out = dash.no_update
                       
                 if plot_show == 'Values':
                     plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}')
@@ -284,7 +295,8 @@ if __name__ == "__main__":
 
         
     if not  'baseline' in locals():    
-        mmodel,baseline  = model.modelload('../Examples/ADAM/baselinenew.pcim',run=1,silent=0 )
+        mmodel,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
+        # make a simpel experimet VAT
         scenarie = baseline.copy()
         scenarie.TG = scenarie.TG + 0.05
         _ = mmodel(scenarie)
