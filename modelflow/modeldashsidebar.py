@@ -121,7 +121,8 @@ class Dash_Mixin():
               dcc.Markdown(
                   id='outvar_state',
                   children=f'{selected_var}'),
-             
+              
+              html.H3("Select a variable"),             
               dcc.Dropdown(id='var',value=selected_var,options=[
                   dict(label=v, value=v)
                   for v in sorted(self.allvar.keys())]),
@@ -176,7 +177,7 @@ class Dash_Mixin():
         top =   dbc.Col([html.P("This is column 1"),
                         dcc.Graph(
                         id='plot',
-                        figure=get_stack(self.att_dic[selected_var],selected_var,heading=f'{selected_var}'))
+                        figure=get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}'))
                          ],
                             width={'size':12,'offset':1,'order':'last'},
                             style={"height": "100%"})
@@ -261,7 +262,7 @@ class Dash_Mixin():
                     plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}')
                 elif plot_show == 'Att':
                    if outvar in self.endogene:         
-                       plot_out = get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact -pct. -  for {outvar}')
+                       plot_out = get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}')
                    else: 
                        plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
                 elif plot_show == 'Attlevel':
@@ -283,7 +284,7 @@ if __name__ == "__main__":
 
         
     if not  'baseline' in locals():    
-        mmodel,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
+        mmodel,baseline  = model.modelload('../Examples/ADAM/baselinenew.pcim',run=1,silent=0 )
         scenarie = baseline.copy()
         scenarie.TG = scenarie.TG + 0.05
         _ = mmodel(scenarie)
