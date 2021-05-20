@@ -262,7 +262,7 @@ class Dash_Mixin():
                     
                     outvar=outvar_state
                       
-                if onclick == 'c'   
+                if onclick == 'c' or outvar not in self.value_dic.keys() :   
                     dot_out =  self.draw(outvar,up=up,down=down,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
                 else:
                     dot_out = dash.no_update
@@ -295,14 +295,14 @@ if __name__ == "__main__":
 
         
     if not  'baseline' in locals():    
-        mmodel,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
+        madam,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
         # make a simpel experimet VAT
         scenarie = baseline.copy()
         scenarie.TG = scenarie.TG + 0.05
-        _ = mmodel(scenarie)
+        _ = madam(scenarie)
         
    
     setattr(model, "modeldash", Dash_Mixin.modeldash)    
-    mmodel.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
+    madam.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
     #mmodel.FY.draw(up=1, down=1,svg=1,browser=1)
 

@@ -2390,7 +2390,7 @@ class Graph_Draw_Mixin():
         maxlevel = max([l for l, p, c in alllinks])
 
         if att:
-            to_att = {p for l, p, c in alllinks }
+            to_att = {p for l, p, c in alllinks }|{ c.split('(')[0] for l, p, c in alllinks if c.split('(')[0] in self.endogene}
             self.att_dic = {v: self.get_att_pct(
                 v.split('(')[0], lag=True, start='', end='') for v in to_att}
             self.att_dic_level = {v: self.get_att_level(
