@@ -75,13 +75,14 @@ def app_run(app,jupyter=False,debug=False,port=5000):
         app.run_server(debug=debug,port=port)
 
 
-def get_stack(df,v='Guess it',heading='Yes'):
+def get_stack(df,v='Guess it',heading='Yes',pct=True):
     pv = cutout(df,5. )
-    trace = [go.Bar(x=pv.columns, y=pv.loc[rowname,:], name=rowname,hovertemplate = '%{y:10.0f}%',) for rowname in pv.index]
+    template =  '%{y:10.0f}%' if pct else '%{y:15.2f}' 
+    trace = [go.Bar(x=pv.columns, y=pv.loc[rowname,:], name=rowname,hovertemplate = template,) for rowname in pv.index]
     out = { 'data': trace,
     'layout':
     go.Layout(title=f'{heading}', barmode='relative',legend_itemclick='toggleothers',
-              yaxis = {'tickformat': ',.0','ticksuffix':'%'})
+              yaxis = {'tickformat': ',.0','ticksuffix':'%' if pct else ''})
     }
     return out 
 
@@ -135,13 +136,13 @@ class Dash_Mixin():
                   dict(label=engine, value=engine)
                   for engine in list(range(10))]),
              
-              html.H3("Graph Show"),             
-              dcc.RadioItems(id='graph_show',
-              options=[
-                  {'label': 'Variables', 'value': 'v'},
-                  {'label': 'Attributions', 'value': 'a'},
-                  ],
-                  value='a',labelStyle={'display': 'block'}),
+               html.H3("Graph Show"),             
+               dcc.RadioItems(id='graph_show',
+               options=[
+                   {'label': 'Variables', 'value': 'v'},
+                   {'label': 'Attributions', 'value': 'a'},
+                   ],
+                   value='a',labelStyle={'display': 'block'}),
              
             
               html.H3("Plot show"),             
@@ -149,8 +150,8 @@ class Dash_Mixin():
               options=[
                   {'label': 'Values', 'value': 'Values'},
                   {'label': 'Diff', 'value': 'Diff'},
-                  {'label': 'Attributions', 'value': 'Att'},
-                  {'label': 'None', 'value':  'None'},
+                  {'label': 'Attributions pct.', 'value': 'Att'},
+                  {'label': 'Attributions level', 'value':  'Attlevel'},
                   ],
               value='Values',labelStyle={'display': 'block'}),  
              
@@ -214,7 +215,6 @@ class Dash_Mixin():
                                orient,
                              outvar_state
                             ):
-            print('hej haj')
             ctx = dash.callback_context
             if ctx.triggered:
                 trigger = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -247,22 +247,26 @@ class Dash_Mixin():
                 else:
                     ...
                     
-                outvar=outvar_state
+                    outvar=outvar_state
                       
                 try:     
                     dot_out =  self.draw(outvar,up=up,down=down,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
-                    print(f'OKKKKKKK {outvar}')
                 except: 
                     dot_out = f'digraph G {{ {outvar} -> exogen}}" '
                     print(dot_out)
                       
                 if plot_show == 'Values':
-                    plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
+                    plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}')
                 elif plot_show == 'Diff':
-                    plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,outvar)
+                    plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}')
                 elif plot_show == 'Att':
                    if outvar in self.endogene:         
-                       plot_out = get_stack(self.att_dic[outvar],outvar,outvar)
+                       plot_out = get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact -pct. -  for {outvar}')
+                   else: 
+                       plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
+                elif plot_show == 'Attlevel':
+                   if outvar in self.endogene:         
+                       plot_out = get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',pct=False)
                    else: 
                        plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
                 else:

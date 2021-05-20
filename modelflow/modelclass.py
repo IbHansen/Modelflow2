@@ -1418,6 +1418,20 @@ class Dekomp_Mixin():
             axis=1), :] if filter else out_pct
         return out
 
+    def get_att_level(self, n, filter=True, lag=True, start='', end=''):
+        ''' det attribution pct for a variable.
+         I little effort to change from multiindex to single node name'''
+        res = self.dekomp(n, lprint=0, start=start, end=end)
+        res_level = res[1].iloc[:, :]
+        if lag:
+            out_pct = pd.DataFrame(res_level.values, columns=res_level.columns,
+                                   index=[r[0]+(f'({str(r[1])})' if r[1] else '') for r in res_level.index])
+        else:
+            out_pct = res_level.groupby(level=[0]).sum()
+        out = out_pct.loc[(out_pct != 0.0).any(
+            axis=1), :] if filter else out_pct
+        return out
+
     def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0):
         xx = self.dekomp(varnavn, lprint=False)
         ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
@@ -2339,7 +2353,7 @@ class Graph_Draw_Mixin():
             '''Define pennwidth based on explanation in the last period '''
             try:
                 # breakpoint()
-                return f'"Min. att. {self.att_dic[v.parent].loc[v.child].min():.0f}%  max: {self.att_dic[v.parent].loc[v.child].max():.0f}%"'
+                return f'" {v.child} -> {v.parent} Min. att. {self.att_dic[v.parent].loc[v.child].min():.0f}%  max: {self.att_dic[v.parent].loc[v.child].max():.0f}%"'
             except:
                 return 'NA'
 
@@ -2378,6 +2392,8 @@ class Graph_Draw_Mixin():
         if att:
             to_att = {p for l, p, c in alllinks }
             self.att_dic = {v: self.get_att_pct(
+                v.split('(')[0], lag=True, start='', end='') for v in to_att}
+            self.att_dic_level = {v: self.get_att_level(
                 v.split('(')[0], lag=True, start='', end='') for v in to_att}
             
 
