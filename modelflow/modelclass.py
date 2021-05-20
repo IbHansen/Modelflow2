@@ -1390,7 +1390,7 @@ class Description_Mixin():
     @staticmethod
     def html_replace(ind):
         '''Replace special characters in html '''
-        out =  (ind.replace('<','&lt;').replace('>','&gt;')
+        out =  (ind.replace('<','&lt;').replace('>','&gt;').replace('\n','&#10;')
                .replace('æ','&#230;').replace('ø','&#248;').replace('å','&#229;')
                .replace('Æ','&#198;').replace('Ø','&#216;').replace('Å','&#197;')
                )
@@ -1765,7 +1765,7 @@ class Graph_Draw_Mixin():
        graph = self.totgraph if lag else self.totgraph_nolag
        graph = self.endograph if endo else graph    
        uplinks   = self.treewalk(graph,navn.upper(),maxlevel=up,lpre=True)       
-       downlinks = (node(level , navn, parent ) for level,parent,navn in 
+       downlinks = (node(-level , navn, parent ) for level,parent,navn in 
                     self.treewalk(graph,navn.upper(),maxlevel=down,lpre=False))
        alllinks  = chain(uplinks,downlinks)
        return self.todot2(alllinks,navn=navn.upper(),down=down,up=up,**kwargs) 
@@ -1829,7 +1829,7 @@ class Graph_Draw_Mixin():
                     yield from self.upwalk(g,child, level + 1,navn, up,select,lpre)
 
 
-    def explain(self,var,up=1,start='',end='',select=False,showatt=True,lag=True,debug=0,dot=False,**kwargs):
+    def explain(self,var,up=1,start='',end='',select=False,showatt=True,lag=True,debug=0,noshow=False,dot=False,**kwargs):
         ''' Walks a tree to explain the difference between basedf and lastdf
         
         Parameters:
@@ -1844,6 +1844,8 @@ class Graph_Draw_Mixin():
         :pdf: open the pdf file
         :svg: display the svg file
         :browser: if true open the svg file in browser 
+        :noshow: Only return the resulting graph 
+        :dot: Return the dot file only 
             
             
         '''    
@@ -1875,6 +1877,8 @@ class Graph_Draw_Mixin():
             self.newgraph = nx.DiGraph([(var,var)])
             nx.set_node_attributes(self.newgraph,{var:{'values':self.get_values(var)}})
             nx.set_node_attributes(self.newgraph,{var:{'att':self.get_att_pct(var,lag=lag,start=start,end=end)}})
+        if noshow:
+            return self.newgraph
         if dot: 
             return self.todot(self.newgraph,navn=var,showatt=showatt,dot=True,**kwargs)
         else: 
@@ -1997,8 +2001,8 @@ class Graph_Draw_Mixin():
         
         
         var_name = v.split("(")[0]
-        des0 = self.var_description[var_name]
-        des0 = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen' 
+        
+        des0 = f"{self.var_description[var_name]}\n{self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen'}" 
         des = self.html_replace(des0)
         if html:
             return f'TOOLTIP="{des}" href="bogus"'
@@ -2039,7 +2043,8 @@ class Graph_Draw_Mixin():
         
         fokus = kwargs.get('fokus','')
 
-        
+        dec = kwargs.get('dec',3)
+      
         #%
         
         def stylefunk(n1=None,n2=None,invisible=set()):
@@ -2081,7 +2086,6 @@ class Graph_Draw_Mixin():
                     t = pt.udtryk_parse(v,funks=[])
                     var=t[0].var
                     lag=int(t[0].lag) if t[0].lag else 0
-                    dec = kwargs.get('dec',3)
                     bvalues = [float(get_a_value(self.basedf,per,var,lag)) for per in self.current_per] if kwargs.get('all',False)  else 0
                     lvalues = [float(get_a_value(self.lastdf,per,var,lag)) for per in self.current_per] if kwargs.get('last',False) or kwargs.get('all',False)  else 0
                     dvalues = [float(get_a_value(self.lastdf,per,var,lag)-get_a_value(self.basedf,per,var,lag)) for per in self.current_per] if kwargs.get('all',False) else 0 
@@ -2125,6 +2129,146 @@ class Graph_Draw_Mixin():
 
         # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing 
         return out
+    
+    
+    def makedotnew(self,alledges,navn='',**kwargs):
+        ''' makes a drawing of all edges in list alledges
+        all is the edges
+        
+        this can handle both attribution and plain 
+        
+        :all: show values for .dfbase and .dflaste
+        :last: show the values for .dflast 
+        :sink: variale to use as sink 
+        :source: variale to use as ssource 
+        :svg: Display the svg image in browser
+        :pdf: display the pdf result in acrobat reader 
+        :saveas: Save the drawing as name 
+        :size: figure size default (6,6)
+        :warnings: warnings displayed in command console, default =False 
+        :invisible: set of invisible nodes 
+        :labels: dict of labels for edges 
+        :transdic: dict of translations for consolidation of nodes {'SHOCK[_A-Z]*__J':'SHOCK__J','DEV__[_A-Z]*':'DEV'}
+        :dec: decimal places in numbers
+        :HR: horisontal orientation default = False 
+        :des: inject variable descriptions 
+        :fokus: Variable to get special colour
+      
+        
+''' 
+        
+        invisible = kwargs.get('invisible',set())
+        
+        des = kwargs.get('des',True)
+        
+        fokus = kwargs.get('fokus','')
+
+        dec = kwargs.get('dec',3)
+        att = kwargs.get('att',True)
+        
+            
+        #%
+        def dftotable(df,dec=0):
+             xx = '\n'.join([f"<TR {self.maketip(row[0],True)}><TD ALIGN='LEFT' {self.maketip(row[0],True)}>{row[0]}</TD>"+
+                             ''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() 
+                                    for b in row[1:]])+'</TR>' for row in df.itertuples()])
+             return xx   
+        
+        def getpw(v):
+            '''Define pennwidth based on explanation in the last period ''' 
+            try:
+               return max(0.5,min(5.,abs(g[v.child][v.parent]['att'].iloc[0,-1])/20.))
+            except:
+               return 0.5
+        
+        def stylefunk(n1=None,n2=None,invisible=set()):
+            if n1 in invisible or n2 in invisible:
+                if n2:
+                    return 'style = invisible arrowhead=none '
+                else: 
+                    return 'style = invisible '
+
+            else:
+#                return ''
+                return 'style = filled'
+            
+        def stylefunkhtml(n1=None,invisible=set()):
+#            return ''
+            if n1 in invisible:
+                return 'style = "invisible" '
+            else:
+                return 'style = "filled"'
+            
+        if 'transdic' in kwargs:
+            alllinks = [node(x.lev,self.trans(x.parent,navn,kwargs['transdic']),self.trans(x.child,navn,kwargs['transdic']))  for x in alledges]
+        elif hasattr(self, 'transdic'):
+            alllinks = [node(x.lev,self.trans(x.parent,navn,self.transdic)     ,self.trans(x.child,navn,self.transdic))  for x in alledges]
+        else:
+            alllinks = list(alledges) 
+
+        labelsdic = kwargs.get('labels',{})
+        labels = self.defsub(labelsdic)
+
+        maxlevel = max([l for l,p,c in alllinks])
+        
+        if att: 
+            to_att = {c for l,p,c in alllinks if l < maxlevel}
+            att_dic = {v: self.get_att_pct(v,lag=True,start='',end='') for v in to_att}            
+        
+        ibh  = {node(0,x.parent,x.child) for x in alllinks}  # To weed out multible  links 
+    #
+        nodelist = {n for nodes in ibh for n in (nodes.parent,nodes.child)}
+        breakpoint()
+#        print(nodelist)
+        def makenode(v,navn):
+            if kwargs.get('last',False) or kwargs.get('all',False):
+                try:
+                    t = pt.udtryk_parse(v,funks=[])
+                    var=t[0].var
+                    lag=int(t[0].lag) if t[0].lag else 0
+                    bvalues = [float(get_a_value(self.basedf,per,var,lag)) for per in self.current_per] if kwargs.get('all',False)  else 0
+                    lvalues = [float(get_a_value(self.lastdf,per,var,lag)) for per in self.current_per] if kwargs.get('last',False) or kwargs.get('all',False)  else 0
+                    dvalues = [float(get_a_value(self.lastdf,per,var,lag)-get_a_value(self.basedf,per,var,lag)) for per in self.current_per] if kwargs.get('all',False) else 0 
+                    per   = "<TR><TD ALIGN='LEFT'>Per</TD>"+''.join([ '<TD>'+(f'{p}'.strip()+'</TD>').strip() for p in self.current_per])+'</TR>'  
+                    base   = "<TR><TD ALIGN='LEFT' TOOLTIP='Baseline values' href='bogus'>Base</TD>"+''.join([ "<TD ALIGN='RIGHT'  TOOLTIP='Baseline values' href='bogus' >"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>' if kwargs.get('all',False) else ''    
+                    last   = "<TR><TD ALIGN='LEFT' TOOLTIP='Latest run values' href='bogus'>Last</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>' if kwargs.get('last',False) or kwargs.get('all',False) else ''    
+                    dif    = "<TR><TD ALIGN='LEFT' TOOLTIP='Difference between baseline and latest run' href='bogus'>Diff</TD>"+''.join([ "<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in dvalues])+'</TR>' if kwargs.get('all',False) else ''    
+#                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '  
+                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
+                    f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
+                    pass 
+
+                except Exception as inst:
+                   out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} '+ (
+                    f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{self.get_des_html(v)}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
+            else:
+                out = f'"{v}" [ shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} '+ (
+                f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {self.maketip(v)}>{self.get_des_html(v,des)}</TD></TR> </TABLE>> ]")
+            return out    
+        
+        pre   = 'digraph TD {rankdir ="HR" \n' if kwargs.get('HR',True) else 'digraph TD { rankdir ="LR" \n'
+        nodes = '{node  [margin=0.025 fontcolor=blue style=filled ] \n '+ '\n'.join([makenode(v,navn) for v in nodelist])+' \n} \n'
+ 
+        links = '\n'.join(['"'+v.child+'" -> "'+v.parent+'"' + f'[ {stylefunk(v.child,v.parent,invisible=invisible)} tooltip="Hest" href="bogus"  ]'    for v in ibh ])
+    
+        psink   = '\n{ rank = sink; "'  +kwargs['sink']  +'"  ; }' if  kwargs.get('sink',False) else ''
+        psource = '\n{ rank = source; "'+kwargs['source']+'"  ; }' if  kwargs.get('source',False) else ''
+        clusterout=''
+        if kwargs.get('cluster',False): # expect a dict with clustername as key and a list of nodes as content 
+            clusterdic = kwargs.get('cluster',False)
+            
+            for i,(c,cl) in enumerate(clusterdic.items()):
+                varincluster = ' '.join([f'"{v.upper()}"' for v in cl])
+                clusterout = clusterout + f'\n subgraph cluster{i} {{ {varincluster} ; label = "{c}" ; color=lightblue ; style = filled ;fontcolor = yellow}}'     
+            
+        fname = kwargs.get('saveas',navn if navn else "A_model_graph")  
+        ptitle = '\n label = "'+kwargs.get('title',fname)+'";'
+        post  = '\n}' 
+        out   = pre+nodes+links+psink+psource+clusterout+ptitle+post 
+        # self.display_graph(out,fname,**kwargs)
+
+        # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing 
+        return out
     def todot2(self,alledges,navn='',**kwargs):
         ''' makes a drawing of all edges in list alledges
         all is the edges
@@ -2149,7 +2293,7 @@ class Graph_Draw_Mixin():
         
 ''' 
         
-        dot = self.makedot(alledges,navn=navn,**kwargs)
+        dot = self.makedotnew(alledges,navn=navn,**kwargs)
        
         fname = kwargs.get('saveas',navn if navn else "A_model_graph")
         
@@ -4921,7 +5065,7 @@ if __name__ == '__main__' :
         b = mx.res(df)
     with model.timer('dddd') as t:
         u=2*2
-#%% test
+#%% smallmodel 
    
     smallmodel      = '''
 frml <> a = c + b $ 
@@ -4937,25 +5081,25 @@ Frml <> x = 0.5 * c +a$'''
 
     xx = mmodel(df)
     yy = mmodel(df2)
-    # mmodel.drawendo()
+    mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
-    mmodel.drawmodel(svg=1,all=False,browser=0,pdf=0,des=False)
-    # mmodel.explain('X',up=1,browser=1)
+    # mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
+    mmodel.X.draw(up=1,down=1)   
     print(mmodel.get_eq_des('A'))
           #%%
-    print(list(m2test.current_per))
-    with m2test.set_smpl(0,0):
-         print(list(m2test.current_per))
-         with m2test.set_smpl(0,2):
+    if 0: 
+        print(list(m2test.current_per))
+        with m2test.set_smpl(0,0):
              print(list(m2test.current_per))
-         print(list(m2test.current_per))
-    print(list(m2test.current_per))
-#%%
-    print(list(m2test.current_per))
-    with m2test.set_smpl_relative(-333):
-         print(list(m2test.current_per))
-    print(list(m2test.current_per))
-    if 0:
-        m2test.modeldump_excel('graph/ib.xlsx')
-        m3test =  model.modelload_excel('graph/ib.xlsx')
-    
+             with m2test.set_smpl(0,2):
+                 print(list(m2test.current_per))
+             print(list(m2test.current_per))
+        print(list(m2test.current_per))
+        print(list(m2test.current_per))
+        with m2test.set_smpl_relative(-333):
+             print(list(m2test.current_per))
+        print(list(m2test.current_per))
+        if 0:
+            m2test.modeldump_excel('graph/ib.xlsx')
+            m3test =  model.modelload_excel('graph/ib.xlsx')
+        

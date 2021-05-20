@@ -52,7 +52,7 @@ SIDEBAR_STYLE = {
 
 # the styles for the main content position it to the right of the sidebar and
 # add some padding.
-CONTENT_STYLE = {"background-color": "blue"
+CONTENT_STYLE = {"background-color": "f8f9fa"
 }
 
 
@@ -178,7 +178,7 @@ class Dash_Mixin():
                        figure=get_stack(nx.get_node_attributes(self.newgraph,'att')[selected_var],selected_var,heading=f'{selected_var}'))
                          ],
                             width={'size':12,'offset':1,'order':'last'},
-                            style={"height": "100%", "background-color": "red"})
+                            style={"height": "100%"})
         
         
         twopanel = [
