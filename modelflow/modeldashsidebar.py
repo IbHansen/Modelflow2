@@ -114,7 +114,6 @@ class Dash_Mixin():
     def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=True,port=5001): 
         
         selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
-    
         sidebar = html.Div(
             [ 
               html.H3("Current Variable"),
@@ -168,14 +167,14 @@ class Dash_Mixin():
         )
         
         graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE, 
-                        dot_source =   self.explain(selected_var,up=0,select=False,showatt=False,lag=True,debug=0,dot=True,HR=True))
+                        dot_source =   self.draw(selected_var,up=1,down=1,select=False,showatt=False,lag=True,debug=0,dot=True,HR=True))
                                      
                          ,width={'size':12,'offset':1,'order':'last'})
         
         top =   dbc.Col([html.P("This is column 1"),
-                       dcc.Graph(
-                       id='plot',
-                       figure=get_stack(nx.get_node_attributes(self.newgraph,'att')[selected_var],selected_var,heading=f'{selected_var}'))
+                        dcc.Graph(
+                        id='plot',
+                        figure=get_stack(self.att_dic[selected_var],selected_var,heading=f'{selected_var}'))
                          ],
                             width={'size':12,'offset':1,'order':'last'},
                             style={"height": "100%"})
@@ -245,28 +244,31 @@ class Dash_Mixin():
                     except:
                         outvar= selected_edge.split('->')[0]
                 else:
-                      outvar=outvar_state
+                    ...
+                    
+                outvar=outvar_state
+                      
                 try:     
-                    dot_out =  self.explain(outvar,up=up,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
+                    dot_out =  self.draw(outvar,up=up,down=down,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
+                    print('OKKKKKKK')
                 except: 
                     dot_out = f'digraph G {{ {outvar} -> exogen}}" '
+                    print(dot_out)
                       
-            if outvar in self.endogene:         
                 if plot_show == 'Values':
-                    plot_out = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[:2,:],outvar,outvar)
+                    plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
                 elif plot_show == 'Diff':
-                    plot_out = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[[2],:],outvar,outvar)
+                    plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,outvar)
                 elif plot_show == 'Att':
                    if outvar in self.endogene:         
-                       plot_out = get_stack(nx.get_node_attributes(self.newgraph,'att')[outvar],outvar,outvar)
+                       plot_out = get_stack(self.att_dic[outvar],outvar,outvar)
                    else: 
-                       plot_out = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[:2,:],outvar,outvar)
+                       plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
                 else:
-                    plot_out = get_line(nx.get_node_attributes(self.newgraph,'values')[outvar].iloc[[2],:],outvar,outvar)
-             
-            else:
-                plot_out = ''
-                
+                    # breakpoint()
+                    plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,outvar)
+                 
+                    
                 
             return [dot_out,plot_out,outvar]
        
@@ -283,6 +285,6 @@ if __name__ == "__main__":
         
    
     setattr(model, "modeldash", Dash_Mixin.modeldash)    
-   # mmodel.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
-    mmodel.FY.draw(up=1, down=1,svg=1,browser=1)
+    mmodel.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
+    #mmodel.FY.draw(up=1, down=1,svg=1,browser=1)
 

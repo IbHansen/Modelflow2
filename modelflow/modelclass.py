@@ -2331,7 +2331,7 @@ class Graph_Draw_Mixin():
             '''Define pennwidth based on explanation in the last period '''
             try:
                 # breakpoint()
-                return max(0.5, min(5., att_dic[v.parent].loc[v.child].abs().max()/20.))
+                return max(0.5, min(5., self.att_dic[v.parent].loc[v.child].abs().max()/20.))
             except:
                 return 0.5
             
@@ -2339,7 +2339,7 @@ class Graph_Draw_Mixin():
             '''Define pennwidth based on explanation in the last period '''
             try:
                 # breakpoint()
-                return f'"Min. att. {att_dic[v.parent].loc[v.child].min():.0f}%  max: {att_dic[v.parent].loc[v.child].max():.0f}%"'
+                return f'"Min. att. {self.att_dic[v.parent].loc[v.child].min():.0f}%  max: {self.att_dic[v.parent].loc[v.child].max():.0f}%"'
             except:
                 return 'NA'
 
@@ -2377,13 +2377,18 @@ class Graph_Draw_Mixin():
 
         if att:
             to_att = {c for l, p, c in alllinks if l < maxlevel}
-            att_dic = {v: self.get_att_pct(
+            self.att_dic = {v: self.get_att_pct(
                 v.split('(')[0], lag=True, start='', end='') for v in to_att}
+            
 
         ibh = {node(0, x.parent, x.child)
                for x in alllinks}  # To weed out multible  links
     #
         nodelist = {n for nodes in ibh for n in (nodes.parent, nodes.child)}
+        
+        
+        
+        self.value_dic =  {v:  self.get_values(v) for v in nodelist } 
         # breakpoint()
 #        print(nodelist)
 
