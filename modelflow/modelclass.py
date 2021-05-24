@@ -5472,7 +5472,7 @@ Frml <> x = 0.5 * c +a$'''
     yy = mmodel(df2)
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
-    # mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
+    mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
     mmodel.X.draw(up=1, down=1,svg=1,browser=1)
     print(mmodel.get_eq_des('A'))
     # %%

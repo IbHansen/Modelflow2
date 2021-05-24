@@ -163,7 +163,7 @@ class Dash_Mixin():
                   
                   {'label': 'Horisontal', 'value': 'h'},
                   ],
-            value='h',labelStyle={'display': 'block'}),
+            value='v',labelStyle={'display': 'block'}),
               
               html.H3("Behavior when clicking on graph"),             
               dcc.RadioItems(id='onclick',
@@ -179,7 +179,7 @@ class Dash_Mixin():
         )
         
         graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE, 
-                        dot_source =   self.draw(selected_var,up=1,down=0,select=False,showatt=False,lag=True,debug=0,dot=True,HR=True))
+                        dot_source =   self.draw(selected_var,up=1,down=0,select=False,showatt=False,lag=True,debug=0,dot=True,HR=False))
                                      
                          ,width={'size':12,'offset':1,'order':'last'})
         
@@ -199,12 +199,13 @@ class Dash_Mixin():
         onepanel = [
             dbc.Row(graph,className="h-100",justify='start')]
         
-        body2 = dbc.Container(twopanel,id='body',style={"height": "100vh"})
-        body1 = dbc.Container(onepanel,id='body',style={"height": "100vh"})
+        body2 = dbc.Container(twopanel,id='body2',style={"height": "100vh"},fluid=False)
+        body1 = dbc.Container(onepanel,id='body',style={"height": "100vh"},fluid=True)
         
         app  = app_setup()
         
-        app.layout = html.Div([sidebar,body2])
+        # app.layout = html.Div([sidebar,body2])
+        app.layout = dbc.Container([sidebar,body2],style={"height": "100vh"},fluid=True)
 
         @app.callback(
             [Output("gv", "dot_source"),Output('plot','figure'), Output('outvar_state','children')],
@@ -262,7 +263,7 @@ class Dash_Mixin():
                     
                     outvar=outvar_state
                       
-                if onclick == 'c' or outvar not in self.value_dic.keys() :   
+                if onclick == 'c' or outvar not in self.value_dic.keys() or trigger == 'orient' :   
                     dot_out =  self.draw(outvar,up=up,down=down,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
                 else:
                     dot_out = dash.no_update
