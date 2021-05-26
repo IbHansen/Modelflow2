@@ -1297,7 +1297,7 @@ class Dekomp_Mixin():
     from functools import lru_cache
 
     @lru_cache(maxsize=10000)
-    def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True):
+    def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
         '''Print all variables that determines input variable (varnavn)
         optional -- enter period and databank to get var values for chosen period'''
 
@@ -1316,8 +1316,13 @@ class Dekomp_Mixin():
         sterms = sorted(set(varterms), key=lambda x: varterms.index(x))
         # find all the eksperiments to be performed
         eksperiments = [(vt, t) for vt in sterms for t in print_per]
-        smallalt = altdf_.loc[:, vars].copy(deep=True)   # for speed
-        smallbase = basedf_.loc[:, vars].copy(deep=True)  # for speed
+        if time_att:
+            ...
+            smallalt = altdf_.loc[:, vars].copy(deep=True)   # for speed
+            smallbase = smallalt.shift().copy()  # for speed
+        else:    
+            smallalt = altdf_.loc[:, vars].copy(deep=True)   # for speed
+            smallbase = basedf_.loc[:, vars].copy(deep=True)  # for speed
         # make a dataframe for each experiment
         alldf = {e: smallalt.copy() for e in eksperiments}
         for e in eksperiments:
@@ -5463,17 +5468,19 @@ Frml <> x = 0.5 * c +a$'''
            'X': 'Eksport <æøåÆØÅ>;',
            'C': 'Forbrug'}
     mmodel = model(smallmodel, var_description=des, svg=1, browser=1)
-    df = pd.DataFrame({'X': [0.2, 0.2], 'C': [0., 0.],
-                      'R': [1., 0.4], 'P': [0., 0.4]})
-    df2 = pd.DataFrame(
-        {'X': [0.2, 0.2], 'C': [10., 10.], 'R': [1., 0.4], 'P': [0., 0.4]})
-
+    df = pd.DataFrame(
+        {'X': [0.2, 0.2, 0.2], 'C': [0.0, 0., 0.],'R': [2., 1., 0.4], 'P': [0.4, 0., 0.4]})
+    df2 = df.copy()
+    df2.loc[:,'C'] = [5, 10, 20]
+    
     xx = mmodel(df)
     yy = mmodel(df2)
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
     mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
     mmodel.X.draw(up=1, down=1,svg=1,browser=1)
+    mmodel.x
+    mmodel.dekomp('X',time_att=1)
     print(mmodel.get_eq_des('A'))
     # %%
     if 0:
