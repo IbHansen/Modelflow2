@@ -18,6 +18,10 @@ try out plotly
 
 implement cython again 
 
+let attribution calculate on growth in addition to level 
+
+For attribution allow a cutoff level for showing sub branches. 
+
 
 
 

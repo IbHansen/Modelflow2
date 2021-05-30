@@ -1339,19 +1339,26 @@ class Dekomp_Mixin():
             alldf[e], e[1], e[1], silent=True) for e in eksperiments}
         # dataframes with the effect of each update
         diffres = {e: smallalt - allres[e] for e in eksperiments}
+        diffres_growth = {e: smallalt.pct_change() - allres[e].pct_change() for e in eksperiments}
         # we are only interested in the efect on the left hand variable
-        res = {e: diffres[e].loc[e[1], varnavn] for e in eksperiments}
+        res        = {e: diffres[e].loc[e[1], varnavn] for e in eksperiments}
+        res_growth = {e: diffres_growth[e].loc[e[1], varnavn] for e in eksperiments}
     # the resulting dataframe
         multi = pd.MultiIndex.from_tuples([e[0] for e in eksperiments], names=[
                                           'Variable', 'lag']).drop_duplicates()
+        
         resdf = pd.DataFrame(index=multi, columns=print_per)
         for e in eksperiments:
             resdf.at[e[0], e[1]] = res[e]
+            
+        res_growthdf = pd.DataFrame(index=multi, columns=print_per)
+        for e in eksperiments:
+            res_growthdf.at[e[0], e[1]] = res_growth[e]
 
     #  a dataframe with some summaries
         res2df = pd.DataFrame(index=multi, columns=print_per)
-        res2df.loc[('Base', '0'), print_per] = smallbase.loc[print_per, varnavn]
-        res2df.loc[('Alternative', '0'),
+        res2df.loc[('t-1' if time_att else 'Base', '0'), print_per] = smallbase.loc[print_per, varnavn]
+        res2df.loc[('t' if time_att else 'Alternative', '0'),
                    print_per] = smallalt.loc[print_per, varnavn]
         res2df.loc[('Difference', '0'), print_per] = difendo = smallalt.loc[print_per,
                                                                             varnavn] - smallbase.loc[print_per, varnavn]
@@ -1374,6 +1381,10 @@ class Dekomp_Mixin():
             print('\n Share of contributions to differende for ', varnavn)
             print(pctendo.to_string(
                 float_format=lambda x: '{0:10.0f}%'.format(x)))
+            
+            print('\n Contribution to growth rate', varnavn)
+            print(res_growthdf.to_string(
+                float_format=lambda x: '{0:10.1f}%'.format(x)))
 
         pctendo = pctendo[pctendo.columns].astype(float)
         return res2df, resdf, pctendo
