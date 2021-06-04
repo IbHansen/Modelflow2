@@ -5491,7 +5491,7 @@ Frml <> x = 0.5 * c +a$'''
     mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
     mmodel.X.draw(up=1, down=1,svg=1,browser=1)
     mmodel.x
-    mmodel.dekomp('X',time_att=1)
+    mmodel.dekomp('X',time_att=0)
     print(mmodel.get_eq_des('A'))
     # %%
     if 0:
