@@ -1525,9 +1525,10 @@ class Description_Mixin():
     @staticmethod
     def html_replace(ind):
         '''Replace special characters in html '''
-        out = (ind.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '&#10;')
+        out = (ind.replace('&','&#38;').replace('<', '&lt;').replace('>', '&gt;').replace('\n', '&#10;')
                .replace('æ', '&#230;').replace('ø', '&#248;').replace('å', '&#229;')
                .replace('Æ', '&#198;').replace('Ø', '&#216;').replace('Å', '&#197;')
+               .replace('$','&#36;')
                )
         return out
 
@@ -2419,8 +2420,10 @@ class Graph_Draw_Mixin():
         nodelist = {n for nodes in ibh for n in (nodes.parent, nodes.child)}
         
         
-        
-        self.value_dic =  {v:  self.get_values(v) for v in nodelist } 
+        try:
+            self.value_dic =  {v:  self.get_values(v) for v in nodelist } 
+        except:
+            self.value_dic = dict()
         # breakpoint()
 #        print(nodelist)
 
@@ -5096,16 +5099,17 @@ class Solver_Mixin():
         except:
             print('No iteration dump')
 
-
+from modeldashsidebar import Dash_Mixin
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
-            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin):
+            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin):
     pass
 
 
 #  Functions used in calculating
 
 
-# wrapper
+# wrapper'
+
 
 def ttimer(*args, **kwargs):
     return model.timer(*args, **kwargs)

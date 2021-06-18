@@ -78,7 +78,7 @@ def app_run(app,jupyter=False,debug=False,port=5000):
 def get_stack(df,v='Guess it',heading='Yes',pct=True):
     pv = cutout(df,5. )
     template =  '%{y:10.0f}%' if pct else '%{y:15.2f}' 
-    trace = [go.Bar(x=pv.columns, y=pv.loc[rowname,:], name=rowname,hovertemplate = template,) for rowname in pv.index]
+    trace = [go.Bar(x=pv.columns.astype('str'), y=pv.loc[rowname,:], name=rowname,hovertemplate = template,) for rowname in pv.index]
     out = { 'data': trace,
     'layout':
     go.Layout(title=f'{heading}', barmode='relative',legend_itemclick='toggleothers',
@@ -87,7 +87,7 @@ def get_stack(df,v='Guess it',heading='Yes',pct=True):
     return out 
 
 def get_line(pv,v='Guess it',heading='Yes'):
-    trace = [go.Line(x=pv.columns, y=pv.loc[rowname,:], name=rowname) for rowname in pv.index]
+    trace = [go.Line(x=pv.columns.astype('str'), y=pv.loc[rowname,:], name=rowname) for rowname in pv.index]
     out = { 'data': trace,
     'layout':
     go.Layout(title=f'{heading}')
@@ -202,7 +202,7 @@ class Dash_Mixin():
         body2 = dbc.Container(twopanel,id='body2',style={"height": "100vh"},fluid=False)
         body1 = dbc.Container(onepanel,id='body',style={"height": "100vh"},fluid=True)
         
-        app  = app_setup()
+        app  = app_setup(jupyter=jupyter)
         
         # app.layout = html.Div([sidebar,body2])
         app.layout = dbc.Container([sidebar,body2],style={"height": "100vh"},fluid=True)
@@ -290,7 +290,7 @@ class Dash_Mixin():
                 
             return [dot_out,plot_out,outvar]
        
-        app_run(app,debug=debug)
+        app_run(app,jupyter=jupyter,debug=debug)
 if __name__ == "__main__":
     from modelclass import model 
 
