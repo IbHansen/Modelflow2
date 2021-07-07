@@ -995,8 +995,12 @@ class Org_model_Mixin():
                 sterms = sorted({(v, 0) for v, l in sterms})
             if showvar:
                 sterms = [(varnavn, 0)]+sterms
-            lines = [[get_a_value(df, p, v, lag)
-                      for p in current_per] for v, lag in sterms]
+            try:
+                lines = [[get_a_value(df, p, v, lag)
+                          for p in current_per] for v, lag in sterms]
+            except:
+                breakpoint()
+                
             out = pd.DataFrame(lines, columns=current_per,
                                index=[r[0]+(f'({str(r[1])})' if r[1] else '') for r in sterms])
             return out

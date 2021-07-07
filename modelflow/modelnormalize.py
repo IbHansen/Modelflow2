@@ -75,7 +75,6 @@ def funk_replace_list(replacelist,a_string):
         
     
 funk_replace_list([('@D','DIFF'),('DLOG','DXLOG')],'d(a) = @d(v) x = dlog(y)')
-#%%
 funk_in('D','+d(b)'.upper())
 
 def funk_find_arg(funk_match, streng):
@@ -235,7 +234,7 @@ def elem_trans(udtryk, df=None):
     udtryk_up = udtryk.upper()
     while  elem_match := funk_in('@ELEM',udtryk_up):
          forelem,elemudtryk_up,efterelem=funk_find_arg(elem_match,udtryk_up)
-         elemtext,elemnumber = elemudtryk_up.split(',')
+         elemtext,elemnumber = elemudtryk_up.replace(' ','').split(',')
          udtryk_up = f'{forelem}({trans_elem(elemtext,elemnumber)}){efterelem}'
          
     return udtryk_up            

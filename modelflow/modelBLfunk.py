@@ -9,7 +9,8 @@ Functions placed here are included in the Pyfs business language
 """
 from math import exp, log, sqrt
 from numpy import transpose , array
-from scipy.stats import norm
+from scipy.stats import norm,lognorm
+from scipy.stats import gamma
 import inspect 
 classfunk = []
 try:
@@ -41,6 +42,13 @@ def logit_inverse(number):
     
 def normcdf(input,mu=0.0,sigma=1.0):
     return norm.cdf(input,mu,sigma)    
+
+def qgamma(q,a,loc=0,scale=1):
+    return gamma.ppf(q,a,loc=0,scale=1)
+
+def clognorm(input,mu=0.0,sigma=1.0):
+    return lognorm.cdf(input,mu,sigma)    
+
 
 
 
