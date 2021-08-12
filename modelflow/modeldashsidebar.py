@@ -113,7 +113,7 @@ class Dash_Mixin():
     
           
     def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=True,port=5001): 
-        
+        self.dashport = port
         selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
         sidebar = html.Div(
             [ 
@@ -290,7 +290,7 @@ class Dash_Mixin():
                 
             return [dot_out,plot_out,outvar]
        
-        app_run(app,jupyter=jupyter,debug=debug)
+        app_run(app,jupyter=jupyter,debug=debug,port=self.dashport)
 if __name__ == "__main__":
     from modelclass import model 
 

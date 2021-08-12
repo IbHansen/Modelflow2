@@ -614,7 +614,7 @@ def inputwidget(model,basedf,slidedef={},radiodef=[],checkdef=[],modelopt={},var
             resdic = get_alt_dic(model,varpat_this,model.experiment_results)
             a = jupviz(resdic,trans=trans)()
         else:  
-            a = vis_alt3(get_alt_dic(model,wpat.value,model.experiment_results),model,trans=trans)
+            a = vis_alt4(get_alt_dic(model,wpat.value,model.experiment_results),model,trans=trans)
 
     def reset(b):
 

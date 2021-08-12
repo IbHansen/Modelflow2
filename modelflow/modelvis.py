@@ -16,9 +16,11 @@ import matplotlib as mpl
 import seaborn as sns 
 import fnmatch 
 from matplotlib import dates
+import matplotlib.ticker as ticker
+
 import numpy 
 
-from modelhelp import cutout
+from modelhelp import cutout,finddec
         
 ##%%
 def meltdim(df,dims=['dima','dimb'],source='Latest'):
@@ -345,7 +347,8 @@ def vis_alt(grund,mul,title='Show variables'):
     return fig
     
 
-def plotshow(df,name='',ppos=-1,kind='line',colrow=6,sharey=True,top=0.90,splitchar='__',savefig='',*args,**kwargs):
+def plotshow(df,name='',ppos=-1,kind='line',colrow=6,sharey=True,top=0.90,
+             splitchar='__',savefig='',*args,**kwargs):
     ''' Plots a subplot for each column in a datafra.
     ppos determins which split by __ to use 
     kind determins which kind of matplotlib chart to use ''' 
@@ -355,7 +358,8 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=6,sharey=True,top=0.90,splitc
         out=df
     number = out.shape[1] 
     row=-((-number)//colrow)
-    axes=out.plot(kind=kind,subplots=True,layout=(row,colrow),figsize = (10, row*2),
+    # breakpoint()
+    axes=out.plot(kind=kind,subplots=True,layout=(row,colrow),figsize = (kwargs.get('xsize',10), row*kwargs.get('ysize',2)),
                  use_index=True,title=name,sharey=sharey)
     for ax in axes.flatten():
         pass
@@ -521,8 +525,11 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
                 stacked=True,color='green' if zero else 'blue',width=width)
         _ = None if allsort and not autosum else dfatt.hend.plot(ax=ax,kind=bartype,bottom=dfatt.start,stacked=True,color='blue',width=width)
         ax.set_ylabel(name,fontsize='x-large')
+        dec=finddec(dfatt)
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda value,number: f'{value:,.{dec}f}'))
+
         ax.set_title(desdic.get(name,name))
-        ax.set_xticklabels(dfatt.index.tolist(), rotation = 45,fontsize='x-large')
+        ax.set_xticklabels(dfatt.index.tolist(), rotation = 70,fontsize='x-large')
 #        plt.xticks(rotation=45, horizontalalignment='right', 
 #                   fontweight='light', fontsize='x-large'  )
     fig.suptitle(title,fontsize=20)

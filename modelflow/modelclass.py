@@ -1405,11 +1405,14 @@ class Dekomp_Mixin():
                 if ldekomp:
                     x = self.dekomp(v.child, lprint=1, start=start, end=end)
 
-    def dekomp_plot_per(self, varnavn, sort=False, pct=True, per='', threshold=0.0):
+    def dekomp_plot_per(self, varnavn, sort=False, pct=True, per='', threshold=0.0
+                         ,nametrans = lambda varnames,thismodel : varnames):
 
         thisper = self.current_per[-1] if per == '' else per
         xx = self.dekomp(varnavn.upper(), lprint=False)
         ddf = join_name_lag(xx[2] if pct else xx[1])
+        ddf.index = nametrans(ddf.index,self)
+
 #        tempdf = pd.DataFrame(0,columns=ddf.columns,index=['Start']).append(ddf)
         tempdf = ddf
         per_loc = tempdf.columns.get_loc(per)
@@ -1452,10 +1455,14 @@ class Dekomp_Mixin():
             axis=1), :] if filter else out_pct
         return out
 
-    def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0):
+    def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0
+                    ,nametrans = lambda varnames,thismodel : varnames):
         xx = self.dekomp(varnavn, lprint=False)
+        # breakpoint()
         ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
             lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
+        
+        ddf0.index = nametrans(ddf0.index,self)
         ddf = cutout(ddf0, threshold)
         fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(
             10, 5), constrained_layout=False)
@@ -5102,8 +5109,20 @@ class Solver_Mixin():
             return fig
         except:
             print('No iteration dump')
-
-from modeldashsidebar import Dash_Mixin
+try:
+    from modeldashsidebar import Dash_Mixin
+except: 
+    ...
+    print('The DASH dashboard is not loaded')
+    class Dash_Mixin:
+        ''' a dummy class if the dash dependencies are not installed. 
+        remember: 
+        conda install pip --y    
+        pip install dash_interactive_graphviz 
+        '''
+        ...
+        
+        
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin):
     pass

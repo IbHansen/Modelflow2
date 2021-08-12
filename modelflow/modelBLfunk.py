@@ -12,6 +12,7 @@ from numpy import transpose , array
 from scipy.stats import norm,lognorm
 from scipy.stats import gamma
 import inspect 
+from numba import jit
 classfunk = []
 try:
     from cvxopt import matrix
@@ -39,15 +40,20 @@ def logit_inverse(number):
     ''' A function which returns the logit of a number 
     '''
     return 1/(1+exp(-number))
-    
+
 def normcdf(input,mu=0.0,sigma=1.0):
     return norm.cdf(input,mu,sigma)    
 
-def qgamma(q,a,loc=0,scale=1):
-    return gamma.ppf(q,a,loc=0,scale=1)
+
+def qgamma(q,a,loc):
+    res = gamma.ppf(q,a,loc,scale=1)
+    return res
+
+
 
 def clognorm(input,mu=0.0,sigma=1.0):
-    return lognorm.cdf(input,mu,sigma)    
+    res = lognorm.cdf(input,mu,sigma)
+    return res    
 
 
 
