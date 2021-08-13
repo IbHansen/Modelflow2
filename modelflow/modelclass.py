@@ -400,7 +400,17 @@ class BaseModel():
             all = sum((n[1] for n in res))
             self._calculate_freq = res+[('Total', all)]
         return self._calculate_freq
+    
+    def calculate_freq_list(self,varlist):
+            operators = (t.op for v in varlist for t in self.allvar[v]['terms'] if (
+                not self.allvar[v]['dropfrml']) and t.op and t.op not in '$,()=[]')
+            res = Counter(operators).most_common()
+            all = sum((n[1] for n in res))
+            calculate_freq = res+[('Total', all)]
+            return calculate_freq
 
+        
+    
     def get_columnsnr(self, df):
         ''' returns a dict a databanks variables as keys and column number as item
         used for fast getting and setting of variable values in the dataframe'''
@@ -5025,6 +5035,7 @@ class Solver_Mixin():
         from modelinvert import targets_instruments
         t_i = targets_instruments(databank, targets, instruments, self, silent=silent,
                                   DefaultImpuls=DefaultImpuls, defaultconv=defaultconv, nonlin=nonlin, maxiter=maxiter)
+        self.t_i = t_i
         res = t_i()
         return res
 

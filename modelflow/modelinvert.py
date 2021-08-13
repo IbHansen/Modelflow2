@@ -161,7 +161,7 @@ class targets_instruments():
     '''
     
     def __init__(self,databank,targets,instruments,model,DefaultImpuls=0.01,defaultconv=0.01, 
-                 nonlin=False,silent = True, maxiter=30,solveopt={}):
+                 nonlin=False,silent = True, maxiter=30,solveopt={},varimpulse=False):
 
         self.model = model
         self.df = model.lastdf
@@ -175,6 +175,7 @@ class targets_instruments():
         self.maxiter = maxiter
         self.nonlin=nonlin
         self.databank = databank.copy()
+        self.varimpulse = varimpulse 
         self.savesolvearg = model.oldkwargs if hasattr(model,'oldkwargs') else {}
         for inumber,i in enumerate(instruments): 
             vars =  i if isinstance(i,list) else [i] # make it a list even if one variable
@@ -206,7 +207,10 @@ class targets_instruments():
      #       print('instrument: ',instrument['name'])
 # set the instrument            
             for var,impuls in instrument['vars']:
-                mul.loc[per_delayed:,var]    =     mul.loc[per_delayed:,var] + impuls                      # increase loan growth
+                if self.varimpulse: 
+                    mul.loc[per_delayed,var]    =     mul.loc[per_delayed,var] + impuls                      # increase loan growth
+                else:
+                    mul.loc[per_delayed:,var]    =     mul.loc[per_delayed:,var] + impuls                      # increase loan growth
 # calculate the effect 
             with self.model.set_smpl(per_delayed,per):
 
@@ -272,7 +276,11 @@ class targets_instruments():
                     if self.debug : print(update)
                     for instrument in self.instruments.values():
                         for var,impuls in instrument['vars']:
-                            res.loc[per_delayed:,var]    =   res.loc[per_delayed:,var] + update[instrument['name']] * impuls  # increase loan growth
+                            if self.varimpulse:
+                                res.loc[per_delayed,var]    =   res.loc[per_delayed,var] + update[instrument['name']] * impuls  # increase loan growth
+                            else:
+                                res.loc[per_delayed:,var]    =   res.loc[per_delayed:,var] + update[instrument['name']] * impuls  # increase loan growth
+                               
                     res = self.model(res,per_delayed ,per ,setlast=False,silent=self.silent, **self.solveopt)
                 else:
                     break
