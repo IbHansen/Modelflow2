@@ -21,8 +21,7 @@ import matplotlib.ticker as ticker
 
 #import qgrid 
 
-import sys
-sys. path.append('modelflow/')
+
  
 from  modelhelp import insertModelVar, finddec
 import modelpattern as pt

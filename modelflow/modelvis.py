@@ -279,12 +279,15 @@ class varvis():
          des = self.model.var_description[var]
          return des if des != var else ''
          
-     def _showall(self,all=1,dif=0,last=0,show_all=False):
+     def _showall(self,all=1,dif=0,last=0,show_all=True):
             if self.endo:
                 des_string = self.model.get_eq_des(self.var,show_all)
                 out1,out2 = '',''
                 out0   = f'Endogeneous: {self.var}: {self.var_des(self.var)} \nFormular: {self.model.allvar[self.var]["frml"]}\n\n{des_string}\n'
                 try:
+                    if dif:
+                        out0 = out0+f'\nValues : \n{self.model.get_values(self.var)}\n' 
+                                            
                     if all:
                         out0 = out0+f'\nValues : \n{self.model.get_values(self.var)}\n' 
                         out1 = f'\nInput last run: \n {self.model.get_eq_values(self.var)}\n\nInput base run: \n {self.model.get_eq_values(self.var,last=False)}\n'
@@ -292,7 +295,7 @@ class varvis():
                         out0 = out0+f'\nValues : \n{self.model.get_values(self.var)}\n' 
                         out1 = f'\nInput last run: \n {self.model.get_eq_values(self.var)}\n'
                     if all or dif:            
-                        out2 = f'\nDifference: \n {self.model.get_eq_dif(self.var,filter=False)}'
+                        out2 = f'\nDifference for input variables: \n {self.model.get_eq_dif(self.var,filter=False)}'
                 except Exception as e:
                     print(e)
                     pass 
@@ -363,6 +366,9 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=6,sharey=True,top=0.90,
                  use_index=True,title=name,sharey=sharey)
     for ax in axes.flatten():
         pass
+        # dec=finddec(dfatt)
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda value,number: f'{value:,}'))
+
         ax.xaxis.set_minor_locator(plt.NullLocator())
         ax.tick_params(axis='x', labelleft=True)
     fig = axes.flatten()[0].get_figure()
