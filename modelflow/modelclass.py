@@ -33,7 +33,7 @@ import gc
 import copy
 import matplotlib.pyplot as plt
 import zipfile
-from functools import partial
+from functools import partial,cached_property
 
 
 import seaborn as sns
@@ -400,6 +400,16 @@ class BaseModel():
             all = sum((n[1] for n in res))
             self._calculate_freq = res+[('Total', all)]
         return self._calculate_freq
+    
+    @cached_property
+    def flop_get(self):
+        ''' The number of operators in the model prolog,core and epilog'''
+        res = {
+            'prolog':self.calculate_freq_list(self.preorder),
+            'core':self.calculate_freq_list(self.coreorder),
+            'epilog':self.calculate_freq_list(self.epiorder)
+            }
+        return res
     
     def calculate_freq_list(self,varlist):
             operators = (t.op for v in varlist for t in self.allvar[v]['terms'] if (
@@ -3777,6 +3787,7 @@ class Solver_Mixin():
                     print(f'{self.periode} not converged in {iteration} iterations')
 
                 self.epi2d(values, values, row,  1.0)
+        endtime = time.time()
 
         if ldumpvar:
             self.dumpdf = pd.DataFrame(self.dumplist)
@@ -3789,21 +3800,27 @@ class Solver_Mixin():
                              columns=databank.columns)
 
         if stats:
-            numberfloats = self.calculate_freq[-1][1]*ittotal
-            endtime = time.time()
             self.simtime = endtime-starttime
             self.setuptime = endtimesetup - starttimesetup
+            
+            numberfloats = (self.flop_get['core'][-1][1]*ittotal+
+                 len(sol_periode)*(self.flop_get['prolog'][-1][1]+self.flop_get['epilog'][-1][1]))
             print(
                 f'Setup time (seconds)                 :{self.setuptime:>15,.2f}')
             print(
-                f'Foating point operations             :{self.calculate_freq[-1][1]:>15,}')
+                f'Foating point operations  core       :{self.flop_get["core"][-1][1]:>15,}')
+            print(
+                f'Foating point operations  prolog     :{self.flop_get["prolog"][-1][1]:>15,}')
+            print(
+                f'Foating point operations  epilog     :{self.flop_get["epilog"][-1][1]:>15,}')
+            print(f'Simulation period                    :{len(sol_periode):>15,}')
             print(f'Total iterations                     :{ittotal:>15,}')
             print(f'Total floating point operations      :{numberfloats:>15,}')
             print(
                 f'Simulation time (seconds)            :{self.simtime:>15,.2f}')
             if self.simtime > 0.0:
                 print(
-                    f'Floating point operations per second : {numberfloats/self.simtime:>15,.1f}')
+                    f'Floating point operations per second :{numberfloats/self.simtime:>15,.1f}')
 
         if not silent:
             print(self.name + ' solved  ')
