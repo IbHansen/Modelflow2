@@ -80,12 +80,17 @@ class vis():
          a = plotshow(self.thisdf.loc[self.model.current_per,:],
                       name=name,*args,**kwargs)
          return a 
-     def plot_alt(self,*args, **kwargs):
+     
+        
+     def plot_alt(self,title='Title',*args, **kwargs):
          ''' Displays a plot for each of the columns in the resulting dataframe '''
          
-         title = kwargs.get('title','Title')
-         a = vis_alt(self.model.basedf.loc[self.model.current_per,self.names],
-                     self.model.lastdf.loc[self.model.current_per,self.names],
+         if hasattr(self.model,'var_description'):
+                 vtrans = self.model.var_description
+         else:
+                 vtrans = {}
+         a = vis_alt(self.model.basedf.loc[self.model.current_per,self.names].rename(columns=vtrans) ,
+                     self.model.lastdf.loc[self.model.current_per,self.names].rename(columns=vtrans) ,
                       title=title,*args,**kwargs)
          return a 
      
@@ -347,6 +352,11 @@ def vis_alt(grund,mul,title='Show variables'):
         x_pos = grunddata.index[-1]
         ax.text(x_pos, grunddata.values[-1],'Baseline',fontsize=14)
         ax.text(x_pos, muldata.values[-1]  ,'Alternative',fontsize=14)
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda value,number: f'{value:,}'))
+
+        ax.xaxis.set_minor_locator(plt.NullLocator())
+        ax.tick_params(axis='x', labelleft=True)
+        
     return fig
     
 
@@ -543,7 +553,7 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
         plt.tight_layout()
         fig.subplots_adjust(top=top)
 
-    plt.show()
+#    plt.show()
     return fig
 
 if __name__ == '__main__' and 1:

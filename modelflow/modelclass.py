@@ -34,6 +34,7 @@ import copy
 import matplotlib.pyplot as plt
 import zipfile
 from functools import partial,cached_property
+from tqdm.auto import tqdm
 
 
 import seaborn as sns
@@ -1437,7 +1438,7 @@ class Dekomp_Mixin():
         tempdf = ddf
         per_loc = tempdf.columns.get_loc(per)
         nthreshold = '' if threshold == 0.0 else f', threshold = {threshold}'
-        ntitle = f'Equation attribution, pct{nthreshold}:{per}' if pct else f'Formula attribution {nthreshold}:{per}'
+        ntitle = f'Attribution in {per}, pct{nthreshold}:' if pct else f'Attribution in {per}, {nthreshold}'
         plotdf = tempdf.loc[[c for c in tempdf.index.tolist(
         ) if c.strip() != 'Total'], :].iloc[:, [per_loc]]
         plotdf.columns = [varnavn.upper()]
@@ -1491,9 +1492,9 @@ class Dekomp_Mixin():
         ax.set_ylabel(varnavn, fontsize='x-large')
         ax.set_xticklabels(ddf.T.index.tolist(),
                            rotation=45, fontsize='x-large')
-        nthreshold = f'' if threshold == 0.0 else f', threshold = {threshold}'
+        nthreshold = '' if threshold == 0.0 else f', threshold = {threshold}'
 
-        ntitle = f'Equation attribution{nthreshold}' if threshold == 0.0 else f'Equation attribution {nthreshold}'
+        ntitle = f'Attribution{nthreshold}' 
         fig.suptitle(ntitle, fontsize=20)
         fig.subplots_adjust(top=top)
 
@@ -3208,7 +3209,7 @@ class Display_Mixin():
         scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',
                              value='linear', style={'description_width': description_width})
         # legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width})
-        legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=1, style={
+        legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=legend, style={
                               'description_width': description_width})
         # breakpoint()
         l = link((selected_vars, 'value'),
@@ -3225,7 +3226,7 @@ class Display_Mixin():
         return
 
     @staticmethod
-    def display_toc(text='**Jupyter notebooks in this and all subfolders**'):
+    def display_toc(text='**Jupyter notebooks in this and all subfolders**',all=False):
         '''In a jupyter notebook this function displays a clickable table of content of all 
         jupyter notebooks in this and sub folders'''
 
@@ -3237,6 +3238,8 @@ class Display_Mixin():
             if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
                 continue
             for i, notebook in enumerate(sorted(dir.glob('*.ipynb'))):
+                if (not all) and (notebook.name.startswith('test') or notebook.name.startswith('Overview')):
+                    break
                 if i == 0:
                     blanks = ''.join(
                         ['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))
@@ -3264,30 +3267,20 @@ class Display_Mixin():
         """))
 
     @staticmethod
-    def togle_inputcells():
-        display(HTML("""\
-        <script>
-        function toggler(){
-        if(window.already_toggling){
-            // Don't add multiple buttons.
-            return 0
-        }
-        let btn = $('.input').append('<button>Toggle Code</button>')
-            .children('button');
-        btn.on('click', function(e){
-            let tgt = e.currentTarget;
-            $(tgt).parent().children('.inner_cell').toggle()
-        })
-        window.already_toggling = true;
-        }
-        // Since javascript cells are executed as soon as we load
-        // the notebook (if it's trusted), and this cell might be at the
-        // top of the notebook (so is executed first), we need to
-        // allow time for all of the other code cells to load before
-        // running. Let's give it 5 seconds.
-        
-        setTimeout(toggler, 5000);
-        """))
+    def scroll_off():
+           from IPython.display import  display, Javascript
+           Javascript("""IPython.OutputArea.prototype._should_scroll = function(lines){
+               return false;
+              }
+                                   """)
+    @staticmethod
+    def scroll_on():
+           from IPython.display import  display, Javascript
+           Javascript("""IPython.OutputArea.prototype._should_scroll = function(lines){
+               return true;
+              }
+                                   """)
+
 
     @staticmethod
     def modelflow_auto(run=True):
@@ -3694,7 +3687,7 @@ class Solver_Mixin():
             max_iterations=100, conv='*', absconv=0.01, relconv=DEFAULT_relconv,
             stringjit=True, transpile_reset=False,
             dumpvar='*', init=False, ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, timeon=False,
-            fairopt={'fair_max_iterations ': 1}, **kwargs):
+            fairopt={'fair_max_iterations ': 1}, progressbar=False,**kwargs):
         '''Evaluates this model on a databank from start to slut (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
@@ -3749,44 +3742,48 @@ class Solver_Mixin():
         endtimesetup = time.time()
 
         starttime = time.time()
+        bars = '{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt}'
+
         for fairiteration in range(fair_max_iterations):
             if fair_max_iterations >= 2:
                 print(f'Fair-Taylor iteration: {fairiteration}')
-            for self.periode in sol_periode:
-                row = databank.index.get_loc(self.periode)
-
-                if ldumpvar:
-                    self.dumplist.append([fairiteration, self.periode, int(0)]+[values[row, p]
-                                                                                for p in dumpplac])
-                if init:
-                    for c in endoplace:
-                        values[row, c] = values[row-1, c]
-                itbefore = values[row, convplace]
-                self.pro2d(values, values,  row,  1.0)
-                for iteration in range(max_iterations):
-                    with self.timer(f'Evaluate {self.periode}/{iteration} ', timeon) as t:
-                        self.solve2d(values, values, row,  alfa)
-                    ittotal += 1
-
+            with tqdm(total=len(sol_periode),disable = not progressbar,desc='Simulating ',bar_format=bars) as pbar:              
+                for self.periode in sol_periode:
+                    row = databank.index.get_loc(self.periode)
+    
                     if ldumpvar:
-                        self.dumplist.append([fairiteration, self.periode, int(iteration+1)]+[values[row, p]
-                                                                                              for p in dumpplac])
-                    if iteration > first_test:
-                        itafter = values[row, convplace]
-                        # breakpoint()
-                        select = absconv <= np.abs(itbefore)
-                        convergence = (
-                            np.abs((itafter-itbefore)[select])/np.abs(itbefore[select]) <= relconv).all()
-                        if convergence:
-                            if not silent:
-                                print(
-                                    f'{self.periode} Solved in {iteration} iterations')
-                            break
-                        itbefore = itafter
-                else:
-                    print(f'{self.periode} not converged in {iteration} iterations')
-
-                self.epi2d(values, values, row,  1.0)
+                        self.dumplist.append([fairiteration, self.periode, int(0)]+[values[row, p]
+                                                                                    for p in dumpplac])
+                    if init:
+                        for c in endoplace:
+                            values[row, c] = values[row-1, c]
+                    itbefore = values[row, convplace]
+                    self.pro2d(values, values,  row,  1.0)
+                    for iteration in range(max_iterations):
+                        with self.timer(f'Evaluate {self.periode}/{iteration} ', timeon) as t:
+                            self.solve2d(values, values, row,  alfa)
+                        ittotal += 1
+    
+                        if ldumpvar:
+                            self.dumplist.append([fairiteration, self.periode, int(iteration+1)]+[values[row, p]
+                                                                                                  for p in dumpplac])
+                        if iteration > first_test:
+                            itafter = values[row, convplace]
+                            # breakpoint()
+                            select = absconv <= np.abs(itbefore)
+                            convergence = (
+                                np.abs((itafter-itbefore)[select])/np.abs(itbefore[select]) <= relconv).all()
+                            if convergence:
+                                if not silent:
+                                    print(
+                                        f'{self.periode} Solved in {iteration} iterations')
+                                break
+                            itbefore = itafter
+                    else:
+                        print(f'{self.periode} not converged in {iteration} iterations')
+    
+                    self.epi2d(values, values, row,  1.0)
+                    pbar.update()
         endtime = time.time()
 
         if ldumpvar:
