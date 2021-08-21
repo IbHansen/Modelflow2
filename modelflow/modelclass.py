@@ -3268,18 +3268,26 @@ class Display_Mixin():
 
     @staticmethod
     def scroll_off():
+        try:
            from IPython.display import  display, Javascript
            Javascript("""IPython.OutputArea.prototype._should_scroll = function(lines){
                return false;
               }
                                    """)
+        except:
+           print('No scroll off')
+           
+           
     @staticmethod
     def scroll_on():
+        try:
            from IPython.display import  display, Javascript
            Javascript("""IPython.OutputArea.prototype._should_scroll = function(lines){
                return true;
               }
                                    """)
+        except:
+           print('no scroll on ')
 
 
     @staticmethod
@@ -3747,7 +3755,7 @@ class Solver_Mixin():
         for fairiteration in range(fair_max_iterations):
             if fair_max_iterations >= 2:
                 print(f'Fair-Taylor iteration: {fairiteration}')
-            with tqdm(total=len(sol_periode),disable = not progressbar,desc='Simulating ',bar_format=bars) as pbar:              
+            with tqdm(total=len(sol_periode),disable = not progressbar,desc=f'Solving {self.name}',bar_format=bars) as pbar:              
                 for self.periode in sol_periode:
                     row = databank.index.get_loc(self.periode)
     
