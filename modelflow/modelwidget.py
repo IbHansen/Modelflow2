@@ -23,8 +23,8 @@ class slidewidget:
     ''' class defefining a widget with lines of slides '''
     mmodel       : any         # The model  var 
     slidedef     : dict         # definition 
-    altname      : str = 'alternaive'
-    basename     : str =  'baseline'
+    altname      : str = 'Alternative'
+    basename     : str =  'Baseline'
     expname      : str =  "Carbon tax rate, US$ per tonn "
     def __post_init__(self):
         ...
@@ -63,28 +63,32 @@ class slidewidget:
              for des,cont in self.slidedef.items()} 
             
     def update_df(self,df,current_per):
-            for i,(des,cont) in enumerate(self.current_values.items()):
-                op = cont.get('op','=')
-                
-                for var in cont['var']:
-                    if  op == '+':
-                        df.loc[model.current_per,var]    =  df.loc[model.current_per,var] + wset[i].value
-                    elif op == '+impulse':    
-                        df.loc[model.current_per[0],var] =  df.loc[model.current_per[0],var] + wset[i].value
-                    elif op == '=start-':   
-                        startindex = df.index.get_loc(model.current_per[0])
-                        varloc = df.columns.get_loc(var)
-                        df.iloc[:startindex,varloc] =  wset[i].value
-                    elif op == '=':    
-                        df.loc[model.current_per,var]    =   wset[i].value
-                    elif op == '=impulse':    
-                        df.loc[model.current_per[0],var] =   wset[i].value
-                    else:
-                        print(f'Wrong operator in {cont}.\nNot updated')
-                        assert 1==3,'wRONG OPERATOR'
+        ''' updates a dataframe with the values from the widget'''
+        for i,(des,cont) in enumerate(self.current_values.items()):
+            op = cont.get('op','=')
+            value = cont['value']
+            for var in cont['var']:
+                if  op == '+':
+                    df.loc[current_per,var]    =  df.loc[current_per,var] + value
+                elif op == '+impulse':    
+                    df.loc[current_per[0],var] =  df.loc[current_per[0],var] + value
+                elif op == '=start-':   
+                    startindex = df.index.get_loc(current_per[0])
+                    varloc = df.columns.get_loc(var)
+                    df.iloc[:startindex,varloc] =  value
+                elif op == '=':    
+                    df.loc[current_per,var]    =   value
+                elif op == '=impulse':    
+                    df.loc[current_per[0],var] =   value
+                else:
+                    print(f'Wrong operator in {cont}.\nNot updated')
+                    assert 1==3,'wRONG OPERATOR'
         
   
     def set_slide_value(self,g):
+        ''' updates the new values to the self.current_vlues
+        will be used in update_df
+        '''
         line_des = g['owner'].description
         if 0: 
           print()
