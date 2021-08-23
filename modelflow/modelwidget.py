@@ -20,15 +20,85 @@ from modelclass import model
 
 @dataclass
 class slidewidget:
-    ''' class define columns in database with values from differentiation'''
+    ''' class defefining a widget with lines of slides '''
     mmodel       : any         # The model  var 
     slidedef     : dict         # definition 
-
-def __post_init__(self):
-    ...
-    
-    
-    
+    altname      : str = 'alternaive'
+    basename     : str =  'baseline'
+    expname      : str =  "Carbon tax rate, US$ per tonn "
+    def __post_init__(self):
+        ...
+        
+        wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+        walt  = widgets.Label(value = self.altname,layout={'width':'10%'})
+        wbas  = widgets.Label(value = self.basename,layout={'width':'20%'})
+        whead = widgets.HBox([wexp,walt,wbas])
+        #
+        wset  = [widgets.FloatSlider(description=des,
+                min=cont['min'],
+                max=cont['max'],
+                value=cont['value'],
+                step=cont.get('step',0.01),
+                layout={'width':'60%'},style={'description_width':'40%'},
+                readout_format = f":<,.{cont.get('dec',2)}f",
+                continuous_update=False
+                )
+             for des,cont in self.slidedef.items()]
+        
+             
+            
+        for w in wset: 
+            w.observe(self.set_slide_value,names='value',type='change')
+        
+        waltval= [widgets.Label(
+                value=f"{cont['value']:<,.{cont.get('dec',2)}f}",
+                layout={'width':'10%'})
+            for des,cont  in self.slidedef.items()]
+        self.wslide = [widgets.HBox([s,v]) for s,v in zip(wset,waltval)]
+        self.slidewidget =  widgets.VBox([whead] + self.wslide)
+      
+        # define the result object 
+        self.current_values = {des:
+             {key : v.split() if key=='var' else v for key,v in cont.items() if key in {'value','var','op'}} 
+             for des,cont in self.slidedef.items()} 
+            
+    def update_df(self,df,current_per):
+            for i,(des,cont) in enumerate(self.current_values.items()):
+                op = cont.get('op','=')
+                
+                for var in cont['var']:
+                    if  op == '+':
+                        df.loc[model.current_per,var]    =  df.loc[model.current_per,var] + wset[i].value
+                    elif op == '+impulse':    
+                        df.loc[model.current_per[0],var] =  df.loc[model.current_per[0],var] + wset[i].value
+                    elif op == '=start-':   
+                        startindex = df.index.get_loc(model.current_per[0])
+                        varloc = df.columns.get_loc(var)
+                        df.iloc[:startindex,varloc] =  wset[i].value
+                    elif op == '=':    
+                        df.loc[model.current_per,var]    =   wset[i].value
+                    elif op == '=impulse':    
+                        df.loc[model.current_per[0],var] =   wset[i].value
+                    else:
+                        print(f'Wrong operator in {cont}.\nNot updated')
+                        assert 1==3,'wRONG OPERATOR'
+        
+  
+    def set_slide_value(self,g):
+        line_des = g['owner'].description
+        if 0: 
+          print()
+          for k,v in g.items():
+             print(f'{k}:{v}')
+          print(self.slidedef[line_des]['var'])
+          print(g['new'])
+        
+          print(self.slidedef[line_des]['var'])
+          print(g['new'])
+        
+        self.current_values[line_des]['value'] = g['new']
+  
+        
 
 def inputwidget(model,basedf,slidedef={},radiodef=[],checkdef=[],modelopt={},varpat='RFF XGDPN RFFMIN GFSRPN DMPTRSH XXIBDUMMY'
                  ,showout=1,trans=None,base1name='',alt1name='',go_now=True,showvar=False):
@@ -279,4 +349,4 @@ if __name__ == '__main__':
     if 'masia' not in locals(): 
         print('loading model')
         masia,baseline = model.modelload('C:/wb Dawn/UNESCAP-/Asia/Asia.pcim',run=1,silent=1)    
-test = slidewidget(masia,{})
+    test = slidewidget(masia,{})
