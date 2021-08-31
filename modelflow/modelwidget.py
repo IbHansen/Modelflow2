@@ -25,7 +25,6 @@ from modelclass import model
 class basewidget:
     ''' basis for widget updating in jupyter'''
     
-    ibstest : str = 'ddd'
     
     datachildren : list = field(default_factory=list) # list of children widgets 
     
@@ -36,38 +35,57 @@ class basewidget:
     
     
 @dataclass
-class tabwidget(basewidget):
+class tabwidget:
     
-    tabdefdict : any =  field(default_factory = lambda: ({}))
-
+    tabdefdict : dict # =  field(default_factory = lambda: ({}))
+    tab : bool = True 
+    selected_index :any = 0
     
-    def __post__init(self):
+    def __post_init__(self):
         
-        
+        thiswidget = widgets.Tab if self.tab else widgets.Accordion
         self.datachildren = [tabcontent 
                              for tabcontent  in self.tabdefdict.values()]
-        self.tabs = widgets.Tab(self.datachrildren, 
-                                layout={'height': 'max-content'})  
+        self.datawidget = thiswidget([child.datawidget for child in self.datachildren], 
+                                     selected_index = self.selected_index,                               
+                                     layout={'height': 'max-content'})  
          
         for i,key in enumerate(self.tabdefdict.keys()):
-           self.tabs.set_title(i,key)
+           self.datawidget.set_title(i,key)
+           
+           
+    def update_df(self,df,current_per):
+        ''' will update container widgets'''
+        for w in self.datachildren:
+            w.update_df(df,current_per)
+            
+            
+    def reset(self,g):
+        ''' will reset  container widgets'''
+        for w in self.datachildren:
+            w.reset(g)
 
 
 @dataclass
-class sheetwidget(basewidget):
+class sheetwidget:
     ''' class defefining a widget which updates from a sheet '''
     df_var         : any = pd.DataFrame()         # definition 
     trans          : any = lambda x : x      # renaming of variables 
-    transpose      : bool = False  
-    
+    transpose      : bool = False            # orientation of dataframe 
+    expname      : str =  "Carbon tax rate, US$ per tonn "
+   
     
     def __post_init__(self):
         ...
+        
+        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+
     
         newnamedf = self.df_var.copy().rename(columns=self.trans)
         self.org_df_var = self.newnamedf.T if self.transpose else newnamedf
         
         self.wsheet = sheet(from_dataframe(self.org_df_var))
+        self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.expname) else self.wsheet
 
     def update_df(self,df,current_per=None):
         # breakpoint()
@@ -78,6 +96,12 @@ class sheetwidget(basewidget):
         df.loc[self.df_new_var.index,self.df_new_var.columns] =  df.loc[ self.df_new_var.index,self.df_new_var.columns] + self.df_new_var 
         pass
         return df
+    
+    
+    def reset(self,g):
+        self.wsheet = sheet(from_dataframe(self.org_df_var))
+        self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.expname) else self.wsheet
+        
  
 
 @dataclass
@@ -95,7 +119,7 @@ class slidewidget:
         wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})
         whead = widgets.HBox([wexp,walt,wbas])
         #
-        wset  = [widgets.FloatSlider(description=des,
+        self.wset  = [widgets.FloatSlider(description=des,
                 min=cont['min'],
                 max=cont['max'],
                 value=cont['value'],
@@ -108,7 +132,7 @@ class slidewidget:
         
              
             
-        for w in wset: 
+        for w in self.wset: 
             w.observe(self.set_slide_value,names='value',type='change')
         
         waltval= [widgets.Label(
@@ -117,13 +141,20 @@ class slidewidget:
             for des,cont  in self.slidedef.items()
             
             ]
-        self.wslide = [widgets.HBox([s,v]) for s,v in zip(wset,waltval)]
+        self.wslide = [widgets.HBox([s,v]) for s,v in zip(self.wset,waltval)]
         self.slidewidget =  widgets.VBox([whead] + self.wslide)
+        self.datawidget =  widgets.VBox([whead] + self.wslide)
       
         # define the result object 
         self.current_values = {des:
              {key : v.split() if key=='var' else v for key,v in cont.items() if key in {'value','var','op'}} 
              for des,cont in self.slidedef.items()} 
+            
+    def reset(self,g): 
+        for i,(des,cont) in enumerate(self.slidedef.items()):
+            self.wset[i].value = cont['value']
+            
+        
             
     def update_df(self,df,current_per):
         ''' updates a dataframe with the values from the widget'''
@@ -160,52 +191,52 @@ class slidewidget:
          
         self.current_values[line_des]['value'] = g['new']
   
-@dataclass
-class update_tab:
-    ''' class defefining a tabbed widget with slide widgets '''
-    tabdef     : dict         # definition 
-    
-    
-    
-    def __post_init__(self):
-        
-        self.inputs = {tabname : slidewidget(slidedef) 
-                   for tabname,slidedef in self.tabdef.items()}
-        
-        
-        self.tabs = widgets.Tab([slides.slidewidget 
-                   for slides in self.inputs.values()],
-                                layout={'height': 'max-content'})  
-        
-        for i,key in enumerate(self.inputs.keys()):
-          self.tabs.set_title(i,key)
-
-    def update_df(self,df,current_per):
-        for wid in self.inputs.values():
-            wid.update_df(df,current_per)
                       
 @dataclass
-class update_input:   
+class updatewidget:   
     ''' class to input and run a model'''
+    
     mmodel : any     # a model 
-    tabdef  : dict 
-    basename : str ='Baseline'
+    a_datawidget : any # a tab to update from  
+    basename : str ='Business as usual'
     varpat   : str = '*'
     showvar  : bool = True 
+    exodif   : any = pd.DataFrame()         # definition 
+    lwrun    : bool = True
+    lwupdate : bool = True
+    lwreset  :  bool = True
+    lwzero  :  bool = True
+    lwsetbas  :  bool = True
+
     
     def __post_init__(self):
-        
         self.baseline = self.mmodel.basedf.copy()
+
         
-        wgo   = widgets.Button(description="Run scenario")
-        wgo.on_click(self.run)
+        wrun   = widgets.Button(description="Run scenario")
+        wrun.on_click(self.run)
+        
+        wupdate   = widgets.Button(description="Update the dataset ")
+        wupdate.on_click(self.update)
         
         wreset   = widgets.Button(description="Reset to start")
+        wreset.on_click(self.reset)
+        
         wzero   = widgets.Button(description="Set all to 0")
         wsetbas   = widgets.Button(description="Use as baseline")
-        wbut  = widgets.HBox([wgo,wreset,wzero,wsetbas])
         
-        self.wtab = update_tab(self.tabdef)
+        self.experiment = 0 
+        
+        lbut = []
+        
+        if self.lwrun: lbut.append(wrun)
+        if self.lwupdate: lbut.append(wupdate)
+        if self.lwreset: lbut.append(wreset)
+        if self.lwzero : lbut.append(wzero)
+        if self.lwsetbas : lbut.append(wsetbas)
+        
+        wbut  = widgets.HBox(lbut)
+        
         
         self.wname = widgets.Text(value=self.basename,placeholder='Type something',description='Scenario name:',
                         layout={'width':'30%'},style={'description_width':'50%'})
@@ -217,16 +248,22 @@ class update_input:
 
         winputstring = widgets.HBox([self.wname,self.wpat])
        
-        self.wtotal = widgets.VBox([self.wtab.tabs,winputstring,wbut])
+        self.wtotal = widgets.VBox([self.a_datawidget.datawidget,winputstring,wbut])
     
     
     
+    def update(self,g):
+        print('update kaldt')
+        self.thisexperiment = self.baseline.copy()
+        self.a_datawidget.update_df(self.thisexperiment,self.mmodel.current_per)
+        self.exodif = self.mmodel.exodif(self.baseline,self.thisexperiment)
+        
     def run(self,g):
-        self.wtab.update_df(self.baseline,self.mmodel.current_per)
-        self.mmodel(self.baseline,progressbar=1)
-        self.exodif = self.mmodel.exodif()
+        self.update(g)
+        self.mmodel(self.thisexperiment,progressbar=1)
          
-
+    def reset(self,g):
+        self.a_datawidget.reset(g) 
 
   
  
