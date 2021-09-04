@@ -3013,7 +3013,7 @@ class Display_Mixin():
                                        xlabel='',
                                        dec=2 if showtype == 'growth' and not dec else dec)
                     for v, df in dfsres.items()}
-            breakpoint()
+
             if type(vline) == type(None):  # to delete vline
                 if hasattr(self, 'vline'):
                     del self.vline
@@ -3078,7 +3078,7 @@ class Display_Mixin():
 
         from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider, SelectMultiple, Layout
         from ipywidgets import interactive, ToggleButtons, SelectionRangeSlider, RadioButtons
-        from ipywidgets import interactive_output, HBox, VBox, link, Dropdown
+        from ipywidgets import interactive_output, HBox, VBox, link, Dropdown,Output
 
         minper = self.lastdf.index[0]
         maxper = self.lastdf.index[-1]
@@ -3106,10 +3106,11 @@ class Display_Mixin():
         def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
             vars = ' '.join(v.split(' ', 1)[0] for v in selected_vars)
             smpl = (self.lastdf.index[i_smpl[0]], self.lastdf.index[i_smpl[1]])
-            plt.clf()
+            out = Output()
             with self.set_smpl(*smpl):
                 self.keep_wiz_figs = self.keep_plot(vars, diff=diff, scale=scale, showtype=showtype,
                                                     legend=legend, dec=dec, vline=vline)
+            # display(list(self.keep_wiz_figs.values())[0])
         description_width = 'initial'
         description_width_long = 'initial'
         keep_keys = list(self.keep_solutions.keys())

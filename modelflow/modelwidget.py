@@ -281,10 +281,7 @@ class updatewidget:
                           set(list(self.mmodel.keep_solutions.values())[0].columns)]
             clear_output(True)
             display(self.wtotal)
-            out = widgets.Output()
-            with out:
-                _ = self.mmodel.keep_viz(pat=selectfrom[0],selectfrom=selectfrom)
-            display(out)    
+            _ = self.mmodel.keep_viz(pat=selectfrom[0],selectfrom=selectfrom)
             
 
         
