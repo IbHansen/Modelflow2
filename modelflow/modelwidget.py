@@ -19,6 +19,7 @@ from dataclasses import dataclass,field
 
 from modelclass import insertModelVar
 from modelclass import model 
+from modeljupyter import jupviz
 
 
 @dataclass
@@ -85,6 +86,7 @@ class sheetwidget:
         self.org_df_var = self.newnamedf.T if self.transpose else newnamedf
         
         self.wsheet = sheet(from_dataframe(self.org_df_var))
+        self.org_values = [c.value for c in self.wsheet.cells]
         self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.expname) else self.wsheet
 
     def update_df(self,df,current_per=None):
@@ -99,8 +101,8 @@ class sheetwidget:
     
     
     def reset(self,g):
-        self.wsheet = sheet(from_dataframe(self.org_df_var))
-        self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.expname) else self.wsheet
+        for c,v in zip(self.wsheet.cells,self.org_values):
+            c.value = v
         
  
 
@@ -199,20 +201,19 @@ class updatewidget:
     mmodel : any     # a model 
     a_datawidget : any # a tab to update from  
     basename : str ='Business as usual'
-    varpat   : str = '*'
-    showvar  : bool = True 
+    keeppat   : str = '*'
+    varpat    : str ='*'
+    showvarpat  : bool = True 
     exodif   : any = pd.DataFrame()         # definition 
     lwrun    : bool = True
-    lwupdate : bool = True
+    lwupdate : bool = False
     lwreset  :  bool = True
-    lwzero  :  bool = True
-    lwsetbas  :  bool = True
-
+    lwsetbas  :  bool = False
+    lwshow    :bool = True 
+    outputwidget : str  = 'jupviz'
     
     def __post_init__(self):
         self.baseline = self.mmodel.basedf.copy()
-
-        
         wrun   = widgets.Button(description="Run scenario")
         wrun.on_click(self.run)
         
@@ -221,8 +222,10 @@ class updatewidget:
         
         wreset   = widgets.Button(description="Reset to start")
         wreset.on_click(self.reset)
+
+        wshow   = widgets.Button(description="Show results")
+        wshow.on_click(self.show)
         
-        wzero   = widgets.Button(description="Set all to 0")
         wsetbas   = widgets.Button(description="Use as baseline")
         
         self.experiment = 0 
@@ -230,9 +233,9 @@ class updatewidget:
         lbut = []
         
         if self.lwrun: lbut.append(wrun)
+        if self.lwshow:  lbut.append(wshow)
         if self.lwupdate: lbut.append(wupdate)
         if self.lwreset: lbut.append(wreset)
-        if self.lwzero : lbut.append(wzero)
         if self.lwsetbas : lbut.append(wsetbas)
         
         wbut  = widgets.HBox(lbut)
@@ -240,27 +243,63 @@ class updatewidget:
         
         self.wname = widgets.Text(value=self.basename,placeholder='Type something',description='Scenario name:',
                         layout={'width':'30%'},style={'description_width':'50%'})
-        self.wpat = widgets.Text(value= self.varpat,placeholder='Type something',description='Output variables:',
+        self.wpat = widgets.Text(value= self.varpat,placeholder='Type something',description='Display variables:',
                         layout={'width':'65%'},style={'description_width':'30%'})
         
-        self.wpat.layout.visibility = 'visible' if self.showvar else 'hidden'
+        self.wpat.layout.visibility = 'visible' if self.showvarpat else 'hidden'
         
 
         winputstring = widgets.HBox([self.wname,self.wpat])
        
         self.wtotal = widgets.VBox([self.a_datawidget.datawidget,winputstring,wbut])
     
-    
+        self.mmodel.keep_solutions = {}
+        self.mmodel.keep_solutions = {self.wname.value : self.baseline}
+        self.mmodel.keep_exodif = {}
+        
+        self.experiment +=  1 
+        self.wname.value = f'Experiment {self.experiment}'
+
     
     def update(self,g):
-        print('update kaldt')
         self.thisexperiment = self.baseline.copy()
         self.a_datawidget.update_df(self.thisexperiment,self.mmodel.current_per)
         self.exodif = self.mmodel.exodif(self.baseline,self.thisexperiment)
+
+
+    def show(self,g):
+        if self.outputwidget == 'jupviz':
+            clear_output(True)
+            display(self.wtotal)
+
+            displaydict =  {k :v.loc[self.mmodel.current_per,self.wpat.value.split()] 
+                            for k,v in self.mmodel.keep_solutions.items()}
+            jupviz(displaydict,legend=0)()
+        elif self.outputwidget == 'keep_viz':
+
+            selectfrom = [v for v in self.mmodel.vlist(self.wpat.value) if v in 
+                          set(list(self.mmodel.keep_solutions.values())[0].columns)]
+            clear_output(True)
+            display(self.wtotal)
+            out = widgets.Output()
+            with out:
+                _ = self.mmodel.keep_viz(pat=selectfrom[0],selectfrom=selectfrom)
+            display(out)    
+            
+
         
     def run(self,g):
+        clear_output(True)
+        display(self.wtotal)
         self.update(g)
-        self.mmodel(self.thisexperiment,progressbar=1)
+        self.mmodel(self.thisexperiment,progressbar=1,keep = self.wname.value,                    
+                keep_variables = self.keeppat)
+        self.mmodel.keep_exodif[self.wname.value] = self.exodif 
+
+        self.experiment +=  1 
+        self.wname.value = f'Experiment {self.experiment}'
+        
+        
          
     def reset(self,g):
         self.a_datawidget.reset(g) 

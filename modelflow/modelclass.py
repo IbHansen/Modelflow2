@@ -2803,19 +2803,7 @@ class Display_Mixin():
                 print(' ' * 5, j, '\n', ' ' * 10,
                       [xx for xx in self.lister[i][j]])
 
-    def keep_plot(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, title='Show variables', trans={}, legend=True,
-                  showfig=False, diff=True):
-        '''Plots variables from experiments'''
-
-        try:
-            # breakpoint()
-            res = self.keep_get_dict(pat, start, slut, start_ofset, slut_ofset)
-            vis = mj.keepviz(res, title=title, trans=trans,
-                             legend=legend, showfig=False)
-            figs = [vis.plot_level(v) for v in res.keys()]
-            return figs
-        except:
-            print('no keept solution')
+   
 
     def keep_print(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, diff=True):
         """ prints variables from experiments look at keep_get_dict for options
@@ -3025,7 +3013,7 @@ class Display_Mixin():
                                        xlabel='',
                                        dec=2 if showtype == 'growth' and not dec else dec)
                     for v, df in dfsres.items()}
-
+            breakpoint()
             if type(vline) == type(None):  # to delete vline
                 if hasattr(self, 'vline'):
                     del self.vline
@@ -3066,75 +3054,6 @@ class Display_Mixin():
                 fig.axes[0].annotate(
                     text, xy=(pd.to_datetime(time), ymax), fontsize=13, va='top')
 
-    def keep_vizold(self, pat='*'):
-        '''A utility function which shows selected variables over a selected timespan'''
-        from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider, SelectMultiple, Layout
-        from ipywidgets import interactive
-
-        minper = self.lastdf.index[0]
-        maxper = self.lastdf.index[-1]
-        defaultvar = self.vlist(pat)
-
-        def explain(smpl, vars):
-            with self.set_smpl(*smpl):
-                figs = self.keep_plot(
-                    ' '.join(vars), diff=0, legend=1, dec='0')
-
-        show = interactive(explain,
-                           smpl=IntRangeSlider(value=[self.current_per[0], 200], min=minper, max=maxper, layout=Layout(
-                               width='75%'), description='Show interval'),
-                           vars=SelectMultiple(value=defaultvar, options=sorted(self.endogene), layout=Layout(width='50%', height='200px'),
-                                               description='One or more'))
-
-        display(show)
-        return
-
-    def keep_viz(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True, select_width='', select_height='200px'):
-        """
-         Plots the keept dataframes
-
-         Args:
-             pat (str, optional): a string of variables to select pr default. Defaults to '*'.
-             smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
-             selectfrom (list, optional): the variables to select from, Defaults to [] -> all endogeneous variables .
-             legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
-             dec (string, optional): decimals on the y-axis. Defaults to '', which gives automatic decimals
-             .
-             use_descriptions : Use the variable descriptions from the model 
-
-         Returns:
-             None.
-
-         self.keep_wiz_figs is set to a dictionary contraining the figures. Can be used to produce publication
-         quality files. 
-
-        """
-
-        from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider, SelectMultiple, Layout
-        from ipywidgets import interactive, ToggleButtons, SelectionRangeSlider
-
-        minper = self.lastdf.index[0]
-        maxper = self.lastdf.index[-1]
-        options = [(ind, nr) for nr, ind in enumerate(self.lastdf.index)]
-        with self.set_smpl(*smpl):
-            show_per = self.current_per[:]
-        init_start = self.lastdf.index.get_loc(show_per[0])
-        init_end = self.lastdf.index.get_loc(show_per[-1])
-        defaultvar = self.vlist(pat)
-        _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(
-            self.endogene_true)
-        var_maxlen = max(len(v) for v in _selectfrom)
-
-        if use_descriptions and self.var_description:
-            select_display = [
-                f'{v:{var_maxlen}} :{self.var_description[v]}' for v in _selectfrom]
-            defaultvar = [
-                f'{v:{var_maxlen}} :{self.var_description[v]}' for v in self.vlist(pat)]
-            width = select_width if select_width else '90%'
-        else:
-            select_display = [f'{v:{var_maxlen}}' for v in _selectfrom]
-            defaultvar = [f'{v:{var_maxlen}}' for v in self.vlist(pat)]
-            width = select_width if select_width else '40%'
 
     def keep_viz(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True,
                  select_width='', select_height='200px', vline=[]):
@@ -3170,7 +3089,7 @@ class Display_Mixin():
         init_end = self.lastdf.index.get_loc(show_per[-1])
         defaultvar = self.vlist(pat)
         _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(
-            self.endogene_true)
+            list(list(self.keep_solutions.values())[0].columns))
         var_maxlen = max(len(v) for v in _selectfrom)
 
         if use_descriptions and self.var_description:
@@ -3187,6 +3106,7 @@ class Display_Mixin():
         def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
             vars = ' '.join(v.split(' ', 1)[0] for v in selected_vars)
             smpl = (self.lastdf.index[i_smpl[0]], self.lastdf.index[i_smpl[1]])
+            plt.clf()
             with self.set_smpl(*smpl):
                 self.keep_wiz_figs = self.keep_plot(vars, diff=diff, scale=scale, showtype=showtype,
                                                     legend=legend, dec=dec, vline=vline)
@@ -3221,7 +3141,6 @@ class Display_Mixin():
 
         show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
                                             'scale': scale, 'legend': legend})
-    #          smpl = SelectionRangeSlider(continuous_update=False,options=options, min = minper, max=maxper,layout=Layout(width='75%'),description='Show interval'),
         display(ui, show)
         return
 

@@ -246,6 +246,7 @@ class jup_keepviz() :
             ax.spines['right'].set_visible(True)
         else:
             ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
             
 #            ax.spines['top'].set_visible(False)
         for i,(k,df) in enumerate(self.dfs.items()):
@@ -258,15 +259,19 @@ class jup_keepviz() :
             x_pos = data.index[-1]
             if not self.legend:
                 if i == 0:
+                    basename = k
                     basevalue = data.values[-1]
+                    ax.text(x_pos, basevalue  ,f' {basename}',fontsize=14)
                 else:
                     if (abs(data.values[-1]-basevalue) < 0.01 or 
                       (abs(basevalue) > 100. and (1.-abs(data.values[-1]/basevalue) < 0.008))):
                         if i == 1:
-                            ax.text(x_pos, data.values[-1]  ,f' {basename} and {altname}{alt}',fontsize=14)
+                            ax.text(x_pos, data.values[-1]  ,f' {basename} and {k}',fontsize=14)
+                        else: 
+                            ax.text(x_pos, data.values[-1]  ,f' {k}',fontsize=14)
+                            
                     else:
-                        ax.text(x_pos, data.values[-1]  ,f' {altname}{alt}',fontsize=14)
-                        ax.text(x_pos, basevalue  ,f' {basename}',fontsize=14)
+                        ax.text(x_pos, data.values[-1]  ,f' {k}',fontsize=14)
         return fig
 
     def plot_dif(self,var):
