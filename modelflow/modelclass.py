@@ -3106,11 +3106,10 @@ class Display_Mixin():
         def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
             vars = ' '.join(v.split(' ', 1)[0] for v in selected_vars)
             smpl = (self.lastdf.index[i_smpl[0]], self.lastdf.index[i_smpl[1]])
-            out = Output()
             with self.set_smpl(*smpl):
                 self.keep_wiz_figs = self.keep_plot(vars, diff=diff, scale=scale, showtype=showtype,
                                                     legend=legend, dec=dec, vline=vline)
-            # display(list(self.keep_wiz_figs.values())[0])
+            plt.show()    
         description_width = 'initial'
         description_width_long = 'initial'
         keep_keys = list(self.keep_solutions.keys())
@@ -3142,7 +3141,9 @@ class Display_Mixin():
 
         show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
                                             'scale': scale, 'legend': legend})
-        display(ui, show)
+        # display(ui, show)
+        display(ui)
+        display(show)
         return
 
     @staticmethod

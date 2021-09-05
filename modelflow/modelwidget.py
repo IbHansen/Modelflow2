@@ -15,6 +15,8 @@ from ipysheet.pandas_loader import from_dataframe, to_dataframe
 
 from IPython.display import display, clear_output,Latex, Markdown
 from dataclasses import dataclass,field
+import matplotlib.pylab  as plt 
+
 
 
 from modelclass import insertModelVar
@@ -269,7 +271,7 @@ class updatewidget:
 
     def show(self,g):
         if self.outputwidget == 'jupviz':
-            clear_output(True)
+            clear_output()
             display(self.wtotal)
 
             displaydict =  {k :v.loc[self.mmodel.current_per,self.wpat.value.split()] 
@@ -279,8 +281,9 @@ class updatewidget:
 
             selectfrom = [v for v in self.mmodel.vlist(self.wpat.value) if v in 
                           set(list(self.mmodel.keep_solutions.values())[0].columns)]
-            clear_output(True)
+            clear_output()
             display(self.wtotal)
+            plt.close('all')
             _ = self.mmodel.keep_viz(pat=selectfrom[0],selectfrom=selectfrom)
             
 
