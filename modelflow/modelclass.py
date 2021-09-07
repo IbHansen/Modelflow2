@@ -3071,7 +3071,7 @@ class Display_Mixin():
          Returns:
              None.
 
-         self.keep_wiz_figs is set to a dictionary contraining the figures. Can be used to produce publication
+         self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
          quality files. 
 
         """
@@ -3259,8 +3259,10 @@ class Json_Mixin():
     a session. 
     '''
 
-    def modeldump(self, outfile=''):
-        '''Dumps a model and its lastdf to a json file'''
+    def modeldump(self, outfile='',keep=False):
+        '''Dumps a model and its lastdf to a json file
+        
+        if keep=True the model.keep_solutions will alse be dumped'''
 
         dumpjson = {
             'version': '1.00',
@@ -3270,7 +3272,9 @@ class Json_Mixin():
             'modelname': self.name,
             'oldkwargs': self.oldkwargs,
             'var_description': self.var_description,
-            'equations_latex': self.equations_latex if hasattr(self, 'equations_latex') else ''
+            'equations_latex': self.equations_latex if hasattr(self, 'equations_latex') else '',
+            'keep_solutions': {k:v.to_json() for k,v in self.keep_solutions.items()} if keep else {}
+ 
         }
 
         if outfile != '':
@@ -3315,6 +3319,7 @@ class Json_Mixin():
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description', {}))
         mmodel.equations_latex = input.get('equations_latex', None)
+        mmodel.keep_solutions = {k : pd.read_json(jdf) for k,jdf in input.get('keep_solutions',{}).items()}
         if keep_json:
             mmodel.json_keep = input
 
