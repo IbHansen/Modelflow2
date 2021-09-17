@@ -137,6 +137,16 @@ class vis():
          mlength = max([len(v) for v in self.names]) 
          out = '\n'.join(getfrml(var,mlength) for var in self.names)
          print(out)
+         
+     @property
+     def des(self):
+         '''Returns variable descriptions '''
+         def getdes(var,l):
+             return f'{var:<{l}} : {self.model.var_description[var]}'
+         mlength = max([len(v) for v in self.names]) 
+
+         out = '\n'.join(getdes(var,mlength) for var in self.names)
+         print(out)
           
 
      @property
@@ -336,7 +346,7 @@ class varvis():
             
 
         
-def vis_alt(grund,mul,title='Show variables'):
+def vis_alt(grund,mul,title='Show variables',top=0.9):
     ''' Graph of one of more variables each variable is displayed for 3 banks'''
     avar = grund.columns
     antal=len(avar)
@@ -356,7 +366,8 @@ def vis_alt(grund,mul,title='Show variables'):
 
         ax.xaxis.set_minor_locator(plt.NullLocator())
         ax.tick_params(axis='x', labelleft=True)
-        
+    fig.subplots_adjust(top=top)
+
     return fig
     
 

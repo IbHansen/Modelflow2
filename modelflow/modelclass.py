@@ -1552,7 +1552,8 @@ class Description_Mixin():
     '''
 
     def set_var_description(self, a_dict):
-        self.var_description = self.defsub(a_dict)
+        allvarset = set(self.allvar.keys())
+        self.var_description = self.defsub({k:v for k,v in a_dict.items() if k in allvarset})
 
     @staticmethod
     def html_replace(ind):
@@ -2953,7 +2954,7 @@ class Display_Mixin():
         return fig
 
     def keep_plot(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, showtype='level',
-                  diff=False, mul=1.0,
+                  diff=False, diffpct = False, mul=1.0,
                   title='Show variables', legend=True, scale='linear', yunit='', ylabel='', dec='',
                   trans={},
                   showfig=False,
@@ -2969,6 +2970,7 @@ class Display_Mixin():
            slut_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
            showtype (str, optional): 'level','growth' or øchange' transformation of data. Defaults to 'level'.
            diff (Logical, optional): if True shows the difference to the first experiment. Defaults to False.
+           diffpct (logical,optional) : if True shows the difference in percent to tirst experiment. defalut to false
            mul (float, optional): multiplier of data. Defaults to 1.0.
            title (TYPE, optional): DESCRIPTION. Defaults to 'Show variables'.
            legend (TYPE, optional): if False, expanations on the right of curve. Defaults to True.
@@ -3001,17 +3003,26 @@ class Display_Mixin():
             if diff:
                 dfsres = {v: vdf.subtract(
                     vdf.iloc[:, 0], axis=0) for v, vdf in dfs.items()}
+                aspct=' '
+            elif diffpct: 
+                dfsres = {v:  vdf.subtract(
+                    vdf.iloc[:, 0], axis=0).divide(
+                    vdf.iloc[:, 0], axis=0)*100 for v, vdf in dfs.items()}
+                aspct= ' in percent '
+               
             else:
                 dfsres = dfs
+                
+            assert not(diff and diffpct) ,"keep_plot can't be called with both diff and diffpct"
 
             xtrans = trans if trans else self.var_description
-            figs = {v: self.plot_basis(v, (df.iloc[:, 1:] if diff else df)*mul, legend=legend,
+            figs = {v: self.plot_basis(v, (df.iloc[:, 1:] if (diff or diffpct) else df)*mul, legend=legend,
                                        scale=scale, trans=xtrans,
-                                       title=f'Difference to "{df.columns[0]}" for {dftype}:' if diff else f'{dftype}:',
+                                       title=f'Difference{aspct}to "{df.columns[0]}" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
                                        yunit=yunit,
                                        ylabel='Percent' if showtype == 'growth' else ylabel,
                                        xlabel='',
-                                       dec=2 if showtype == 'growth' and not dec else dec)
+                                       dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec)
                     for v, df in dfsres.items()}
 
             if type(vline) == type(None):  # to delete vline
@@ -3106,8 +3117,15 @@ class Display_Mixin():
         def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
             vars = ' '.join(v.split(' ', 1)[0] for v in selected_vars)
             smpl = (self.lastdf.index[i_smpl[0]], self.lastdf.index[i_smpl[1]])
+            if type(diff) == str:
+                diffpct = True
+                ldiff = False
+            else: 
+                ldiff = diff
+                diffpct = False
+            # print(ldiff,diffpct)    
             with self.set_smpl(*smpl):
-                self.keep_wiz_figs = self.keep_plot(vars, diff=diff, scale=scale, showtype=showtype,
+                self.keep_wiz_figs = self.keep_plot(vars, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
                                                     legend=legend, dec=dec, vline=vline)
             plt.show()    
         description_width = 'initial'
@@ -3121,7 +3139,7 @@ class Display_Mixin():
                                        description='Select one or more', style={'description_width': description_width})
         selected_vars2 = SelectMultiple(value=defaultvar, options=select_display, layout=Layout(width=width, height=select_height),
                                         description='Select one or more', style={'description_width': description_width})
-        diff = RadioButtons(options=[('No', False), ('Yes', True)], description=fr'Difference to: "{keep_first}"',
+        diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
                             value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
         # diff_select = Dropdown(options=keep_keys,value=keep_first, description = fr'to:')
         showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
@@ -3135,6 +3153,114 @@ class Display_Mixin():
         l = link((selected_vars, 'value'),
                  (selected_vars2, 'value'))  # not used
         select = HBox([selected_vars])
+        options1 = diff
+        options2 = HBox([scale, legend, showtype])
+        ui = VBox([select, options1, options2, i_smpl])
+
+        show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
+                                            'scale': scale, 'legend': legend})
+        # display(ui, show)
+        display(ui)
+        display(show)
+        return
+    
+    def keep_viz_countries(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True,
+                 select_width='', select_height='200px', vline=[],country_dict={}):
+        """
+         Plots the keept dataframes
+
+         Args:
+             pat (str, optional): a string of variables to select pr default. Defaults to '*'.
+             smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
+             selectfrom (list, optional): the variables to select from, Defaults to [] -> all endogeneous variables .
+             legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
+             dec (string, optional): decimals on the y-axis. Defaults to '0'.
+             use_descriptions : Use the variable descriptions from the model 
+
+         Returns:
+             None.
+
+         self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
+         quality files. 
+
+        """
+
+        from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider, SelectMultiple, Layout
+        from ipywidgets import Select
+        from ipywidgets import interactive, ToggleButtons, SelectionRangeSlider, RadioButtons
+        from ipywidgets import interactive_output, HBox, VBox, link, Dropdown,Output
+
+        minper = self.lastdf.index[0]
+        maxper = self.lastdf.index[-1]
+        options = [(ind, nr) for nr, ind in enumerate(self.lastdf.index)]
+        with self.set_smpl(*smpl):
+            show_per = self.current_per[:]
+        init_start = self.lastdf.index.get_loc(show_per[0])
+        init_end = self.lastdf.index.get_loc(show_per[-1])
+        defaultvar = self.vlist(pat)
+        _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(
+            list(list(self.keep_solutions.values())[0].columns))
+        var_maxlen = max(len(v) for v in _selectfrom)
+
+        if use_descriptions and self.var_description:
+            select_display = [
+                f'{v}  :{self.var_description[v]}' for v in _selectfrom]
+            defaultvar = [
+                f'{v}  :{self.var_description[v]}' for v in self.vlist(pat)]
+            width = select_width if select_width else '90%'
+        else:
+            select_display = [fr'{v}' for v in _selectfrom]
+            defaultvar = [fr'{v}' for v in self.vlist(pat)]
+            width = select_width if select_width else '50%'
+
+        def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
+            vars = ' '.join(v.split(' ', 1)[0] for v in selected_vars)
+            smpl = (self.lastdf.index[i_smpl[0]], self.lastdf.index[i_smpl[1]])
+            if type(diff) == str:
+                diffpct = True
+                ldiff = False
+            else: 
+                ldiff = diff
+                diffpct = False
+            print(ldiff,diffpct)    
+            with self.set_smpl(*smpl):
+                self.keep_wiz_figs = self.keep_plot(vars, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
+                                                    legend=legend, dec=dec, vline=vline)
+            plt.show()    
+        description_width = 'initial'
+        description_width_long = 'initial'
+        keep_keys = list(self.keep_solutions.keys())
+        keep_first = keep_keys[0]
+        select_countries = [(c,iso) for iso,c in country_dict.items()]
+        # breakpoint()
+        i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
+                                      max=maxper, layout=Layout(width='75%'), description='Show interval')
+        selected_vars = SelectMultiple(value=defaultvar, options=select_display, layout=Layout(width=width, height=select_height, font="monospace"),
+                                       description='Select one or more', style={'description_width': description_width})
+        selected_country = Select(value='IDN', options=select_countries, layout=Layout(width=width, height=select_height, font="monospace"),
+                                       description='Select one or more', style={'description_width': description_width})
+        selected_vars2 = SelectMultiple(value=defaultvar, options=select_display, layout=Layout(width=width, height=select_height),
+                                        description='Select one or more', style={'description_width': description_width})
+        diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
+                            value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
+        # diff_select = Dropdown(options=keep_keys,value=keep_first, description = fr'to:')
+        showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
+                                description='Data type', value='level', style={'description_width': description_width})
+        scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',
+                             value='linear', style={'description_width': description_width})
+        # legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width})
+        legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=legend, style={
+                              'description_width': description_width})
+        # breakpoint()
+        def get_country(g):
+            print(g)
+
+        selected_country.observe(get_country,names='value',type='change')
+                   
+                        
+        l = link((selected_vars, 'value'),
+                 (selected_vars2, 'value'))  # not used
+        select = HBox([selected_country,selected_vars])
         options1 = diff
         options2 = HBox([scale, legend, showtype])
         ui = VBox([select, options1, options2, i_smpl])

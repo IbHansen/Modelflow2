@@ -106,7 +106,7 @@ class sheetwidget:
         for c,v in zip(self.wsheet.cells,self.org_values):
             c.value = v
         
- 
+
 
 @dataclass
 class slidewidget:
@@ -134,7 +134,6 @@ class slidewidget:
                 )
              for des,cont in self.slidedef.items()]
         
-             
             
         for w in self.wset: 
             w.observe(self.set_slide_value,names='value',type='change')
@@ -194,7 +193,121 @@ class slidewidget:
              print(f'{k}:{v}')
          
         self.current_values[line_des]['value'] = g['new']
+
+@dataclass
+class sumslidewidget:
+    ''' class defefining a widget with lines of slides '''
+    slidedef     : dict         # definition
+    maxsum          : any  = None 
+    altname      : str = 'Alternative'
+    basename     : str =  'Baseline'
+    expname      : str =  "Carbon tax rate, US$ per tonn "
+    def __post_init__(self):
+        ...
+        
+        self.first = list(self.slidedef.keys())[:-1]     
+        self.lastdes = list(self.slidedef.keys())[-1]     
+
+        wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+        walt  = widgets.Label(value = self.altname,layout={'width':'8%', 'border':"hide"})
+        wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})
+        whead = widgets.HBox([wexp,walt,wbas])
+        #
+        self.wset  = [widgets.FloatSlider(description=des,
+                min=cont['min'],
+                max=cont['max'],
+                value=cont['value'],
+                step=cont.get('step',0.01),
+                layout={'width':'60%'},style={'description_width':'40%'},
+                readout_format = f":>,.{cont.get('dec',2)}f",
+                continuous_update=False,
+                disabled= False
+                )
+             for des,cont in self.slidedef.items()]
+        
+             
+            
+        for w in self.wset: 
+            w.observe(self.set_slide_value,names='value',type='change')
+        
+        waltval= [widgets.Label(
+                value=f"{cont['value']:>,.{cont.get('dec',2)}f}",
+                layout=widgets.Layout(display="flex", justify_content="center", width="10%", border="hide"))
+            for des,cont  in self.slidedef.items()
+            
+            ]
+        self.wslide = [widgets.HBox([s,v]) for s,v in zip(self.wset,waltval)]
+        self.slidewidget =  widgets.VBox([whead] + self.wslide)
+        self.datawidget =  widgets.VBox([whead] + self.wslide)
+      
+        # define the result object 
+        self.current_values = {des:
+             {key : v.split() if key=='var' else v for key,v in cont.items() if key in {'value','var','op','min','max'}} 
+             for des,cont in self.slidedef.items()} 
+            
+    def reset(self,g): 
+        for i,(des,cont) in enumerate(self.slidedef.items()):
+            self.wset[i].value = cont['value']
+            
+        
+            
+    def update_df(self,df,current_per):
+        ''' updates a dataframe with the values from the widget'''
+        for i,(des,cont) in enumerate(self.current_values.items()):
+            op = cont.get('op','=')
+            value = cont['value']
+            for var in cont['var']:
+                if  op == '+':
+                    df.loc[current_per,var]    =  df.loc[current_per,var] + value
+                elif op == '+impulse':    
+                    df.loc[current_per[0],var] =  df.loc[current_per[0],var] + value
+                elif op == '=start-':   
+                    startindex = df.index.get_loc(current_per[0])
+                    varloc = df.columns.get_loc(var)
+                    df.iloc[:startindex,varloc] =  value
+                elif op == '=':    
+                    df.loc[current_per,var]    =   value
+                elif op == '=impulse':    
+                    df.loc[current_per[0],var] =   value
+                else:
+                    print(f'Wrong operator in {cont}.\nNot updated')
+                    assert 1==3,'wRONG OPERATOR'
+        
   
+    def set_slide_value(self,g):
+        ''' updates the new values to the self.current_vlues
+        will be used in update_df
+        '''
+        line_des = g['owner'].description
+        line_index = list(self.current_values.keys()).index(line_des)
+        if 0: 
+          print()
+          for k,v in g.items():
+             print(f'{k}:{v}')
+         
+        self.current_values[line_des]['value'] = g['new']
+        # print(self.current_values)
+        if type(self.maxsum) == float:
+            allvalues = [v['value'] for v  in self.current_values.values()]
+            thissum = sum(allvalues)
+            if thissum > self.maxsum:
+                # print(f'{allvalues=}')
+                # print(f"{self.current_values[self.lastdes]['min']=}")
+                newlast = self.maxsum-sum(allvalues[:-1])
+                newlast = max(newlast,self.current_values[self.lastdes]['min'])
+                # print(f'{newlast=}')
+                self.current_values[self.lastdes]['value']= newlast
+    
+                newsum= sum([v['value'] for v  in self.current_values.values()]) 
+                # print(f'{newsum=}')
+                # print(f'{line_index=}')
+                if newsum > self.maxsum:
+                    self.current_values[line_des]['value']=self.wset[line_index].value-newsum +self.maxsum
+                    self.wset[line_index].value = self.current_values[line_des]['value'] 
+                    
+                self.wset[-1].value = newlast
+                
+
                       
 @dataclass
 class updatewidget:   
