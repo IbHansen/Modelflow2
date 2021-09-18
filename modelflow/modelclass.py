@@ -3164,15 +3164,15 @@ class Display_Mixin():
         display(show)
         return
     
-    def keep_viz_countries(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True,
-                 select_width='', select_height='200px', vline=[],country_dict={}):
+    def keep_viz_prefix(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True,
+                 select_width='', select_height='200px', vline=[],prefix_dict={},add_var_name=False):
         """
          Plots the keept dataframes
 
          Args:
              pat (str, optional): a string of variables to select pr default. Defaults to '*'.
              smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
-             selectfrom (list, optional): the variables to select from, Defaults to [] -> all endogeneous variables .
+             selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
              legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
              dec (string, optional): decimals on the y-axis. Defaults to '0'.
              use_descriptions : Use the variable descriptions from the model 
@@ -3189,7 +3189,8 @@ class Display_Mixin():
         from ipywidgets import Select
         from ipywidgets import interactive, ToggleButtons, SelectionRangeSlider, RadioButtons
         from ipywidgets import interactive_output, HBox, VBox, link, Dropdown,Output
-
+        
+        
         minper = self.lastdf.index[0]
         maxper = self.lastdf.index[-1]
         options = [(ind, nr) for nr, ind in enumerate(self.lastdf.index)]
@@ -3197,24 +3198,15 @@ class Display_Mixin():
             show_per = self.current_per[:]
         init_start = self.lastdf.index.get_loc(show_per[0])
         init_end = self.lastdf.index.get_loc(show_per[-1])
-        defaultvar = self.vlist(pat)
-        _selectfrom = [s.upper() for s in selectfrom] if selectfrom else sorted(
-            list(list(self.keep_solutions.values())[0].columns))
-        var_maxlen = max(len(v) for v in _selectfrom)
-
-        if use_descriptions and self.var_description:
-            select_display = [
-                f'{v}  :{self.var_description[v]}' for v in _selectfrom]
-            defaultvar = [
-                f'{v}  :{self.var_description[v]}' for v in self.vlist(pat)]
-            width = select_width if select_width else '90%'
-        else:
-            select_display = [fr'{v}' for v in _selectfrom]
-            defaultvar = [fr'{v}' for v in self.vlist(pat)]
-            width = select_width if select_width else '50%'
+        keepvar = sorted (list(self.keep_solutions.values())[0].columns)
+        defaultvar = [v for v in self.vlist(pat) if v in keepvar] 
+        _selectfrom = [s.upper() for s in selectfrom] if selectfrom else keepvar
+        
+        gross_selectfrom =  [(f'{(v+" ") if add_var_name else ""}{self.var_description[v] if use_descriptions else v}',v) for v in _selectfrom] 
+        width = select_width if select_width else '90%' if use_descriptions else '50%'
 
         def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
-            vars = ' '.join(v.split(' ', 1)[0] for v in selected_vars)
+            vars = ' '.join(v for v in selected_vars)
             smpl = (self.lastdf.index[i_smpl[0]], self.lastdf.index[i_smpl[1]])
             if type(diff) == str:
                 diffpct = True
@@ -3231,36 +3223,37 @@ class Display_Mixin():
         description_width_long = 'initial'
         keep_keys = list(self.keep_solutions.keys())
         keep_first = keep_keys[0]
-        select_countries = [(c,iso) for iso,c in country_dict.items()]
+        select_prefix = [(c,iso) for iso,c in prefix_dict.items()]
         # breakpoint()
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
                                       max=maxper, layout=Layout(width='75%'), description='Show interval')
-        selected_vars = SelectMultiple(value=defaultvar, options=select_display, layout=Layout(width=width, height=select_height, font="monospace"),
+        selected_vars = SelectMultiple(value=defaultvar, options=gross_selectfrom, layout=Layout(width=width, height=select_height, font="monospace"),
                                        description='Select one or more', style={'description_width': description_width})
-        selected_country = Select(value='IDN', options=select_countries, layout=Layout(width=width, height=select_height, font="monospace"),
-                                       description='Select one or more', style={'description_width': description_width})
-        selected_vars2 = SelectMultiple(value=defaultvar, options=select_display, layout=Layout(width=width, height=select_height),
-                                        description='Select one or more', style={'description_width': description_width})
         diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
                             value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
-        # diff_select = Dropdown(options=keep_keys,value=keep_first, description = fr'to:')
         showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
                                 description='Data type', value='level', style={'description_width': description_width})
         scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',
                              value='linear', style={'description_width': description_width})
-        # legend = ToggleButtons(options=[('Yes',1),('No',0)], description = 'Legends',value=1,style={'description_width': description_width})
         legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=legend, style={
                               'description_width': description_width})
         # breakpoint()
-        def get_country(g):
-            print(g)
-
-        selected_country.observe(get_country,names='value',type='change')
+        def get_prefix(g):
+            selected_prefix_var =  [(des,variable) for des,variable in gross_selectfrom  if variable.startswith(g['new'])]
+            selected_vars.options = selected_prefix_var
+            selected_vars.value  = [selected_prefix_var[0][1]]
+                
                    
-                        
-        l = link((selected_vars, 'value'),
-                 (selected_vars2, 'value'))  # not used
-        select = HBox([selected_country,selected_vars])
+        if len(prefix_dict): 
+            selected_prefix = Select(value=select_prefix[0][1], options=select_prefix, layout=Layout(width='30%', height=select_height, font="monospace"),
+                                       description='Select one', style={'description_width': description_width})
+               
+            selected_prefix.observe(get_prefix,names='value',type='change')
+            select = VBox([selected_prefix,selected_vars])
+            get_prefix({'new':select_prefix[0]})
+        else: 
+            select = VBox([selected_vars])
+            
         options1 = diff
         options2 = HBox([scale, legend, showtype])
         ui = VBox([select, options1, options2, i_smpl])
