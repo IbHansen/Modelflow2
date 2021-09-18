@@ -3203,7 +3203,7 @@ class Display_Mixin():
         _selectfrom = [s.upper() for s in selectfrom] if selectfrom else keepvar
         
         gross_selectfrom =  [(f'{(v+" ") if add_var_name else ""}{self.var_description[v] if use_descriptions else v}',v) for v in _selectfrom] 
-        width = select_width if select_width else '90%' if use_descriptions else '50%'
+        width = select_width if select_width else '50%' if use_descriptions else '50%'
 
         def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
             vars = ' '.join(v for v in selected_vars)
@@ -3237,31 +3237,36 @@ class Display_Mixin():
         legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=legend, style={
                               'description_width': description_width})
         # breakpoint()
+        
+        
         def get_prefix(g):
             try:
-                current_suffix = [v[len(g['old']):] for v in selected_vars.value]
+                current_suffix = {v[len(g['old'][0]):] for v in selected_vars.value}
             except:
                 current_suffix = ''
                 
             new_prefix = g['new']
             selected_prefix_var =  [(des,variable) for des,variable in gross_selectfrom  
-                                    if variable.startswith(new_prefix)]
+                                    if any([variable.startswith(n)  for n in new_prefix])]
+                                    
             selected_vars.options = selected_prefix_var
+            
             if current_suffix:
-                new_selection   = [f'{new_prefix}{c}' for c in current_suffix 
-                                        if f'{new_prefix}{c}' in {s  for p,s in selected_prefix_var}]
+                new_selection   = [f'{n}{c}' for c in current_suffix for n in new_prefix
+                                        if f'{n}{c}' in {s  for p,s in selected_prefix_var}]
                 selected_vars.value  = new_selection 
-
+                # print(f"{new_selection=}{current_suffix=}{g['old']=}")
             else:    
                 selected_vars.value  = [selected_prefix_var[0][1]]
                 
                    
         if len(prefix_dict): 
-            selected_prefix = Select(value=select_prefix[0][1], options=select_prefix, layout=Layout(width='30%', height=select_height, font="monospace"),
-                                       description='Select one', style={'description_width': description_width})
+            selected_prefix = SelectMultiple(value=[select_prefix[0][1]], options=select_prefix, 
+                                             layout=Layout(width='25%', height=select_height, font="monospace"),
+                                       description='')
                
             selected_prefix.observe(get_prefix,names='value',type='change')
-            select = VBox([selected_prefix,selected_vars])
+            select = HBox([selected_vars,selected_prefix])
             get_prefix({'new':select_prefix[0]})
         else: 
             select = VBox([selected_vars])
