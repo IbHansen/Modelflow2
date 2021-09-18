@@ -3214,7 +3214,6 @@ class Display_Mixin():
             else: 
                 ldiff = diff
                 diffpct = False
-            print(ldiff,diffpct)    
             with self.set_smpl(*smpl):
                 self.keep_wiz_figs = self.keep_plot(vars, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
                                                     legend=legend, dec=dec, vline=vline)
@@ -3239,9 +3238,22 @@ class Display_Mixin():
                               'description_width': description_width})
         # breakpoint()
         def get_prefix(g):
-            selected_prefix_var =  [(des,variable) for des,variable in gross_selectfrom  if variable.startswith(g['new'])]
+            try:
+                current_suffix = [v[len(g['old']):] for v in selected_vars.value]
+            except:
+                current_suffix = ''
+                
+            new_prefix = g['new']
+            selected_prefix_var =  [(des,variable) for des,variable in gross_selectfrom  
+                                    if variable.startswith(new_prefix)]
             selected_vars.options = selected_prefix_var
-            selected_vars.value  = [selected_prefix_var[0][1]]
+            if current_suffix:
+                new_selection   = [f'{new_prefix}{c}' for c in current_suffix 
+                                        if f'{new_prefix}{c}' in {s  for p,s in selected_prefix_var}]
+                selected_vars.value  = new_selection 
+
+            else:    
+                selected_vars.value  = [selected_prefix_var[0][1]]
                 
                    
         if len(prefix_dict): 
