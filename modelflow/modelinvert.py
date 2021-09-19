@@ -266,9 +266,10 @@ class targets_instruments():
             orgdistance = self.targets.loc[per,self.targetvars] - res.loc[per,self.targetvars]
             shortfallvar = (shortfall * orgdistance) >= 0 
             for iterations in range(self.maxiter):
-                if not silent: print('Period:',per,' Target instrument iteration:',iterations)
                 startdistance = self.targets.loc[per,self.targetvars] - res.loc[per,self.targetvars]
                 self.distance = distance = startdistance*shortfallvar if shortfall else startdistance
+                if not silent: print('Period:',per,' Target instrument iteration:',iterations,
+                                        f' Max distance: {distance.abs().max():.3f}')
                 if self.debug:
                     print(f'\nTarget instrument {per},  iteration {iterations}')
                     print(f'Distance to target   :\n{startdistance}\n')
