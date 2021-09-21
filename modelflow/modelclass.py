@@ -1489,7 +1489,7 @@ class Dekomp_Mixin():
             10, 5), constrained_layout=False)
         ax = axis
         ddf.T.plot(ax=ax, stacked=True, kind='bar')
-        ax.set_ylabel(varnavn, fontsize='x-large')
+        ax.set_ylabel(self.var_description[varnavn], fontsize='x-large')
         ax.set_xticklabels(ddf.T.index.tolist(),
                            rotation=45, fontsize='x-large')
         nthreshold = '' if threshold == 0.0 else f', threshold = {threshold}'
@@ -3295,8 +3295,9 @@ class Display_Mixin():
             if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
                 continue
             for i, notebook in enumerate(sorted(dir.glob('*.ipynb'))):
+                # print(notebook)    
                 if (not all) and (notebook.name.startswith('test') or notebook.name.startswith('Overview')):
-                    break
+                    continue
                 if i == 0:
                     blanks = ''.join(
                         ['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))

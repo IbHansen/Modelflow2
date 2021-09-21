@@ -13,6 +13,8 @@ Created on Thu Sep 21 12:41:10 2017
 
 import pandas as pd
 import numpy as np 
+from tqdm.auto import tqdm
+
 
 from modelhelp import update_var
 
@@ -239,7 +241,7 @@ class targets_instruments():
             out= pd.DataFrame(np.linalg.inv(x),x.columns,x.index)
         return out
     
-    def targetseek(self,databank=None,shortfall=False,ti_damp=1.0,delay=0,**kwargs):
+    def targetseek(self,databank=None,shortfall=False,ti_damp=1.0,delay=0,progressbar = True,**kwargs):
         ''' Calculates the instruments as a function of targets '''
         silent =  kwargs.get('silent',self.silent)
         self.maxiter = kwargs.get('maxiter',self.maxiter)
@@ -253,52 +255,57 @@ class targets_instruments():
         self.conv = pd.Series([self.targetconv[v] for v in self.targetvars],self.targetvars)
 #        print(inv)
         oldsave = self.model.save
-        for per in self.targets.index:
-            
-            iper = self.df.index.get_loc(per)
-            iper_delayed = iper-delay
-            per_delayed = self.df.index[iper_delayed]
+        bars = '{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt}'
 
+        with tqdm(total=len(self.targets.index),disable = not progressbar,desc=f'Finding instruments ',bar_format=bars) as pbar:              
 
-            if not silent or self.debug:
-                print('Period:',per)
-            res = self.model(res,per_delayed ,per ,save=False, **self.solveopt)
-            orgdistance = self.targets.loc[per,self.targetvars] - res.loc[per,self.targetvars]
-            shortfallvar = (shortfall * orgdistance) >= 0 
-            for iterations in range(self.maxiter):
-                startdistance = self.targets.loc[per,self.targetvars] - res.loc[per,self.targetvars]
-                self.distance = distance = startdistance*shortfallvar if shortfall else startdistance
-                if not silent: print('Period:',per,' Target instrument iteration:',iterations,
-                                        f' Max distance: {distance.abs().max():.3f}')
-                if self.debug:
-                    print(f'\nTarget instrument {per},  iteration {iterations}')
-                    print(f'Distance to target   :\n{startdistance}\n')
-                    if shortfall:
-                        print(f'Distance to shortfall target    :\n{distance}\n')
-
-                if (distance.abs()>=self.conv).any():
-                    if self.nonlin:
-                        if type(self.nonlin) == int: 
-                            if iterations >= self.nonlin: 
-                                if not iterations%self.nonlin:
-                                    self.inv  = inv  = self.invjacobi(per,diag=shortfall,delay=delay)
-                        else:         
-                            self.inv  = inv  = self.invjacobi(per,diag=shortfall,delay=delay)
-
-                    update = inv.dot(distance) * ti_damp
-                    if self.debug : 
-                        print('Update instruments:')
-                        print(update)
-                    for instrument in self.instruments.values():
-                        for var,impuls in instrument['vars']:
-                            if self.varimpulse:
-                                res.loc[per_delayed,var]    =   res.loc[per_delayed,var] + update[instrument['name']] * impuls  # increase loan growth
-                            else:
-                                res.loc[per_delayed:,var]    =   res.loc[per_delayed:,var] + update[instrument['name']] * impuls  # increase loan growth
-                               
-                    res = self.model(res,per_delayed ,per ,setlast=False,**self.solveopt)
-                else:
-                    break
+            for per in self.targets.index:
+                
+                iper = self.df.index.get_loc(per)
+                iper_delayed = iper-delay
+                per_delayed = self.df.index[iper_delayed]
+    
+    
+                if not silent or self.debug:
+                    print('Period:',per)
+                res = self.model(res,per_delayed ,per ,save=False, **self.solveopt)
+                orgdistance = self.targets.loc[per,self.targetvars] - res.loc[per,self.targetvars]
+                shortfallvar = (shortfall * orgdistance) >= 0 
+                for iterations in range(self.maxiter):
+                    startdistance = self.targets.loc[per,self.targetvars] - res.loc[per,self.targetvars]
+                    self.distance = distance = startdistance*shortfallvar if shortfall else startdistance
+                    if not silent: print('Period:',per,' Target instrument iteration:',iterations,
+                                            f' Max distance: {distance.abs().max():.3f}')
+                    if self.debug:
+                        print(f'\nTarget instrument {per},  iteration {iterations}')
+                        print(f'Distance to target   :\n{startdistance}\n')
+                        if shortfall:
+                            print(f'Distance to shortfall target    :\n{distance}\n')
+    
+                    if (distance.abs()>=self.conv).any():
+                        if self.nonlin:
+                            if type(self.nonlin) == int: 
+                                if iterations >= self.nonlin: 
+                                    if not iterations%self.nonlin:
+                                        self.inv  = inv  = self.invjacobi(per,diag=shortfall,delay=delay)
+                            else:         
+                                self.inv  = inv  = self.invjacobi(per,diag=shortfall,delay=delay)
+    
+                        update = inv.dot(distance) * ti_damp
+                        if self.debug : 
+                            print('Update instruments:')
+                            print(update)
+                        for instrument in self.instruments.values():
+                            for var,impuls in instrument['vars']:
+                                if self.varimpulse:
+                                    res.loc[per_delayed,var]    =   res.loc[per_delayed,var] + update[instrument['name']] * impuls  # increase loan growth
+                                else:
+                                    res.loc[per_delayed:,var]    =   res.loc[per_delayed:,var] + update[instrument['name']] * impuls  # increase loan growth
+                                   
+                        res = self.model(res,per_delayed ,per ,setlast=False,**self.solveopt)
+                    else:
+                        break
+                pbar.update()
         self.model.lastdf = res
         self.model.oldkwargs = self.savesolvearg 
         self.model.save = oldsave

@@ -408,7 +408,7 @@ class updatewidget:
         self.mmodel(self.thisexperiment,progressbar=1,keep = self.wname.value,                    
                 keep_variables = self.keeppat)
         self.mmodel.keep_exodif[self.wname.value] = self.exodif 
-
+        self.mmodel.inputwidget_alternativerun = True
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
         
