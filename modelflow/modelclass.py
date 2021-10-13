@@ -3694,6 +3694,8 @@ class Solver_Mixin():
 
         if not silent:
             print(f'Create compiled solving function for {self.name}')
+            print(f'{ljit=} {stringjit=}  {transpile_reset=}  {hasattr(self, f"pro_{jitname}")=}')
+
         if ljit:
             if newdata or transpile_reset or not hasattr(self, f'pro_{jitname}'):
                 if stringjit:
@@ -3705,16 +3707,18 @@ class Solver_Mixin():
                     pro_jit, core_jit, epi_jit = make_los(
                         self.funks, self.errfunk)
                 else:
-                    # if we import from a cache, we assume that the dataframe is in the same order
+                    # breakpoint()
+                   # if we import from a cache, we assume that the dataframe is in the same order
                     if transpile_reset or not hasattr(self, f'pro_{jitname}'):
-                        jitfilename= f'numbacache/{jitname}_jitsolver.py'.replace(' ','_')
+                        jitfilename= f'modelsource/{jitname}_jitsolver.py'.replace(' ','_')
                         jitfile = Path(jitfilename)
                         jitfile.parent.mkdir(parents=True, exist_ok=True)
+                        if not silent:
+                            print(f'{transpile_reset=} {hasattr(self, f"pro_{jitname}")=}  {jitfile.is_file()=}')
                         initfile = jitfile.parent /'__init__.py' 
                         if not initfile.exists():
                             with open(initfile,'wt') as i: 
                                 i.write('#')
-                        # breakpoint()
                         if transpile_reset or not jitfile.is_file():
                             solvetext0 = solveout()
                             solvetext = '\n'.join(
@@ -3724,9 +3728,12 @@ class Solver_Mixin():
 
                             with open(jitfile, 'wt') as f:
                                 f.write(solvetext)
+                            importlib.invalidate_caches()  
+                            if not silent:
+                                print(f'Writes the evaluation functon to {jitfile.is_file()=}')
+                                
                         if not silent:
-                            print(
-                                f'Now makelos imports a {solvename} jitfunction')
+                            print(f'Importing {jitfile}')    
                         m1 = importlib.import_module('.'+jitfile.stem,jitfile.parent.name)
 
                         pro_jit, core_jit, epi_jit = m1.prolog, m1.core, m1.epilog
@@ -3797,7 +3804,8 @@ class Solver_Mixin():
         newdata, databank = self.is_newdata(databank)
 
         self.pro2d, self.solve2d, self.epi2d = self.makelos(
-            databank, solvename='sim', ljit=ljit, stringjit=stringjit, transpile_reset=transpile_reset, chunk=chunk, newdata=newdata)
+            databank, solvename='sim', ljit=ljit, stringjit=stringjit, transpile_reset=transpile_reset, 
+            chunk=chunk, newdata=newdata,silent=silent)
 
         values = databank.values.copy()  #
         self.genrcolumns = databank.columns.copy()
