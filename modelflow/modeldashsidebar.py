@@ -7,14 +7,14 @@ Created on Fri May 14 22:46:21 2021
 
 import dash
 from jupyter_dash import JupyterDash
-import dash_core_components as dcc
+from dash import dcc 
 
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from  dash_interactive_graphviz import DashInteractiveGraphviz
 import plotly.graph_objs as go
-
+from plotly.graph_objs.scatter.marker import Line
 
 import webbrowser
 from threading import Timer
@@ -86,8 +86,18 @@ def get_stack(df,v='Guess it',heading='Yes',pct=True):
     }
     return out 
 
-def get_line(pv,v='Guess it',heading='Yes'):
+def get_line_old(pv,v='Guess it',heading='Yes'):
     trace = [go.Line(x=pv.columns.astype('str'), y=pv.loc[rowname,:], name=rowname) for rowname in pv.index]
+    out = { 'data': trace,
+    'layout':
+    go.Layout(title=f'{heading}')
+    }
+    return out 
+def get_line(pv,v='Guess it',heading='Yes'):
+    trace = [go.Scatter(x=pv.columns.astype('str'),
+                  y=pv.loc[rowname,:], 
+                  name=rowname
+                  ) for rowname in pv.index]
     out = { 'data': trace,
     'layout':
     go.Layout(title=f'{heading}')
@@ -286,11 +296,14 @@ class Dash_Mixin():
                     # breakpoint()
                     plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,outvar)
                  
-                    
+            else:
+                return [dash.no_update,dash.no_update,dash.no_update]
+
                 
             return [dot_out,plot_out,outvar]
        
         app_run(app,jupyter=jupyter,debug=debug,port=self.dashport)
+#%% test        
 if __name__ == "__main__":
     from modelclass import model 
 
@@ -304,6 +317,6 @@ if __name__ == "__main__":
         
    
     setattr(model, "modeldash", Dash_Mixin.modeldash)    
-    madam.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
+    madam.modeldash('FY',jupyter=False,show_trigger=False,debug=False) 
     #mmodel.FY.draw(up=1, down=1,svg=1,browser=1)
 

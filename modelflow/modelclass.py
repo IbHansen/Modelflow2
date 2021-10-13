@@ -3707,8 +3707,14 @@ class Solver_Mixin():
                 else:
                     # if we import from a cache, we assume that the dataframe is in the same order
                     if transpile_reset or not hasattr(self, f'pro_{jitname}'):
-
-                        jitfile = Path(f'{jitname}_jitsolver.py')
+                        jitfilename= f'numbacache/{jitname}_jitsolver.py'.replace(' ','_')
+                        jitfile = Path(jitfilename)
+                        jitfile.parent.mkdir(parents=True, exist_ok=True)
+                        initfile = jitfile.parent /'__init__.py' 
+                        if not initfile.exists():
+                            with open(initfile,'wt') as i: 
+                                i.write('#')
+                        # breakpoint()
                         if transpile_reset or not jitfile.is_file():
                             solvetext0 = solveout()
                             solvetext = '\n'.join(
@@ -3721,7 +3727,7 @@ class Solver_Mixin():
                         if not silent:
                             print(
                                 f'Now makelos imports a {solvename} jitfunction')
-                        m1 = importlib.import_module(f'{jitname}_jitsolver')
+                        m1 = importlib.import_module('.'+jitfile.stem,jitfile.parent.name)
 
                         pro_jit, core_jit, epi_jit = m1.prolog, m1.core, m1.epilog
                 setattr(self, f'pro_{jitname}', pro_jit)

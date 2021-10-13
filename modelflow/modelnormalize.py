@@ -140,9 +140,24 @@ def preprocess(udtryk,funks=[]):
         fordif,difudtryk_up,efterdif=funk_find_arg(diff_match,udtryk_up)
         udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif  
          
+    while  diff_match := funk_in('D' , udtryk_up):
+        fordif,difudtryk_up,efterdif=funk_find_arg(diff_match,udtryk_up)
+        difudtryk_up = difudtryk_up.replace(' ','').replace(',0,1','') if difudtryk_up.endswith(',0,1')  else difudtryk_up
+        udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif  
+         
     return udtryk_up         
  
-        
+def fixleads(eq,check=False):
+   leadpat      = r'(?:\(([0-9]+)\))'
+   this = eq.replace(' ','').replace('\n','')
+   res = re.sub(namepat+leadpat,r'\g<1>(+\g<2>)',this)
+   if check:
+       print(f"Before {this}")
+       print(f"After  {res}")
+   return res
+
+fixleads('a = b(1) + v(33)'.upper(),1)  
+fixleads(' 0.2121303706720161 * D( LOG(QLHP), 0, 1 )           + -0.04133299713432281 * D( LOG(QLHP(1)), 0, 1 )           + 0.9805787292172398 * ZLHP(1)           + -0.1948471451936957 * ZLHP(2) ')     
 def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A'):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
@@ -169,7 +184,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         lhs_var_clash = {var : Symbol(var) for var in lhs_var}
         return lhs_var_clash
 
-    preprocessed = preprocess(ind_o) if do_preprocess else ind_o[:]
+    preprocessed = preprocess(fixleads(ind_o)) if do_preprocess else fixleads(ind_o[:])
     ind = preprocessed.upper().replace('LOG(','log(').replace('EXP(','exp(')
     lhs,rhs=ind.strip().split('=',1)
     lhs = lhs.strip()
@@ -248,7 +263,12 @@ if __name__ == '__main__':
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
     normal('a = pct_growth(b)',add_adjust=0).fprint
     normal("DLOG(SAUNECONGOVTXN) =-0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
-    normal("DLOG(a) = b").fprint
+    normal("D(a,0,1) = b").fprint
+    normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
+    normal('a = D( LOG(QLHP(+1)))').fprint
+    # breakpoint()
+    normal('zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_adjust=1).fprint
+    fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')
 #%%
 
 elem_trans('DLOG(PAKNVRENPRODXN)=DLOG((WLDHYDROPOWER*PAKPANUSATLS)/(@ELEM(WLDHYDROPOWER,2011)*@ELEM(PAKPANUSATLS,2011)))-0.00421833463034*DUMH')
