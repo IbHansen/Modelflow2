@@ -1451,7 +1451,9 @@ class Dekomp_Mixin():
     def get_att_pct(self, n, filter=True, lag=True, start='', end=''):
         ''' det attribution pct for a variable.
          I little effort to change from multiindex to single node name'''
-        res = self.dekomp(n, lprint=0, start=start, end=end)
+        tstart = self.current_per[0] if start =='' else start
+        tend   = self.current_per[-1] if end =='' else end
+        res = self.dekomp(n, lprint=0, start=tstart, end=tend)
         res_pct = res[2].iloc[:-2, :]
         if lag:
             out_pct = pd.DataFrame(res_pct.values, columns=res_pct.columns,
@@ -1478,7 +1480,7 @@ class Dekomp_Mixin():
 
     def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0
                     ,nametrans = lambda varnames,thismodel : varnames):
-        xx = self.dekomp(varnavn, lprint=False)
+        xx = self.dekomp(varnavn,self.current_per[0],self.current_per[-1],lprint=False)
         # breakpoint()
         ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
             lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
@@ -1991,23 +1993,38 @@ class Graph_Draw_Mixin():
             out = 'red'
         return out
 
-    def upwalk(self, g, navn, level=0, parent='Start', up=20, select=False, lpre=True):
+    def upwalk(self, g, navn, level=0, parent='Start', up=20, select=0.0, lpre=True):
         ''' Traverse the call tree from name, and returns a generator \n
         to get a list just write: list(upwalk(...)) 
-        up determins the number of generations to back up 
+        up determins the number
+        of generations to back up 
 
         '''
         if select:
             if level <= up:
+                # print(level,parent,navn)
+                # print(f'upwalk {level=} {parent=} {navn=}')
+
                 if parent != 'Start':
-                    if (g[navn][parent]['att'] != 0.0).any(axis=1).any():
+                    # print(level,parent,navn,'\n',(g[navn][parent]['att']))
+                    if (g[navn][parent]['att'].abs() >= select).any(axis=1).any():
                         # return level=0 in order to prune dublicates
+                        # print(f'Yield {level=} {parent=} {navn=}')
                         yield node(level, parent, navn)
                 for child in (g.predecessors(navn) if lpre else g[navn]):
+
                     try:
-                        if (g[child][navn]['att'] != 0.0).any(axis=1).any():
-                            yield from self.upwalk(g, child, level + 1, navn, up, select)
+                        # print('vvv',level,parent,navn)
+                        if  parent == 'Start': # (g[parent][navn]['att'].abs() >= select).any(axis=1).any():
+                            # print(f'Yield upwalk {(level+1)=} {child=} {navn=}')
+
+                            yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
+                        elif (g[navn][parent]['att'].abs() >= select).any(axis=1).any(): 
+                            yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
                     except:
+                       # breakpoint() 
+                        # print('xxx',level,parent,navn,'\n',g[navn][parent]['att'])
+                        
                         pass
         else:
             if level <= up:
@@ -2046,8 +2063,8 @@ class Graph_Draw_Mixin():
                 [var]  # remember the starting node
             nodestodekomp = list(
                 {n.split('(')[0] for n in nodelist if n.split('(')[0] in self.endogene})
-    #        print(nodelist)
-    #        print(nodestodekomp)
+            print(nodelist)
+            print(nodestodekomp)
             with self.timer('Dekomp', debug) as t:
                 pctdic2 = {n: self.get_att_pct(
                     n, lag=lag, start=start, end=end) for n in nodestodekomp}
@@ -2496,7 +2513,7 @@ class Graph_Draw_Mixin():
             return out
 
         pre = 'digraph TD {rankdir ="HR" \n' if kwargs.get(
-            'HR', True) else 'digraph TD { rankdir ="LR" \n'
+            'HR', False) else 'digraph TD { rankdir ="LR" \n'
         nodes = '{node  [margin=0.025 fontcolor=blue style=filled ] \n ' + \
             '\n'.join([makenode(v, navn) for v in nodelist])+' \n} \n'
 
