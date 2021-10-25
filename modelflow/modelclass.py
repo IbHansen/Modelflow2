@@ -1321,7 +1321,7 @@ class Dekomp_Mixin():
     '''
     from functools import lru_cache
 
-    @lru_cache(maxsize=10000)
+    @lru_cache(maxsize=2048)
     def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
         '''Print all variables that determines input variable (varnavn)
         optional -- enter period and databank to get var values for chosen period'''
@@ -1467,7 +1467,10 @@ class Dekomp_Mixin():
     def get_att_level(self, n, filter=True, lag=True, start='', end=''):
         ''' det attribution pct for a variable.
          I little effort to change from multiindex to single node name'''
-        res = self.dekomp(n, lprint=0, start=start, end=end)
+        tstart = self.current_per[0] if start =='' else start
+        tend   = self.current_per[-1] if end =='' else end
+         
+        res = self.dekomp(n, lprint=0, start=tstart, end=tend)
         res_level = res[1].iloc[:, :]
         if lag:
             out_pct = pd.DataFrame(res_level.values, columns=res_level.columns,
@@ -1993,6 +1996,44 @@ class Graph_Draw_Mixin():
             out = 'red'
         return out
 
+    def upwalk_x(self, g, navn, level=0, parent='Start', up=20, select=0.0, lpre=True):
+        ''' Traverse the call tree from name, and returns a generator \n
+        to get a list just write: list(upwalk(...)) 
+        up determins the number
+        of generations to back up 
+
+        '''
+        if level <= up:
+            # print(level,parent,navn)
+            # print(f'upwalk {level=} {parent=} {navn=}')
+
+            if parent != 'Start':
+                # print(level,parent,navn,'\n',(g[navn][parent]['att']))
+                if (g[navn][parent]['att'].abs() >= select).any(axis=1).any():
+                    # return level=0 in order to prune dublicates
+                    # print(f'Yield {level=} {parent=} {navn=}')
+                    yield node(level, parent, navn)
+            for child in (g.predecessors(navn) if lpre else g[navn]):
+
+                try:
+                    # print('vvv',level,parent,navn)
+                    if  parent == 'Start': # (g[parent][navn]['att'].abs() >= select).any(axis=1).any():
+                        # print(f'Yield upwalk {(level+1)=} {child=} {navn=}')
+
+                        yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
+                    elif (g[navn][parent]['att'].abs() >= select).any(axis=1).any(): 
+                        print(f'yield  {level=} {parent=} {navn=} ')
+
+                        yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
+                    else:
+                        print(f'UPS  {level=} {parent=} {navn=} ')
+                        pass
+                except Exception as e:
+                   # breakpoint() 
+                   print(f'Exception {e}')
+                   print('Problem ',level,parent,navn,'\n',g[navn][parent]['att'])
+                    
+                   pass
     def upwalk(self, g, navn, level=0, parent='Start', up=20, select=0.0, lpre=True):
         ''' Traverse the call tree from name, and returns a generator \n
         to get a list just write: list(upwalk(...)) 
@@ -2020,12 +2061,18 @@ class Graph_Draw_Mixin():
 
                             yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
                         elif (g[navn][parent]['att'].abs() >= select).any(axis=1).any(): 
+                            # print(f'yield  {level=} {parent=} {navn=} ')
+
                             yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
-                    except:
+                        else:
+                            # print(f'UPS  {level=} {parent=} {navn=} ')
+                            pass
+                    except Exception as e:
                        # breakpoint() 
-                        # print('xxx',level,parent,navn,'\n',g[navn][parent]['att'])
+                       # print(f'Exception {e}')
+                       # print('Problem ',level,parent,navn,'\n',g[navn][parent]['att'])
                         
-                        pass
+                       pass
         else:
             if level <= up:
                 if parent != 'Start':
@@ -2034,7 +2081,8 @@ class Graph_Draw_Mixin():
                 for child in (g.predecessors(navn) if lpre else g[navn]):
                     yield from self.upwalk(g, child, level + 1, navn, up, select, lpre)
 
-    def explain(self, var, up=1, start='', end='', select=False, showatt=True, lag=True, debug=0, noshow=False, dot=False, **kwargs):
+    def explain(self, var, up=1, start='', end='', select=False, showatt=True, lag=True,
+                debug=0, noshow=False, dot=False, **kwargs):
         ''' Walks a tree to explain the difference between basedf and lastdf
 
         Parameters:
@@ -2056,15 +2104,15 @@ class Graph_Draw_Mixin():
         '''
         if up > 0:
             with self.timer('Get totgraph', debug) as t:
-                startgraph = self.totgraph  # if lag else self.totgraph_nolag
+                startgraph = self.totgraph   if lag else self.totgraph_nolag
             edgelist = list({v for v in self.upwalk(
                 startgraph, var.upper(), up=up)})
             nodelist = list({v.child for v in edgelist}) + \
                 [var]  # remember the starting node
             nodestodekomp = list(
                 {n.split('(')[0] for n in nodelist if n.split('(')[0] in self.endogene})
-            print(nodelist)
-            print(nodestodekomp)
+            # print(nodelist)
+            # print(nodestodekomp)
             with self.timer('Dekomp', debug) as t:
                 pctdic2 = {n: self.get_att_pct(
                     n, lag=lag, start=start, end=end) for n in nodestodekomp}
@@ -3668,7 +3716,9 @@ class Solver_Mixin():
         # print(f'solver:{solver},solverkwargs:{newkwargs}')
         # breakpoint()
         outdf = self.model_solver(*args, **newkwargs)
-
+        if  newkwargs.get('cache_clear', True): 
+            self.dekomp.cache_clear()
+            
         if newkwargs.get('keep', '') and self.save:
             if newkwargs.get('keep_variables', ''):
                 keepvar = self.vlist(newkwargs.get('keep_variables', ''))
