@@ -1464,6 +1464,13 @@ class Dekomp_Mixin():
             axis=1), :] if filter else out_pct
         return out
 
+    def get_att_pct_to_from(self,to_var,from_var,lag=False):
+        '''Get the  attribution for a singel variable'''
+        outdf = self.get_att_pct(to_var.upper(),lag=lag,filter=False)
+        # print(f'{to_var=} {from_var=} {outdf.loc[from_var.upper(),:].abs().max()}')
+        
+        return outdf.loc[from_var.upper(),:]
+
     def get_att_level(self, n, filter=True, lag=True, start='', end=''):
         ''' det attribution pct for a variable.
          I little effort to change from multiindex to single node name'''
@@ -1481,13 +1488,13 @@ class Dekomp_Mixin():
             axis=1), :] if filter else out_pct
         return out
 
-    def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0
+    def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0,lag=True
                     ,nametrans = lambda varnames,thismodel : varnames):
-        xx = self.dekomp(varnavn,self.current_per[0],self.current_per[-1],lprint=False)
-        # breakpoint()
-        ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
-            lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
-        
+        # xx = self.dekomp(varnavn,self.current_per[0],self.current_per[-1],lprint=False)
+        # # breakpoint()
+        # ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
+        #     lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
+        ddf0 = self.get_att_pct(varnavn,lag=lag) if pct else  self.get_att_level(varnavn,lag=lag)
         ddf0.index = nametrans(ddf0.index,self)
         ddf = cutout(ddf0, threshold)
         fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(
@@ -1943,7 +1950,8 @@ class Graph_Draw_Mixin():
                                         self._superstrongblock, self._superstrongtype, size=size, title=title)
         return fig
 
-    def draw(self, navn, down=7, up=7, lag=True, endo=False, **kwargs):
+    
+    def draw(self, navn, down=7, up=7, lag=False, endo=False, select=0, **kwargs):
         '''draws a graph of dependensies of navn up to maxlevel
 
         :lag: show the complete graph including lagged variables else only variables. 
@@ -1955,11 +1963,11 @@ class Graph_Draw_Mixin():
         '''
         graph = self.totgraph if lag else self.totgraph_nolag
         graph = self.endograph if endo else graph
-        uplinks = self.treewalk(graph, navn.upper(), maxlevel=up, lpre=True)
+        uplinks = self.upwalk(graph, navn.upper(), maxlevel=up, lpre=True,select=select )
         downlinks = (node(-level, navn, parent) for level, parent, navn in
-                     self.treewalk(graph, navn.upper(), maxlevel=down, lpre=False))
+                     self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,select=select))
         alllinks = chain(uplinks, downlinks)
-        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, **kwargs)
+        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up,  **kwargs)
 
     def trans(self, ind, root, transdic=None, debug=False):
         ''' as there are many variable starting with SHOCK, the can renamed to save nodes'''
@@ -1996,90 +2004,85 @@ class Graph_Draw_Mixin():
             out = 'red'
         return out
 
-    def upwalk_x(self, g, navn, level=0, parent='Start', up=20, select=0.0, lpre=True):
-        ''' Traverse the call tree from name, and returns a generator \n
-        to get a list just write: list(upwalk(...)) 
-        up determins the number
-        of generations to back up 
-
-        '''
-        if level <= up:
-            # print(level,parent,navn)
-            # print(f'upwalk {level=} {parent=} {navn=}')
-
-            if parent != 'Start':
-                # print(level,parent,navn,'\n',(g[navn][parent]['att']))
-                if (g[navn][parent]['att'].abs() >= select).any(axis=1).any():
-                    # return level=0 in order to prune dublicates
-                    # print(f'Yield {level=} {parent=} {navn=}')
-                    yield node(level, parent, navn)
-            for child in (g.predecessors(navn) if lpre else g[navn]):
-
-                try:
-                    # print('vvv',level,parent,navn)
-                    if  parent == 'Start': # (g[parent][navn]['att'].abs() >= select).any(axis=1).any():
-                        # print(f'Yield upwalk {(level+1)=} {child=} {navn=}')
-
-                        yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
-                    elif (g[navn][parent]['att'].abs() >= select).any(axis=1).any(): 
-                        print(f'yield  {level=} {parent=} {navn=} ')
-
-                        yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
-                    else:
-                        print(f'UPS  {level=} {parent=} {navn=} ')
-                        pass
-                except Exception as e:
-                   # breakpoint() 
-                   print(f'Exception {e}')
-                   print('Problem ',level,parent,navn,'\n',g[navn][parent]['att'])
-                    
-                   pass
-    def upwalk(self, g, navn, level=0, parent='Start', up=20, select=0.0, lpre=True):
-        ''' Traverse the call tree from name, and returns a generator \n
-        to get a list just write: list(upwalk(...)) 
-        up determins the number
-        of generations to back up 
-
-        '''
-        if select:
-            if level <= up:
+    def upwalk(self, g, navn, level=0, parent='Start', maxlevel=20, select=0.0, lpre=True):
+         ''' Traverse the call tree from name, and returns a generator \n
+         to get a list just write: list(upwalk(...)) 
+         maxlevel determins the number
+         of generations to back maxlevel 
+    
+         '''
+         if select:
+            if level <= maxlevel:
                 # print(level,parent,navn)
                 # print(f'upwalk {level=} {parent=} {navn=}')
-
+       
                 if parent != 'Start':
-                    # print(level,parent,navn,'\n',(g[navn][parent]['att']))
-                    if (g[navn][parent]['att'].abs() >= select).any(axis=1).any():
-                        # return level=0 in order to prune dublicates
-                        # print(f'Yield {level=} {parent=} {navn=}')
+                    # print(f'Look at  {parent=}  {navn=}' )
+                     if ((self.get_att_pct_to_from(parent,navn) if lpre 
+                         else self.get_att_pct_to_from(navn,parent)).abs() >= select).any():
+                       # print(f'yield {parent=}  {navn=}' )
                         yield node(level, parent, navn)
                 for child in (g.predecessors(navn) if lpre else g[navn]):
-
-                    try:
-                        # print('vvv',level,parent,navn)
-                        if  parent == 'Start': # (g[parent][navn]['att'].abs() >= select).any(axis=1).any():
-                            # print(f'Yield upwalk {(level+1)=} {child=} {navn=}')
-
-                            yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
-                        elif (g[navn][parent]['att'].abs() >= select).any(axis=1).any(): 
-                            # print(f'yield  {level=} {parent=} {navn=} ')
-
-                            yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
-                        else:
-                            # print(f'UPS  {level=} {parent=} {navn=} ')
-                            pass
-                    except Exception as e:
-                       # breakpoint() 
-                       # print(f'Exception {e}')
-                       # print('Problem ',level,parent,navn,'\n',g[navn][parent]['att'])
-                        
-                       pass
-        else:
-            if level <= up:
+                        # breakpoint()
+                            if ((self.get_att_pct_to_from(navn,child) if lpre 
+                                else self.get_att_pct_to_from(child,navn)).abs() >= select).any():
+                                    # print(f'yield from {child=} {navn=}')
+                                    yield from self.upwalk(g, child, level + 1, navn, maxlevel, select,lpre)
+  
+         else:
+            if level <= maxlevel:
                 if parent != 'Start':
                     # return level=0 in order to prune dublicates
                     yield node(level, parent, navn)
                 for child in (g.predecessors(navn) if lpre else g[navn]):
-                    yield from self.upwalk(g, child, level + 1, navn, up, select, lpre)
+                    yield from self.upwalk(g, child, level + 1, navn, maxlevel, select, lpre)
+
+    def upwalk_old(self, g, navn, level=0, parent='Start', up=20, select=0.0, lpre=True):
+     ''' Traverse the call tree from name, and returns a generator \n
+     to get a list just write: list(upwalk(...)) 
+     up determins the number
+     of generations to back up 
+
+     '''
+     if select:
+         if level <= up:
+             # print(level,parent,navn)
+             # print(f'upwalk {level=} {parent=} {navn=}')
+
+             if parent != 'Start':
+                 # print(level,parent,navn,'\n',(g[navn][parent]['att']))
+                 if (g[navn][parent]['att'].abs() >= select).any(axis=1).any():
+                     # return level=0 in order to prune dublicates
+                     # print(f'Yield {level=} {parent=} {navn=}')
+                     yield node(level, parent, navn)
+             for child in (g.predecessors(navn) if lpre else g[navn]):
+
+                 try:
+                     # print('vvv',level,parent,navn)
+                     if  parent == 'Start': # (g[parent][navn]['att'].abs() >= select).any(axis=1).any():
+                         # print(f'Yield upwalk {(level+1)=} {child=} {navn=}')
+
+                         yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
+                     elif (g[navn][parent]['att'].abs() >= select).any(axis=1).any(): 
+                         # print(f'yield  {level=} {parent=} {navn=} ')
+
+                         yield from self.upwalk(g, child, level + 1, navn, up, select,lpre)
+                     else:
+                         # print(f'UPS  {level=} {parent=} {navn=} ')
+                         pass
+                 except Exception as e:
+                    # breakpoint() 
+                    # print(f'Exception {e}')
+                    # print('Problem ',level,parent,navn,'\n',g[navn][parent]['att'])
+                     
+                    pass
+     else:
+         if level <= up:
+             if parent != 'Start':
+                 # return level=0 in order to prune dublicates
+                 yield node(level, parent, navn)
+             for child in (g.predecessors(navn) if lpre else g[navn]):
+                 yield from self.upwalk(g, child, level + 1, navn, up, select, lpre)
 
     def explain(self, var, up=1, start='', end='', select=False, showatt=True, lag=True,
                 debug=0, noshow=False, dot=False, **kwargs):
@@ -2277,142 +2280,6 @@ class Graph_Draw_Mixin():
         else:
             return f'tooltip="{des}"'
 
-    def makedot(self, alledges, navn='', **kwargs):
-        ''' makes a drawing of all edges in list alledges
-        all is the edges
-
-
-        :all: show values for .dfbase and .dflaste
-        :last: show the values for .dflast 
-        :sink: variale to use as sink 
-        :source: variale to use as ssource 
-        :svg: Display the svg image in browser
-        :pdf: display the pdf result in acrobat reader 
-        :saveas: Save the drawing as name 
-        :size: figure size default (6,6)
-        :warnings: warnings displayed in command console, default =False 
-        :invisible: set of invisible nodes 
-        :labels: dict of labels for edges 
-        :transdic: dict of translations for consolidation of nodes {'SHOCK[_A-Z]*__J':'SHOCK__J','DEV__[_A-Z]*':'DEV'}
-        :dec: decimal places in numbers
-        :HR: horisontal orientation default = False 
-        :des: inject variable descriptions 
-        :fokus: Variable to get special colour
-
-
-'''
-
-        invisible = kwargs.get('invisible', set())
-
-        des = kwargs.get('des', True)
-
-        fokus = kwargs.get('fokus', '')
-
-        dec = kwargs.get('dec', 3)
-
-        # %
-
-        def stylefunk(n1=None, n2=None, invisible=set()):
-            if n1 in invisible or n2 in invisible:
-                if n2:
-                    return 'style = invisible arrowhead=none '
-                else:
-                    return 'style = invisible '
-
-            else:
-                #                return ''
-                return 'style = filled'
-
-        def stylefunkhtml(n1=None, invisible=set()):
-            #            return ''
-            if n1 in invisible:
-                return 'style = "invisible" '
-            else:
-                return 'style = "filled"'
-
-        if 'transdic' in kwargs:
-            alllinks = (node(x.lev, self.trans(x.parent, navn, kwargs['transdic']), self.trans(
-                x.child, navn, kwargs['transdic'])) for x in alledges)
-        elif hasattr(self, 'transdic'):
-            alllinks = (node(x.lev, self.trans(x.parent, navn, self.transdic), self.trans(
-                x.child, navn, self.transdic)) for x in alledges)
-        else:
-            alllinks = alledges
-
-        labelsdic = kwargs.get('labels', {})
-        labels = self.defsub(labelsdic)
-
-        ibh = {node(0, x.parent, x.child)
-               for x in alllinks}  # To weed out multible  links
-    #
-        nodelist = {n for nodes in ibh for n in (nodes.parent, nodes.child)}
-#        print(nodelist)
-
-        def makenode(v, navn):
-            if kwargs.get('last', False) or kwargs.get('all', False):
-                try:
-                    t = pt.udtryk_parse(v, funks=[])
-                    var = t[0].var
-                    lag = int(t[0].lag) if t[0].lag else 0
-                    bvalues = [float(get_a_value(self.basedf, per, var, lag))
-                               for per in self.current_per] if kwargs.get('all', False) else 0
-                    lvalues = [float(get_a_value(self.lastdf, per, var, lag)) for per in self.current_per] if kwargs.get(
-                        'last', False) or kwargs.get('all', False) else 0
-                    dvalues = [float(get_a_value(self.lastdf, per, var, lag)-get_a_value(self.basedf, per, var, lag))
-                               for per in self.current_per] if kwargs.get('all', False) else 0
-                    per = "<TR><TD ALIGN='LEFT'>Per</TD>" + \
-                        ''.join(['<TD>'+(f'{p}'.strip()+'</TD>').strip()
-                                for p in self.current_per])+'</TR>'
-                    base = "<TR><TD ALIGN='LEFT' TOOLTIP='Baseline values' href='bogus'>Base</TD>"+''.join(["<TD ALIGN='RIGHT'  TOOLTIP='Baseline values' href='bogus' >"+(
-                        f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>' if kwargs.get('all', False) else ''
-                    last = "<TR><TD ALIGN='LEFT' TOOLTIP='Latest run values' href='bogus'>Last</TD>"+''.join(["<TD ALIGN='RIGHT'>"+(
-                        f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>' if kwargs.get('last', False) or kwargs.get('all', False) else ''
-                    dif = "<TR><TD ALIGN='LEFT' TOOLTIP='Difference between baseline and latest run' href='bogus'>Diff</TD>" + \
-                        ''.join(["<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip(
-                        ) for b in dvalues])+'</TR>' if kwargs.get('all', False) else ''
-#                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '
-                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
-                        f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
-                    pass
-
-                except Exception as inst:
-                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
-                        f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{self.get_des_html(v)}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
-            else:
-                out = f'"{v}" [ shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} ' + (
-                    f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {self.maketip(v)}>{self.get_des_html(v,des)}</TD></TR> </TABLE>> ]")
-            return out
-
-        pre = 'digraph TD {rankdir ="HR" \n' if kwargs.get(
-            'HR', True) else 'digraph TD { rankdir ="LR" \n'
-        nodes = '{node  [margin=0.025 fontcolor=blue style=filled ] \n ' + \
-            '\n'.join([makenode(v, navn) for v in nodelist])+' \n} \n'
-
-        links = '\n'.join(['"'+v.child+'" -> "'+v.parent+'"' +
-                          f'[ {stylefunk(v.child,v.parent,invisible=invisible)}   ]' for v in ibh])
-
-        psink = '\n{ rank = sink; "' + \
-            kwargs['sink'] + '"  ; }' if kwargs.get('sink', False) else ''
-        psource = '\n{ rank = source; "' + \
-            kwargs['source']+'"  ; }' if kwargs.get('source', False) else ''
-        clusterout = ''
-        # expect a dict with clustername as key and a list of nodes as content
-        if kwargs.get('cluster', False):
-            clusterdic = kwargs.get('cluster', False)
-
-            for i, (c, cl) in enumerate(clusterdic.items()):
-                varincluster = ' '.join([f'"{v.upper()}"' for v in cl])
-                clusterout = clusterout + \
-                    f'\n subgraph cluster{i} {{ {varincluster} ; label = "{c}" ; color=lightblue ; style = filled ;fontcolor = yellow}}'
-
-        fname = kwargs.get('saveas', navn if navn else "A_model_graph")
-        ptitle = '\n label = "'+kwargs.get('title', fname)+'";'
-        post = '\n}'
-        out = pre+nodes+links+psink+psource+clusterout+ptitle+post
-        # self.display_graph(out,fname,**kwargs)
-
-        # run('%windir%\system32\mspaint.exe '+ pngname,shell=True) # display the drawing
-        return out
 
     def makedotnew(self, alledges, navn='', **kwargs):
         ''' makes a drawing of all edges in list alledges
@@ -2439,7 +2306,6 @@ class Graph_Draw_Mixin():
 
 
 '''
-
         invisible = kwargs.get('invisible', set())
 
         des = kwargs.get('des', True)
@@ -2457,18 +2323,19 @@ class Graph_Draw_Mixin():
             return xx
 
         def getpw(v):
-            '''Define pennwidth based on explanation in the last period '''
+            '''Define pennwidth based on max explanation over the period '''
             try:
                 # breakpoint()
-                return max(0.5, min(5., self.att_dic[v.parent].loc[v.child].abs().max()/20.))
+                return f'{max(1., min(8., att_dic[v.parent].loc[v.child].abs().max()/10.)):2}'
+                # return f'{max(1., min(8., self.get_att_pct_to_from(v.parent,v.child).abs().max()/10.)):.2}'
             except:
-                return 0.5
+                return '0.5'
             
         def getpct(v):
             '''Define pennwidth based on explanation in the last period '''
             try:
                 # breakpoint()
-                return f'" {v.child} -> {v.parent} Min. att. {self.att_dic[v.parent].loc[v.child].min():.0f}%  max: {self.att_dic[v.parent].loc[v.child].max():.0f}%"'
+                return f'" {v.child} -> {v.parent} Min. att. {att_dic[v.parent].loc[v.child].min():.0f}%  max: {att_dic[v.parent].loc[v.child].max():.0f}%"'
             except:
                 return 'NA'
 
@@ -2501,15 +2368,19 @@ class Graph_Draw_Mixin():
 
         labelsdic = kwargs.get('labels', {})
         labels = self.defsub(labelsdic)
+        
+        if not len(alllinks):
+            print(f'No graph {navn}')
+            return 
 
         maxlevel = max([l for l, p, c in alllinks])
 
         if att:
             to_att = {p for l, p, c in alllinks }|{ c.split('(')[0] for l, p, c in alllinks if c.split('(')[0] in self.endogene}
-            self.att_dic = {v: self.get_att_pct(
-                v.split('(')[0], lag=True, start='', end='') for v in to_att}
-            self.att_dic_level = {v: self.get_att_level(
-                v.split('(')[0], lag=True, start='', end='') for v in to_att}
+            att_dic = {v: self.get_att_pct(
+                v.split('(')[0], lag=False, start='', end='') for v in to_att}
+            att_dic_level = {v: self.get_att_level(
+                v.split('(')[0], lag=False, start='', end='') for v in to_att}
             
 
         ibh = {node(0, x.parent, x.child)
@@ -2567,6 +2438,7 @@ class Graph_Draw_Mixin():
 
         links = '\n'.join([f'"{v.child}" -> "{v.parent}" [ {stylefunk(v.child,v.parent,invisible=invisible)} tooltip={getpct(v)} href="bogus" penwidth = {getpw(v)} ]'
                            for v in ibh])
+        # breakpoint()
         # links = '\n'.join(
         #     [f'"{v.child}" -> "{v.parent}" [penwidth={p}]' for v, p in zip(ibh, pw)])
 
@@ -2618,7 +2490,7 @@ class Graph_Draw_Mixin():
 '''
 
         dot = self.makedotnew(alledges, navn=navn, **kwargs)
-
+        
         fname = kwargs.get('saveas', navn if navn else "A_model_graph")
 
         if kwargs.get('dot', False):
