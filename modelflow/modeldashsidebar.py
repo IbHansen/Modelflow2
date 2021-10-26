@@ -189,7 +189,7 @@ class Dash_Mixin():
         )
         
         graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE, 
-                        dot_source =   self.draw(selected_var,up=1,down=0,select=False,showatt=False,lag=True,debug=0,dot=True,HR=False))
+                        dot_source =   self.draw(selected_var,up=1,down=0,select=10.,showatt=False,lag=True,debug=0,dot=True,HR=False))
                                      
                          ,width={'size':12,'offset':1,'order':'last'})
         
@@ -274,7 +274,7 @@ class Dash_Mixin():
                     outvar=outvar_state
                       
                 if onclick == 'c' or outvar not in self.value_dic.keys() or trigger == 'orient' :   
-                    dot_out =  self.draw(outvar,up=up,down=down,select=False,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
+                    dot_out =  self.draw(outvar,up=up,down=down,select=10.,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
                 else:
                     dot_out = dash.no_update
                       

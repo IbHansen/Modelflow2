@@ -2208,8 +2208,8 @@ class Graph_Draw_Mixin():
                 hval = f"<TR><TD COLSPAN = '{dflen+1}' {self.maketip(v,True)}>{v}</TD></TR>"
                 lval = dftotable(dfval, dec)
                 try:
-                    latt = f"<TR><TD COLSPAN = '{dflen+1}'> % Explained by</TD></TR>{dftotable(att_dic[v],dec)}" if len(
-                        att_dic[v]) else ''
+                    latt = f"<TR><TD COLSPAN = '{dflen+1}'> % Explained by</TD></TR>{dftotable(self.att_dic[v],dec)}" if len(
+                        self.att_dic[v]) else ''
                 except:
                     latt = ''
                 # breakpoint()
@@ -2335,7 +2335,7 @@ class Graph_Draw_Mixin():
             '''Define pennwidth based on explanation in the last period '''
             try:
                 # breakpoint()
-                return f'" {v.child} -> {v.parent} Min. att. {att_dic[v.parent].loc[v.child].min():.0f}%  max: {att_dic[v.parent].loc[v.child].max():.0f}%"'
+                return f'" {v.child} -> {v.parent} Min. att. {self.att_dic[v.parent].loc[v.child].min():.0f}%  max: {self.att_dic[v.parent].loc[v.child].max():.0f}%"'
             except:
                 return 'NA'
 
@@ -2377,9 +2377,9 @@ class Graph_Draw_Mixin():
 
         if att:
             to_att = {p for l, p, c in alllinks }|{ c.split('(')[0] for l, p, c in alllinks if c.split('(')[0] in self.endogene}
-            att_dic = {v: self.get_att_pct(
+            self.att_dic = {v: self.get_att_pct(
                 v.split('(')[0], lag=False, start='', end='') for v in to_att}
-            att_dic_level = {v: self.get_att_level(
+            self.att_dic_level = {v: self.get_att_level(
                 v.split('(')[0], lag=False, start='', end='') for v in to_att}
             
 
