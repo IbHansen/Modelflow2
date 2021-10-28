@@ -1951,7 +1951,7 @@ class Graph_Draw_Mixin():
         return fig
 
     
-    def draw(self, navn, down=7, up=7, lag=False, endo=False, select=0, **kwargs):
+    def draw(self, navn, down=7, up=7, lag=False, endo=False, filter=0, **kwargs):
         '''draws a graph of dependensies of navn up to maxlevel
 
         :lag: show the complete graph including lagged variables else only variables. 
@@ -1963,9 +1963,9 @@ class Graph_Draw_Mixin():
         '''
         graph = self.totgraph if lag else self.totgraph_nolag
         graph = self.endograph if endo else graph
-        uplinks = self.upwalk(graph, navn.upper(), maxlevel=up, lpre=True,select=select )
+        uplinks = self.upwalk(graph, navn.upper(), maxlevel=up, lpre=True,filter=filter )
         downlinks = (node(-level, navn, parent) for level, parent, navn in
-                     self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,select=select))
+                     self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,filter=filter))
         alllinks = chain(uplinks, downlinks)
         return self.todot2(alllinks, navn=navn.upper(), down=down, up=up,  **kwargs)
 
@@ -2004,14 +2004,14 @@ class Graph_Draw_Mixin():
             out = 'red'
         return out
 
-    def upwalk(self, g, navn, level=0, parent='Start', maxlevel=20, select=0.0, lpre=True):
+    def upwalk(self, g, navn, level=0, parent='Start', maxlevel=20, filter=0.0, lpre=True):
          ''' Traverse the call tree from name, and returns a generator \n
          to get a list just write: list(upwalk(...)) 
          maxlevel determins the number
          of generations to back maxlevel 
     
          '''
-         if select:
+         if filter:
             if level <= maxlevel:
                 # print(level,parent,navn)
                 # print(f'upwalk {level=} {parent=} {navn=}')
@@ -2019,15 +2019,15 @@ class Graph_Draw_Mixin():
                 if parent != 'Start':
                     # print(f'Look at  {parent=}  {navn=}' )
                      if ((self.get_att_pct_to_from(parent,navn) if lpre 
-                         else self.get_att_pct_to_from(navn,parent)).abs() >= select).any():
+                         else self.get_att_pct_to_from(navn,parent)).abs() >= filter).any():
                        # print(f'yield {parent=}  {navn=}' )
                         yield node(level, parent, navn)
                 for child in (g.predecessors(navn) if lpre else g[navn]):
                         # breakpoint()
                             if ((self.get_att_pct_to_from(navn,child) if lpre 
-                                else self.get_att_pct_to_from(child,navn)).abs() >= select).any():
+                                else self.get_att_pct_to_from(child,navn)).abs() >= filter).any():
                                     # print(f'yield from {child=} {navn=}')
-                                    yield from self.upwalk(g, child, level + 1, navn, maxlevel, select,lpre)
+                                    yield from self.upwalk(g, child, level + 1, navn, maxlevel, filter,lpre)
   
          else:
             if level <= maxlevel:
@@ -2035,7 +2035,7 @@ class Graph_Draw_Mixin():
                     # return level=0 in order to prune dublicates
                     yield node(level, parent, navn)
                 for child in (g.predecessors(navn) if lpre else g[navn]):
-                    yield from self.upwalk(g, child, level + 1, navn, maxlevel, select, lpre)
+                    yield from self.upwalk(g, child, level + 1, navn, maxlevel, filter, lpre)
 
     def upwalk_old(self, g, navn, level=0, parent='Start', up=20, select=0.0, lpre=True):
      ''' Traverse the call tree from name, and returns a generator \n
