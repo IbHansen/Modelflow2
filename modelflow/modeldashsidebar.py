@@ -28,6 +28,9 @@ import pandas as pd
 
 from modelhelp import cutout
 
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 
 initial_dot_source = """
@@ -75,8 +78,8 @@ def app_run(app,jupyter=False,debug=False,port=5000):
         app.run_server(debug=debug,port=port)
 
 
-def get_stack(df,v='Guess it',heading='Yes',pct=True):
-    pv = cutout(df,5. )
+def get_stack(df,v='Guess it',heading='Yes',pct=True,threshold=0.5):
+    pv = cutout(df,threshold)
     template =  '%{y:10.0f}%' if pct else '%{y:15.2f}' 
     trace = [go.Bar(x=pv.columns.astype('str'), y=pv.loc[rowname,:], name=rowname,hovertemplate = template,) for rowname in pv.index]
     out = { 'data': trace,
@@ -122,7 +125,8 @@ def generate_table(dataframe, max_rows=10):
 class Dash_Mixin():
     
           
-    def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=True,port=5001): 
+    def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=True,port=5001,lag= False,filter = 0,up=1,down=0,
+                  threshold=0.5): 
         self.dashport = port
         selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
         sidebar = html.Div(
@@ -138,12 +142,12 @@ class Dash_Mixin():
                   for v in sorted(self.allvar.keys())]),
              
               html.H3("Up Levels"),
-              dcc.Dropdown(id="up",value=1,options=[
+              dcc.Dropdown(id="up",value=up,options=[
                   dict(label=engine, value=engine)
                   for engine in list(range(10))]),
 
               html.H3("Down levels"),
-              dcc.Dropdown(id="down",value=0,options=[
+              dcc.Dropdown(id="down",value=down,options=[
                   dict(label=engine, value=engine)
                   for engine in list(range(10))]),
              
@@ -189,7 +193,8 @@ class Dash_Mixin():
         )
         
         graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE, 
-                        dot_source =   self.draw(selected_var,up=1,down=0,select=10.,showatt=False,lag=True,debug=0,dot=True,HR=False))
+                        dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
+                                                 debug=0,dot=True,HR=False,filter = filter))
                                      
                          ,width={'size':12,'offset':1,'order':'last'})
         
@@ -274,7 +279,8 @@ class Dash_Mixin():
                     outvar=outvar_state
                       
                 if onclick == 'c' or outvar not in self.value_dic.keys() or trigger == 'orient' :   
-                    dot_out =  self.draw(outvar,up=up,down=down,select=10.,showatt=False,lag=True,debug=0,dot=True,HR=orient=='h')
+                    dot_out =  self.draw(outvar,up=up,down=down,filter=filter,showatt=False,debug=0,
+                                         lag=lag,dot=True,HR=orient=='h')
                 else:
                     dot_out = dash.no_update
                       
@@ -284,12 +290,12 @@ class Dash_Mixin():
                     plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}')
                 elif plot_show == 'Att':
                    if outvar in self.endogene:         
-                       plot_out = get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}')
+                       plot_out = get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',threshold=threshold)
                    else: 
                        plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
                 elif plot_show == 'Attlevel':
                    if outvar in self.endogene:         
-                       plot_out = get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',pct=False)
+                       plot_out = get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',pct=False,threshold=threshold)
                    else: 
                        plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
                 else:

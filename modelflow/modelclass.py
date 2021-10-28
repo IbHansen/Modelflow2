@@ -1391,8 +1391,9 @@ class Dekomp_Mixin():
                                                                        varnavn] / (0.0000001+smallbase.loc[print_per, varnavn])-1)
         res2df = res2df.dropna()
     #
-        pctendo = (resdf / (0.000000001+difendo[print_per]) * 100).sort_values(
+        pctendo = (resdf / (difendo[print_per]) *(difendo[print_per]>0.000001) * 100).sort_values(
             print_per[-1], ascending=False)       # each contrinution in pct of total change
+        # breakpoint()
         residual = pctendo.sum() - 100
         pctendo.at[('Total', 0), print_per] = pctendo.sum()
         pctendo.at[('Residual', 0), print_per] = residual
@@ -1448,7 +1449,7 @@ class Dekomp_Mixin():
                            sort=sort, title=ntitle, bartype='bar', threshold=threshold)
         return res
 
-    def get_att_pct(self, n, filter=True, lag=True, start='', end=''):
+    def get_att_pct(self, n, filter=False, lag=True, start='', end=''):
         ''' det attribution pct for a variable.
          I little effort to change from multiindex to single node name'''
         tstart = self.current_per[0] if start =='' else start
@@ -1471,7 +1472,7 @@ class Dekomp_Mixin():
         
         return outdf.loc[from_var.upper(),:]
 
-    def get_att_level(self, n, filter=True, lag=True, start='', end=''):
+    def get_att_level(self, n, filter=False, lag=True, start='', end=''):
         ''' det attribution pct for a variable.
          I little effort to change from multiindex to single node name'''
         tstart = self.current_per[0] if start =='' else start
@@ -1961,7 +1962,9 @@ class Graph_Draw_Mixin():
 
 
         '''
-        graph = self.totgraph if lag else self.totgraph_nolag
+        if filter and lag:
+            print('No lagged nodes when using filter')
+        graph = self.totgraph if (lag and not filter) else self.totgraph_nolag
         graph = self.endograph if endo else graph
         uplinks = self.upwalk(graph, navn.upper(), maxlevel=up, lpre=True,filter=filter )
         downlinks = (node(-level, navn, parent) for level, parent, navn in
@@ -2018,16 +2021,25 @@ class Graph_Draw_Mixin():
        
                 if parent != 'Start':
                     # print(f'Look at  {parent=}  {navn=}' )
-                     if ((self.get_att_pct_to_from(parent,navn) if lpre 
-                         else self.get_att_pct_to_from(navn,parent)).abs() >= filter).any():
-                       # print(f'yield {parent=}  {navn=}' )
-                        yield node(level, parent, navn)
+                    try:
+                         if ((self.get_att_pct_to_from(parent,navn) if lpre 
+                             else self.get_att_pct_to_from(navn,parent)).abs() >= filter).any():
+                           # print(f'yield {parent=}  {navn=}' )
+                                yield node(level, parent, navn)
+                    except:
+                        pass
+                        # yield node(level, parent, navn)
+
                 for child in (g.predecessors(navn) if lpre else g[navn]):
                         # breakpoint()
+                        try:
                             if ((self.get_att_pct_to_from(navn,child) if lpre 
                                 else self.get_att_pct_to_from(child,navn)).abs() >= filter).any():
                                     # print(f'yield from {child=} {navn=}')
                                     yield from self.upwalk(g, child, level + 1, navn, maxlevel, filter,lpre)
+                        except:
+                            yield from self.upwalk(g, child, level + 1, navn, maxlevel, filter,lpre)
+                            pass
   
          else:
             if level <= maxlevel:
