@@ -2326,7 +2326,7 @@ class Graph_Draw_Mixin():
             '''Define pennwidth based on max explanation over the period '''
             try:
                 # breakpoint()
-                return f'{max(1., min(8., att_dic[v.parent].loc[v.child].abs().max()/10.)):2}'
+                return f'{max(1., min(8., self.att_dic[v.parent].loc[v.child].abs().max()/10.)):2}'
                 # return f'{max(1., min(8., self.get_att_pct_to_from(v.parent,v.child).abs().max()/10.)):.2}'
             except:
                 return '0.5'
@@ -5565,7 +5565,8 @@ Frml <> x = 0.5 * c +a$'''
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
     mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
-    mmodel.X.draw(up=1, down=1,svg=1,browser=1)
+    mmodel.X.draw(up=1, down=1,svg=1,browser=1,filter=0.01)
+    mmodel.draw_new('X',up=1, down=1,svg=1,browser=1,filter=0.01,lag=0)
     mmodel.x
     mmodel.dekomp('X',time_att=0)
     print(mmodel.get_eq_des('A'))
