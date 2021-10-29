@@ -41,21 +41,24 @@ a->c->d
 }
 """
 
-
+sidebar_width, adbar_width = "16rem", "12rem"
 # the style arguments for the sidebar. We use position:fixed and a fixed width
 SIDEBAR_STYLE = {
     "position": "fixed",
     "top": 0,
     "left": 0,
     "bottom": 0,
-    "width": "16rem",
+    "width": sidebar_width,
     "padding": "2rem 1rem",
     "background-color": "#f8f9fa",
+    "overflow": "scroll",
 }
 
 # the styles for the main content position it to the right of the sidebar and
 # add some padding.
-CONTENT_STYLE = {"background-color": "f8f9fa"
+CONTENT_STYLE = {
+    "background-color": "f8f9fa",
+    "margin-left": sidebar_width,
 }
 
 
@@ -66,15 +69,22 @@ def app_setup(jupyter=False):
         app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     return app                 
 
-def app_run(app,jupyter=False,debug=False,port=5000):
+def app_run(app,jupyter=False,debug=False,port=5000,inline=True):
     def open_browser(port=port):
     	webbrowser.open_new(f"http://localhost:{port}")
     
     Timer(1, open_browser).start()            
        
     if jupyter:
-        app.run_server(debug=debug,port=port,mode='external')
-    else:     
+        if inline:
+            app.run_server(debug=debug,port=port,mode='inline')
+        else:     
+            Timer(1, open_browser).start()            
+            app.run_server(debug=debug,port=port,mode='external')
+
+    else:    
+        Timer(1, open_browser).start()            
+
         app.run_server(debug=debug,port=port)
 
 
@@ -125,8 +135,8 @@ def generate_table(dataframe, max_rows=10):
 class Dash_Mixin():
     
           
-    def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=True,port=5001,lag= False,filter = 0,up=1,down=0,
-                  threshold=0.5): 
+    def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=False,port=5001,lag= False,filter = 0,up=1,down=0,
+                  threshold=0.5,inline=True): 
         self.dashport = port
         selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
         sidebar = html.Div(
@@ -189,7 +199,7 @@ class Dash_Mixin():
                    
              
             ],
-            style=SIDEBAR_STYLE,
+            style=SIDEBAR_STYLE
         )
         
         graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE, 
@@ -204,7 +214,7 @@ class Dash_Mixin():
                         figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
                          ],
                             width={'size':12,'offset':1,'order':'last'},
-                            style={"height": "100%"})
+                            style=CONTENT_STYLE)
         
         
         twopanel = [
@@ -214,7 +224,7 @@ class Dash_Mixin():
         onepanel = [
             dbc.Row(graph,className="h-100",justify='start')]
         
-        body2 = dbc.Container(twopanel,id='body2',style={"height": "100vh"},fluid=False)
+        body2 = dbc.Container(twopanel,id='body2',style={"height": "100vh"},fluid=True)
         body1 = dbc.Container(onepanel,id='body',style={"height": "100vh"},fluid=True)
         
         app  = app_setup(jupyter=jupyter)
@@ -308,7 +318,7 @@ class Dash_Mixin():
                 
             return [dot_out,plot_out,outvar]
        
-        app_run(app,jupyter=jupyter,debug=debug,port=self.dashport)
+        app_run(app,jupyter=jupyter,debug=debug,port=self.dashport,inline=inline)
 #%% test        
 if __name__ == "__main__":
     from modelclass import model 
