@@ -56,7 +56,11 @@ SIDEBAR_STYLE = {
 
 # the styles for the main content position it to the right of the sidebar and
 # add some padding.
-CONTENT_STYLE = {
+CONTENT_STYLE_TOP = {
+    "background-color": "f8f9fa",
+    "margin-left": sidebar_width,
+}
+CONTENT_STYLE_GRAPH = {
     "background-color": "f8f9fa",
     "margin-left": sidebar_width,
 }
@@ -137,6 +141,7 @@ class Dash_Mixin():
           
     def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=False,port=5001,lag= False,filter = 0,up=1,down=0,
                   threshold=0.5,inline=True): 
+        print('Still worlking on the layout of this')
         self.dashport = port
         selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
         sidebar = html.Div(
@@ -201,25 +206,26 @@ class Dash_Mixin():
             ],
             style=SIDEBAR_STYLE
         )
-        
-        graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE, 
-                        dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
-                                                 debug=0,dot=True,HR=False,filter = filter))
-                                     
-                         ,width={'size':12,'offset':1,'order':'last'})
-        
-        top =   dbc.Col([html.P("This is column 1"),
+        top =   dbc.Col([
                         dcc.Graph(
                         id='plot',
                         figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
                          ],
                             width={'size':12,'offset':1,'order':'last'},
-                            style=CONTENT_STYLE)
+                            style=CONTENT_STYLE_TOP)
+        
+        graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
+                        dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
+                                                 debug=0,dot=True,HR=False,filter = filter))
+                                     
+                         ,width={'size':12,'offset':1,'order':'last'},
+                         style=CONTENT_STYLE_GRAPH)
         
         
-        twopanel = [
+        
+        twopanel = ([
             dbc.Row(top ,className="h-50",justify='start' ),
-            dbc.Row(graph,className="h-50",justify='start')]
+            dbc.Row(graph,className="h-50",justify='start')])
         
         onepanel = [
             dbc.Row(graph,className="h-100",justify='start')]
