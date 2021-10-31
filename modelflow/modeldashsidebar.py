@@ -7,6 +7,7 @@ Created on Fri May 14 22:46:21 2021
 
 import dash
 from jupyter_dash import JupyterDash
+from jupyter_dash.comms import _send_jupyter_config_comm_request
 from dash import dcc 
 
 import dash_bootstrap_components as dbc
@@ -68,6 +69,8 @@ CONTENT_STYLE_GRAPH = {
 
 def app_setup(jupyter=False):  
     if jupyter: 
+        # Timer(1,_send_jupyter_config_comm_request).start()
+        # JupyterDash.infer_jupyter_proxy_config()
         app = JupyterDash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
     else:
         app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -77,7 +80,6 @@ def app_run(app,jupyter=False,debug=False,port=5000,inline=True):
     def open_browser(port=port):
     	webbrowser.open_new(f"http://localhost:{port}")
     
-    Timer(1, open_browser).start()            
        
     if jupyter:
         if inline:
