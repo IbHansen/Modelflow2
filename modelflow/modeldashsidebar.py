@@ -63,6 +63,10 @@ CONTENT_STYLE_TOP = {
 }
 CONTENT_STYLE_GRAPH = {
     "background-color": "f8f9fa",
+    "margin-left": sidebar_width,"overflow": "scroll",
+}
+CONTENT_STYLE_TAB = {
+    "background-color": "f8f9fa",
     "margin-left": sidebar_width,
 }
 
@@ -208,37 +212,57 @@ class Dash_Mixin():
             ],
             style=SIDEBAR_STYLE
         )
-        top =   dbc.Col([
-                        dcc.Graph(
-                        id='plot',
-                        figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
-                         ],
-                            width={'size':12,'offset':1,'order':'last'},
-                            style=CONTENT_STYLE_TOP)
+        # top =   dbc.Col([
+        #                 dcc.Graph(
+        #                 id='plot',
+        #                 figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
+        #                  ],
+        #                     width={'size':12,'offset':1,'order':'last'},
+        #                     style=CONTENT_STYLE_TOP)
         
-        graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
-                        dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
-                                                 debug=0,dot=True,HR=False,filter = filter))
+        # graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
+        #                 dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
+        #                                          debug=0,dot=True,HR=False,filter = filter))
                                      
-                         ,width={'size':12,'offset':1,'order':'last'},
-                         style=CONTENT_STYLE_GRAPH)
+        #                  ,width={'size':12,'offset':1,'order':'last'},
+        #                  style=CONTENT_STYLE_GRAPH)
         
         
         
-        twopanel = ([
-            dbc.Row(top ,className="h-50",justify='start' ),
-            dbc.Row(graph,className="h-50",justify='start')])
+        # twopanel = ([
+        #     dbc.Row(top ,className="h-50",justify='start' ),
+        #     dbc.Row(graph,className="h-50",justify='start')])
         
-        onepanel = [
-            dbc.Row(graph,className="h-100",justify='start')]
+        # onepanel = [
+        #     dbc.Row(graph,className="h-100",justify='start')]
         
-        body2 = dbc.Container(twopanel,id='body2',style={"height": "100vh"},fluid=True)
-        body1 = dbc.Container(onepanel,id='body',style={"height": "100vh"},fluid=True)
+        # body2 = dbc.Container(twopanel,id='body2',style={"height": "100vh"},fluid=True)
+        # body1 = dbc.Container(onepanel,id='body',style={"height": "100vh"},fluid=True)
         
+        tab0 = html.Div([
+            dcc.Tabs(id="tabs", value='tab-graph', children=[
+                dcc.Tab(label='Graph', value='tab-1-example-graph'
+                        ,children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
+                        dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
+                                                 debug=0,dot=True,HR=False,filter = filter))],
+                        style=CONTENT_STYLE_TOP),
+
+                dcc.Tab(label='Chart', value='tab-att',
+                        children = [dcc.Graph(id='plot',
+                        figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
+                         ],                            
+                        style=CONTENT_STYLE_TOP)
+
+                    ]),
+                  ],style = CONTENT_STYLE_TAB)
+        # tabbed = tab0
+        tabbed = dbc.Container(tab0,id='tabbed',style={"height": "100vh"},fluid=True)
         app  = app_setup(jupyter=jupyter)
+    
+        
         
         # app.layout = html.Div([sidebar,body2])
-        app.layout = dbc.Container([sidebar,body2],style={"height": "100vh"},fluid=True)
+        app.layout = dbc.Container([sidebar,tabbed],style={"height": "100vh"},fluid=True)
 
         @app.callback(
             [Output("gv", "dot_source"),Output('plot','figure'), Output('outvar_state','children')],
