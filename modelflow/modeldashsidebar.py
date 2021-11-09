@@ -32,6 +32,8 @@ from modelhelp import cutout
 import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
+# log.setLevel(logging.INFO)
+
 
 
 initial_dot_source = """
@@ -59,11 +61,11 @@ SIDEBAR_STYLE = {
 # add some padding.
 CONTENT_STYLE_TOP = {
     "background-color": "f8f9fa",
-    "margin-left": sidebar_width,
+  #  "margin-left": sidebar_width,
 }
 CONTENT_STYLE_GRAPH = {
     "background-color": "f8f9fa",
-    "margin-left": sidebar_width,"overflow": "scroll",
+  #  "margin-left": sidebar_width,"overflow": "scroll",
 }
 CONTENT_STYLE_TAB = {
     "background-color": "f8f9fa",
@@ -116,7 +118,7 @@ def get_line_old(pv,v='Guess it',heading='Yes'):
     go.Layout(title=f'{heading}')
     }
     return out 
-def get_line(pv,v='Guess it',heading='Yes'):
+def get_line(pv,v='Guess it',heading='Yes',pct=True):
     trace = [go.Scatter(x=pv.columns.astype('str'),
                   y=pv.loc[rowname,:], 
                   name=rowname
@@ -172,25 +174,6 @@ class Dash_Mixin():
                   dict(label=engine, value=engine)
                   for engine in list(range(10))]),
              
-               html.H3("Graph Show"),             
-               dcc.RadioItems(id='graph_show',
-               options=[
-                   {'label': 'Variables', 'value': 'v'},
-                   {'label': 'Attributions', 'value': 'a'},
-                   ],
-                   value='a',labelStyle={'display': 'block'}),
-             
-            
-              html.H3("Plot show"),             
-              dcc.RadioItems(id='plot_show',
-              options=[
-                  {'label': 'Values', 'value': 'Values'},
-                  {'label': 'Diff', 'value': 'Diff'},
-                  {'label': 'Attributions pct.', 'value': 'Att'},
-                  {'label': 'Attributions level', 'value':  'Attlevel'},
-                  ],
-              value='Values',labelStyle={'display': 'block'}),  
-             
               html.H3("Graph orientation"),             
               dcc.RadioItems(id='orient',
               options=[
@@ -213,45 +196,33 @@ class Dash_Mixin():
             style=SIDEBAR_STYLE
         )
         # top =   dbc.Col([
-        #                 dcc.Graph(
-        #                 id='plot',
-        #                 figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
-        #                  ],
-        #                     width={'size':12,'offset':1,'order':'last'},
-        #                     style=CONTENT_STYLE_TOP)
-        
-        # graph = dbc.Col( DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
-        #                 dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
-        #                                          debug=0,dot=True,HR=False,filter = filter))
-                                     
-        #                  ,width={'size':12,'offset':1,'order':'last'},
-        #                  style=CONTENT_STYLE_GRAPH)
-        
-        
-        
-        # twopanel = ([
-        #     dbc.Row(top ,className="h-50",justify='start' ),
-        #     dbc.Row(graph,className="h-50",justify='start')])
-        
-        # onepanel = [
-        #     dbc.Row(graph,className="h-100",justify='start')]
-        
-        # body2 = dbc.Container(twopanel,id='body2',style={"height": "100vh"},fluid=True)
-        # body1 = dbc.Container(onepanel,id='body',style={"height": "100vh"},fluid=True)
-        
+        outvar= selected_var    
         tab0 = html.Div([
-            dcc.Tabs(id="tabs", value='tab-graph', children=[
-                dcc.Tab(label='Graph', value='tab-1-example-graph'
-                        ,children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
+            dbc.Tabs(id="tabs", children=[
+                dbc.Tab(label='Graph', children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
                         dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
                                                  debug=0,dot=True,HR=False,filter = filter))],
                         style=CONTENT_STYLE_TOP),
 
-                dcc.Tab(label='Chart', value='tab-att',
-                        children = [dcc.Graph(id='plot',
+                dbc.Tab(label='Chart', 
+                        children = [dcc.Graph(id='chart',
                         figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
+                        , dcc.Graph(id='chart_dif',
+                        figure=get_line(self.value_dic[selected_var].iloc[[2],:],selected_var,f'The impact for {selected_var}'))
+                         ],                            
+                        style=CONTENT_STYLE_TOP),
+
+                dbc.Tab(label='Attribution', 
+                        children = [dcc.Graph(id='att_pct',
+                        figure = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',threshold=threshold)
+                                   if outvar in self.endogene else dash.no_update))
+                        , dcc.Graph(id='att_level',
+                        figure =  (get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',
+                                           pct=False,threshold=threshold) if outvar in self.endogene else  dash.no_update))
+               
                          ],                            
                         style=CONTENT_STYLE_TOP)
+
 
                     ]),
                   ],style = CONTENT_STYLE_TAB)
@@ -265,12 +236,14 @@ class Dash_Mixin():
         app.layout = dbc.Container([sidebar,tabbed],style={"height": "100vh"},fluid=True)
 
         @app.callback(
-            [Output("gv", "dot_source"),Output('plot','figure'), Output('outvar_state','children')],
+            [Output("gv", "dot_source"),
+             Output('chart','figure'), Output('chart_dif','figure'), 
+             Output('att_pct','figure'), Output('att_level','figure'), 
+             Output('outvar_state','children')],
+            
             [Input('var', "value"),
                 Input('gv', "selected_node"),Input('gv', "selected_edge"),
                   Input('up', "value"),Input('down', "value"),
-                  Input('graph_show', "value"),
-                   Input('plot_show', "value"),
                   Input('orient', "value"),
                   Input('onclick','value')
 
@@ -280,8 +253,6 @@ class Dash_Mixin():
         def display_output( var,
                             selected_node,selected_edge,
                               up,down,
-                              graph_show,
-                                plot_show,
                                orient,
                                onclick,
                              outvar_state
@@ -303,7 +274,7 @@ class Dash_Mixin():
                     try:
                         outvar=var[:]
                     except:
-                        return [dash.no_update,dash.no_update,dash.no_update]
+                        return [dash.no_update, dash.no_update,dash.no_update, dash.no_update,dash.no_update, dash.no_update]
                     
 
               
@@ -320,35 +291,26 @@ class Dash_Mixin():
                     
                     outvar=outvar_state
                       
-                if onclick == 'c' or outvar not in self.value_dic.keys() or trigger == 'orient' :   
+                if onclick == 'c' or outvar not in self.value_dic.keys()  or trigger in ['up','down','orient'] :   
                     dot_out =  self.draw(outvar,up=up,down=down,filter=filter,showatt=False,debug=0,
                                          lag=lag,dot=True,HR=orient=='h')
                 else:
                     dot_out = dash.no_update
                       
-                if plot_show == 'Values':
-                    plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}')
-                elif plot_show == 'Diff':
-                    plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}')
-                elif plot_show == 'Att':
-                   if outvar in self.endogene:         
-                       plot_out = get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',threshold=threshold)
-                   else: 
-                       plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
-                elif plot_show == 'Attlevel':
-                   if outvar in self.endogene:         
-                       plot_out = get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',pct=False,threshold=threshold)
-                   else: 
-                       plot_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,outvar)
-                else:
-                    # breakpoint()
-                    plot_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,outvar)
+                chart_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}')
+                chart_dif_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}')
+                
+                att_pct_out = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',threshold=threshold)
+                                   if outvar in self.endogene else dash.no_update)
+                     
+                att_level_out = (get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',
+                                           pct=False,threshold=threshold) if outvar in self.endogene else  dash.no_update)
                  
             else:
-                return [dash.no_update,dash.no_update,dash.no_update]
+                return [dash.no_update, dash.no_update,dash.no_update,dash.no_update,dash.no_update, dash.no_update]
 
                 
-            return [dot_out,plot_out,outvar]
+            return [dot_out, chart_out, chart_dif_out, att_pct_out, att_level_out, outvar_state ]
        
         app_run(app,jupyter=jupyter,debug=debug,port=self.dashport,inline=inline)
 #%% test        

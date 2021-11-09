@@ -1391,7 +1391,7 @@ class Dekomp_Mixin():
                                                                        varnavn] / (0.0000001+smallbase.loc[print_per, varnavn])-1)
         res2df = res2df.dropna()
     #
-        pctendo = (resdf / (difendo[print_per]) *(difendo[print_per]>0.000001) * 100).sort_values(
+        pctendo = (resdf / (difendo[print_per]) *(abs(difendo[print_per])>0.000001) * 100).sort_values(
             print_per[-1], ascending=False)       # each contrinution in pct of total change
         # breakpoint()
         residual = pctendo.sum() - 100

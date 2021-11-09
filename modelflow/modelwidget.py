@@ -323,7 +323,7 @@ class updatewidget:
     lwrun    : bool = True
     lwupdate : bool = False
     lwreset  :  bool = True
-    lwsetbas  :  bool = False
+    lwsetbas  :  bool = True
     lwshow    :bool = True 
     outputwidget : str  = 'jupviz'
     
