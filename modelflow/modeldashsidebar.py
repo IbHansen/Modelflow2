@@ -8,10 +8,16 @@ Created on Fri May 14 22:46:21 2021
 import dash
 from jupyter_dash import JupyterDash
 from jupyter_dash.comms import _send_jupyter_config_comm_request
-from dash import dcc 
+try:
+    from dash import dcc 
+except:
+    import dash_core_components as dcc
 
 import dash_bootstrap_components as dbc
-from dash import html
+try:
+    from dash import html
+except:     
+    import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from  dash_interactive_graphviz import DashInteractiveGraphviz
 import plotly.graph_objs as go
@@ -61,7 +67,9 @@ SIDEBAR_STYLE = {
 # add some padding.
 CONTENT_STYLE_TOP = {
     "background-color": "f8f9fa",
-  #  "margin-left": sidebar_width,
+    "width": "fit-content",
+    
+    "margin-left": sidebar_width,
 }
 CONTENT_STYLE_GRAPH = {
     "background-color": "f8f9fa",
@@ -70,6 +78,8 @@ CONTENT_STYLE_GRAPH = {
 CONTENT_STYLE_TAB = {
     "background-color": "f8f9fa",
     "margin-left": sidebar_width,
+    "width": "fit-content",
+    "height": "auto",
 }
 
 
@@ -100,14 +110,21 @@ def app_run(app,jupyter=False,debug=False,port=5000,inline=True):
         app.run_server(debug=debug,port=port)
 
 
-def get_stack(df,v='Guess it',heading='Yes',pct=True,threshold=0.5):
+def get_stack(df,v='Guess it',heading='Yes',pct=True,threshold=0.5,desdict = {}):
     pv = cutout(df,threshold)
-    template =  '%{y:10.0f}%' if pct else '%{y:15.2f}' 
-    trace = [go.Bar(x=pv.columns.astype('str'), y=pv.loc[rowname,:], name=rowname,hovertemplate = template,) for rowname in pv.index]
+    template =  '%{y:.1f}% explained by:<br><b>%{meta}</b>:' if pct else '%{y:.2f} explained by:<br><b>%{meta}</b>:' 
+    trace = [go.Bar(x=pv.columns.astype('str'), y=pv.loc[rowname,:], name=rowname,hovertemplate = template,
+                    meta = desdict.get(rowname,'hest')) for rowname in pv.index]
     out = { 'data': trace,
     'layout':
     go.Layout(title=f'{heading}', barmode='relative',legend_itemclick='toggleothers',
-              yaxis = {'tickformat': ',.0','ticksuffix':'%' if pct else ''})
+              yaxis = {'tickformat': ',7.0','ticksuffix':'%' if pct else ''})
+    }
+    return out 
+
+def get_no_stack(df,v='No attribution for exogenous variables ',desdict = {}):
+    out = {'layout':
+    go.Layout(title=f'{v}')
     }
     return out 
 
@@ -148,7 +165,7 @@ class Dash_Mixin():
     
           
     def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=False,port=5001,lag= False,filter = 0,up=1,down=0,
-                  threshold=0.5,inline=True): 
+                  threshold=0.5,inline=False,time_att=False): 
         print('Still worlking on the layout of this')
         self.dashport = port
         selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
@@ -173,6 +190,11 @@ class Dash_Mixin():
               dcc.Dropdown(id="down",value=down,options=[
                   dict(label=engine, value=engine)
                   for engine in list(range(10))]),
+              
+              html.H3("Graph filter%"),
+              dcc.Dropdown(id="filter",value=filter,options=[
+                  dict(label=t, value=t)
+                  for t in list(range(0,100,10))]),
              
               html.H3("Graph orientation"),             
               dcc.RadioItems(id='orient',
@@ -214,11 +236,12 @@ class Dash_Mixin():
 
                 dbc.Tab(label='Attribution', 
                         children = [dcc.Graph(id='att_pct',
-                        figure = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',threshold=threshold)
-                                   if outvar in self.endogene else dash.no_update))
+                        figure = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',
+                                            threshold=threshold,desdict=self.var_description)
+                                   if outvar in self.endogene else html.H3("Graph orientation")))
                         , dcc.Graph(id='att_level',
                         figure =  (get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',
-                                           pct=False,threshold=threshold) if outvar in self.endogene else  dash.no_update))
+                                           pct=False,threshold=threshold,desdict=self.var_description) if outvar in self.endogene else   html.H3("Graph orientation")))
                
                          ],                            
                         style=CONTENT_STYLE_TOP)
@@ -227,13 +250,14 @@ class Dash_Mixin():
                     ]),
                   ],style = CONTENT_STYLE_TAB)
         # tabbed = tab0
-        tabbed = dbc.Container(tab0,id='tabbed',style={"height": "100vh"},fluid=True)
+        # tabbed = dbc.Container(tab0,id='tabbed',style={"height": "100vh"},fluid=True)
+        tabbed =  html.Div(tab0,id='tabbed',style={"height": "100vh"})
         app  = app_setup(jupyter=jupyter)
     
         
         
         # app.layout = html.Div([sidebar,body2])
-        app.layout = dbc.Container([sidebar,tabbed],style={"height": "100vh"},fluid=True)
+        app.layout = dbc.Container([sidebar,tabbed],style={"height": "100vh","width":"100%"},fluid=True)
 
         @app.callback(
             [Output("gv", "dot_source"),
@@ -243,7 +267,7 @@ class Dash_Mixin():
             
             [Input('var', "value"),
                 Input('gv', "selected_node"),Input('gv', "selected_edge"),
-                  Input('up', "value"),Input('down', "value"),
+                  Input('up', "value"),Input('down', "value"),Input('filter', "value"),
                   Input('orient', "value"),
                   Input('onclick','value')
 
@@ -252,7 +276,7 @@ class Dash_Mixin():
         )
         def display_output( var,
                             selected_node,selected_edge,
-                              up,down,
+                              up,down,filter,
                                orient,
                                onclick,
                              outvar_state
@@ -291,29 +315,30 @@ class Dash_Mixin():
                     
                     outvar=outvar_state
                       
-                if onclick == 'c' or outvar not in self.value_dic.keys()  or trigger in ['up','down','orient'] :   
+                if onclick == 'c' or outvar not in self.value_dic.keys()  or trigger in ['up','down','orient','filter'] :   
                     dot_out =  self.draw(outvar,up=up,down=down,filter=filter,showatt=False,debug=0,
                                          lag=lag,dot=True,HR=orient=='h')
                 else:
                     dot_out = dash.no_update
                       
-                chart_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}')
-                chart_dif_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}')
+                chart_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}:{self.var_description.get(outvar,"")}')
+                chart_dif_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}:{self.var_description.get(outvar,"")}')
                 
-                att_pct_out = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',threshold=threshold)
-                                   if outvar in self.endogene else dash.no_update)
+                att_pct_out = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}:{self.var_description.get(outvar,"")}'
+                                         ,threshold=threshold,desdict=self.var_description)
+                                   if outvar in self.endogene else  html.H3(""))
                      
                 att_level_out = (get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',
-                                           pct=False,threshold=threshold) if outvar in self.endogene else  dash.no_update)
+                                           pct=False,threshold=threshold,desdict=self.var_description) if outvar in self.endogene else  html.H3("") )
                  
             else:
                 return [dash.no_update, dash.no_update,dash.no_update,dash.no_update,dash.no_update, dash.no_update]
 
-                
+            outvar_state = outvar     
             return [dot_out, chart_out, chart_dif_out, att_pct_out, att_level_out, outvar_state ]
        
         app_run(app,jupyter=jupyter,debug=debug,port=self.dashport,inline=inline)
-#%% test        
+#%test        
 if __name__ == "__main__":
     from modelclass import model 
 

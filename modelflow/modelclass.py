@@ -1428,10 +1428,11 @@ class Dekomp_Mixin():
                     x = self.dekomp(v.child, lprint=1, start=start, end=end)
 
     def dekomp_plot_per(self, varnavn, sort=False, pct=True, per='', threshold=0.0
-                         ,nametrans = lambda varnames,thismodel : varnames):
+                         ,nametrans = lambda varnames,thismodel : varnames
+                         ,time_att=False):
 
         thisper = self.current_per[-1] if per == '' else per
-        xx = self.dekomp(varnavn.upper(), lprint=False)
+        xx = self.dekomp(varnavn.upper(), lprint=False,time_att=time_att)
         ddf = join_name_lag(xx[2] if pct else xx[1])
         ddf.index = nametrans(ddf.index,self)
 
@@ -1449,12 +1450,12 @@ class Dekomp_Mixin():
                            sort=sort, title=ntitle, bartype='bar', threshold=threshold)
         return res
 
-    def get_att_pct(self, n, filter=False, lag=True, start='', end=''):
+    def get_att_pct(self, n, filter=False, lag=True, start='', end='',time_att=False):
         ''' det attribution pct for a variable.
          I little effort to change from multiindex to single node name'''
         tstart = self.current_per[0] if start =='' else start
         tend   = self.current_per[-1] if end =='' else end
-        res = self.dekomp(n, lprint=0, start=tstart, end=tend)
+        res = self.dekomp(n, lprint=0, start=tstart, end=tend,time_att=time_att)
         res_pct = res[2].iloc[:-2, :]
         if lag:
             out_pct = pd.DataFrame(res_pct.values, columns=res_pct.columns,
@@ -1465,20 +1466,20 @@ class Dekomp_Mixin():
             axis=1), :] if filter else out_pct
         return out
 
-    def get_att_pct_to_from(self,to_var,from_var,lag=False):
+    def get_att_pct_to_from(self,to_var,from_var,lag=False,time_att=False):
         '''Get the  attribution for a singel variable'''
-        outdf = self.get_att_pct(to_var.upper(),lag=lag,filter=False)
+        outdf = self.get_att_pct(to_var.upper(),lag=lag,filter=False,time_att=time_att)
         # print(f'{to_var=} {from_var=} {outdf.loc[from_var.upper(),:].abs().max()}')
         
         return outdf.loc[from_var.upper(),:]
 
-    def get_att_level(self, n, filter=False, lag=True, start='', end=''):
+    def get_att_level(self, n, filter=False, lag=True, start='', end='',time_att=False):
         ''' det attribution pct for a variable.
          I little effort to change from multiindex to single node name'''
         tstart = self.current_per[0] if start =='' else start
         tend   = self.current_per[-1] if end =='' else end
          
-        res = self.dekomp(n, lprint=0, start=tstart, end=tend)
+        res = self.dekomp(n, lprint=0, start=tstart, end=tend,time_att=time_att)
         res_level = res[1].iloc[:, :]
         if lag:
             out_pct = pd.DataFrame(res_level.values, columns=res_level.columns,
@@ -1490,12 +1491,13 @@ class Dekomp_Mixin():
         return out
 
     def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0,lag=True
-                    ,nametrans = lambda varnames,thismodel : varnames):
+                    ,nametrans = lambda varnames,thismodel : varnames
+                    ,time_att=False):
         # xx = self.dekomp(varnavn,self.current_per[0],self.current_per[-1],lprint=False)
         # # breakpoint()
         # ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
         #     lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
-        ddf0 = self.get_att_pct(varnavn,lag=lag) if pct else  self.get_att_level(varnavn,lag=lag)
+        ddf0 = self.get_att_pct(varnavn,lag=lag,time_att=time_att) if pct else  self.get_att_level(varnavn,lag=lag)
         ddf0.index = nametrans(ddf0.index,self)
         ddf = cutout(ddf0, threshold)
         fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(
@@ -5578,7 +5580,6 @@ Frml <> x = 0.5 * c +a$'''
     # mmodel.drawendo_lag_lead(browser=1)
     mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
     mmodel.X.draw(up=1, down=1,svg=1,browser=1,filter=0.01)
-    mmodel.draw_new('X',up=1, down=1,svg=1,browser=1,filter=0.01,lag=0)
     mmodel.x
     mmodel.dekomp('X',time_att=0)
     print(mmodel.get_eq_des('A'))
