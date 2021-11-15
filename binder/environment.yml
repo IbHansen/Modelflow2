@@ -1,6 +1,9 @@
 name: base
 channels:
-  - ibh
+  - ibh  
 dependencies:
   - python=3.8
-  - modelflow=1.6
+  - modelflow=1.13
+  - pip
+  - pip:
+    - dash_interactive_graphviz
