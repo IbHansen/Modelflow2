@@ -795,7 +795,7 @@ lag_n_tup('a',n=-3)
 
 
  
-def pastestring(ind,post,funks=[]):
+def pastestring(ind,post,funks=[],onlylags = False):
     ''' All variable names in a  in a string **ind** is pasted with the string **post** 
     
     This function can be used to awoid variable name conflict with the internal variable names in sympy. 
@@ -810,7 +810,14 @@ def pastestring(ind,post,funks=[]):
         elif t.number:
             ud=t.number
         elif t.var:
-            ud= t.var+ post+ ('('+(str(int(t.lag)))+')' if t.lag else '')            
+            if onlylags:
+                if t.lag: 
+                    ud= t.var+ post.upper()+ ('('+(str(int(t.lag)))+')' if t.lag else '') 
+                else: 
+                    ud= t.var
+            else: 
+                ud= t.var+ post+ ('('+(str(int(t.lag)))+')' if t.lag else '') 
+
         fib.append(ud)
     return ''.join(fib)
 
@@ -831,7 +838,9 @@ def stripstring(ind,post,funks=[]):
             if t.var.endswith(post.upper()):
                 ud= t.var[:-lenpost]+  ('('+(str(int(t.lag)))+')' if t.lag else '')  
             else: 
-                print('Tryes to strip '+post +' from '+ind)
+                ud= t.var+  ('('+(str(int(t.lag)))+')' if t.lag else '')  
+                
+                # print('Tries to strip '+post +' from '+ind)
         fib.append(ud)
     return ''.join(fib)
    

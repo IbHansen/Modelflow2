@@ -12,13 +12,14 @@ import matplotlib.pyplot  as plt
 import matplotlib as mpl
 
 import pandas as pd
-from sympy import sympify ,Symbol
+from sympy import sympify ,Symbol,Function
 from collections import defaultdict, namedtuple
 import itertools
 
 import numpy as np 
 import scipy as sp
 import os
+import sys
 from subprocess import run 
 import seaborn as sns 
 import ipywidgets as ip
@@ -38,7 +39,7 @@ import modelpattern as pt
 # from modelclass import model, ttimer, insertModelVar
 
 
-from modelmanipulation import split_frml,udtryk_parse
+from modelmanipulation import split_frml,udtryk_parse,pastestring,stripstring
 #import modeljupyter as mj
 
 from modelhelp import tovarlag, ttimer, insertModelVar   
@@ -177,7 +178,8 @@ class newton_diff():
             return var2
 
         with ttimer('Find espressions for partial derivatives',self.timeit):
-            clash = {var : Symbol(var) for var in self.mmodel.allvar.keys()}
+            # clash = {var : Symbol(var) for var in self.mmodel.allvar.keys()}
+            clash = {var :None for var in self.mmodel.allvar.keys()}
             diffendocur={} #defaultdict(defaultdict) #here we wanmt to store the derivativs
             i=0
             for nvar,v in enumerate(self.endovar):
@@ -195,12 +197,17 @@ class newton_diff():
                 udtryk=re.sub(r'LOG\(','log(',udtryk) # sympy uses lover case for log and exp 
                 udtryk=re.sub(r'EXP\(','exp(',udtryk)
                 lhs,rhs=udtryk.split('=',1)
+                post = '_____XXYY'
                 try:
                     if not self.forcenum:
                         # kat=sympify(rhs[0:-1], md._clash) # we take the the $ out _clash1 makes I is not taken as imiganary 
-                        kat=sympify(rhs[0:-1],clash) # we take the the $ out _clash1 makes I is not taken as imiganary 
-                except:
-                    # breakpoint()
+                        lookat = pastestring(rhs[0:-1], post,onlylags=True,funks= self.mmodel.funks)
+                        kat=sympify(lookat,clash) # we take the the $ out _clash1 makes I is not taken as imiganary 
+                except :
+                    e = sys.exc_info()[0]
+                    print(e)
+                    # print(lookat)
+                    # print({c:type(s) for c,s in clash.items()})
                     print('* Problem sympify ',lhs,'=',rhs[0:-1])
                 for rhv in endocur:
                     try:
@@ -208,13 +215,15 @@ class newton_diff():
                         if not self.forcenum:
                             # ud=str(kat.diff(sympify(rhv,md._clash)))
                             try:
-                                ud=str(kat.diff(sympify(rhv,clash)))
+                                ud=str(kat.diff(sympify(pastestring(rhv, post,funks=self.mmodel.funks,onlylags=True ),clash)))
+                                # print(v,rhv,ud)
+                                ud = stripstring(ud,post,self.mmodel.funks)
                                 ud = re.sub(pt.namepat+r'(?:(\()([0-9]*)(\)))',r'\g<1>\g<2>+\g<3>\g<4>',ud) 
                             except:
                                 ud = numdif(self.mmodel,v,rhv,silent=self.silent)
                                 
 
-                        if self.forcenum or 'Derivative(' in ud :
+                        if self.forcenum or 'DERIVATIVE(' in ud.upper() :
                             ud = numdif(self.mmodel,v,rhv,silent=self.silent)
                             if not self.silent and 0: print('numdif of {rhv}')
                         diffendocur[v.upper()][rhv.upper()]=ud
@@ -754,13 +763,14 @@ class newton_diff():
 
     
         return fig
+#%%    
 if __name__ == '__main__':
     #%% testing
     os.environ['PYTHONBREAKPOINT'] = ''
     from modelclass import model
     fsolow = '''\
     Y         = a * k**alfa * l **(1-alfa) 
-    C         = (1-SAVING_RATIO)  * Y 
+    C         = (1-SAVING_RATIO)  * Y  
     I         = Y - C 
     diff(K)   = I-depreciates_rate * K(-1)
     diff(l)   = labor_growth * (L(-1)+l(-2))/2 
