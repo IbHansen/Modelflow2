@@ -326,6 +326,7 @@ class updatewidget:
     lwsetbas  :  bool = True
     lwshow    :bool = True 
     outputwidget : str  = 'jupviz'
+    prefix_dict : dict = field(default_factory=dict)
     
     def __post_init__(self):
         self.baseline = self.mmodel.basedf.copy()
@@ -342,7 +343,7 @@ class updatewidget:
         wshow.on_click(self.show)
         
         wsetbas   = widgets.Button(description="Use as baseline")
-        
+        wsetbas.on_click(self.setbasis)
         self.experiment = 0 
         
         lbut = []
@@ -390,6 +391,7 @@ class updatewidget:
             displaydict =  {k :v.loc[self.mmodel.current_per,self.wpat.value.split()] 
                             for k,v in self.mmodel.keep_solutions.items()}
             jupviz(displaydict,legend=0)()
+            
         elif self.outputwidget == 'keep_viz':
 
             selectfrom = [v for v in self.mmodel.vlist(self.wpat.value) if v in 
@@ -399,7 +401,15 @@ class updatewidget:
             plt.close('all')
             _ = self.mmodel.keep_viz(pat=selectfrom[0],selectfrom=selectfrom)
             
+        elif self.outputwidget == 'keep_viz_prefix':
 
+            selectfrom = [v for v in self.mmodel.vlist(self.wpat.value) if v in 
+                          set(list(self.mmodel.keep_solutions.values())[0].columns)]
+            clear_output()
+            display(self.wtotal)
+            plt.close('all')
+            _ = self.mmodel.keep_viz_prefix(pat=selectfrom[0],selectfrom=selectfrom,prefix_dict=self.prefix_dict)
+            
         
     def run(self,g):
         clear_output(True)
@@ -409,8 +419,18 @@ class updatewidget:
                 keep_variables = self.keeppat)
         self.mmodel.keep_exodif[self.wname.value] = self.exodif 
         self.mmodel.inputwidget_alternativerun = True
+        self.current_experiment = self.wname.value
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
+        
+    def setbasis(self,g):
+        clear_output(True)
+        display(self.wtotal)
+        self.mmodel.keep_solutions={self.current_experiment:self.mmodel.keep_solutions[self.current_experiment]}
+        
+        self.mmodel.keep_exodif[self.current_experiment] = self.exodif 
+        self.mmodel.inputwidget_alternativerun = True
+
         
         
          
