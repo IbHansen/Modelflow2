@@ -42,7 +42,7 @@ class tabwidget:
     
     tabdefdict : dict # =  field(default_factory = lambda: ({}))
     tab : bool = True 
-    selected_index :any = 0
+    selected_index :any = None
     
     def __post_init__(self):
         
@@ -327,6 +327,9 @@ class updatewidget:
     lwshow    :bool = True 
     outputwidget : str  = 'jupviz'
     prefix_dict : dict = field(default_factory=dict)
+    display_first :any = None 
+    vline  : list = field(default_factory=list)
+    relativ_start : int = 0 
     
     def __post_init__(self):
         self.baseline = self.mmodel.basedf.copy()
@@ -399,16 +402,20 @@ class updatewidget:
             clear_output()
             display(self.wtotal)
             plt.close('all')
-            _ = self.mmodel.keep_viz(pat=selectfrom[0],selectfrom=selectfrom)
+            _ = self.mmodel.keep_viz(pat=selectfrom[0],selectfrom=selectfrom,vline=self.vline)
             
         elif self.outputwidget == 'keep_viz_prefix':
 
             selectfrom = [v for v in self.mmodel.vlist(self.wpat.value) if v in 
                           set(list(self.mmodel.keep_solutions.values())[0].columns)]
             clear_output()
+            if self.display_first:
+                display(self.display_first)
             display(self.wtotal)
             plt.close('all')
-            _ = self.mmodel.keep_viz_prefix(pat=selectfrom[0],selectfrom=selectfrom,prefix_dict=self.prefix_dict)
+            with self.mmodel.set_smpl_relative(self.relativ_start,0):
+                _ = self.mmodel.keep_viz_prefix(pat=selectfrom[0],
+                        selectfrom=selectfrom,prefix_dict=self.prefix_dict,vline=self.vline)
             
         
     def run(self,g):

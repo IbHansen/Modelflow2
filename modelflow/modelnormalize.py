@@ -17,7 +17,7 @@ import re
 from dataclasses import dataclass, field, asdict
 
 
-from modelmanipulation import lagone, find_arg
+from modelmanipulation import lagone, find_arg,pastestring,stripstring
 from modelpattern import udtryk_parse, namepat
 
 @dataclass
@@ -181,9 +181,9 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         names like e '''
         
         lhs_var = {t.var for t in udtryk_parse(f) if t.var }
-        lhs_var_clash = {var : Symbol(var) for var in lhs_var}
+        lhs_var_clash = {var : None for var in lhs_var}
         return lhs_var_clash
-
+    post = '___LAG'
     preprocessed = preprocess(fixleads(ind_o)) if do_preprocess else fixleads(ind_o[:])
     ind = preprocessed.upper().replace('LOG(','log(').replace('EXP(','exp(')
     lhs,rhs=ind.strip().split('=',1)
@@ -194,17 +194,21 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         endo_name = the_endo.upper() if the_endo else endovar(lhs)
         endo = sympify(endo_name,clash)
         a_name = f'{endo_name}{add_suffix}' if add_adjust else ''
-        kat=sympify(f'Eq({lhs},__rhs__ {"+" if add_adjust else ""}{a_name})',clash)  
+        thiseq = f'({lhs}-__RHS__ {"+" if add_adjust else ""}{a_name})'
+        transeq = pastestring(thiseq,post,onlylags=True).replace('LOG','log').replace('EXP','exp')
+        kat=sympify(transeq,clash)  
+        # breakpoint()
         
-        endo_frml  = solve(kat,endo  ,simplify=False,rational=False)
-        res_rhs    = str(endo_frml[0]).replace('__rhs__',f' ({rhs.strip()}) ')
-        out_frml   = f'{endo} = {res_rhs}'.upper()
+        endo_frml  = solve(kat,endo  ,simplify=False,rational=False,warn=False)
+        res_rhs    =stripstring(str(endo_frml[0]),post).replace('__RHS__',f' ({rhs.strip()}) ')
+        out_frml   = f'{endo} = {res_rhs}'.upper() 
         
         if add_adjust:
             a_sym = sympify(a_name,clash)
             a_frml     = solve(kat,a_sym,simplify=False,rational=False)
-            res_rhs_a  = str(a_frml[0]).replace('__rhs__',f' (({rhs.strip()})) ')
+            res_rhs_a  = stripstring(str(a_frml[0]),post).replace('__RHS__',f' (({rhs.strip()})) ')
             out_a      = f'{a_name} = {res_rhs_a}'.upper()
+            # breakpoint()
         else:
             out_a = ''
         
@@ -258,11 +262,12 @@ if __name__ == '__main__':
     
     normal('DELRFF=RFF-RFF(-1)',add_adjust=1,add_suffix= '_AERR').fprint
     normal('a = n(-1)',add_adjust=0).fprint
+    normal('a+b = c',add_adjust=1).fprint
     normal('PCT_growth(a) = n(-1)',add_adjust=0).fprint
     normal('a = movavg(pct(b),2)',add_adjust=0).fprint
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
     normal('a = pct_growth(b)',add_adjust=0).fprint
-    normal("DLOG(SAUNECONGOVTXN) =-0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
+    normal("DLOG(SAUNECONGOVTXN) = -0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
     normal("D(a,0,1) = b").fprint
     normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
     normal('a = D( LOG(QLHP(+1)))').fprint
