@@ -429,6 +429,7 @@ class updatewidget:
         self.current_experiment = self.wname.value
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
+        self.show(g)
         
     def setbasis(self,g):
         clear_output(True)

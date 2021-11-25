@@ -2098,7 +2098,7 @@ class Graph_Draw_Mixin():
              for child in (g.predecessors(navn) if lpre else g[navn]):
                  yield from self.upwalk(g, child, level + 1, navn, up, select, lpre)
 
-    def explain(self, var, up=1, start='', end='', select=False, showatt=True, lag=True,
+    def explain(self, var, up=1, start='', end='', filter = 0, showatt=True, lag=True,
                 debug=0, noshow=False, dot=False, **kwargs):
         ''' Walks a tree to explain the difference between basedf and lastdf
 
@@ -2123,7 +2123,7 @@ class Graph_Draw_Mixin():
             with self.timer('Get totgraph', debug) as t:
                 startgraph = self.totgraph   if lag else self.totgraph_nolag
             edgelist = list({v for v in self.upwalk(
-                startgraph, var.upper(), up=up)})
+                startgraph, var.upper(), maxlevel=up)})
             nodelist = list({v.child for v in edgelist}) + \
                 [var]  # remember the starting node
             nodestodekomp = list(
@@ -2141,7 +2141,7 @@ class Graph_Draw_Mixin():
                 [(v.child, v.parent) for v in edgelist])
             nx.set_edge_attributes(self.localgraph, edges)
             self.newgraph = nx.DiGraph()
-            for v in self.upwalk(self.localgraph, var.upper(), up=up, select=select):
+            for v in self.upwalk(self.localgraph, var.upper(), maxlevel=up, filter=filter):
                 #                print(f'{"-"*v.lev} {v.child} {v.parent} \n',self.localgraph[v.child][v.parent].get('att','**'))
                 #                print(f'{"-"*v.lev} {v.child} {v.parent} \n')
                 self.newgraph.add_edge(
@@ -2317,6 +2317,7 @@ class Graph_Draw_Mixin():
         :HR: horisontal orientation default = False 
         :des: inject variable descriptions 
         :fokus: Variable to get special colour
+        :fokus2: Variable to get special colour
 
 
 '''
@@ -2325,11 +2326,31 @@ class Graph_Draw_Mixin():
         des = kwargs.get('des', True)
 
         fokus = kwargs.get('fokus', '')
+        fokus2 = kwargs.get('fokus2', '')
 
         dec = kwargs.get('dec', 3)
         att = kwargs.get('att', True)
 
         # %
+        def color( v, navn=''):
+              # breakpoint()
+              if navn == v:
+                  out = 'red'
+                  return out
+              if v == fokus2:
+                  out = 'chocolate1'
+                  return out
+              if v in self.endogene:
+                  out = 'steelblue1'
+              elif v in self.exogene:
+                  out = 'yellow'
+              elif '(' in v:
+                  namepart = v.split('(')[0]
+                  out = 'springgreen' if namepart in self.endogene else 'olivedrab1'
+              else:
+                  out = 'red'
+              return out
+        
         def dftotable(df, dec=0):
             xx = '\n'.join([f"<TR {self.maketip(row[0],True)}><TD ALIGN='LEFT' {self.maketip(row[0],True)}>{row[0]}</TD>" +
                             ''.join(["<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip()
@@ -2433,15 +2454,15 @@ class Graph_Draw_Mixin():
                         ''.join(["<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip(
                         ) for b in dvalues])+'</TR>' if kwargs.get('all', False) else ''
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '
-                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
+                    out = f'"{v}" [shape=box fillcolor= {color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
                         f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
                     pass
 
                 except Exception as inst:
-                    out = f'"{v}" [shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
+                    out = f'"{v}" [shape=box fillcolor= {color(v,navn)} {self.maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
                         f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{self.get_des_html(v)}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
             else:
-                out = f'"{v}" [ shape=box fillcolor= {self.color(v,navn)} {self.maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} ' + (
+                out = f'"{v}" [ shape=box fillcolor= {color(v,navn)} {self.maketip(v,False)}  margin=0.025 fontcolor=blue {stylefunk(v,invisible=invisible)} ' + (
                     f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(v,invisible=invisible)}  > <TR><TD {self.maketip(v)}>{self.get_des_html(v,des)}</TD></TR> </TABLE>> ]")
             return out
 
@@ -5496,7 +5517,7 @@ if __name__ == '__main__':
                 cluster={'test1': ['horse', 'A0', 'A1'], 'test2': ['YY', 'D0']}, sink='D2')
             m2test.drawendo(last=1, size=(2, 2))
             m2test.drawmodel(all=1, browser=0, lag=0, dec=4, HR=0, title='test2', invisible={
-                             'A2'}, labels={'A0': 'This is a test'})
+                             'A2'}, labels={'A0': 'This is a test'},focus2='A')
             print(m2test.equations.replace('$', '\n'))
             print(m2test.todynare(
                 paravars=['HORSE', 'C'], paravalues=['C=33', 'HORSE=42']))
@@ -5579,7 +5600,7 @@ Frml <> x = 0.5 * c +a$'''
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
     mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
-    mmodel.X.draw(up=1, down=1,svg=1,browser=1,filter=0.01)
+    mmodel.X.draw(up=1, down=1,svg=1,browser=1,filter=0.01,fokus2='A')
     mmodel.x
     mmodel.dekomp('X',time_att=0)
     print(mmodel.get_eq_des('A'))

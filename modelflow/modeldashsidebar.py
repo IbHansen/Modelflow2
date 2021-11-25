@@ -221,12 +221,12 @@ class Dash_Mixin():
         outvar= selected_var    
         tab0 = html.Div([
             dbc.Tabs(id="tabs", children=[
-                dbc.Tab(label='Graph', children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
+                dbc.Tab(id='Graph',label='Graph', children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
                         dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
                                                  debug=0,dot=True,HR=False,filter = filter))],
                         style=CONTENT_STYLE_TOP),
 
-                dbc.Tab(label='Chart', 
+                dbc.Tab(id='Chart',label='Chart', 
                         children = [dcc.Graph(id='chart',
                         figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
                         , dcc.Graph(id='chart_dif',
@@ -234,7 +234,7 @@ class Dash_Mixin():
                          ],                            
                         style=CONTENT_STYLE_TOP),
 
-                dbc.Tab(label='Attribution', 
+                dbc.Tab(id='Attribution',label='Attribution', 
                         children = [dcc.Graph(id='att_pct',
                         figure = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',
                                             threshold=threshold,desdict=self.var_description)
@@ -263,7 +263,8 @@ class Dash_Mixin():
             [Output("gv", "dot_source"),
              Output('chart','figure'), Output('chart_dif','figure'), 
              Output('att_pct','figure'), Output('att_level','figure'), 
-             Output('outvar_state','children')],
+             Output('outvar_state','children'),
+             Output('tabs','active_tab')],
             
             [Input('var', "value"),
                 Input('gv', "selected_node"),Input('gv', "selected_edge"),
@@ -293,12 +294,14 @@ class Dash_Mixin():
                     print(ctx_msg)
                     # print(f'{outvar=},{data_show=}')
                     # print(value)
-                              
+                update_var = True    
+                tab_out = dash.no_update
+
                 if trigger in ['var']:
                     try:
                         outvar=var[:]
                     except:
-                        return [dash.no_update, dash.no_update,dash.no_update, dash.no_update,dash.no_update, dash.no_update]
+                        return [dash.no_update, dash.no_update,dash.no_update, dash.no_update,dash.no_update, dash.no_update,dash.no_update]
                     
 
               
@@ -318,9 +321,17 @@ class Dash_Mixin():
                 if onclick == 'c' or outvar not in self.value_dic.keys()  or trigger in ['up','down','orient','filter'] :   
                     dot_out =  self.draw(outvar,up=up,down=down,filter=filter,showatt=False,debug=0,
                                          lag=lag,dot=True,HR=orient=='h')
+                    tab_out = dash.no_update
+  
+                elif onclick == 'd' and trigger in ['gv'] :   
+                    dot_out =  self.draw(outvar_state,up=up,down=down,filter=filter,showatt=False,debug=0,
+                                         lag=lag,dot=True,HR=orient=='h',fokus2=outvar)
+                    update_var  = False 
+                    tab_out = 'Attribution'
                 else:
                     dot_out = dash.no_update
-                      
+                    tab_out =dash.no_update
+  
                 chart_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}:{self.var_description.get(outvar,"")}')
                 chart_dif_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}:{self.var_description.get(outvar,"")}')
                 
@@ -332,18 +343,18 @@ class Dash_Mixin():
                                            pct=False,threshold=threshold,desdict=self.var_description) if outvar in self.endogene else  html.H3("") )
                  
             else:
-                return [dash.no_update, dash.no_update,dash.no_update,dash.no_update,dash.no_update, dash.no_update]
+                return [dash.no_update, dash.no_update,dash.no_update,dash.no_update,dash.no_update, dash.no_update, dash.no_update]
 
-            outvar_state = outvar     
-            return [dot_out, chart_out, chart_dif_out, att_pct_out, att_level_out, outvar_state ]
+            outvar_state = outvar if update_var else outvar_state     
+            return [dot_out, chart_out, chart_dif_out, att_pct_out, att_level_out, outvar_state ,dash.no_update,]
        
         app_run(app,jupyter=jupyter,debug=debug,port=self.dashport,inline=inline)
 #%test        
 if __name__ == "__main__":
-    from modelclass import model 
 
         
     if not  'baseline' in locals():    
+        from modelclass import model 
         madam,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
         # make a simpel experimet VAT
         scenarie = baseline.copy()
@@ -352,6 +363,6 @@ if __name__ == "__main__":
         
    
     setattr(model, "modeldash", Dash_Mixin.modeldash)    
-    madam.modeldash('FY',jupyter=False,show_trigger=False,debug=False) 
+    madam.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
     #mmodel.FY.draw(up=1, down=1,svg=1,browser=1)
 
