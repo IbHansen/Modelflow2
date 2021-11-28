@@ -67,7 +67,7 @@ SIDEBAR_STYLE = {
 # add some padding.
 CONTENT_STYLE_TOP = {
     "background-color": "f8f9fa",
-    "width": "100%",
+    "width": rest_width,
     
     "margin-left": sidebar_width,
 }
