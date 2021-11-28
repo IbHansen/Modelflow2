@@ -50,7 +50,7 @@ a->c->d
 }
 """
 
-sidebar_width, adbar_width = "16rem", "12rem"
+sidebar_width, rest_width = "15%", "82%"
 # the style arguments for the sidebar. We use position:fixed and a fixed width
 SIDEBAR_STYLE = {
     "position": "fixed",
@@ -67,18 +67,18 @@ SIDEBAR_STYLE = {
 # add some padding.
 CONTENT_STYLE_TOP = {
     "background-color": "f8f9fa",
-    "width": "fit-content",
+    "width": "100%",
     
     "margin-left": sidebar_width,
 }
 CONTENT_STYLE_GRAPH = {
     "background-color": "f8f9fa",
-  #  "margin-left": sidebar_width,"overflow": "scroll",
+    "width":"70%",
 }
 CONTENT_STYLE_TAB = {
     "background-color": "f8f9fa",
     "margin-left": sidebar_width,
-    "width": "fit-content",
+    "width": "85%",
     "height": "auto",
 }
 
