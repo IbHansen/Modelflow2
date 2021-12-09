@@ -67,13 +67,15 @@ SIDEBAR_STYLE = {
 # add some padding.
 CONTENT_STYLE_TOP = {
     "background-color": "f8f9fa",
-    "width": rest_width,
+    "width": "100%",
     
-    "margin-left": sidebar_width,
+    "margin-left": "0%",
 }
 CONTENT_STYLE_GRAPH = {
     "background-color": "f8f9fa",
-    "width":"70%",
+    "width":"82%",
+    
+    "margin-left": '0%',
 }
 CONTENT_STYLE_TAB = {
     "background-color": "f8f9fa",
@@ -165,7 +167,7 @@ class Dash_Mixin():
     
           
     def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=False,port=5001,lag= False,filter = 0,up=1,down=0,
-                  threshold=0.5,inline=False,time_att=False): 
+                  threshold=0.5,inline=False,time_att=False,attshow=False,all=False): 
         print('Still worlking on the layout of this')
         self.dashport = port
         selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
@@ -203,7 +205,17 @@ class Dash_Mixin():
                   
                   {'label': 'Horisontal', 'value': 'h'},
                   ],
-            value='v',labelStyle={'display': 'block'}),
+              value='v',labelStyle={'display': 'block'}),
+              
+              html.H3("Node Dispolay"),             
+              dcc.RadioItems(id='node',
+              options=[
+                  {'label': 'Name', 'value':'name'},
+                  {'label': '+values', 'value':'all'},
+                  
+                  {'label': '+Attribution', 'value': 'attshow'},
+                  ],
+            value='all' if all else ('attshow' if attshow else 'name') ,labelStyle={'display': 'block'}),
               
               html.H3("Behavior when clicking on graph"),             
               dcc.RadioItems(id='onclick',
@@ -223,7 +235,8 @@ class Dash_Mixin():
             dbc.Tabs(id="tabs", children=[
                 dbc.Tab(id='Graph',label='Graph', children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
                         dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
-                                                 debug=0,dot=True,HR=False,filter = filter))],
+                                                 debug=0,dot=True,HR=False,filter = filter,
+                                                 all=all,attshow=attshow))],
                         style=CONTENT_STYLE_TOP),
 
                 dbc.Tab(id='Chart',label='Chart', 
@@ -270,7 +283,8 @@ class Dash_Mixin():
                 Input('gv', "selected_node"),Input('gv', "selected_edge"),
                   Input('up', "value"),Input('down', "value"),Input('filter', "value"),
                   Input('orient', "value"),
-                  Input('onclick','value')
+                  Input('onclick','value'),
+                  Input('node','value')
 
                ]
                , State('outvar_state','children')
@@ -280,6 +294,7 @@ class Dash_Mixin():
                               up,down,filter,
                                orient,
                                onclick,
+                               node,
                              outvar_state
                             ):
             ctx = dash.callback_context
@@ -318,14 +333,16 @@ class Dash_Mixin():
                     
                     outvar=outvar_state
                       
-                if onclick == 'c' or outvar not in self.value_dic.keys()  or trigger in ['up','down','orient','filter'] :   
+                if onclick == 'c' or outvar not in self.value_dic.keys()  or trigger in ['up','down','orient','filter','node'] :   
                     dot_out =  self.draw(outvar,up=up,down=down,filter=filter,showatt=False,debug=0,
-                                         lag=lag,dot=True,HR=orient=='h')
+                                         lag=lag,dot=True,HR=orient=='h',last=0,all = node == 'all',
+                                         attshow=node=='attshow')
                     tab_out = dash.no_update
   
                 elif onclick == 'd' and trigger in ['gv'] :   
                     dot_out =  self.draw(outvar_state,up=up,down=down,filter=filter,showatt=False,debug=0,
-                                         lag=lag,dot=True,HR=orient=='h',fokus2=outvar)
+                                         lag=lag,dot=True,HR=orient=='h',fokus2=outvar,all= node == 'all',
+                                         attshow= node =='attshow')
                     update_var  = False 
                     tab_out = 'Attribution'
                 else:
@@ -353,7 +370,7 @@ class Dash_Mixin():
 if __name__ == "__main__":
 
         
-    if not  'baseline' in locals():    
+    if not  'baseline' in locals() or 1 :    
         from modelclass import model 
         madam,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
         # make a simpel experimet VAT
@@ -363,6 +380,7 @@ if __name__ == "__main__":
         
    
     setattr(model, "modeldash", Dash_Mixin.modeldash)    
-    madam.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
+   # madam.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
+    madam.modeldash('FE',jupyter=1,port = 5004,all = 0)
     #mmodel.FY.draw(up=1, down=1,svg=1,browser=1)
 

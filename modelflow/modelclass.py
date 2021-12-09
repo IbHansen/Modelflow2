@@ -1954,7 +1954,7 @@ class Graph_Draw_Mixin():
         return fig
 
     
-    def draw(self, navn, down=7, up=7, lag=False, endo=False, filter=0, **kwargs):
+    def draw(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
         '''draws a graph of dependensies of navn up to maxlevel
 
         :lag: show the complete graph including lagged variables else only variables. 
@@ -1972,7 +1972,7 @@ class Graph_Draw_Mixin():
         downlinks = (node(-level, navn, parent) for level, parent, navn in
                      self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,filter=filter))
         alllinks = chain(uplinks, downlinks)
-        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up,  **kwargs)
+        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter,  **kwargs)
 
     def trans(self, ind, root, transdic=None, debug=False):
         ''' as there are many variable starting with SHOCK, the can renamed to save nodes'''
@@ -2330,8 +2330,7 @@ class Graph_Draw_Mixin():
 
         dec = kwargs.get('dec', 3)
         att = kwargs.get('att', True)
-
-        # %
+        filter =  kwargs.get('filter', 0)
         def color( v, navn=''):
               # breakpoint()
               if navn == v:
@@ -2432,33 +2431,52 @@ class Graph_Draw_Mixin():
 #        print(nodelist)
 
         def makenode(v, navn):
-            if kwargs.get('last', False) or kwargs.get('all', False):
+            show  = v  == fokus2
+            if kwargs.get('last', False) or kwargs.get('all', False) or kwargs.get('attshow', False) or show :
                 try:
                     t = pt.udtryk_parse(v, funks=[])
                     var = t[0].var
                     lag = int(t[0].lag) if t[0].lag else 0
                     bvalues = [float(get_a_value(self.basedf, per, var, lag))
-                               for per in self.current_per] if kwargs.get('all', False) else 0
-                    lvalues = [float(get_a_value(self.lastdf, per, var, lag)) for per in self.current_per] if kwargs.get(
-                        'last', False) or kwargs.get('all', False) else 0
+                               for per in self.current_per]
+                    lvalues = [float(get_a_value(self.lastdf, per, var, lag)) for per in self.current_per] 
                     dvalues = [float(get_a_value(self.lastdf, per, var, lag)-get_a_value(self.basedf, per, var, lag))
-                               for per in self.current_per] if kwargs.get('all', False) else 0
+                               for per in self.current_per] 
+                    if kwargs.get('attshow', False) or fokus2:
+                       # breakpoint()
+                       attvalues = self.att_dic[v] 
+                       # attvalues = self.get_att_pct(v.split('(')[0], lag=False, start='', end='')
+                       if filter: 
+                           attvalues = cutout(attvalues,filter)
+                       # attvalues2 = self.att_dic_level[v]
+                       dflen = len(attvalues.columns)
+                       try:
+                            latt = f"<TR><TD COLSPAN = '{dflen+1}'> % Explained by</TD></TR>{dftotable(attvalues,dec)}" if len(
+                                self.att_dic[v]) else ''
+                       except:
+                            latt = ''
+                    else:
+                        latt = ''
+                        
+
                     per = "<TR><TD ALIGN='LEFT'>Per</TD>" + \
                         ''.join(['<TD>'+(f'{p}'.strip()+'</TD>').strip()
                                 for p in self.current_per])+'</TR>'
                     base = "<TR><TD ALIGN='LEFT' TOOLTIP='Baseline values' href='bogus'>Base</TD>"+''.join(["<TD ALIGN='RIGHT'  TOOLTIP='Baseline values' href='bogus' >"+(
-                        f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>' if kwargs.get('all', False) else ''
+                        f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>'
                     last = "<TR><TD ALIGN='LEFT' TOOLTIP='Latest run values' href='bogus'>Last</TD>"+''.join(["<TD ALIGN='RIGHT'>"+(
-                        f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>' if kwargs.get('last', False) or kwargs.get('all', False) else ''
+                        f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>'
                     dif = "<TR><TD ALIGN='LEFT' TOOLTIP='Difference between baseline and latest run' href='bogus'>Diff</TD>" + \
                         ''.join(["<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip(
-                        ) for b in dvalues])+'</TR>' if kwargs.get('all', False) else ''
+                        ) for b in dvalues])+'</TR>' 
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '
-                    out = f'"{v}" [shape=box fillcolor= {color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
-                        f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif} </TABLE>> ]")
+                    # out = f'"{v}" [shape=box fillcolor= {color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
+                    out = f'"{v}" [shape=box style=filled fillcolor="#ff00008f"   margin=0.025 fontcolor=blue ' + (
+                        f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif}{latt} </TABLE>> ]")
                     pass
 
                 except Exception as inst:
+                    # breakpoint()
                     out = f'"{v}" [shape=box fillcolor= {color(v,navn)} {self.maketip(v,True)} margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
                         f" label=<<TABLE BORDER='0' CELLBORDER = '0' {stylefunkhtml(var,invisible=invisible)} > <TR><TD>{self.get_des_html(v)}</TD></TR> <TR><TD> Condensed</TD></TR></TABLE>> ]")
             else:
@@ -3137,7 +3155,7 @@ class Display_Mixin():
         return
     
     def keep_viz_prefix(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True,
-                 select_width='', select_height='200px', vline=[],prefix_dict={},add_var_name=False):
+                 select_width='', select_height='200px', vline=[],prefix_dict={},add_var_name=False,short=False):
         """
          Plots the keept dataframes
 
@@ -3243,9 +3261,12 @@ class Display_Mixin():
         else: 
             select = VBox([selected_vars])
             
-        options1 = diff
-        options2 = HBox([scale, legend, showtype])
-        ui = VBox([select, options1, options2, i_smpl])
+        options1 = HBox([diff,legend])
+        options2 = HBox([scale, showtype])
+        if short:
+            ui = VBox([select, options1, i_smpl])
+        else:
+            ui = VBox([select, options1, options2, i_smpl])
 
         show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
                                             'scale': scale, 'legend': legend})
@@ -5427,160 +5448,8 @@ def timer_old(input='test', show=True, short=False):
 
 
 if __name__ == '__main__':
-    if 0:
-        # %% Test model
-        ftest = ''' FRMl <>  y = c + i + x $ 
-        FRMl <>  yd = 0.6 * y $
-        frml <>  c=0.8*yd $
-        FRMl <>  i = ii+iy $ 
-        FRMl <>  ii = x+z $
-        FRMl <>  x = 2 $ 
-        FRML <>  dogplace = y *4 $'''
-        mtest = model(ftest)
-        mtest.drawall()
-        mtest.drawendo()
-        mtest.drawpre('Y')
-        mtest.todot('Y')
-        g = mtest.endograph
-#        print(mtest.strongblock)
-#        print(mtest.strongtype)
-#        (list(mtest.treewalk(mtest.allgraph,'Y',lpre=1)))
-# %%
-    if 0:
-        # %%
-        if 'base0' not in locals():
-            with open(r"models\mtotal.fru", "r") as text_file:
-                ftotal = text_file.read()
-            base0 = pd.read_pickle(r'data\base0.pc')
-            adve0 = pd.read_pickle(r'data\adve0.pc')
-            base = pd.read_pickle(r'data\base.pc')
-            adverse = pd.read_pickle(r'data\adverse.pc')
-    # %%  Transpile the model
-        if 1:
-            tdic = {'SHOCK[_A-Z]*__J': 'SHOCK__J', 'SHOCK[_A-Z]*__0': 'SHOCK__0',
-                    'DEV__[_A-Z]*': 'DEV', 'SHOCK__[_A-Z]*': 'SHOCK'}
-            with model.timer('Transpile:'):
-                mtotal = model(ftotal, straight=False)
-            b = mtotal(base, '2016q1', '2018q4')
-            a = mtotal(adverse, '2016q1', '2018q4', samedata=True)
-            assert 1 == 2
-            mtotal.draw(
-                'REA_NON_DEF__DECOM__DE__HH_OTHER_NSME_AIRB', up=1, lag=True)
-            mtotal.draw(
-                'REA_NON_DEF__DECOM__DE__HH_OTHER_NSME_AIRB', up=0, down=5)
-            mtotal.draw('rcet1__DECOM'.upper(), up=1, down=7, browser=False)
-            mtotal.draw('rcet1__DECOM'.upper(), uplevel=3,
-                        downlevel=7, browser=False)
-            mtotal.draw('REA_NON_DEF__DECOM__DE__HH_OTHER_NSME_AIRB', up=11,
-                        down=8, sink='IMPACT__DE', browser=True, transdic=tdic)
-            mtotal.draw('imp_loss_total_def__DECOM__DE__HH_OTHER_NSME_AIRB',
-                        sink='IMPACT__DE', uplevel=12, downlevel=11, browser=True, transdic=tdic)
-#            with model.timer('Second calculation new translation :'):
-#                adverse2  = mtotal(adve0   ,'2016q1','2018Q4',samedata=True,silent=True)
-            mtotal.impact('REA_NON_DEF__DECOM__DE__HH_OTHER_NSME_AIRB', leq=1)
-#            mtotal.impact('REA_NON_DEF__DECOM__DE__HH_OTHER_NSME_AIRB',ldekomp=1)
-# %%
-        if 0:
-            # %%     Get a plain model
-            with model.timer('MAKE model and base+adverse'):
-                mtotal = model(ftotal, straight=True)
-                base2 = mtotal(base0, '2016q1', '2018Q4',
-                               samedata=True, silent=True)
-                adverse2 = mtotal(adve0, '2016q1', '2018Q4', samedata=True,
-                                  silent=True, sim=True, max_iterations=3)
-            assert (base2 == base).all().all()
-            assert (adverse2 == adverse).all().all()
-# %%
-        if 0:
-            a = mtotal.vis('PD__*__CY').plot(ppos=-2)
-            compvis(mtotal, 'PD__FF_HH_H*').box()
 
-    # %%
-    if 1:
-        # %% a simpel model
-        numberlines = 3
-        df = pd.DataFrame(
-            {'A': [1., 2., 0.0002, 4004.00003], 'B': [10., 20., 30., 40.]})
-        df2 = pd.DataFrame(
-            {'A': [1., 2., 0.0002, 4010.00003], 'B': [10., 20., 30., 50.]})
-        m2test = model('frml <z> d = log(11) $ \n frml xx yy = a0 + yy(-1)+yy(-2) + +horse**3 + horse(-1)+horse(-2) $'+''.join(['FRMl <>  a'+str(i) +
-                                                                                                                               '=a +' +
-                                                                                                                                str(i) + ' +c $ frml xx d'+str(
-                                                                                                                                    i) + ' = log(1)+abs(a) $'
-                                                                                                                                for i in range(numberlines)]))
-        yy = m2test(df)
-        yy = m2test(df2)
-        m2test.A1.showdif
-        if 0:
-            m2test.drawmodel(invisible={'A2'})
-            m2test.drawmodel(
-                cluster={'test1': ['horse', 'A0', 'A1'], 'test2': ['YY', 'D0']}, sink='D2')
-            m2test.drawendo(last=1, size=(2, 2))
-            m2test.drawmodel(all=1, browser=0, lag=0, dec=4, HR=0, title='test2', invisible={
-                             'A2'}, labels={'A0': 'This is a test'},focus2='A')
-            print(m2test.equations.replace('$', '\n'))
-            print(m2test.todynare(
-                paravars=['HORSE', 'C'], paravalues=['C=33', 'HORSE=42']))
-# %%
-#        m2test.drawmodel(transdic={'D[0-9]':'DDD'},last=1,browser=1)
-#        m2test.drawmodel(transdic={'D[0-9]':'DDD'},lag=False)
-#        m2test.draw('A0',transdic={'D[0-9]':'DDD'},sink='A',lag=1,all=1)
-# %%
-    if 0:
-        df = pd.DataFrame({'Z': [1., 2., 3, 4], 'TY': [10., 20., 30., 40.], 'YD': [
-                          10., 20., 30., 40.]}, index=[2017, 2018, 2019, 2020])
-        df2 = pd.DataFrame({'Z': [1., 22., 33, 43], 'TY': [10., 20., 30., 40.], 'YD': [
-                           10., 20., 30., 40.]}, index=[2017, 2018, 2019, 2020])
-        ftest = ''' 
-        FRMl <>  ii = x+z $
-        frml <>  c=0.8*yd $
-        FRMl <>  i = ii+iy $ 
-        FRMl <>  x = 2 $ 
-        FRMl <>  y = c + i + x+ i(-1)$ 
-        FRMl <>  yX = 0.6 * y $
-        FRML <>  dogplace = y *4 $'''
-        m2 = model(ftest)
-#        m2.drawmodel()
-        m2(df)
-        m2(df2)
-        xx = m2.Y.explain(select=True, showatt=True, HR=False, up=3, dot=False)
-#        g  = m2.ximpact('Y',select=True,showatt=True,lag=True,pdf=0)
-        m2.Y.explain(select=0, up=4, pdf=1)
-#        m2.Y.dekomp(lprint=1)
-        print(m2['I*'])
-
-    if 0:
-
-        def f1(e):
-            return 42
-
-        def f2(c):
-            return 103
-        df = pd.DataFrame({'A': [1, 2], 'B': [2, 3]})
-        mtest = model('frml <> a=b(-1) $', funks=[f1, f2])
-        print(mtest.outeval(df))
-        res = mtest(df)
-        print(mtest.outsolve())
-        res2 = mtest(df)
-        res3 = mtest(df)
-    if 0:
-        # %%
-        fx = '''
-        FRML <I>  x  = y $ 
-        FRML <Z> y  = 1-r*x +p*x**2 $ 
-        '''
-        mx = create_model(fx, straight=True)
-        df = pd.DataFrame(
-            {'X': [0.2, 0.2], 'Y': [0., 0.], 'R': [1., 0.4], 'P': [0., 0.4]})
-        df
-
-        a = mx(df, max_iterations=50, silent=False, alfa=0.8, relconv=0.000001, conv='X',
-               debug=False, ldumpvar=0, stats=True, ljit=True)
-        b = mx.res(df)
-    with model.timer('dddd') as t:
-        u = 2*2
-# %% smallmodel
-
+#%%  test 
     smallmodel = '''
 frml <> a = c + b $ 
 frml <> d1 = x + 3 * a(-1)+ c **2 +a  $ 
@@ -5599,24 +5468,8 @@ Frml <> x = 0.5 * c +a$'''
     yy = mmodel(df2)
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
-    mmodel.drawmodel(svg=1,all=False,browser=1,pdf=0,des=False)
-    mmodel.X.draw(up=1, down=1,svg=1,browser=1,filter=0.01,fokus2='A')
-    mmodel.x
-    mmodel.dekomp('X',time_att=0)
-    print(mmodel.get_eq_des('A'))
-    # %%
-    if 0:
-        print(list(m2test.current_per))
-        with m2test.set_smpl(0, 0):
-            print(list(m2test.current_per))
-            with m2test.set_smpl(0, 2):
-                print(list(m2test.current_per))
-            print(list(m2test.current_per))
-        print(list(m2test.current_per))
-        print(list(m2test.current_per))
-        with m2test.set_smpl_relative(-333):
-            print(list(m2test.current_per))
-        print(list(m2test.current_per))
-        if 0:
-            m2test.modeldump_excel('graph/ib.xlsx')
-            m3test = model.modelload_excel('graph/ib.xlsx')
+    # mmodel.drawmodel(svg=1,all=True,browser=1,pdf=0,des=False,attshow=1)
+    mmodel.draw('X',up=1, down=0,svg=1,browser=1,attshow=1,fokus2='A',filter=40,invisible=set())
+    # mmodel.x
+    # mmodel.dekomp('X',time_att=0)
+    # print(mmodel.get_eq_des('A'))
