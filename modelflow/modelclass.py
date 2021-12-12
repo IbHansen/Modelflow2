@@ -1549,11 +1549,10 @@ class Dekomp_Mixin():
         attributions '''
         if not hasattr(self, 'totdekomp'):
             from modeldekom import totdif
-            self.totdekomp = totdif(model=self, summaryvar=spat, desdic=desdic)
+            self.totdekomp = totdif(model=self, summaryvar=spat, desdic=self.var_description)
             print('TOTDEKOMP made')
         if self.totdekomp.go:
-            xvar = var if var in self.endogene else sorted(list(self.endogene))[
-                0]
+            xvar = var if var in self.endogene else sorted(list(self.endogene))[0]
             xx = mj.get_att_gui(self.totdekomp, var=xvar,
                                 spat=spat, desdic=desdic, use=use)
             display(xx)
@@ -2326,7 +2325,8 @@ class Graph_Draw_Mixin():
         des = kwargs.get('des', True)
 
         fokus = kwargs.get('fokus', '')
-        fokus2 = kwargs.get('fokus2', '')
+        fokus200 = kwargs.get('fokus2', '')
+        fokus2 = set(fokus200) if type(fokus200) == str else fokus200
 
         dec = kwargs.get('dec', 3)
         att = kwargs.get('att', True)
@@ -2431,7 +2431,7 @@ class Graph_Draw_Mixin():
 #        print(nodelist)
 
         def makenode(v, navn):
-            show  = v  == fokus2
+            show  = v  in fokus2
             if kwargs.get('last', False) or kwargs.get('all', False) or kwargs.get('attshow', False) or show :
                 try:
                     t = pt.udtryk_parse(v, funks=[])
@@ -2443,15 +2443,15 @@ class Graph_Draw_Mixin():
                     dvalues = [float(get_a_value(self.lastdf, per, var, lag)-get_a_value(self.basedf, per, var, lag))
                                for per in self.current_per] 
                     if kwargs.get('attshow', False) or fokus2:
-                       # breakpoint()
-                       attvalues = self.att_dic[v] 
-                       # attvalues = self.get_att_pct(v.split('(')[0], lag=False, start='', end='')
-                       if filter: 
-                           attvalues = cutout(attvalues,filter)
-                       # attvalues2 = self.att_dic_level[v]
-                       dflen = len(attvalues.columns)
                        try:
-                            latt = f"<TR><TD COLSPAN = '{dflen+1}'> % Explained by</TD></TR>{dftotable(attvalues,dec)}" if len(
+                           # breakpoint()
+                           attvalues = self.att_dic[v] 
+                           # attvalues = self.get_att_pct(v.split('(')[0], lag=False, start='', end='')
+                           if filter: 
+                               attvalues = cutout(attvalues,filter)
+                           # attvalues2 = self.att_dic_level[v]
+                           dflen = len(attvalues.columns)
+                           latt = f"<TR><TD COLSPAN = '{dflen+1}'> % Explained by</TD></TR>{dftotable(attvalues,dec)}" if len(
                                 self.att_dic[v]) else ''
                        except:
                             latt = ''
@@ -2464,15 +2464,15 @@ class Graph_Draw_Mixin():
                                 for p in self.current_per])+'</TR>'
                     base = "<TR><TD ALIGN='LEFT' TOOLTIP='Baseline values' href='bogus'>Base</TD>"+''.join(["<TD ALIGN='RIGHT'  TOOLTIP='Baseline values' href='bogus' >"+(
                         f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>'
-                    last = "<TR><TD ALIGN='LEFT' TOOLTIP='Latest run values' href='bogus'>Last</TD>"+''.join(["<TD ALIGN='RIGHT'>"+(
+                    last = "<TR><TD ALIGN='LEFT' TOOLTIP='Latest run values' href='bogus'>Last</TD>"+''.join(["<TD ALIGN='RIGHT' >"+(
                         f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>'
                     dif = "<TR><TD ALIGN='LEFT' TOOLTIP='Difference between baseline and latest run' href='bogus'>Diff</TD>" + \
                         ''.join(["<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip(
                         ) for b in dvalues])+'</TR>' 
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '
                     # out = f'"{v}" [shape=box fillcolor= {color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
-                    out = f'"{v}" [shape=box style=filled fillcolor="#ff00008f"   margin=0.025 fontcolor=blue ' + (
-                        f" label=<<TABLE BORDER='1' CELLBORDER = '1' {stylefunkhtml(var,invisible=invisible)}   {self.maketip(v,True)} > <TR><TD COLSPAN ='{len(lvalues)+1}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif}{latt} </TABLE>> ]")
+                    out = f'"{v}" [shape=box style=filled  fillcolor=None  margin=0.025 fontcolor=blue ' + (
+                        f" label=<<TABLE BORDER='1' CELLBORDER = '1'  {stylefunkhtml(var,invisible=invisible)}    > <TR><TD COLSPAN ='{len(lvalues)+1}' bgcolor='{color(v,navn)}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif}{latt} </TABLE>> ]")
                     pass
 
                 except Exception as inst:
@@ -5469,7 +5469,7 @@ Frml <> x = 0.5 * c +a$'''
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
     # mmodel.drawmodel(svg=1,all=True,browser=1,pdf=0,des=False,attshow=1)
-    mmodel.draw('X',up=1, down=0,svg=1,browser=1,attshow=1,fokus2='A',filter=40,invisible=set())
+    mmodel.draw('A',up=1, down=0,svg=1,browser=1,attshow=0,fokus2='A',filter=0,invisible=set())
     # mmodel.x
     # mmodel.dekomp('X',time_att=0)
     # print(mmodel.get_eq_des('A'))

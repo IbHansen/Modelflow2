@@ -565,6 +565,8 @@ def inputwidget(model,basedf,slidedef={},radiodef=[],checkdef=[],modelopt={},var
                 for var in cont['var'].split():
                     if  op == '+':
                         mulstart.loc[model.current_per,var]    =  mulstart.loc[model.current_per,var] + wset[i].value
+                    elif  op == '%':
+                        mulstart.loc[model.current_per,var]    =  mulstart.loc[model.current_per,var] * (1+wset[i].value/100)
                     elif op == '+impulse':    
                         mulstart.loc[model.current_per[0],var] =  mulstart.loc[model.current_per[0],var] + wset[i].value
                     elif op == '=start-':   
