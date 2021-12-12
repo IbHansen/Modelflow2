@@ -18,8 +18,10 @@ try:
     from dash import html
 except:     
     import dash_html_components as html
+    
 from dash.dependencies import Input, Output, State
 from  dash_interactive_graphviz import DashInteractiveGraphviz
+
 import plotly.graph_objs as go
 from plotly.graph_objs.scatter.marker import Line
 
@@ -28,6 +30,8 @@ from threading import Timer
 
 import json
 import networkx as nx
+
+from dataclasses import dataclass,field
 
 
 from pathlib import Path
@@ -161,16 +165,30 @@ def generate_table(dataframe, max_rows=10):
     ])
 
 
-
-
-class Dash_Mixin():
+@dataclass 
+class Dash_new():
     
-          
-    def modeldash(self,pre_var='FY',debug=False,jupyter=False,show_trigger=False,port=5001,lag= False,filter = 0,up=1,down=0,
-                  threshold=0.5,inline=False,time_att=False,attshow=False,all=False): 
+     mmodel : any = None  
+     pre_var : str ='FY'
+     filter: float  = 0
+     up : int = 1
+     down : int = 0
+     time_att  : bool = False 
+     attshow :bool = False
+     all : bool = False 
+     dashport : int = 5001
+     debug : bool = False
+     jupyter : bool = False 
+     show_trigger : bool = False 
+     inline : bool =False
+     lag : bool = False 
+     threshold : float  =0.5
+     
+     def __post_init__(self):
+        self.fokusvar = set()
         print('Still worlking on the layout of this')
-        self.dashport = port
-        selected_var = pre_var if pre_var else sorted(self.allvar.keys())[0] 
+        
+        selected_var = self.pre_var if self.pre_var else sorted(self.mmodel.allvar.keys())[0] 
         sidebar = html.Div(
             [ 
               html.H3("Current Variable"),
@@ -181,20 +199,20 @@ class Dash_Mixin():
               html.H3("Select a variable"),             
               dcc.Dropdown(id='var',value=selected_var,options=[
                   dict(label=v, value=v)
-                  for v in sorted(self.allvar.keys())]),
+                  for v in sorted(self.mmodel.allvar.keys())]),
              
               html.H3("Up Levels"),
-              dcc.Dropdown(id="up",value=up,options=[
+              dcc.Dropdown(id="up",value=self.up,options=[
                   dict(label=engine, value=engine)
                   for engine in list(range(10))]),
 
               html.H3("Down levels"),
-              dcc.Dropdown(id="down",value=down,options=[
+              dcc.Dropdown(id="down",value=self.down,options=[
                   dict(label=engine, value=engine)
                   for engine in list(range(10))]),
               
               html.H3("Graph filter%"),
-              dcc.Dropdown(id="filter",value=filter,options=[
+              dcc.Dropdown(id="filter",value=self.filter,options=[
                   dict(label=t, value=t)
                   for t in list(range(0,100,10))]),
              
@@ -215,7 +233,7 @@ class Dash_Mixin():
                   
                   {'label': '+Attribution', 'value': 'attshow'},
                   ],
-            value='all' if all else ('attshow' if attshow else 'name') ,labelStyle={'display': 'block'}),
+            value='all' if self.all else ('attshow' if self.attshow else 'name') ,labelStyle={'display': 'block'}),
               
               html.H3("Behavior when clicking on graph"),             
               dcc.RadioItems(id='onclick',
@@ -229,32 +247,32 @@ class Dash_Mixin():
             ],
             style=SIDEBAR_STYLE
         )
-        # top =   dbc.Col([
+        # breakpoint()
         outvar= selected_var    
         tab0 = html.Div([
             dbc.Tabs(id="tabs", children=[
                 dbc.Tab(id='Graph',label='Graph', children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
-                        dot_source =   self.draw(selected_var,up=up,down=down,showatt=False,lag=lag,
-                                                 debug=0,dot=True,HR=False,filter = filter,
-                                                 all=all,attshow=attshow))],
+                        dot_source =   self.mmodel.draw(selected_var,up=self.up,down=self.down,showatt=False,lag=self.lag,
+                                                 debug=0,dot=True,HR=False,filter = self.filter,
+                                                 all=False,attshow=False))],
                         style=CONTENT_STYLE_TOP),
 
                 dbc.Tab(id='Chart',label='Chart', 
                         children = [dcc.Graph(id='chart',
-                        figure=get_line(self.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
+                        figure=get_line(self.mmodel.value_dic[selected_var].iloc[:2,:],selected_var,f'The values for {selected_var}'))
                         , dcc.Graph(id='chart_dif',
-                        figure=get_line(self.value_dic[selected_var].iloc[[2],:],selected_var,f'The impact for {selected_var}'))
+                        figure=get_line(self.mmodel.value_dic[selected_var].iloc[[2],:],selected_var,f'The impact for {selected_var}'))
                          ],                            
                         style=CONTENT_STYLE_TOP),
 
                 dbc.Tab(id='Attribution',label='Attribution', 
                         children = [dcc.Graph(id='att_pct',
-                        figure = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',
-                                            threshold=threshold,desdict=self.var_description)
-                                   if outvar in self.endogene else html.H3("Graph orientation")))
+                        figure = (get_stack(self.mmodel.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}',
+                                            threshold=self.threshold,desdict=self.mmodel.var_description)
+                                   if outvar in self.mmodel.endogene else html.H3("Graph orientation")))
                         , dcc.Graph(id='att_level',
-                        figure =  (get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',
-                                           pct=False,threshold=threshold,desdict=self.var_description) if outvar in self.endogene else   html.H3("Graph orientation")))
+                        figure =  (get_stack(self.mmodel.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',
+                                           pct=False,threshold=self.threshold,desdict=self.mmodel.var_description) if outvar in self.mmodel.endogene else   html.H3("Graph orientation")))
                
                          ],                            
                         style=CONTENT_STYLE_TOP)
@@ -265,7 +283,7 @@ class Dash_Mixin():
         # tabbed = tab0
         # tabbed = dbc.Container(tab0,id='tabbed',style={"height": "100vh"},fluid=True)
         tabbed =  html.Div(tab0,id='tabbed',style={"height": "100vh"})
-        app  = app_setup(jupyter=jupyter)
+        app  = app_setup(jupyter=self.jupyter)
     
         
         
@@ -280,7 +298,7 @@ class Dash_Mixin():
              Output('tabs','active_tab')],
             
             [Input('var', "value"),
-                Input('gv', "selected_node"),Input('gv', "selected_edge"),
+                Input('gv', "selected_node"), Input('gv', "selected_edge"),
                   Input('up', "value"),Input('down', "value"),Input('filter', "value"),
                   Input('orient', "value"),
                   Input('onclick','value'),
@@ -297,10 +315,11 @@ class Dash_Mixin():
                                node,
                              outvar_state
                             ):
+            # breakpoint()
             ctx = dash.callback_context
             if ctx.triggered:
                 trigger = ctx.triggered[0]['prop_id'].split('.')[0]
-                if show_trigger:
+                if self.show_trigger:
                     ctx_msg = json.dumps({
                     'states': ctx.states,
                     'triggered': ctx.triggered,
@@ -310,7 +329,7 @@ class Dash_Mixin():
                     # print(f'{outvar=},{data_show=}')
                     # print(value)
                 update_var = True    
-                tab_out = dash.no_update
+                print(f'{outvar_state=}')
 
                 if trigger in ['var']:
                     try:
@@ -320,56 +339,66 @@ class Dash_Mixin():
                     
 
               
-                elif trigger == 'gv':
-                    pass
-                    try:
+                elif trigger == 'gv' :
+                    print(f'{selected_node=}')
+                    if selected_node:
                         xvar= selected_node.split('(')[0]
-                        if xvar in self.endogene or xvar in self.exogene: 
+                        if xvar in self.mmodel.endogene or xvar in self.mmodel.exogene: 
                             outvar = xvar[:]
-                    except:
-                        outvar = selected_edge.split('->')[0]
+                        else:
+                            print(f'{xvar=} an error ')
+                        if onclick == 'd':
+                            if outvar in self.fokusvar:
+                                self.fokusvar = self.fokusvar-{outvar}
+                            else: 
+                                self.fokusvar = self.fokusvar | {outvar}
+                            # print(self.fokusvar)
+                        print(f'{outvar=}')   
+                    else:
+                        outvar = 'FY'
+                
                 else:
                     ...
                     
                     outvar=outvar_state
                       
-                if onclick == 'c' or outvar not in self.value_dic.keys()  or trigger in ['up','down','orient','filter','node'] :   
-                    dot_out =  self.draw(outvar,up=up,down=down,filter=filter,showatt=False,debug=0,
-                                         lag=lag,dot=True,HR=orient=='h',last=0,all = node == 'all',
-                                         attshow=node=='attshow')
-                    tab_out = dash.no_update
+                if onclick == 'c' : #or outvar not in self.mmodel.value_dic.keys() : # or trigger in ['up','down','orient','filter','node'] :   
+                    dot_out =  self.mmodel.draw(outvar,up=up,down=down,filter=filter,showatt=False,debug=0,
+                                         lag=self.lag,dot=True,HR=orient=='h',last=0,all = False,
+                                         attshow=False)
   
-                elif onclick == 'd' and trigger in ['gv'] :   
-                    dot_out =  self.draw(outvar_state,up=up,down=down,filter=filter,showatt=False,debug=0,
-                                         lag=lag,dot=True,HR=orient=='h',fokus2=outvar,all= node == 'all',
+                elif onclick == 'd'  :   
+                    # print(f'{outvar=}')
+                    dot_out =  self.mmodel.draw(outvar_state,up=up,down=down,filter=filter,showatt=False,debug=0,
+                                         lag=self.lag,dot=True,HR=orient=='h',fokus2=self.fokusvar,all= node == 'all',
                                          attshow= node =='attshow')
                     update_var  = False 
-                    tab_out = 'Attribution'
                 else:
                     dot_out = dash.no_update
-                    tab_out =dash.no_update
   
-                chart_out = get_line(self.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}:{self.var_description.get(outvar,"")}')
-                chart_dif_out = get_line(self.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}:{self.var_description.get(outvar,"")}')
+                chart_out = get_line(self.mmodel.value_dic[outvar].iloc[:2,:],outvar,f'The values for {outvar}:{self.mmodel.var_description.get(outvar,"")}')
+                chart_dif_out = get_line(self.mmodel.value_dic[outvar].iloc[[2],:],outvar,f'The impact for {outvar}:{self.mmodel.var_description.get(outvar,"")}')
                 
-                att_pct_out = (get_stack(self.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}:{self.var_description.get(outvar,"")}'
-                                         ,threshold=threshold,desdict=self.var_description)
-                                   if outvar in self.endogene else  html.H3(""))
+                att_pct_out = (get_stack(self.mmodel.att_dic[outvar],outvar,f'Attribution of the impact - pct. for {outvar}:{self.mmodel.var_description.get(outvar,"")}'
+                                         ,threshold=self.threshold,desdict=self.mmodel.var_description)
+                                   if outvar in self.mmodel.endogene else  html.H3(""))
                      
-                att_level_out = (get_stack(self.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',
-                                           pct=False,threshold=threshold,desdict=self.var_description) if outvar in self.endogene else  html.H3("") )
+                att_level_out = (get_stack(self.mmodel.att_dic_level[outvar],outvar,f'Attribution of the impact - level for {outvar}',
+                                           pct=False,threshold=self.threshold,desdict=self.mmodel.var_description) if outvar in self.mmodel.endogene else  html.H3("") )
                  
             else:
                 return [dash.no_update, dash.no_update,dash.no_update,dash.no_update,dash.no_update, dash.no_update, dash.no_update]
 
-            outvar_state = outvar if update_var else outvar_state     
+            outvar_state = outvar if update_var else outvar_state   
+            self.pre_var = 'ibhansen'
             return [dot_out, chart_out, chart_dif_out, att_pct_out, att_level_out, outvar_state ,dash.no_update,]
-       
-        app_run(app,jupyter=jupyter,debug=debug,port=self.dashport,inline=inline)
+        
+        app_run(app,jupyter=self.jupyter,debug=self.debug,port=self.dashport,inline=self.inline)
 #%test        
 if __name__ == "__main__":
 
-        
+#%% testing
+       
     if not  'baseline' in locals() or 1 :    
         from modelclass import model 
         madam,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0 )
@@ -378,9 +407,5 @@ if __name__ == "__main__":
         scenarie.TG = scenarie.TG + 0.05
         _ = madam(scenarie)
         
-   
-    setattr(model, "modeldash", Dash_Mixin.modeldash)    
-   # madam.modeldash('FY',jupyter=False,show_trigger=True,debug=False) 
-    madam.modeldash('FE',jupyter=1,port = 5004,all = 0)
-    #mmodel.FY.draw(up=1, down=1,svg=1,browser=1)
-
+    
+    _ =  Dash_new(madam,'FE',debug = 0,show_trigger=True)

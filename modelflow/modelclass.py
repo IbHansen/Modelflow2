@@ -2336,7 +2336,7 @@ class Graph_Draw_Mixin():
               if navn == v:
                   out = 'red'
                   return out
-              if v == fokus2:
+              if v in fokus2:
                   out = 'chocolate1'
                   return out
               if v in self.endogene:
@@ -2432,7 +2432,9 @@ class Graph_Draw_Mixin():
 
         def makenode(v, navn):
             show  = v  in fokus2
-            if kwargs.get('last', False) or kwargs.get('all', False) or kwargs.get('attshow', False) or show :
+            # print(f'{v=}, {show=}  {fokus2=}')
+            if (kwargs.get('last', False) or kwargs.get('all', False) or kwargs.get('attshow', False)) and show :
+                # breakpoint()
                 try:
                     t = pt.udtryk_parse(v, funks=[])
                     var = t[0].var
@@ -2442,7 +2444,7 @@ class Graph_Draw_Mixin():
                     lvalues = [float(get_a_value(self.lastdf, per, var, lag)) for per in self.current_per] 
                     dvalues = [float(get_a_value(self.lastdf, per, var, lag)-get_a_value(self.basedf, per, var, lag))
                                for per in self.current_per] 
-                    if kwargs.get('attshow', False) or fokus2:
+                    if kwargs.get('attshow', False) and fokus2:
                        try:
                            # breakpoint()
                            attvalues = self.att_dic[v] 
@@ -2472,7 +2474,7 @@ class Graph_Draw_Mixin():
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '
                     # out = f'"{v}" [shape=box fillcolor= {color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
                     out = f'"{v}" [shape=box style=filled  fillcolor=None  margin=0.025 fontcolor=blue ' + (
-                        f" label=<<TABLE BORDER='1' CELLBORDER = '1'  {stylefunkhtml(var,invisible=invisible)}    > <TR><TD COLSPAN ='{len(lvalues)+1}' bgcolor='{color(v,navn)}' {self.maketip(v,True)}>{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif}{latt} </TABLE>> ]")
+                        f" label=<<TABLE BORDER='1' CELLBORDER = '1'  {stylefunkhtml(var,invisible=invisible)}    > <TR><TD COLSPAN ='{len(lvalues)+1}' bgcolor='{color(v,navn)}' {self.maketip(v,True)} >{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif}{latt} </TABLE>> ]")
                     pass
 
                 except Exception as inst:
