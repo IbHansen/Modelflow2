@@ -75,6 +75,7 @@ def funk_replace_list(replacelist,a_string):
         
     
 funk_replace_list([('@D','DIFF'),('DLOG','DXLOG')],'d(a) = @d(v) x = dlog(y)')
+funk_replace_list([('@D','DIFF'),('D','DIFF'),('DLOG','DXLOG')],'d(a) = @d(v) x = dlog(y)')
 funk_in('D','+d(b)'.upper())
 
 def funk_find_arg(funk_match, streng):
@@ -156,9 +157,7 @@ def fixleads(eq,check=False):
        print(f"After  {res}")
    return res
 
-fixleads('a = b(1) + v(33)'.upper(),1)  
-fixleads(' 0.2121303706720161 * D( LOG(QLHP), 0, 1 )           + -0.04133299713432281 * D( LOG(QLHP(1)), 0, 1 )           + 0.9805787292172398 * ZLHP(1)           + -0.1948471451936957 * ZLHP(2) ')     
-def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A'):
+def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
     
@@ -169,8 +168,9 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
     Args:
         ind_o (str): input expression
         the_endo (str, optional): the endogeneous to isolate on the left hans side. if '' the first variable in the lhs. It shoud be on the left hand side. 
-        add_adjust (TYPE, optional): force introduction aof adjustment term, and an expression to calculate it
-        do_preprocess (TYPE, optional): DESCRIPTION. preprocess the expression
+        add_adjust (bool, optional): force introduction aof adjustment term, and an expression to calculate it
+        do_preprocess (bool, optional): DESCRIPTION. preprocess the expression
+        endo_lhs (bool, optional): Accept to normalize for a rhs endogeneous variable 
 
     Returns:
          An instance of the class: Normalized_frml which will contain the different relevant expressions 
@@ -188,19 +188,21 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
     ind = preprocessed.upper().replace('LOG(','log(').replace('EXP(','exp(')
     lhs,rhs=ind.strip().split('=',1)
     lhs = lhs.strip()
-    if len(udtryk_parse(lhs)) >=2: # we have an expression on the left hand side 
+    if len(udtryk_parse(lhs)) >=2 or not endo_lhs : # we have an expression on the left hand side 
         clash = getclash(ind)
         
         endo_name = the_endo.upper() if the_endo else endovar(lhs)
         endo = sympify(endo_name,clash)
         a_name = f'{endo_name}{add_suffix}' if add_adjust else ''
-        thiseq = f'({lhs}-__RHS__ {"+" if add_adjust else ""}{a_name})'
+        thiseq = f'({lhs}-__RHS__ {"+" if add_adjust else ""}{a_name})'  if endo_lhs else \
+                 f'({lhs}- {rhs}  {"+" if add_adjust else ""}{a_name})'
         transeq = pastestring(thiseq,post,onlylags=True).replace('LOG','log').replace('EXP','exp')
         kat=sympify(transeq,clash)  
         # breakpoint()
         
         endo_frml  = solve(kat,endo  ,simplify=False,rational=False,warn=False)
-        res_rhs    =stripstring(str(endo_frml[0]),post).replace('__RHS__',f' ({rhs.strip()}) ')
+        res_rhs    =stripstring(str(endo_frml[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
+                    stripstring(str(endo_frml[0]),post)
         out_frml   = f'{endo} = {res_rhs}'.upper() 
         
         if add_adjust:
@@ -266,14 +268,18 @@ if __name__ == '__main__':
     normal('PCT_growth(a) = n(-1)',add_adjust=0).fprint
     normal('a = movavg(pct(b),2)',add_adjust=0).fprint
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
+    normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
     normal('a = pct_growth(b)',add_adjust=0).fprint
     normal("DLOG(SAUNECONGOVTXN) = -0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
     normal("D(a,0,1) = b").fprint
     normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
     normal('a = D( LOG(QLHP(+1)))').fprint
+    normal('a = b+c',the_endo='B',endo_lhs=False).fprint
     # breakpoint()
     normal('zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_adjust=1).fprint
     fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')
 #%%
 
-elem_trans('DLOG(PAKNVRENPRODXN)=DLOG((WLDHYDROPOWER*PAKPANUSATLS)/(@ELEM(WLDHYDROPOWER,2011)*@ELEM(PAKPANUSATLS,2011)))-0.00421833463034*DUMH')
+    elem_trans('DLOG(PAKNVRENPRODXN)=DLOG((WLDHYDROPOWER*PAKPANUSATLS)/(@ELEM(WLDHYDROPOWER,2011)*@ELEM(PAKPANUSATLS,2011)))-0.00421833463034*DUMH')
+    fixleads('a = b(1) + v(33)'.upper(),1)  
+    fixleads(' 0.2121303706720161 * D( LOG(QLHP), 0, 1 )           + -0.04133299713432281 * D( LOG(QLHP(1)), 0, 1 )           + 0.9805787292172398 * ZLHP(1)           + -0.1948471451936957 * ZLHP(2) ')     

@@ -1079,7 +1079,7 @@ if __name__ == '__main__' and 1 :
     list_extract('list bankdic = bank	:   Danske , Nordea / danske : yes , no $')
     kw_frml_name('<res=abe>','res')
     kw_frml_name('<res=abe,animal>','animal')
-    find_res('FRML <res=x> ib    =x+y+v $')
+    find_res('FRML <res=x> ib    =x+y+v +ib(-1)$')
     find_res('FRML <res=J> ib    =x+y+v + ib_j $')
     find_res('FRML <res=JR> ib   =(x+y+v + ib_j)*(1+ ib_JR) $)')
     find_hist_model('FRML <res=x> ib    =x+y+v $ frml <ident> y=c+i+x-m $')
@@ -1140,9 +1140,9 @@ if __name__ == '__main__' and 1 :
         return x    
     
     eq='''FRML <> logit(pd_country_sector) = 
-    0.008 + 0.44 * logit(pd_country_sector(-1)) - 0.18 * gdp_country -0.05*gdp_country(-1) + 0.12 * delta_4URX_country  + 0.02 * sltn_country + 0.11 * nsltn_country(-1) $ ''' 
-    eq='''FRML <> logit(cow) = logit(1+1) + diff(a) $ ''' 
-    eq='''FRML <> x =  diff(f1(a)) $ ''' 
+    0.008 + 0.44 * logit(pd_country_sector(-1)) - 0.18 * gdp_country -0.05*gdp_country(-1) + 0.12 * URX_country  + 0.02 * sltn_country + 0.11 * nsltn_country(-1) $ ''' 
+    # eq='''FRML <> logit(cow) = logit(1+1) + diff(a) $ ''' 
+    # eq='''FRML <> x =  diff(f1(a)) $ ''' 
     print(eq)
     print('After normalization' )
     neq=normalize(eq,funks=[f1]).lower()

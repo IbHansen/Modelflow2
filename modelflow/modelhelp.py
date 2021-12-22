@@ -15,11 +15,13 @@ import numpy as np
 import time
 from contextlib import contextmanager
 import sys
+import itertools
+import operator as op
 
 
 
 
-def update_var(databank,var,operator='=',inputval=0,start='',slut='',create=1, lprint=False,scale=1.0):
+def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, lprint=False,scale=1.0):
     
         """Updates a variable in the databank. Possible update choices are: 
         \n \= : val = inputval 
@@ -34,6 +36,7 @@ def update_var(databank,var,operator='=',inputval=0,start='',slut='',create=1, l
         """ 
         import sys 
         import numpy as np 
+        var = xvar.upper()
         if var not in databank: 
             if not create:
                 print('** Error, variable not found:',var)
@@ -83,6 +86,13 @@ def update_var(databank,var,operator='=',inputval=0,start='',slut='',create=1, l
                 iloccol = databank.columns.get_loc(var)
                 temp=databank.iloc[ilocrow,iloccol]
                 opdater=[temp+sum(inputdata[:i+1]) for i in range(len(inputdata))]
+                outputserie=pd.Series(opdater,current_per) 
+            elif operator.upper() == '=GROWTH': # data=data(-1)+inputdata 
+                ilocrow =databank.index.get_loc(start)-1
+                iloccol = databank.columns.get_loc(var)
+                temp=databank.iloc[ilocrow,iloccol]
+                factor = list(itertools.accumulate([(1+i/100) for i in inputdata],op.mul))
+                opdater=[temp * it for it in factor]
                 outputserie=pd.Series(opdater,current_per) 
             else:
                 print('Illegal operator in update:',operator,'Variable:',var)
@@ -210,6 +220,13 @@ def df_extend(df,add=5):
     return df.reindex(newindex,method='ffill')    
   
 if __name__ == '__main__':
+    #%% Test
+    if not  'baseline' in locals() or 1 :    
+        from modelclass import model 
+        madam,baseline  = model.modelload('../Examples/ADAM/baseline.pcim',run=1,silent=0,ljit=1,stringjit=0 )
+        # make a simpel experimet VAT
+        scenarie = baseline.copy()
+        scenarie.TG = scenarie.TG + 0.05
+        _ = madam(scenarie)
     
-    with ttimer('test'):
-        print(2+2)
+    update_var(baseline,'tg','=GROWTH',1,2021,2024,lprint=1)

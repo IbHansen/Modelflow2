@@ -55,6 +55,7 @@ from modelnet import draw_adjacency_matrix
 from modelnewton import newton_diff
 import modeljupyter as mj
 from modelhelp import cutout, update_var
+from modelnormalize import normal
 
 # functions used in BL language
 from scipy.stats import norm
@@ -1038,7 +1039,19 @@ class Org_model_Mixin():
         else:
             out = out0
         return out
-
+    
+    def get_var_growth(self,varname,showname= False,diff=False):
+        '''Returns the  growth rate of this variable in the base and the last dataframe'''
+        with self.set_smpl_relative(-1, 0):
+            basevalues = self.basedf.loc[self.current_per, varname].pct_change()
+            basevalues.name = f'{varname+" " if showname else ""}Base growth'
+            lastvalues = self.lastdf.loc[self.current_per, varname].pct_change()
+            lastvalues.name = f'{varname +" " if showname else ""}Last growth'
+            diffvalues = lastvalues-basevalues 
+            diffvalues.name = f'{varname +" " if showname else ""}Diff growth'
+        out = pd.DataFrame([basevalues,lastvalues,diffvalues]) if diff else pd.DataFrame([basevalues,lastvalues])  
+        return out.loc[:,self.current_per]*100.
+    
     def get_values(self, v, pct=False):
         ''' returns a dataframe with the data points for a node,  including lags '''
         t = pt.udtryk_parse(v, funks=[])
@@ -1605,7 +1618,96 @@ class Description_Mixin():
         else:
             return f'{var}'
 
+class Modify_Mixin():
+    '''Class to modify a model with new equations, (later alse delete, and new normalization)'''
+    def modelmodify(self,updateeq=None,deleteeq=None,newnormalisation=None,newfunks=[]):
+        '''
+        
 
+        Parameters
+        ----------
+        updateeq : TYPE
+            new equations seperated by newline . 
+        deleteeq : TYPE, optional
+            Variables where equations are to be deleted. The default is None.
+        newnormalisation : TYPE, optional
+            Not implementet yet . The default is None.
+        newfunks : TYPE, optional
+            Additional userspecified functions. The default is [].
+
+        Returns
+        -------
+        newmodel : TYPE
+            The new  model with the new and deleted equations .
+        newdf : TYPE
+            a dataframe with calculated add factors. Origin is the original models lastdf.
+
+        '''
+        
+        if deleteeq:
+            vars_todelete = self.vlist(deleteeq)
+        else:
+            vars_todelete = set()
+            
+        updatefunks=list(set(self.funks+newfunks) ) # 
+            
+        if updateeq:            
+            updatemodel = self.__class__.from_eq(updateeq,funks=updatefunks)   
+            frmldict2   = {k: v['frml'].replace('$','') for (k,v) in updatemodel.allvar.items() if k in updatemodel.endogene}
+    
+            frmldic2_strip = {k : v.split(' ',2) for k,v in frmldict2.items() } 
+            frmldic2_normal = {k : [frml,fname,normal(expression)] for k,(frml,fname,expression) 
+                               in frmldic2_strip.items()} 
+            frmldict_update = {k: f'{frml} {fname} {nexpression.normalized}$' for k,(frml,fname,nexpression) 
+                               in frmldic2_normal.items()} 
+            frmldict_calc_add = {k: f'{frml} {fname} {nexpression.calc_adjustment}$' for k,(frml,fname,nexpression) 
+                               in frmldic2_normal.items() if k in self.endogene or k in self.exogene} 
+            # breakpoint()
+        else:
+            frmldict_update ={}
+            frmldict_calc_add={}
+            
+        frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_todelete }
+        newfrmldict = {**frmldict,**frmldict_update}
+            
+        newfrml     = '\n'.join([f for f in newfrmldict.values()])
+        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=updatefunks)
+        
+        if len(frmldict_calc_add):          
+
+            calc_add_frml = '\n'.join([f for f in frmldict_calc_add.values()])
+            calc_add_model = self.__class__(calc_add_frml,modelname = f'adjustment calculation for updated {self.name}',funks=updatefunks)
+            var_add = calc_add_model.endogene
+            
+        print(f'\nThis model "{self.name}" will be modified')
+        for varname,frml  in frmldict_update.items():
+            print(f'\nNew equation for For {varname}')
+            print(f'Old frml   :{frmldict.get(varname,"new endogeneous variable ")}')
+            print(f'New frml   :{frml}')
+            print(f'Adjust calc:{frmldict_calc_add.get(varname,"No frml for adjustment calc  ")}')
+            print()
+        # breakpoint()
+        if deleteeq: 
+            print('The following equations are deleted')
+            for v in vars_todelete:
+                print(f'{v}  :{self.allvar[v]["frml"]}')
+  
+        thisdf = self.lastdf.copy()
+        if len(frmldict_calc_add):
+            calc_add_model.current_per = self.current_per
+            newdf = calc_add_model(thisdf)
+            print('\nNew add factors to get the same results for existing variables:')
+            print(newdf.loc[self.current_per,var_add])
+        else: 
+            newdf = thisdf
+            
+        newmodel.current_per = self.current_per.copy()
+        newmodel.var_description = self.var_description
+        return newmodel,newdf 
+        ... 
+        
+            
+    
 class Graph_Mixin():
     '''This class defines graph related methods and properties
     '''
@@ -2410,13 +2512,16 @@ class Graph_Draw_Mixin():
         maxlevel = max([l for l, p, c in alllinks])
 
         if att:
-            to_att = {p for l, p, c in alllinks }|{ c.split('(')[0] for l, p, c in alllinks if c.split('(')[0] in self.endogene}
-            self.att_dic = {v: self.get_att_pct(
-                v.split('(')[0], lag=False, start='', end='') for v in to_att}
-            self.att_dic_level = {v: self.get_att_level(
-                v.split('(')[0], lag=False, start='', end='') for v in to_att}
-            
-
+            try:
+                to_att = {p for l, p, c in alllinks }|{ c.split('(')[0] for l, p, c in alllinks if c.split('(')[0] in self.endogene}
+                self.att_dic = {v: self.get_att_pct(
+                    v.split('(')[0], lag=False, start='', end='') for v in to_att}
+                self.att_dic_level = {v: self.get_att_level(
+                    v.split('(')[0], lag=False, start='', end='') for v in to_att}
+            except:
+                self.att_dic_leve ={}
+                self.att_dic={}
+                 
         ibh = {node(0, x.parent, x.child)
                for x in alllinks}  # To weed out multible  links
     #
@@ -2433,7 +2538,8 @@ class Graph_Draw_Mixin():
         def makenode(v, navn):
             show  = v  in fokus2
             # print(f'{v=}, {show=}  {fokus2=}')
-            if (kwargs.get('last', False) or kwargs.get('all', False) or kwargs.get('attshow', False)) and show :
+            if (kwargs.get('last', False) or kwargs.get('all', False) or 
+                kwargs.get('attshow', False) or kwargs.get('growthshow', False)) and show :
                 # breakpoint()
                 try:
                     t = pt.udtryk_parse(v, funks=[])
@@ -2444,7 +2550,7 @@ class Graph_Draw_Mixin():
                     lvalues = [float(get_a_value(self.lastdf, per, var, lag)) for per in self.current_per] 
                     dvalues = [float(get_a_value(self.lastdf, per, var, lag)-get_a_value(self.basedf, per, var, lag))
                                for per in self.current_per] 
-                    if kwargs.get('attshow', False) and fokus2:
+                    if kwargs.get('attshow', False) and show:
                        try:
                            # breakpoint()
                            attvalues = self.att_dic[v] 
@@ -2460,6 +2566,14 @@ class Graph_Draw_Mixin():
                     else:
                         latt = ''
                         
+                    if kwargs.get('growthshow', False) and show:
+                        growthdf = self.get_var_growth(v)
+                        dflen = len(growthdf.columns)
+                        lgrowth = f"<TR><TD COLSPAN = '{dflen+1}'> Growth rate</TD></TR>{dftotable(growthdf,dec)}" if len(
+                                self.att_dic[v]) else ''
+                    else:
+                        lgrowth = ''
+                       
 
                     per = "<TR><TD ALIGN='LEFT'>Per</TD>" + \
                         ''.join(['<TD>'+(f'{p}'.strip()+'</TD>').strip()
@@ -2474,7 +2588,7 @@ class Graph_Draw_Mixin():
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '
                     # out = f'"{v}" [shape=box fillcolor= {color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
                     out = f'"{v}" [shape=box style=filled  fillcolor=None  margin=0.025 fontcolor=blue ' + (
-                        f" label=<<TABLE BORDER='1' CELLBORDER = '1'  {stylefunkhtml(var,invisible=invisible)}    > <TR><TD COLSPAN ='{len(lvalues)+1}' bgcolor='{color(v,navn)}' {self.maketip(v,True)} >{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif}{latt} </TABLE>> ]")
+                        f" label=<<TABLE BORDER='1' CELLBORDER = '1'  {stylefunkhtml(var,invisible=invisible)}    > <TR><TD COLSPAN ='{len(lvalues)+1}' bgcolor='{color(v,navn)}' {self.maketip(v,True)} >{self.get_des_html(v,des)}</TD></TR>{per} {base}{last}{dif}{lgrowth}{latt} </TABLE>> ]")
                     pass
 
                 except Exception as inst:
@@ -3263,13 +3377,15 @@ class Display_Mixin():
         else: 
             select = VBox([selected_vars])
             
-        options1 = HBox([diff,legend])
+        options1 = HBox([diff]) if short >=2 else HBox([diff,legend])
         options2 = HBox([scale, showtype])
         if short:
-            ui = VBox([select, options1, i_smpl])
+            vui = [select, options1, i_smpl]
         else:
-            ui = VBox([select, options1, options2, i_smpl])
-
+            vui = [select, options1, options2, i_smpl]
+        vui =  vui[:-1] if short >= 2 else vui  
+        ui = VBox(vui)
+        
         show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
                                             'scale': scale, 'legend': legend})
         # display(ui, show)
@@ -5216,22 +5332,29 @@ class Solver_Mixin():
             return fig
         except:
             print('No iteration dump')
-try:
-    from modeldashsidebar import Dash_Mixin
-except: 
-    ...
-    print('The DASH dashboard is not loaded')
-    class Dash_Mixin:
-        ''' a dummy class if the dash dependencies are not installed. 
-        remember: 
-        conda install pip --y    
-        pip install dash_interactive_graphviz 
-        '''
-        ...
+# try:
+#     from modeldashsidebar import Dash_Mixin
+# except: 
+#     ...
+#     print('The DASH dashboard is not loaded')
+#     class Dash_Mixin:
+#         ''' a dummy class if the dash dependencies are not installed. 
+#         remember: 
+#         conda install pip --y    
+#         pip install dash_interactive_graphviz 
+#         '''
+#         ...
+from modeldashsidebar import Dash_graph
         
+class Dash_Mixin():
+    def modeldash(self,*arg,**kwargs):
+        ...
+        out = Dash_graph(self,*arg,**kwargs)
+        return out 
+         
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
-            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin):
+            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin):
     pass
 
 
@@ -5462,16 +5585,30 @@ Frml <> x = 0.5 * c +a$'''
            'C': 'Forbrug'}
     mmodel = model(smallmodel, var_description=des, svg=1, browser=1)
     df = pd.DataFrame(
-        {'X': [0.2, 0.2, 0.2], 'C': [0.0, 0., 0.],'R': [2., 1., 0.4], 'P': [0.4, 0., 0.4]})
+        {'X': [0.2, 0.2, 0.2], 'C': [2.0, 3., 5.],'R': [2., 1., 0.4], 'P': [0.4, 0., 0.4]})
     df2 = df.copy()
     df2.loc[:,'C'] = [5, 10, 20]
     
     xx = mmodel(df)
     yy = mmodel(df2)
+    m2model = model.from_eq('x = 42')
     # mmodel.drawendo()
     # mmodel.drawendo_lag_lead(browser=1)
     # mmodel.drawmodel(svg=1,all=True,browser=1,pdf=0,des=False,attshow=1)
-    mmodel.draw('A',up=1, down=0,svg=1,browser=1,attshow=0,fokus2='A',filter=0,invisible=set())
+    # mmodel.draw('A',up=1, growthshow=1, down=0,svg=1,browser=1,attshow=1,fokus2={'A'},all=1,filter=0,invisible=set())
     # mmodel.x
     # mmodel.dekomp('X',time_att=0)
     # print(mmodel.get_eq_des('A'))
+    # _ = mmodel.modeldash('A',growthshow = 1,all=1)
+    # x = mmodel.get_var_growth('A')
+    # y = mmodel.get_var_growth('A',showname= 1,diff=1)
+    # frmldict = {k: v['frml'] for (k,v) in mmodel.allvar.items() if k in mmodel.endogene}
+    # frmldict2 = {k: v['frml'] for (k,v) in mmodel.allvar.items() if k in m2model.endogene}
+    # newfrmldict = {**frmldict2,**frmldict}
+    # newfrml = '\n'.join([f for f in newfrmldict.values()])
+    newmodel, newdf  =  mmodel.modelmodify('''\
+    <exo,jled> x = 42
+    ibhansen=33
+    '''
+    ,deleteeq='D*')
+    

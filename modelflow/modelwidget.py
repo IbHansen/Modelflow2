@@ -177,6 +177,8 @@ class slidewidget:
                     df.loc[current_per,var]    =   value
                 elif op == '=impulse':    
                     df.loc[current_per[0],var] =   value
+                elif op == '%':    
+                    df.loc[current_per,var] =   df.loc[current_per,var] * (1-value/100)
                 else:
                     print(f'Wrong operator in {cont}.\nNot updated')
                     assert 1==3,'wRONG OPERATOR'
@@ -331,6 +333,7 @@ class updatewidget:
     vline  : list = field(default_factory=list)
     relativ_start : int = 0 
     short :bool = False 
+    legend :bool = False
     
     def __post_init__(self):
         self.baseline = self.mmodel.basedf.copy()
@@ -387,7 +390,7 @@ class updatewidget:
         self.exodif = self.mmodel.exodif(self.baseline,self.thisexperiment)
 
 
-    def show(self,g):
+    def show(self,g=None):
         if self.outputwidget == 'jupviz':
             clear_output()
             display(self.wtotal)
@@ -416,7 +419,7 @@ class updatewidget:
             plt.close('all')
             with self.mmodel.set_smpl_relative(self.relativ_start,0):
                 _ = self.mmodel.keep_viz_prefix(pat=selectfrom[0],
-                        selectfrom=selectfrom,prefix_dict=self.prefix_dict,vline=self.vline,short=self.short)
+                        selectfrom=selectfrom,prefix_dict=self.prefix_dict,vline=self.vline,short=self.short,legend=self.legend)
             
         
     def run(self,g):
