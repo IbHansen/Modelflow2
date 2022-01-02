@@ -166,7 +166,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
     The variable - without lags-  should not be on rhs. 
     
     Args:
-        ind_o (str): input expression
+        ind_o (str): input expression, no $ and no frml name just lhs=rhs
         the_endo (str, optional): the endogeneous to isolate on the left hans side. if '' the first variable in the lhs. It shoud be on the left hand side. 
         add_adjust (bool, optional): force introduction aof adjustment term, and an expression to calculate it
         do_preprocess (bool, optional): DESCRIPTION. preprocess the expression

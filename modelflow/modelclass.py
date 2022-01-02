@@ -1652,11 +1652,11 @@ class Modify_Mixin():
         updatefunks=list(set(self.funks+newfunks) ) # 
             
         if updateeq:            
-            updatemodel = self.__class__.from_eq(updateeq,funks=updatefunks)   
-            frmldict2   = {k: v['frml'].replace('$','') for (k,v) in updatemodel.allvar.items() if k in updatemodel.endogene}
+            updatemodel = self.__class__.from_eq(updateeq,funks=updatefunks)   # create the moedl with the usual processing of frml's 
+            frmldict2   = {k: v['frml'] for (k,v) in updatemodel.allvar.items() if k in updatemodel.endogene} # A dict with the frml's of the modify 
     
-            frmldic2_strip = {k : v.split(' ',2) for k,v in frmldict2.items() } 
-            frmldic2_normal = {k : [frml,fname,normal(expression)] for k,(frml,fname,expression) 
+            frmldic2_strip = {k : v.replace('$','').split(' ',2) for k,v in frmldict2.items() } # {endovariabbe :  [FRML, FRMLNAME, EXPRESSION]...} 
+            frmldic2_normal = {k : [frml,fname,normal(expression,do_preprocess=False)] for k,(frml,fname,expression) 
                                in frmldic2_strip.items()} 
             frmldict_update = {k: f'{frml} {fname} {nexpression.normalized}$' for k,(frml,fname,nexpression) 
                                in frmldic2_normal.items()} 
@@ -1667,8 +1667,8 @@ class Modify_Mixin():
             frmldict_update ={}
             frmldict_calc_add={}
             
-        frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_todelete }
-        newfrmldict = {**frmldict,**frmldict_update}
+        frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_todelete } # frml's in the existing model 
+        newfrmldict = {**frmldict,**frmldict_update} # frml's in the new model 
             
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
         newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=updatefunks)
