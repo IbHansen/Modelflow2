@@ -1620,19 +1620,19 @@ class Description_Mixin():
 
 class Modify_Mixin():
     '''Class to modify a model with new equations, (later alse delete, and new normalization)'''
-    def modelmodify(self,updateeq=None,deleteeq=None,newnormalisation=None,newfunks=[]):
+
+
+    def eqflip(self,flip=None,calc_add=True,newname='',sep='\n'):
         '''
         
 
         Parameters
         ----------
-        updateeq : TYPE
-            new equations seperated by newline . 
-        deleteeq : TYPE, optional
-            Variables where equations are to be deleted. The default is None.
         newnormalisation : TYPE, optional
             Not implementet yet . The default is None.
         newfunks : TYPE, optional
+            Additional userspecified functions. The default is [].
+        calc_add : bool, optional
             Additional userspecified functions. The default is [].
 
         Returns
@@ -1644,30 +1644,121 @@ class Modify_Mixin():
 
         '''
         
-        if deleteeq:
-            vars_todelete = self.vlist(deleteeq)
-        else:
-            vars_todelete = set()
+        newmodelname = newname if newname else self.name+' flipped'      
+        updatefunks=self.funks # 
+        # breakpoint() 
+        lines = flip.strip().split(sep)
+        newnormalisation = [l.split() for l in lines]
+        vars_before_normalization = {beforeendo.upper() for  beforeendo,afterendo in newnormalisation  }
+        frml_normalize_strip = {(beforeendo.upper(),afterendo.upper()) : self.allvar[beforeendo]['frml'].replace('$','').split(' ',2)   for beforeendo,afterendo in newnormalisation }
+        frml_normalize_gross = {(beforeendo,afterendo) : (fname ,normal(expression,the_endo = afterendo,endo_lhs=False,add_adjust=False))  for (beforeendo,afterendo),(frml,fname,expression)  in frml_normalize_strip.items() }
+        frmldict_normalized = {afterendo : f'FRML {fname} {nexpression.normalized}$'
+                               for (beforeendo,afterendo),(fname,nexpression)  in frml_normalize_gross.items() }
+#        breakpoint() 
+            
+        frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_before_normalization } # frml's in the existing model 
+        newfrmldict = {**frmldict,**frmldict_normalized} # frml's in the new model 
+            
+        newfrml     = '\n'.join([f for f in newfrmldict.values()])
+        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=updatefunks)
+        print(f'\nThe model:"{self.name}" Has endogeneous variable flipped, new model name is:"{newmodelname}"')
+        for  (beforeendo,afterendo),(fname,nexpression)  in frml_normalize_gross.items():
+            print(f'\nEndogeneous flip for {beforeendo} to {afterendo}')
+            print(f'Old frml   :FRML {fname} {nexpression.original}$')
+            print(f'New frml   :FRML {fname} {nexpression.normalized}$')
+            print()
+
+        newdf = self.lastdf.copy()
+        newmodel.current_per = self.current_per.copy()
+        newmodel.var_description = self.var_description
+        newmodel.name = newmodelname 
+        return newmodel,newdf 
+        ... 
+
+
+    def eqdelete(self,deleteeq=None,newname=''):
+        '''
+        
+
+        Parameters
+        ----------
+        deleteeq : TYPE, optional
+            Variables where equations are to be deleted. The default is None.
+
+        Returns
+        -------
+        newmodel : TYPE
+            The new  model with the new and deleted equations .
+        newdf : TYPE
+            a dataframe with calculated add factors. Origin is the original models lastdf.
+
+        '''
+        
+        vars_todelete = self.vlist(deleteeq)
+        newmodelname = newname if newname else self.name+' with deleted eq'      
+            
+            
+        newfrmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_todelete} # frml's in the existing model 
+            
+        newfrml     = '\n'.join([f for f in newfrmldict.values()])
+        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=self.funks)
+        print(f'\nThe model:"{self.name}" Has equations deleted, new model name is:"{newmodelname}"')
+
+        print('The following equations are deleted')
+        for v in vars_todelete:
+            print(f'{v}  :{self.allvar[v]["frml"]}')
+  
+        newdf = self.lastdf.copy()
+            
+        newmodel.current_per = self.current_per.copy()
+        newmodel.var_description = self.var_description
+        newmodel.name = newmodelname 
+
+        return newmodel,newdf 
+        ... 
+
+        
+    def equpdate(self,updateeq=None,newfunks=[],calc_add=True,newname=''):
+        '''
+        
+
+        Parameters
+        ----------
+        updateeq : TYPE
+            new equations seperated by newline . 
+        newfunks : TYPE, optional
+            Additional userspecified functions. The default is [].
+        calc_add : bool, optional
+            Additional userspecified functions. The default is [].
+
+        Returns
+        -------
+        newmodel : TYPE
+            The new  model with the new and deleted equations .
+        newdf : TYPE
+            a dataframe with calculated add factors. Origin is the original models lastdf.
+
+        '''
+        
             
         updatefunks=list(set(self.funks+newfunks) ) # 
-            
-        if updateeq:            
-            updatemodel = self.__class__.from_eq(updateeq,funks=updatefunks)   # create the moedl with the usual processing of frml's 
-            frmldict2   = {k: v['frml'] for (k,v) in updatemodel.allvar.items() if k in updatemodel.endogene} # A dict with the frml's of the modify 
+        
+        newmodelname = newname if newname else self.name+' Updated'      
     
-            frmldic2_strip = {k : v.replace('$','').split(' ',2) for k,v in frmldict2.items() } # {endovariabbe :  [FRML, FRMLNAME, EXPRESSION]...} 
-            frmldic2_normal = {k : [frml,fname,normal(expression,do_preprocess=False)] for k,(frml,fname,expression) 
-                               in frmldic2_strip.items()} 
-            frmldict_update = {k: f'{frml} {fname} {nexpression.normalized}$' for k,(frml,fname,nexpression) 
-                               in frmldic2_normal.items()} 
-            frmldict_calc_add = {k: f'{frml} {fname} {nexpression.calc_adjustment}$' for k,(frml,fname,nexpression) 
-                               in frmldic2_normal.items() if k in self.endogene or k in self.exogene} 
-            # breakpoint()
-        else:
-            frmldict_update ={}
-            frmldict_calc_add={}
             
-        frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_todelete } # frml's in the existing model 
+        updatemodel = self.__class__.from_eq(updateeq,funks=updatefunks)   # create the moedl with the usual processing of frml's 
+        frmldict2   = {k: v['frml'] for (k,v) in updatemodel.allvar.items() if k in updatemodel.endogene} # A dict with the frml's of the modify 
+
+        frmldic2_strip = {k : v.replace('$','').split(' ',2) for k,v in frmldict2.items() } # {endovariabbe :  [FRML, FRMLNAME, EXPRESSION]...} 
+        frmldic2_normal = {k : [frml,fname,normal(expression,do_preprocess=False)] for k,(frml,fname,expression) 
+                           in frmldic2_strip.items()} 
+        frmldict_update = {k: f'{frml} {fname} {nexpression.normalized}$' for k,(frml,fname,nexpression) 
+                           in frmldic2_normal.items()} 
+        frmldict_calc_add = {k: f'{frml} {fname} {nexpression.calc_adjustment}$' for k,(frml,fname,nexpression) 
+                           in frmldic2_normal.items() if k in self.endogene|self.exogene} 
+        # breakpoint()
+            
+        frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene } # frml's in the existing model 
         newfrmldict = {**frmldict,**frmldict_update} # frml's in the new model 
             
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
@@ -1679,19 +1770,15 @@ class Modify_Mixin():
             calc_add_model = self.__class__(calc_add_frml,modelname = f'adjustment calculation for updated {self.name}',funks=updatefunks)
             var_add = calc_add_model.endogene
             
-        print(f'\nThis model "{self.name}" will be modified')
+        print(f'\nThe model:"{self.name}" got new equations, new model name is:"{newmodelname}"')
         for varname,frml  in frmldict_update.items():
-            print(f'\nNew equation for For {varname}')
+            print(f'New equation for For {varname}')
             print(f'Old frml   :{frmldict.get(varname,"new endogeneous variable ")}')
             print(f'New frml   :{frml}')
             print(f'Adjust calc:{frmldict_calc_add.get(varname,"No frml for adjustment calc  ")}')
             print()
         # breakpoint()
-        if deleteeq: 
-            print('The following equations are deleted')
-            for v in vars_todelete:
-                print(f'{v}  :{self.allvar[v]["frml"]}')
-  
+        
         thisdf = self.lastdf.copy()
         if len(frmldict_calc_add):
             calc_add_model.current_per = self.current_per
@@ -1703,6 +1790,8 @@ class Modify_Mixin():
             
         newmodel.current_per = self.current_per.copy()
         newmodel.var_description = self.var_description
+        newmodel.name = newmodelname 
+
         return newmodel,newdf 
         ... 
         
@@ -5606,9 +5695,12 @@ Frml <> x = 0.5 * c +a$'''
     # frmldict2 = {k: v['frml'] for (k,v) in mmodel.allvar.items() if k in m2model.endogene}
     # newfrmldict = {**frmldict2,**frmldict}
     # newfrml = '\n'.join([f for f in newfrmldict.values()])
-    newmodel, newdf  =  mmodel.modelmodify('''\
+    newmodel, newdf  =  mmodel.equpdate('''\
     <exo,jled> x = 42
     ibhansen=33
-    '''
-    ,deleteeq='D*')
+    ''')
+    newmodel2 = mmodel.eqdelete('D*')
+    newmodel3 = mmodel.eqflip('''\
+                                D1 C
+                                A B'''  )
     
