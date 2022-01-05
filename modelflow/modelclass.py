@@ -1706,7 +1706,11 @@ class Modify_Mixin():
 
         print('The following equations are deleted')
         for v in vars_todelete:
-            print(f'{v}  :{self.allvar[v]["frml"]}')
+            if v in self.endogene:
+                print(f'{v}  :deleted ')
+            else: 
+                print(f'{v}  :  is exogenous and not deleted ')
+                
   
         newdf = self.lastdf.copy()
             
@@ -1745,7 +1749,8 @@ class Modify_Mixin():
         
         newmodelname = newname if newname else self.name+' Updated'      
     
-            
+        dfvars = set(self.lastdf.columns)    
+    
         updatemodel = self.__class__.from_eq(updateeq,funks=updatefunks)   # create the moedl with the usual processing of frml's 
         frmldict2   = {k: v['frml'] for (k,v) in updatemodel.allvar.items() if k in updatemodel.endogene} # A dict with the frml's of the modify 
 
@@ -1755,7 +1760,7 @@ class Modify_Mixin():
         frmldict_update = {k: f'{frml} {fname} {nexpression.normalized}$' for k,(frml,fname,nexpression) 
                            in frmldic2_normal.items()} 
         frmldict_calc_add = {k: f'{frml} {fname} {nexpression.calc_adjustment}$' for k,(frml,fname,nexpression) 
-                           in frmldic2_normal.items() if k in self.endogene|self.exogene} 
+                           in frmldic2_normal.items() if k in self.endogene|self.exogene|dfvars } 
         # breakpoint()
             
         frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene } # frml's in the existing model 
@@ -1774,6 +1779,8 @@ class Modify_Mixin():
         for varname,frml  in frmldict_update.items():
             print(f'New equation for For {varname}')
             print(f'Old frml   :{frmldict.get(varname,"new endogeneous variable ")}')
+            if not varname in self.endogene|self.exogene and varname in dfvars:
+                print('This new endogeneous variable is no an existing exogeneous, but is in .lastdf')
             print(f'New frml   :{frml}')
             print(f'Adjust calc:{frmldict_calc_add.get(varname,"No frml for adjustment calc  ")}')
             print()
@@ -2162,7 +2169,7 @@ class Graph_Draw_Mixin():
         downlinks = (node(-level, navn, parent) for level, parent, navn in
                      self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,filter=filter))
         alllinks = chain(uplinks, downlinks)
-        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter,  **kwargs)
+        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter,fokus2all=True,  **kwargs)
 
     def trans(self, ind, root, transdic=None, debug=False):
         ''' as there are many variable starting with SHOCK, the can renamed to save nodes'''
@@ -2491,8 +2498,11 @@ class Graph_Draw_Mixin():
 
         this can handle both attribution and plain 
 
-        :all: show values for .dfbase and .dflaste
-        :last: show the values for .dflast 
+        :all: show values for .dfbase and .lastdf
+        :last: show the values for .lastdf
+        :growthshow: Show growthrates 
+        :attshow: Show attributiuons
+        :filter: Prune tree branches where all(abs(attribution)<filter value)
         :sink: variale to use as sink 
         :source: variale to use as ssource 
         :svg: Display the svg image in browser
@@ -2507,7 +2517,8 @@ class Graph_Draw_Mixin():
         :HR: horisontal orientation default = False 
         :des: inject variable descriptions 
         :fokus: Variable to get special colour
-        :fokus2: Variable to get special colour
+        :fokus2: Variable for which values are shown 
+        :fokus2all: Show values for all variables 
 
 
 '''
@@ -2518,6 +2529,7 @@ class Graph_Draw_Mixin():
         fokus = kwargs.get('fokus', '')
         fokus200 = kwargs.get('fokus2', '')
         fokus2 = set(fokus200) if type(fokus200) == str else fokus200
+        fokus2all = kwargs.get('fokus2all', False)
 
         dec = kwargs.get('dec', 3)
         att = kwargs.get('att', True)
@@ -2625,7 +2637,7 @@ class Graph_Draw_Mixin():
 #        print(nodelist)
 
         def makenode(v, navn):
-            show  = v  in fokus2
+            show  = v  in fokus2 or fokus2all
             # print(f'{v=}, {show=}  {fokus2=}')
             if (kwargs.get('last', False) or kwargs.get('all', False) or 
                 kwargs.get('attshow', False) or kwargs.get('growthshow', False)) and show :
@@ -5674,7 +5686,8 @@ Frml <> x = 0.5 * c +a$'''
            'C': 'Forbrug'}
     mmodel = model(smallmodel, var_description=des, svg=1, browser=1)
     df = pd.DataFrame(
-        {'X': [0.2, 0.2, 0.2], 'C': [2.0, 3., 5.],'R': [2., 1., 0.4], 'P': [0.4, 0., 0.4]})
+        {'X': [0.2, 0.2, 0.2], 'C': [2.0, 3., 5.],'R': [2., 1., 0.4],
+         'PPP': [0.4, 0., 0.4]})
     df2 = df.copy()
     df2.loc[:,'C'] = [5, 10, 20]
     
@@ -5698,6 +5711,7 @@ Frml <> x = 0.5 * c +a$'''
     newmodel, newdf  =  mmodel.equpdate('''\
     <exo,jled> x = 42
     ibhansen=33
+    ppp = a
     ''')
     newmodel2 = mmodel.eqdelete('D*')
     newmodel3 = mmodel.eqflip('''\
