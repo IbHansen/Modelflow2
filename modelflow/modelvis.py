@@ -216,17 +216,17 @@ class compvis() :
      def box(self,*args, **kwargs): 
         '''Displays a boxplot'''
         fig, ax = plt.subplots(figsize=(12,6))
-        ax = sns.boxplot(x='quarter',y='value',data=self.melted,hue='source',ax=ax)
+        ax = sns.boxplot(x='time',y='value',data=self.melted,hue='source',ax=ax)
         ax.set_title(self.__pat__)
      def swarm(self,*args, **kwargs): 
         '''Displays a swarmplot '''
         fig, ax = plt.subplots(figsize=(12,6))
-        ax = sns.swarmplot(x='quarter',y='value',data=self.melted,hue='source',ax=ax)
+        ax = sns.swarmplot(x='time',y='value',data=self.melted,hue='source',ax=ax)
         ax.set_title(self.__pat__)
      def violin(self,*args, **kwargs):
         '''Displays a violinplot''' 
         fig, ax = plt.subplots(figsize=(12,6))
-        ax = sns.violinplot(x='quarter',y='value',data=self.melted,hue='source',ax=ax)
+        ax = sns.violinplot(x='time',y='value',data=self.melted,hue='source',ax=ax)
         ax.set_title(self.__pat__)
         
    
@@ -405,7 +405,7 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=6,sharey=True,top=0.90,
     
 def melt(df,source='Latest'):
     ''' melts a wide dataframe to a tall dataframe , appends a soruce column ''' 
-    melted = pd.melt(df.reset_index().rename(columns={'index':'quarter'}),id_vars='quarter').assign(source=source) 
+    melted = pd.melt(df.reset_index().rename(columns={'index':'time'}),id_vars='time').assign(source=source) 
     return melted
 
 def heatshow(df,name='',cmap="Reds",mul=1.,annot=False,size=(11.69,8.27),dec=0,cbar=True,linewidths=.5):
