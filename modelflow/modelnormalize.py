@@ -23,6 +23,7 @@ from modelpattern import udtryk_parse, namepat
 @dataclass
 class Normalized_frml:
     ''' class defining result from normalization of expression'''
+    endo_var         : str = ''   
     original         : str = ''   
     preprocessed     : str = '' 
     normalized       : str = '' 
@@ -157,7 +158,7 @@ def fixleads(eq,check=False):
        print(f"After  {res}")
    return res
 
-def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True):
+def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,exo_adjust=False):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
     
@@ -171,6 +172,8 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         add_adjust (bool, optional): force introduction aof adjustment term, and an expression to calculate it
         do_preprocess (bool, optional): DESCRIPTION. preprocess the expression
         endo_lhs (bool, optional): Accept to normalize for a rhs endogeneous variable 
+        exo_adjust (bool, optional): also make this equation exogenizable  
+        
 
     Returns:
          An instance of the class: Normalized_frml which will contain the different relevant expressions 
@@ -184,6 +187,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         lhs_var_clash = {var : None for var in lhs_var}
         return lhs_var_clash
     post = '___LAG'
+    # breakpoint()
     preprocessed = preprocess(fixleads(ind_o)) if do_preprocess else fixleads(ind_o[:])
     ind = preprocessed.upper().replace('LOG(','log(').replace('EXP(','exp(')
     lhs,rhs=ind.strip().split('=',1)
@@ -203,7 +207,11 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         endo_frml  = solve(kat,endo  ,simplify=False,rational=False,warn=False)
         res_rhs    =stripstring(str(endo_frml[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
                     stripstring(str(endo_frml[0]),post)
-        out_frml   = f'{endo} = {res_rhs}'.upper() 
+        if exo_adjust:
+            out_frml   = f'{endo} = ({res_rhs}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
+        else: 
+            out_frml   = f'{endo} = {res_rhs}'.upper() 
+            
         
         if add_adjust:
             a_sym = sympify(a_name,clash)
@@ -214,14 +222,26 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         else:
             out_a = ''
         
-        result = Normalized_frml(ind_o,preprocessed,out_frml,out_a) 
+        result = Normalized_frml(str(endo),ind_o,preprocessed,out_frml,out_a) 
         
         return result
     else: # no need to normalize  this equation 
+        out_frml = preprocessed 
         if add_adjust:
-            result = Normalized_frml(ind_o,preprocessed,f'{lhs} = {rhs} + {lhs}{add_suffix}', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})')
+            if exo_adjust:
+                result = Normalized_frml(lhs,ind_o,preprocessed,
+                    f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})')
+            else:
+                result = Normalized_frml(lhs,ind_o,preprocessed,
+                    f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})')
         else:
-            result = Normalized_frml(ind_o,preprocessed,f'{lhs} = {rhs}')
+            if exo_adjust:
+                result = Normalized_frml(lhs,ind_o,preprocessed,
+                    f'{lhs} = ({rhs})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D')
+            else: 
+                result = Normalized_frml(lhs,ind_o,preprocessed,
+                
+                    f'{lhs} = {rhs}')
         return result
         
 def elem_trans(udtryk, df=None):
@@ -274,7 +294,7 @@ if __name__ == '__main__':
     normal("D(a,0,1) = b").fprint
     normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
     normal('a = D( LOG(QLHP(+1)))').fprint
-    normal('a = b+c',the_endo='B',endo_lhs=False).fprint
+    normal('a = b+c',the_endo='B',endo_lhs=False,exo_adjust=True).fprint
     # breakpoint()
     normal('zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_adjust=1).fprint
     fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')

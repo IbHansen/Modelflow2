@@ -87,7 +87,7 @@ class sheetwidget:
         newnamedf = self.df_var.copy().rename(columns=self.trans)
         self.org_df_var = self.newnamedf.T if self.transpose else newnamedf
         
-        self.wsheet = sheet(from_dataframe(self.org_df_var))
+        self.wsheet = sheet(from_dataframe(self.org_df_var),column_resizing=True)
         self.org_values = [c.value for c in self.wsheet.cells]
         self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.expname) else self.wsheet
 

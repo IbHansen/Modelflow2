@@ -62,6 +62,7 @@ class vis():
              x = self.model.draw(var,**kwargs)
          
      def dekomp(self,**kwargs):
+         self.model.dekomp.cache_clear()
          for var in self.names:
              x = self.model.dekomp(var,**kwargs)
     
@@ -287,6 +288,8 @@ class varvis():
 
          
      def dekomp(self,**kwargs):
+         if kwargs.get('lprint','False'):
+             self.model.dekomp.cache_clear()
          x = self.model.dekomp(self.var,**kwargs)
          return x
      

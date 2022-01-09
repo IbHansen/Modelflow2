@@ -374,6 +374,38 @@ class BaseModel():
 
         self.current_per = old_current_per
 
+    @contextmanager
+    def keepswitch(self,switch=False,scenarios='*'):
+         """
+         temporary place basedf,lastdf in keep_solutions
+    
+    
+         """
+         from copy import deepcopy
+         old_keep_solutions = {k:v.copy() for k,v in self.keep_solutions.items() }
+         # old_keep_solutions = self.keep_solutions
+         
+         if switch: 
+             basename = self.basename if hasattr(self, 'basename') else 'Baseline solution'
+             lastname = self.lastname if hasattr(self, 'lastname') else 'Last solution'
+             self.keep_solutions = {basename:self.basedf.copy() , lastname:self.lastdf.copy()}
+         
+         scenariolist = self.keep_solutions.keys() 
+         selected = [v for  up in scenarios.split() for v in sorted(fnmatch.filter(scenariolist, up))]
+         # print(f'{selected=}')
+         
+         if len(selected):
+             self.keep_solutions = {v:k for v,k in self.keep_solutions.items() if  v in selected}
+         else: 
+             print('No scenarios match the scenarios you try')
+             self.keep_solutions = old_keep_solutions
+         
+         yield
+                     
+         self.keep_solutions = old_keep_solutions
+
+
+
     @property
     def endograph(self):
         ''' Dependencygraph for currrent periode endogeneous variable, used for reorder the equations'''
@@ -1338,7 +1370,6 @@ class Dekomp_Mixin():
     def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
         '''Print all variables that determines input variable (varnavn)
         optional -- enter period and databank to get var values for chosen period'''
-
         basedf_ = basedf if isinstance(basedf, pd.DataFrame) else self.basedf
         altdf_ = altdf if isinstance(altdf, pd.DataFrame) else self.lastdf
         start_ = start if start != '' else self.current_per[0]
@@ -1411,7 +1442,7 @@ class Dekomp_Mixin():
         pctendo.at[('Total', 0), print_per] = pctendo.sum()
         pctendo.at[('Residual', 0), print_per] = residual
         if lprint:
-            print('Formula        :', mfrml.allvar[varnavn]['frml'], '\n')
+            print('\nFormula        :', mfrml.allvar[varnavn]['frml'], '\n')
             print(res2df.to_string(
                 float_format=lambda x: '{0:10.6f}'.format(x)))
             print('\n Contributions to differende for ', varnavn)
@@ -1722,7 +1753,98 @@ class Modify_Mixin():
         ... 
 
         
-    def equpdate(self,updateeq=None,newfunks=[],calc_add=True,newname=''):
+    def equpdate(self,updateeq=None,newfunks=[],add_adjust=False,calc_add=True,do_preprocess=True,newname=''):
+        '''
+        
+
+        Parameters
+        ----------
+        updateeq : TYPE
+            new equations seperated by newline . 
+        newfunks : TYPE, optional
+            Additional userspecified functions. The default is [].
+        calc_add : bool, optional
+            Additional userspecified functions. The default is [].
+
+        Returns
+        -------
+        newmodel : TYPE
+            The new  model with the new and deleted equations .
+        newdf : TYPE
+            a dataframe with calculated add factors. Origin is the original models lastdf.
+
+        '''
+        
+            
+        updatefunks=list(set(self.funks+newfunks) ) # 
+        
+        newmodelname = newname if newname else self.name+' Updated'      
+    
+        dfvars = set(self.lastdf.columns)    
+    
+        updatemodel = mp.tofrml(updateeq)   # create the moedl with the usual processing of frml's 
+        while '  ' in updatemodel:
+            updatemodel = updatemodel.replace('  ', ' ')
+        frml2   = updatemodel.split('$') 
+        frml2_strip = [mp.split_frml(f+'$') for f in frml2 if len(f)>2]
+        # breakpoint()
+        frml2_normal = [[frml,fname, 
+                         normal(expression[:-1],do_preprocess=do_preprocess,add_adjust=add_adjust,
+                                exo_adjust=pt.kw_frml_name(fname.upper(),'EXO'))]
+                           for allfrml,frml,fname,expression in frml2_strip] 
+        frmldict_update = {nexpression.endo_var: f'{frml} {fname} {nexpression.normalized}$' for 
+                           frml,fname,nexpression in frml2_normal} 
+        
+        
+        if add_adjust:
+            frmldict_calc_add = {nexpression.endovar: f'{frml} {fname} {nexpression.calc_adjustment}$' for 
+                    frml,fname,nexpression in frml2_normal if nexpression.endovar in self.endogene|self.exogene|dfvars } 
+        else: 
+            frmldict_calc_add={}
+        # breakpoint()
+            
+        frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene } # frml's in the existing model 
+        newfrmldict = {**frmldict,**frmldict_update} # frml's in the new model 
+            
+        newfrml     = '\n'.join([f for f in newfrmldict.values()])
+        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=updatefunks)
+        
+        if len(frmldict_calc_add) and add_adjust:          
+
+            calc_add_frml = '\n'.join([f for f in frmldict_calc_add.values()])
+            calc_add_model = self.__class__(calc_add_frml,modelname = f'adjustment calculation for updated {self.name}',funks=updatefunks)
+            var_add = calc_add_model.endogene
+            
+        print(f'\nThe model:"{self.name}" got new equations, new model name is:"{newmodelname}"')
+        for varname,frml  in frmldict_update.items():
+            print(f'New equation for For {varname}')
+            print(f'Old frml   :{frmldict.get(varname,"new endogeneous variable ")}')
+            if not varname in self.endogene|self.exogene and varname in dfvars:
+                print('This new endogeneous variable is no an existing exogeneous, but is in .lastdf')
+            print(f'New frml   :{frml}')
+            print(f'Adjust calc:{frmldict_calc_add.get(varname,"No frml for adjustment calc  ")}')
+            print()
+        # breakpoint()
+        
+        thisdf = newmodel.insertModelVar(self.lastdf)
+        
+        
+        if len(frmldict_calc_add and calc_add):
+            calc_add_model.current_per = self.current_per
+            newdf = calc_add_model(thisdf)
+            print('\nNew add factors to get the same results for existing variables:')
+            print(newdf.loc[self.current_per,var_add])
+        else: 
+            newdf = thisdf
+            
+        newmodel.current_per = self.current_per.copy()
+        newmodel.var_description = self.var_description
+        newmodel.name = newmodelname 
+
+        return newmodel,newdf 
+        ... 
+        
+    def equpdate_old(self,updateeq=None,newfunks=[],add_adjust=False,calc_add=True,do_preprocess=True,newname=''):
         '''
         
 
@@ -1755,12 +1877,16 @@ class Modify_Mixin():
         frmldict2   = {k: v['frml'] for (k,v) in updatemodel.allvar.items() if k in updatemodel.endogene} # A dict with the frml's of the modify 
 
         frmldic2_strip = {k : v.replace('$','').split(' ',2) for k,v in frmldict2.items() } # {endovariabbe :  [FRML, FRMLNAME, EXPRESSION]...} 
-        frmldic2_normal = {k : [frml,fname,normal(expression,do_preprocess=False)] for k,(frml,fname,expression) 
+        frmldic2_normal = {k : [frml,fname,normal(expression,do_preprocess=do_preprocess,
+                                                  add_adjust=add_adjust)] for k,(frml,fname,expression) 
                            in frmldic2_strip.items()} 
         frmldict_update = {k: f'{frml} {fname} {nexpression.normalized}$' for k,(frml,fname,nexpression) 
                            in frmldic2_normal.items()} 
-        frmldict_calc_add = {k: f'{frml} {fname} {nexpression.calc_adjustment}$' for k,(frml,fname,nexpression) 
+        if add_adjust:
+            frmldict_calc_add = {k: f'{frml} {fname} {nexpression.calc_adjustment}$' for k,(frml,fname,nexpression) 
                            in frmldic2_normal.items() if k in self.endogene|self.exogene|dfvars } 
+        else: 
+            frmldict_calc_add={}
         # breakpoint()
             
         frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene } # frml's in the existing model 
@@ -1769,7 +1895,7 @@ class Modify_Mixin():
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
         newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=updatefunks)
         
-        if len(frmldict_calc_add):          
+        if len(frmldict_calc_add) and add_adjust:          
 
             calc_add_frml = '\n'.join([f for f in frmldict_calc_add.values()])
             calc_add_model = self.__class__(calc_add_frml,modelname = f'adjustment calculation for updated {self.name}',funks=updatefunks)
@@ -1786,8 +1912,10 @@ class Modify_Mixin():
             print()
         # breakpoint()
         
-        thisdf = self.lastdf.copy()
-        if len(frmldict_calc_add):
+        thisdf = newmodel.insertModelVar(self.lastdf)
+        
+        
+        if len(frmldict_calc_add and calc_add):
             calc_add_model.current_per = self.current_per
             newdf = calc_add_model(thisdf)
             print('\nNew add factors to get the same results for existing variables:')
@@ -2530,6 +2658,8 @@ class Graph_Draw_Mixin():
         fokus200 = kwargs.get('fokus2', '')
         fokus2 = set(fokus200) if type(fokus200) == str else fokus200
         fokus2all = kwargs.get('fokus2all', False)
+        #breakpoint()
+       # print('set fokus2all',fokus2all)
 
         dec = kwargs.get('dec', 3)
         att = kwargs.get('att', True)
@@ -2637,7 +2767,8 @@ class Graph_Draw_Mixin():
 #        print(nodelist)
 
         def makenode(v, navn):
-            show  = v  in fokus2 or fokus2all
+            # print(v,fokus2all)
+            show  = (v  in fokus2) # or fokus2all
             # print(f'{v=}, {show=}  {fokus2=}')
             if (kwargs.get('last', False) or kwargs.get('all', False) or 
                 kwargs.get('attshow', False) or kwargs.get('growthshow', False)) and show :
@@ -3047,6 +3178,14 @@ class Display_Mixin():
         out = pd.concat(res, axis=1)
         out.columns.names = ('Variable', 'Experiment')
         return out
+    
+    # def var_get_df(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0):
+    #     varlist  = self.vlist(pat)
+    #     res = {}
+    #     with self.set_smpl(start, slut) as a, self.set_smpl_relative(start_ofset, slut_ofset):res = []
+    #         res['basedf'] = self.basedf.loc[self.current_per,varlist]
+    #         res['lastdf'] = self.lastdf.loc[self.current_per,varlist]
+    #     return out
 
     def keep_get_dict(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, diff=False):
         """
@@ -5709,7 +5848,7 @@ Frml <> x = 0.5 * c +a$'''
     # newfrmldict = {**frmldict2,**frmldict}
     # newfrml = '\n'.join([f for f in newfrmldict.values()])
     newmodel, newdf  =  mmodel.equpdate('''\
-    <exo,jled> x = 42
+    <exo, jled> x = 42
     ibhansen=33
     ppp = a
     ''')
