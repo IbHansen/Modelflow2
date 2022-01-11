@@ -382,8 +382,8 @@ class BaseModel():
     
          """
          from copy import deepcopy
-         old_keep_solutions = {k:v.copy() for k,v in self.keep_solutions.items() }
-         # old_keep_solutions = self.keep_solutions
+         # old_keep_solutions = {k:v.copy() for k,v in self.keep_solutions.items() }
+         old_keep_solutions = self.keep_solutions
          
          if switch: 
              basename = self.basename if hasattr(self, 'basename') else 'Baseline solution'
@@ -392,8 +392,8 @@ class BaseModel():
          
          scenariolist = [k for k in self.keep_solutions.keys()]
          selected = [v for  up in scenarios.split() for v in sorted(fnmatch.filter(scenariolist, up))]
-         print(f'{selected=}')
-         print(f'{scenariolist=}')
+         # print(f'{selected=}')
+         # print(f'{scenariolist=}')
          
          if len(selected):
              self.keep_solutions = {v:self.keep_solutions[v] for  v in selected}
@@ -3315,7 +3315,7 @@ class Display_Mixin():
            slut (TYPE, optional): end periode. Defaults to ''.
            start_ofset (int, optional): start periode relativ ofset to current. Defaults to 0.
            slut_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
-           showtype (str, optional): 'level','growth' or øchange' transformation of data. Defaults to 'level'.
+           showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
            diff (Logical, optional): if True shows the difference to the first experiment. Defaults to False.
            diffpct (logical,optional) : if True shows the difference in percent to tirst experiment. defalut to false
            mul (float, optional): multiplier of data. Defaults to 1.0.
@@ -3328,9 +3328,9 @@ class Display_Mixin():
            trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
            showfig (TYPE, optional): Time will come . Defaults to False.
            vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
-           savefig (string,optional): name of location to save figures in 
+           savefig (string,optional): folder to save figures in. Can include folder name, if needed the folder will be created 
        Returns:
-           figs (dict): dict of the generated figures. 
+           figs (dict): dict of the generated Matplotlib figures. 
 
        """
 
@@ -3662,6 +3662,21 @@ class Display_Mixin():
                 name = notebook.name.split('.')[0]
                 display(HTML(
                     f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
+    @staticmethod
+    def display_toc_this(pat='*',text='**Jupyter notebooks**',path='.',ext='ipynb',showext=False):
+        
+        '''In a jupyter notebook this function displays a clickable table of content in the folder pat with name in path'''
+
+        from IPython.display import display, Markdown, HTML
+        from pathlib import Path
+
+        display(Markdown(text))
+        dir = Path(path)
+        print(dir,':')
+        for fname in sorted(dir.glob(pat+'.'+ext)):
+            name = fname.name if showext else fname.name.split('.')[0]
+            display(HTML(
+                f'&nbsp; &nbsp; <a href="{fname}" target="_blank">{name}</a>'))
 
     @staticmethod
     def widescreen():
