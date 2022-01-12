@@ -1473,13 +1473,38 @@ class Dekomp_Mixin():
                     x = self.dekomp(v.child, lprint=1, start=start, end=end)
 
     def dekomp_plot_per(self, varnavn, sort=False, pct=True, per='', threshold=0.0
-                         ,nametrans = lambda varnames,thismodel : varnames
+                         ,rename=True
                          ,time_att=False):
+        '''
+        Returns  a waterfall diagram with attribution for a variable in one time frame 
+
+        Parameters
+        ----------
+        varnavn : TYPE
+            variable name.
+        sort : TYPE, optional
+            . The default is False.
+        pct : TYPE, optional
+            display pct contribution . The default is True.
+        per : TYPE, optional
+            DESCRIPTION. The default is ''.
+        threshold : TYPE, optional
+            cutoff. The default is 0.0.
+        rename : TYPE, optional
+            Use descriptions instead of variable names. The default is True.
+        time_att : TYPE, optional
+            Do time attribution . The default is False.
+
+        Returns
+        -------
+        a matplotlib figure instance .
+
+        '''
 
         thisper = self.current_per[-1] if per == '' else per
         xx = self.dekomp(varnavn.upper(), lprint=False,time_att=time_att)
         ddf = join_name_lag(xx[2] if pct else xx[1])
-        ddf.index = nametrans(ddf.index,self)
+        ddf = ddf.rename(index= self.var_description) if rename else ddf
 
 #        tempdf = pd.DataFrame(0,columns=ddf.columns,index=['Start']).append(ddf)
         tempdf = ddf
@@ -1488,8 +1513,8 @@ class Dekomp_Mixin():
         ntitle = f'Attribution in {per}, pct{nthreshold}:' if pct else f'Attribution in {per}, {nthreshold}'
         plotdf = tempdf.loc[[c for c in tempdf.index.tolist(
         ) if c.strip() != 'Total'], :].iloc[:, [per_loc]]
-        plotdf.columns = [varnavn.upper()]
-#        waterdf = self.cutout(plotdf,threshold)
+        plotdf.columns =  [self.var_description.get(varnavn.upper(),varnavn.upper())] if rename else [varnavn.upper()]
+#        waterdf = self.cutout(plotdf,threshold
         waterdf = plotdf
         res = mv.waterplot(waterdf, autosum=1, allsort=sort, top=0.86,
                            sort=sort, title=ntitle, bartype='bar', threshold=threshold)
@@ -1536,14 +1561,46 @@ class Dekomp_Mixin():
         return out
 
     def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0,lag=True
-                    ,nametrans = lambda varnames,thismodel : varnames
+                    ,rename=True 
                     ,time_att=False):
+
+        '''
+        Returns  a chart with attribution for a variable over the smpl  
+
+        Parameters
+        ----------
+        varnavn : TYPE
+            variable name.
+        sort : TYPE, optional
+            . The default is False.
+        pct : TYPE, optional
+            display pct contribution . The default is True.
+        per : TYPE, optional
+            DESCRIPTION. The default is ''.
+        threshold : TYPE, optional
+            cutoff. The default is 0.0.
+        rename : TYPE, optional
+            Use descriptions instead of variable names. The default is True.
+        time_att : TYPE, optional
+            Do time attribution . The default is False.
+        lag : TYPE, optional
+           separete by lags The default is True.           
+        top : TYPE, optional
+          where to place the title 
+           
+
+        Returns
+        -------
+        a matplotlib figure instance .
+
+        '''
+        
         # xx = self.dekomp(varnavn,self.current_per[0],self.current_per[-1],lprint=False)
         # # breakpoint()
         # ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
         #     lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
         ddf0 = self.get_att_pct(varnavn,lag=lag,time_att=time_att) if pct else  self.get_att_level(varnavn,lag=lag)
-        ddf0.index = nametrans(ddf0.index,self)
+        ddf0 = ddf0.rename(index= self.var_description) if rename else ddf0
         ddf = cutout(ddf0, threshold)
         fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(
             10, 5), constrained_layout=False)

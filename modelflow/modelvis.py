@@ -542,7 +542,7 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
               allsort=False,title=f'Attribution ',top=0.9, desdic = {},zero=True, **kwarg):
     att = [(name,water(ser,sort=sort,autosum=autosum,allsort=allsort,threshold=threshold)) 
                        for name,ser in basis.transpose().iterrows()]
-
+    # print(att[0][1])
     fig, axis = plt.subplots(nrows=len(att),ncols=1,figsize=(10,5*len(att)),constrained_layout=False)
     width = 0.5  # the width of the barsser
     laxis = axis if isinstance(axis,numpy.ndarray) else [axis]
@@ -552,7 +552,7 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
         _ = dfatt.hneg.plot(ax=ax,kind=bartype,bottom=dfatt.start,stacked=True,
                             color='red',width=width)
         _ = None if allsort else dfatt.hbegin.plot(ax=ax,kind=bartype,bottom=dfatt.start,
-                stacked=True,color='green' if zero else 'blue',width=width)
+                stacked=True,color=('green' if dfatt.hbegin[0] > 0 else 'red') if zero else 'blue',width=width)
         _ = None if allsort and not autosum else dfatt.hend.plot(ax=ax,kind=bartype,bottom=dfatt.start,stacked=True,color='blue',width=width)
         ax.set_ylabel(name,fontsize='x-large')
         dec=finddec(dfatt)
