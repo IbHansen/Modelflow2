@@ -3010,7 +3010,7 @@ class Graph_Draw_Mixin():
 
         The file is placed in cwd/graph
 
-        A png and a svg file is generated, and displayes
+        A png and a svg file is generated, and the svg file is displayed if possible. 
 
         options pdf and eps determins if a pdf and an eps file is genrated.
 

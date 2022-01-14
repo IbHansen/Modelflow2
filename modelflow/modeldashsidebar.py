@@ -395,7 +395,7 @@ class Dash_graph():
 
                     dot_out =  self.mmodel.draw(self.outvar_state,up=up,down=down,filter=filter,showatt=False,debug=0,
                                          lag=self.lag,dot=True,HR=orient=='h',fokus2=self.fokusvar,all= node == 'all',
-                                         attshow= node =='attshow',growthshow= node=='all' or node =='attshow')
+                                         attshow= node =='attshow',growthshow= node=='all' or node =='attshow',)
   
                 chart_out = get_line(self.mmodel.get_values(outvar).iloc[:2,:],outvar,f'The values for {outvar}:{self.mmodel.var_description.get(outvar,"")}')
                 chart_dif_out = get_line(self.mmodel.get_values(outvar).iloc[[2],:],outvar,f'The impact for {outvar}:{self.mmodel.var_description.get(outvar,"")}')

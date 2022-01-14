@@ -34,6 +34,7 @@ def graphviz(line, cell):
     '''Creates a ModelFlow model from a Latex document'''
     name,options = get_options(line,'Testgraph')    
     gv = cell
+    # print(options)
     model.display_graph(gv,name,**options)
     return
 
