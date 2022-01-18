@@ -378,6 +378,7 @@ class BaseModel():
     def keepswitch(self,switch=False,scenarios='*'):
          """
          temporary place basedf,lastdf in keep_solutions
+         if scenarios contains * or ? they are separated by | else space
     
     
          """
@@ -391,7 +392,11 @@ class BaseModel():
              self.keep_solutions = {basename:self.basedf.copy() , lastname:self.lastdf.copy()}
          
          scenariolist = [k for k in self.keep_solutions.keys()]
-         selected = [v for  up in scenarios.split() for v in sorted(fnmatch.filter(scenariolist, up))]
+         if scenarios == '*':
+             selected = scenariolist
+         else:
+             sep= ' ' if '*' in scenarios or '?' in scenarios else '|' 
+             selected = [v for  up in scenarios.split(sep) for v in sorted(fnmatch.filter(scenariolist, up))]
          # print(f'{selected=}')
          # print(f'{scenariolist=}')
          
@@ -3245,6 +3250,38 @@ class Display_Mixin():
     #         res['lastdf'] = self.lastdf.loc[self.current_per,varlist]
     #     return out
 
+    def keep_var_dict(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, diff=False):
+        """
+       Returns a dict of the keept experiments. Key is the scrnario names, values are a dataframe with  values for each variable
+
+
+
+        Args:
+            pat (TYPE, optional): variable selection. Defaults to '*'.
+            start (TYPE, optional): start period. Defaults to ''.
+            slut (TYPE, optional): end period. Defaults to ''.
+            start_ofset (TYPE, optional): start ofset period. Defaults to 0.
+            slut_ofset (TYPE, optional): end ofste period. Defaults to 0.
+
+        Returns:
+            res (dictionary): a dict with a dataframe for each experiment 
+
+        """
+        if len(self.keep_solutions) == 0:
+            print('No keept solutions')
+            return
+        allvars = list({c for k, df in self.keep_solutions.items()
+                       for c in df.columns})
+        vars = self.list_names(allvars, pat)
+        res = {}
+        with self.set_smpl(start, slut) as a, self.set_smpl_relative(start_ofset, slut_ofset):
+            for solver, solution in self.keep_solutions.items():
+                outv = pd.concat([solution.loc[self.current_per, v] for v in vars ], axis=1)
+                outv.columns = [self.var_description[v] for v  in vars]
+                outv.columns.names = ['Variable']
+                res[solver] = outv
+        return res
+
     def keep_get_dict(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, diff=False):
         """
        Returns a dict of the keept experiments. Key is the variable names, values are a dataframe with variable values for each experiment
@@ -3279,6 +3316,169 @@ class Display_Mixin():
                     outv.iloc[:, 0], axis=0) if diff else outv
         return res
 
+    def keep_get_plotdict(self, pat='*', start='', slut='', 
+                          showtype='level',
+                   diff=False, diffpct = False, keep_dim=1):
+            """
+            returns 
+            - a dict of {variable in pat :dfs scenarios as columnns } if keep_dim = 1
+            - a dict of {scenarios       :dfs with variables in pat as columnns } if keep_dim = 1
+            
+            Args:
+                pat (string, optional): Variable selection. Defaults to '*'.
+                start (TYPE, optional): start periode. Defaults to ''.
+                slut (TYPE, optional): end periode. Defaults to ''.
+                showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
+                diff (Logical, optional): if True shows the difference to the
+                                          first experiment or the first scenario. Defaults to False.
+                diffpct (logical,optional) : if True shows the difference in percent instead of level
+                mul (float, optional): multiplier of data. Defaults to 1.0.
+                
+            Returns:
+                figs :a dict with data
+    """
+            # breakpoint()
+            if keep_dim:
+                dfs = self.keep_get_dict(pat, start, slut, -1 if  showtype == 'growth' else 0, 0)
+            else: 
+                dfs = self.keep_var_dict(pat, start, slut,  -1 if  showtype == 'growth' else 0, 0)
+                
+            if showtype == 'growth':
+                dfs = {v: (vdf.pct_change()*100.).iloc[1:,:] for v, vdf in dfs.items()}
+        
+            elif showtype == 'change':
+                dfs = {v: vdf.diff() for v, vdf in dfs.items()}
+        
+            else:
+                ... 
+            
+            if keep_dim: 
+                if diff:
+                    dfsres = {v: vdf.subtract(
+                        vdf.iloc[:, 0], axis=0) for v, vdf in dfs.items()}
+                elif diffpct: 
+                    dfsres = {v:  vdf.subtract(
+                        vdf.iloc[:, 0], axis=0).divide(
+                        vdf.iloc[:, 0], axis=0)*100 for v, vdf in dfs.items()}
+                   
+                else:
+                    dfsres = dfs
+            else:          
+               first_scenario = dfs[list(dfs.keys())[0]]
+               if diff:
+                   dfsres = {v: vdf - first_scenario 
+                        for i,(v, vdf)  in enumerate(dfs.items())  if i >= 1}
+               elif diffpct: 
+                   dfsres = {v:  (vdf/first_scenario-1.)*100
+                        for i,(v, vdf)  in enumerate(dfs.items()) if i >= 1}
+                  
+               else:
+                   dfsres = dfs
+                   
+            assert not(diff and diffpct) ,"keep_plot can't be called with both diff and diffpct"
+     
+            return dfsres
+    
+             
+    
+    def keep_plot_multi(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, showtype='level',
+                   diff=False, diffpct = False, mul=1.0,
+                   title='', legend=False, scale='linear', yunit='', ylabel='', dec='',
+                   trans={},
+                   showfig=False,
+                   vline=[], savefig='', keep_dim= True,dataonly=False,nrow=None,ncol=2,
+                   kind='line',size=(10,10)):
+         """
+    
+    
+        Args:
+            pat (string, optional): Variable selection. Defaults to '*'.
+            start (TYPE, optional): start periode. Defaults to ''.
+            slut (TYPE, optional): end periode. Defaults to ''.
+            start_ofset (int, optional): start periode relativ ofset to current. Defaults to 0.
+            slut_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
+            showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
+            diff (Logical, optional): if True shows the difference to the first experiment. Defaults to False.
+            diffpct (logical,optional) : if True shows the difference in percent to tirst experiment. defalut to false
+            mul (float, optional): multiplier of data. Defaults to 1.0.
+            title (TYPE, optional): DESCRIPTION. Defaults to 'Show variables'.
+            legend (TYPE, optional): if False, expanations on the right of curve. Defaults to True.
+            scale (TYPE, optional): 'log' og 'linear'. Defaults to 'linear'.
+            yunit (TYPE, optional): DESCRIPTION. Defaults to ''.
+            ylabel (TYPE, optional): DESCRIPTION. Defaults to ''.
+            dec (TYPE, optional): decimals if '' automated. Defaults to ''.
+            trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
+            showfig (TYPE, optional): Time will come . Defaults to False.
+            vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
+            savefig (string,optional): folder to save figures in. Can include folder name, if needed the folder will be created 
+            keep_dim (bool,True): if True each line is a scenario else each line is a variable 
+            dataonly = False: If True only the resulting dataframes are returned 
+            kind: kind of  plot line|bar|bar_stacked
+        Returns:
+            figs : a matplotlib figure . 
+        """
+         def trim_axs(axs, N):
+            """
+            Reduce *axs* to *N* Axes. All further Axes are removed from the figure.
+            """
+            axs = axs.flat
+            for ax in axs[N:]:
+                ax.remove()
+            return axs[:N]
+         try:
+            
+                    
+             dfsres = self.keep_get_plotdict(pat=pat, start=start, slut=slut, 
+                                   showtype=showtype,
+                            diff=diff, diffpct = diffpct, keep_dim=keep_dim)
+             
+             # if we are looking 
+             number =  len(dfsres)
+             xcol = ncol 
+             xrow=-((-number )//ncol)
+             fig,axes = plt.subplots(xrow,xcol)
+             axes = trim_axs(axes,number)
+             fig.set_size_inches(*size)
+    
+             xtrans = trans if trans else self.var_description
+             aspct = ' as pct ' if diffpct else ' '
+             dftype = showtype.capitalize()
+             
+             for i,(v, df) in enumerate(dfsres.items()):
+                 self.plot_basis_ax(axes.flat[i], v , df*mul, legend=legend,
+                                        scale=scale, trans=xtrans,
+                                        title=title if title else (f'Difference{aspct}to "{df.columns[0] if keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:'),
+                                        yunit=yunit,
+                                        ylabel='Percent' if showtype == 'growth' else ylabel,
+                                        xlabel='',kind = kind,
+                                        dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec)
+                     
+    
+             if type(vline) == type(None):  # to delete vline
+                 if hasattr(self, 'vline'):
+                     del self.vline
+             else:
+                 if vline or hasattr(self, 'vline'):
+                     if vline:
+                         self.vline = vline
+                     for xtime, text in self.vline:
+                         model.keep_add_vline(figs, xtime, text)
+             plt.tight_layout()            
+             if savefig:
+                 figpath = Path(savefig)
+                 suffix = figpath.suffix if figpath.suffix else '.png'
+                 stem = figpath.stem
+                 parent = figpath.parent
+                 parent.mkdir(parents=True, exist_ok=True)
+                 location = parent / f'{stem}{suffix}'
+                 fig.savefig(location)
+    
+             return fig
+         except ZeroDivisionError:
+             print('no keept solution')
+    
+    
+
     def inputwidget(self, start='', slut='', basedf=None, **kwargs):
         ''' calls modeljupyter input widget, and keeps the period scope '''
         if type(basedf) == type(None):
@@ -3290,9 +3490,20 @@ class Display_Mixin():
             with self.set_smpl(start=start, slut=slut):
                 return mj.inputwidget(self, self.basedf, **kwargs)
 
-    @staticmethod
-    def plot_basis(var, df, title='', suptitle='', legend=True, scale='linear', trans={}, dec='',
+    
+    def plot_basis(self,var, df, title='', suptitle='', legend=True, scale='linear', trans={}, dec='',
                    ylabel='', yunit='', xlabel=''):
+        ibs = {k:v for k,v in locals().items() if k not in {'self'}}
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(10, 6))
+        # print(ibs)
+        ax = self.plot_basis_ax(ax,**ibs)
+        fig.suptitle(suptitle, fontsize=16)
+        return fig
+    
+    @staticmethod
+    def plot_basis_ax(ax,var, df, title='', suptitle='', legend=True, scale='linear', trans={}, dec='',
+                   ylabel='', yunit='', xlabel='',kind='line'):
         import matplotlib.pyplot as plt
         import matplotlib as mpl
         import matplotlib.ticker as ticker
@@ -3301,14 +3512,12 @@ class Display_Mixin():
         import matplotlib.cbook as cbook
         import seaborn as sns
         from modelhelp import finddec
-
+        # breakpoint() 
         years = mdates.YearLocator()   # every year
         months = mdates.MonthLocator()  # every month
         years_fmt = mdates.DateFormatter('%Y')
 
-        fig, ax = plt.subplots(figsize=(10, 6))
         ax.set_title(f'{title} {trans.get(var,var)}', fontsize=14)
-        fig.suptitle(suptitle, fontsize=16)
         if legend:
             ax.spines['right'].set_visible(True)
         else:
@@ -3330,12 +3539,24 @@ class Display_Mixin():
             xval = df.index.to_timestamp()
         except:
             xval = df.index
-        for i, col in enumerate(df.loc[:, df.columns]):
-            yval = df[col]
-            ax.plot(xval, yval, label=col, linewidth=3.0)
-            x_pos = xval[-1]
-            if not legend:
-                ax.text(x_pos, yval.iloc[-1], f' {col}', fontsize=14)
+
+
+        if kind == 'line':    
+            for i, col in enumerate(df.loc[:, df.columns]):
+                yval = df[col]
+                ax.plot(xval, yval, label=col, linewidth=3.0)
+                if not legend:
+                    x_pos = xval[-1]
+                    ax.text(x_pos, yval.iloc[-1], f' {col}', fontsize=14)
+        elif kind == 'bar_stacked':   
+            df.plot(ax=ax, stacked=True, kind='bar')
+        elif kind == 'bar':   
+            df.plot(ax=ax, stacked=False, kind='bar')
+        else:
+            print(f'Error illegal kind:{kind}')
+            0/0
+            
+            
         if legend:
             ax.legend()
         # ax.xaxis.set_minor_locator(ticker.MultipleLocator(years))
@@ -3355,14 +3576,14 @@ class Display_Mixin():
             formatter.set_scientific(False)
             ax.yaxis.set_major_formatter(formatter)
 
-        return fig
+        return ax
 
     def keep_plot(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, showtype='level',
                   diff=False, diffpct = False, mul=1.0,
-                  title='Show variables', legend=True, scale='linear', yunit='', ylabel='', dec='',
+                  title='Show variables', legend=False, scale='linear', yunit='', ylabel='', dec='',
                   trans={},
                   showfig=False,
-                  vline=[], savefig=''):
+                  vline=[], savefig='', keep_dim= True,dataonly=False):
         """
 
 
@@ -3388,41 +3609,63 @@ class Display_Mixin():
            savefig (string,optional): folder to save figures in. Can include folder name, if needed the folder will be created 
        Returns:
            figs (dict): dict of the generated Matplotlib figures. 
-
+           keep_dim (bool,True): if True each line is a scenario else each line is a variable 
+           dataonly = False: If True only the resulting dataframes are returned 
        """
 
         try:
-            dfs = self.keep_get_dict(pat, start, slut, start_ofset, slut_ofset)
+            if keep_dim:
+                dfs = self.keep_get_dict(pat, start, slut, start_ofset, slut_ofset)
+            else: 
+                dfs = self.keep_var_dict(pat, start, slut, start_ofset, slut_ofset)
+                
             if showtype == 'growth':
                 dfs = {v: vdf.pct_change()*100. for v, vdf in dfs.items()}
                 dftype = 'Growth'
 
             elif showtype == 'change':
                 dfs = {v: vdf.diff() for v, vdf in dfs.items()}
-                dftype = 'change'
+                dftype = 'Change'
 
             else:
-                dftype = 'Variable'
-
-            if diff:
-                dfsres = {v: vdf.subtract(
-                    vdf.iloc[:, 0], axis=0) for v, vdf in dfs.items()}
-                aspct=' '
-            elif diffpct: 
-                dfsres = {v:  vdf.subtract(
-                    vdf.iloc[:, 0], axis=0).divide(
-                    vdf.iloc[:, 0], axis=0)*100 for v, vdf in dfs.items()}
-                aspct= ' in percent '
-               
-            else:
-                dfsres = dfs
-                
+                dftype = 'Level'
+            
+            if keep_dim: 
+                if diff:
+                    dfsres = {v: (vdf.subtract(
+                        vdf.iloc[:, 0], axis=0)).iloc[:, 1:] for v, vdf in dfs.items()}
+                    aspct=' '
+                elif diffpct: 
+                    dfsres = {v:  (vdf.subtract(
+                        vdf.iloc[:, 0], axis=0).divide(
+                        vdf.iloc[:, 0], axis=0)*100).iloc[:, 1:] for v, vdf in dfs.items()}
+                    aspct= ' in percent '
+                   
+                else:
+                    dfsres = dfs
+            else:          
+               first_scenario = dfs[list(dfs.keys())[0]]
+               if diff:
+                   dfsres = {v: vdf - first_scenario 
+                        for i,(v, vdf)  in enumerate(dfs.items()) if i >= 1}
+                   aspct=' '
+               elif diffpct: 
+                   dfsres = {v:  (vdf/first_scenario-1.)*100
+                        for i,(v, vdf)  in enumerate(dfs.items()) if i >= 1}
+                   aspct= ' in percent '
+                  
+               else:
+                   dfsres = dfs
+                   
             assert not(diff and diffpct) ,"keep_plot can't be called with both diff and diffpct"
-
+            
+            if dataonly: 
+                return dfsres
+            
             xtrans = trans if trans else self.var_description
-            figs = {v: self.plot_basis(v, (df.iloc[:, 1:] if (diff or diffpct) else df)*mul, legend=legend,
+            figs = {v: self.plot_basis(v,  df*mul, legend=legend,
                                        scale=scale, trans=xtrans,
-                                       title=f'Difference{aspct}to "{df.columns[0]}" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
+                                       title=f'Difference{aspct}to "{df.columns[0] if keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
                                        yunit=yunit,
                                        ylabel='Percent' if showtype == 'growth' else ylabel,
                                        xlabel='',
