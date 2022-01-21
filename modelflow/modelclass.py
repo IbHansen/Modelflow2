@@ -5900,10 +5900,10 @@ class Solver_Mixin():
 #         pip install dash_interactive_graphviz 
 #         '''
 #         ...
-from modeldashsidebar import Dash_graph
         
 class Dash_Mixin():
     def modeldash(self,*arg,**kwargs):
+        from modeldashsidebar import Dash_graph
         ...
         out = Dash_graph(self,*arg,**kwargs)
         return out 
@@ -5911,6 +5911,10 @@ class Dash_Mixin():
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin):
+    pass
+
+class wbmodel(         Json_Mixin, Model_help_Mixin, Solver_Mixin,                                  Graph_Mixin,
+            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin,             Modify_Mixin):
     pass
 
 
