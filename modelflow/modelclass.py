@@ -33,7 +33,7 @@ import gc
 import copy
 import matplotlib.pyplot as plt
 import zipfile
-from functools import partial,cached_property
+from functools import partial,cached_property,lru_cache
 from tqdm.auto import tqdm
 
 
@@ -1367,10 +1367,10 @@ class Model_help_Mixin():
         self.oldkwargs = {}
 
 
+
 class Dekomp_Mixin():
     '''This class defines methods and properties related to equation attribution analyses (dekomp)
     '''
-    from functools import lru_cache
 
     @lru_cache(maxsize=2048)
     def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
@@ -5907,15 +5907,24 @@ class Dash_Mixin():
         ...
         out = Dash_graph(self,*arg,**kwargs)
         return out 
+
+class WB_Mixin():
+    @cached_property
+    def wb_behavioral(self):
+        ''' returns endogeneous where the frml name contains a Z which signals a stocastic equation 
+        '''
+        return  {vx for vx in self.endogene if 'Z' in self.allvar[vx]['frmlname']}
+    
+    @cached_property
+    def wb_ident(self):
+        '''returns endogeneous variables not in wb_behavioral '''
+        return  self.endogene-self.wb_behavioral
          
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
-            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin):
+            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,WB_Mixin):
     pass
 
-class wbmodel(         Json_Mixin, Model_help_Mixin, Solver_Mixin,                                  Graph_Mixin,
-            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin,             Modify_Mixin):
-    pass
 
 
 #  Functions used in calculating
