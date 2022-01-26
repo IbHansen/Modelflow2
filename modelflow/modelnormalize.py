@@ -15,7 +15,7 @@ This Module is used transforming model specifications to modelflow business lang
 from sympy import sympify, solve, Symbol
 import re
 from dataclasses import dataclass, field, asdict
-
+import dataclasses 
 
 from modelmanipulation import lagone, find_arg,pastestring,stripstring
 from modelpattern import udtryk_parse, namepat
@@ -38,6 +38,12 @@ class Normalized_frml:
     @property
     def fprint(self):
         print(f'\n{self}')
+
+    @property
+    def fdict(self):
+        return dataclasses.asdict(self)
+        
+    
     
 def endovar(f):
     '''Finds the first variable in a expression'''
@@ -200,7 +206,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         a_name = f'{endo_name}{add_suffix}' if add_adjust else ''
         thiseq = f'({lhs}-__RHS__ {"+" if add_adjust else ""}{a_name})'  if endo_lhs else \
                  f'({lhs}- {rhs}  {"+" if add_adjust else ""}{a_name})'
-        transeq = pastestring(thiseq,post,onlylags=True).replace('LOG','log').replace('EXP','exp')
+        transeq = pastestring(thiseq,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
         kat=sympify(transeq,clash)  
         # breakpoint()
         

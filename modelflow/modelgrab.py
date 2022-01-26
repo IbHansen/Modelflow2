@@ -53,6 +53,7 @@ class GrapWbModel():
     end       : int = 2040 
     country_trans   : any = lambda x:x[:]    # function which transform model specification
     country_df_trans : any = lambda x:x     # function which transforms initial dataframe 
+    from_wf2  : bool = False
     
     
     def __post_init__(self):
@@ -62,25 +63,32 @@ class GrapWbModel():
         self.rawmodel_org = open(self.frml).read()
         self.rawmodel = self.country_trans(self.rawmodel_org)
         rawmodel6 = self.trans_eviews(self.rawmodel)
-        line_type = []
-        line =[] 
         # breakpoint()
         bars = '{desc}: {percentage:3.0f}%|{bar}|{n_fmt}/{total_fmt}'
-        with tqdm(total=len(rawmodel6.split('\n')),desc='Reading original model',bar_format=bars) as pbar:
-            for l in rawmodel6.split('\n'):
-                if ('*******' in l or '----------' in l)  and 'IDEN' in l.upper():
-                    sec='iden'
-                    #print(l)
-                elif '*******' in l and 'STOC' in l:
-                    sec='stoc'
-                    #print(l)
-                else: 
-                    line_type.append(sec)
-                    line.append(l)
-                    # print(f' {sec} {l[:30]} ....')
-                pbar.update(1)    
+        if self.from_wf2:
+            
+            orgline = [l for l in rawmodel6.split('\n')]
+            line_type = ['ident' if l.startswith('@IDENTITY') else 'stoc' for l in orgline]
+            line = [l.replace('@IDENTITY ','').replace(' ','')  for l in orgline]
+        else:    
+            line_type = []
+            line =[] 
+            with tqdm(total=len(rawmodel6.split('\n')),desc='Reading original model',bar_format=bars) as pbar:
+                for l in rawmodel6.split('\n'):
+                    if ('*******' in l or '----------' in l)  and 'IDEN' in l.upper():
+                        sec='iden'
+                        #print(l)
+                    elif '*******' in l and 'STOC' in l:
+                        sec='stoc'
+                        #print(l)
+                    else: 
+                        line_type.append(sec)
+                        line.append(l)
+                        # print(f' {sec} {l[:30]} ....')
+                    pbar.update(1)    
                     
         self.all_frml = [nz.normal(l,add_adjust=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
+        self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
         lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
         self.rorg = [fname + f.normalized for f,fname in zip(self.all_frml,lfname) ]
                 
@@ -143,12 +151,15 @@ class GrapWbModel():
         '''The original input data enriched with during variablees, variables containing 
         values for specific historic years and model specific transformation '''
         # Now the data 
-        df = (pd.read_excel(self.data).
-              pipe( lambda df : df.rename(columns={c:c.upper() for c in df.columns})).
-              pipe( lambda df : df.rename(columns={'_DATE_':'DATEID'})).
-              pipe( lambda df : df.set_index('DATEID'))
-              )
-        df.index = [int(i.year) for i in df.index]
+        if self.from_wf2:
+            df = pd.read_excel(self.data,index_col=0)
+        else:       
+            df = (pd.read_excel(self.data).
+                  pipe( lambda df : df.rename(columns={c:c.upper() for c in df.columns})).
+                  pipe( lambda df : df.rename(columns={'_DATE_':'DATEID'})).
+                  pipe( lambda df : df.set_index('DATEID'))
+                  )
+            df.index = [int(i.year) for i in df.index]
         
         try:
             sca = pd.read_excel(self.scalars ,index_col=0,header=None).T.pipe(
