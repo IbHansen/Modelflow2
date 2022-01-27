@@ -29,6 +29,7 @@ class Normalized_frml:
     normalized       : str = '' 
     calc_adjustment  : str = '' 
     un_normalized    : str = '' 
+    fitted           : str = '' 
     
     def __str__(self):
         maxkey = max(len(k) for k in vars(self).keys())
@@ -164,7 +165,7 @@ def fixleads(eq,check=False):
        print(f"After  {res}")
    return res
 
-def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,exo_adjust=False):
+def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,exo_adjust=False,make_fitted=False):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
     
@@ -179,6 +180,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         do_preprocess (bool, optional): DESCRIPTION. preprocess the expression
         endo_lhs (bool, optional): Accept to normalize for a rhs endogeneous variable 
         exo_adjust (bool, optional): also make this equation exogenizable  
+        fitted (bool,optional) : create a fitted equations, without exo and adjustment 
         
 
     Returns:
@@ -213,6 +215,17 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         endo_frml  = solve(kat,endo  ,simplify=False,rational=False,warn=False)
         res_rhs    =stripstring(str(endo_frml[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
                     stripstring(str(endo_frml[0]),post)
+        if make_fitted:            
+            thiseq_fit = f'({lhs}-__RHS__ )'  if endo_lhs else \
+                     f'({lhs}- {rhs} )'
+            transeq_fit = pastestring(thiseq_fit,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
+            kat_fit=sympify(transeq_fit,clash)  
+            # breakpoint()
+            
+            endo_frml_fit  = solve(kat_fit,endo  ,simplify=False,rational=False,warn=False)
+            res_rhs_fit    =stripstring(str(endo_frml_fit[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
+                    stripstring(str(endo_frml_fit[0]),post)
+                    
         if exo_adjust:
             out_frml   = f'{endo} = ({res_rhs}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
         else: 
@@ -227,27 +240,30 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
             # breakpoint()
         else:
             out_a = ''
-        
-        result = Normalized_frml(str(endo),ind_o,preprocessed,out_frml,out_a) 
+            
+        out_fitted = f'{endo}__fitted = {res_rhs_fit}'.upper()  if make_fitted else ''
+    
+        result = Normalized_frml(str(endo),ind_o,preprocessed,out_frml,out_a,fitted=out_fitted) 
         
         return result
     else: # no need to normalize  this equation 
         out_frml = preprocessed 
+        out_fitted = f'{lhs}__fitted = {rhs}'.upper()  if make_fitted else ''
         if add_adjust:
             if exo_adjust:
                 result = Normalized_frml(lhs,ind_o,preprocessed,
-                    f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})')
+                    f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
             else:
                 result = Normalized_frml(lhs,ind_o,preprocessed,
-                    f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})')
+                    f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
         else:
             if exo_adjust:
                 result = Normalized_frml(lhs,ind_o,preprocessed,
-                    f'{lhs} = ({rhs})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D')
+                    f'{lhs} = ({rhs})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D',fitted=out_fitted)
             else: 
                 result = Normalized_frml(lhs,ind_o,preprocessed,
                 
-                    f'{lhs} = {rhs}')
+                    f'{lhs} = {rhs}',fitted=out_fitted)
         return result
         
 def elem_trans(udtryk, df=None):
@@ -289,8 +305,8 @@ if __name__ == '__main__':
 
     
     normal('DELRFF=RFF-RFF(-1)',add_adjust=1,add_suffix= '_AERR').fprint
-    normal('a = n(-1)',add_adjust=0).fprint
-    normal('a+b = c',add_adjust=1).fprint
+    normal('a = n(-1)',add_adjust=0,make_fitted = 1).fprint
+    normal('a+b = c',add_adjust=1,make_fitted=1).fprint
     normal('PCT_growth(a) = n(-1)',add_adjust=0).fprint
     normal('a = movavg(pct(b),2)',add_adjust=0).fprint
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint

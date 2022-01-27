@@ -4077,7 +4077,9 @@ class Json_Mixin():
             'oldkwargs': self.oldkwargs,
             'var_description': self.var_description,
             'equations_latex': self.equations_latex if hasattr(self, 'equations_latex') else '',
-            'keep_solutions': {k:v.to_json() for k,v in self.keep_solutions.items()} if keep else {}
+            'keep_solutions': {k:v.to_json() for k,v in self.keep_solutions.items()} if keep else {},
+            'wb_MFMSAOPTIONS': self.wb_MFMSAOPTIONS if hasattr(self, 'wb_MFMSAOPTIONS') else '',
+
  
         }
 
@@ -4123,6 +4125,7 @@ class Json_Mixin():
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description', {}))
         mmodel.equations_latex = input.get('equations_latex', None)
+        if input.get('wb_MFMSAOPTIONS', None) : mmodel.wb_MFMSAOPTIONS = input.get('wb_MFMSAOPTIONS', None)
         mmodel.keep_solutions = {k : pd.read_json(jdf) for k,jdf in input.get('keep_solutions',{}).items()}
         if keep_json:
             mmodel.json_keep = input

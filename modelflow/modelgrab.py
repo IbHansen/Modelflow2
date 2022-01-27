@@ -54,6 +54,7 @@ class GrapWbModel():
     country_trans   : any = lambda x:x[:]    # function which transform model specification
     country_df_trans : any = lambda x:x     # function which transforms initial dataframe 
     from_wf2  : bool = False
+    make_fitted  : bool = False # if True, a clean equation for fittet variables is created
     
     
     def __post_init__(self):
@@ -87,14 +88,19 @@ class GrapWbModel():
                         # print(f' {sec} {l[:30]} ....')
                     pbar.update(1)    
                     
-        self.all_frml = [nz.normal(l,add_adjust=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
+        self.all_frml = [nz.normal(l,add_adjust=(typ=='stoc'),make_fitted=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
         lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
         self.rorg = [fname + f.normalized for f,fname in zip(self.all_frml,lfname) ]
+        
+        if self.make_fitted:
+            self.rfitmodel = ['<FIT> ' + f.fitted for f in self.all_frml if len(f.fitted)]
+        else: 
+            self.rfitmodel = []
                 
         self.rres = [f.calc_adjustment for f in self.all_frml if len(f.calc_adjustment)]
         
-        self.fmodel = mp.exounroll(mp.tofrml ('\n'.join(self.rorg)))
+        self.fmodel = mp.exounroll(mp.tofrml ('\n'.join(self.rorg+self.rfitmodel)))
         self.fres =   ('\n'.join(self.rres))
         self.mmodel = model(self.fmodel,modelname = self.modelname)
         self.mmodel.set_var_description(self.var_description)
@@ -223,6 +229,7 @@ class GrapWbModel():
         err=0
         print(f'\nChekking residuals for {self.mmodel.name} {_start} to {_end}')
         for i,v in enumerate(self.mmodel.solveorder):
+            if v.endswith('__FITTED'): continue
             if i > maxvar : break
             if err > maxerr : break
             check = self.mmodel.get_values(v,pct=True).T 
