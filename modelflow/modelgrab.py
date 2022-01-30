@@ -55,6 +55,8 @@ class GrapWbModel():
     country_df_trans : any = lambda x:x     # function which transforms initial dataframe 
     from_wf2  : bool = False
     make_fitted  : bool = False # if True, a clean equation for fittet variables is created
+    fit_start   : int =2000   # start of fittet model 
+    fit_end     : int = 2100  # end of fittet model 
     
     
     def __post_init__(self):
@@ -95,6 +97,8 @@ class GrapWbModel():
         
         if self.make_fitted:
             self.rfitmodel = ['<FIT> ' + f.fitted for f in self.all_frml if len(f.fitted)]
+            self.mfitmodel = model('\n'.join(self.rfitmodel))
+            self.mfitmodel.modelname = self.modelname + ' calc fittet values'
         else: 
             self.rfitmodel = []
                 
@@ -139,14 +143,22 @@ class GrapWbModel():
     @property 
     def var_description(self):
         '''
+        Adds var descriptions for add factors, exogenizing dummies and exoggenizing values
         '''
         
         if isinstance(self.des,dict):
             return self.des
         
         try:
+            # breakpoint()
             trans0 = pd.read_excel(self.des).loc[:,['mnem','Excel']].set_index('mnem').to_dict(orient = 'dict')['Excel']
             var_description = {str(k) : str(v) for k,v in trans0.items() if 'nan' != str(v)}
+            add_d =   { newname : 'Add factor:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_A') in self.mmodel.exogene }
+            dummy_d = { newname : 'Exo dummy:'+ var_description.get(v,v)  for v in self.mmodel.endogene if  (newname := v+'_D')  in self.mmodel.exogene }
+            exo_d =   { newname : 'Exo value:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_X')  in self.mmodel.exogene }
+            fitted_d =   { newname : 'Fitted  value:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_FITTED')  in self.mmodel.endogene }
+            var_description =  {**var_description,**add_d,**dummy_d,**exo_d,**fitted_d}
+            self.mmodel.set_var_description(var_description)
         except:
             print('*** No variable description',flush=True)
             var_description = {}
@@ -174,6 +186,10 @@ class GrapWbModel():
             df= pd.concat([df,sca],axis=1)    
         except: 
             print(f'{self.modelname} no Scalars prowided ')
+
+        if self.make_fitted:
+            df = self.mfitmodel.res(df,self.fit_start,self.fit_end)
+
             
         #% Now set the vars with fixedvalues 
         value_vars = self.mmodel.vlist('*_value_*')
@@ -229,7 +245,7 @@ class GrapWbModel():
         err=0
         print(f'\nChekking residuals for {self.mmodel.name} {_start} to {_end}')
         for i,v in enumerate(self.mmodel.solveorder):
-            if v.endswith('__FITTED'): continue
+            # if v.endswith('_FITTED'): continue
             if i > maxvar : break
             if err > maxerr : break
             check = self.mmodel.get_values(v,pct=True).T 

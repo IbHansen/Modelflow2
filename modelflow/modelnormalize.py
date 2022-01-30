@@ -241,14 +241,14 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         else:
             out_a = ''
             
-        out_fitted = f'{endo}__fitted = {res_rhs_fit}'.upper()  if make_fitted else ''
+        out_fitted = f'{endo}_fitted = {res_rhs_fit}'.upper()  if make_fitted else ''
     
         result = Normalized_frml(str(endo),ind_o,preprocessed,out_frml,out_a,fitted=out_fitted) 
         
         return result
     else: # no need to normalize  this equation 
         out_frml = preprocessed 
-        out_fitted = f'{lhs}__fitted = {rhs}'.upper()  if make_fitted else ''
+        out_fitted = f'{lhs}_fitted = {rhs}'.upper()  if make_fitted else ''
         if add_adjust:
             if exo_adjust:
                 result = Normalized_frml(lhs,ind_o,preprocessed,
