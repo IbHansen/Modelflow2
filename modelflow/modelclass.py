@@ -72,21 +72,12 @@ class BaseModel():
     """Class which defines a model from equations
 
 
-   The basic enduser calls are: 
+   In itself the BaseModel is of no use. 
+   
+   The **model** class enriches BaseModel with additional 
+   Mixin classes which has additional methods and properties. 
 
-   mi = Basemodel(equations): Will create an instance of a model
-
-   And: 
-
-   result = mi(dataframe,start,end)  Will calculate a  model.
-
-   If the model don't contain contemporaneous feedback it will be topological sorted and and calculated (by xgenr)
-   will be solved by gauss-seidle (sim). Gauss-Seidle will use the input order of the equations. 
-
-   Beware that this is the baseclass, other other ordering and solution methods will be defined in child classes. 
-
-      In additions there are defined functions which can do useful chores. 
-
+  
    A model instance has a number of properties among which theese can be particular useful:
 
        :allvar: Information regarding all variables 
@@ -134,22 +125,19 @@ class BaseModel():
         That is the model specification is first exploded. 
 
         Args:
+            :equations: The model
+            :modelname: Name of the model. Defaults to 'testmodel'.
+            :silent: Suppress messages. Defaults to False.
+            :straigth: Don't reorder the model. Defaults to False.
+            :funks: Functions incorporated in the model specification . Defaults to [].
+            :params: For later use. Defaults to {}.
+            :tabcomplete: Allow tab compleetion in editor, for large model time consuming. Defaults to True.
+            :previousbase: Use previous run as basedf not the first. Defaults to False.
+            :norm: Normalize the model. Defaults to True.
+            :sym: If normalize do it symbolic. Defaults to False.
+            :sep: Seperate the equations. Defaults to newline '\n'.
 
-            equations (string): The model
-            modelname : Name of the model. Defaults to 'testmodel'.
-            silent (TYPE, optional): Suppress messages. Defaults to False.
-            straight (TYPE, optional): Don't reorder the model. Defaults to False.
-            funks (TYPE, optional): Functions incorporated in the model specification . Defaults to [].
-            params (TYPE, optional): For later use. Defaults to {}.
-            tabcomplete (TYPE, optional): Allow tab compleetion in editor, for large model time consuming. Defaults to True.
-            previousbase (TYPE, optional): Use previous run as basedf not the first. Defaults to False.
-            norm (TYPE, optional): Normalize the model. Defaults to True.
-            sym (TYPE, optional): If normalize do it symbolic. Defaults to False.
-            sep (TYPE, optional): Seperate the equations. Defaults to '\n'.
-            **kwargs (TYPE): DESCRIPTION.
-
-        Returns:
-            TYPE: A model instance.
+        :Returns:  A model instance: 
 
         """
 
