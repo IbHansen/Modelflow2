@@ -4,8 +4,7 @@ __pycache__/
 *$py.class
 
 
-# Sphinx documentation
-docs/_build/
+
 
 
 # Jupyter Notebook
