@@ -89,7 +89,7 @@ class BaseModel():
     """
 
     def __init__(self, i_eq='', modelname='testmodel', silent=False, straight=False, funks=[],
-                 tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,
+                 tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= True,
                  var_description={}, **kwargs):
         ''' initialize a model'''
         if i_eq != '':
@@ -107,6 +107,7 @@ class BaseModel():
             self.tabcomplete = tabcomplete
             # set basedf to the previous run instead of the first run
             self.previousbase = previousbase
+            self.safeorder= safeorder 
             if not self.istopo or self.straight:
                 self.use_preorder = use_preorder    # if prolog is used in sim2d
             else:
@@ -402,15 +403,20 @@ class BaseModel():
 
     @property
     def endograph(self):
-        ''' Dependencygraph for currrent periode endogeneous variable, used for reorder the equations'''
+        ''' Dependencygraph for currrent periode endogeneous variable, used for reorder the equations
+        if self.safeorder is true feedback for all lags are included '''
         if not hasattr(self, '_endograph'):
             terms = ((var, inf['terms'])
                      for var, inf in self.allvar.items() if inf['endo'])
 
             rhss = ((var, term[self.allvar[var]['assigpos']:])
                     for var, term in terms)
-            rhsvar = ((var, {v.var for v in rhs if v.var and v.var in self.endogene and v.var !=
-                      var and not v.lag}) for var, rhs in rhss)
+            if self.safeorder: 
+                rhsvar = ((var, {v.var for v in rhs if v.var and v.var in self.endogene and v.var !=
+                           var                }) for var, rhs in rhss)
+            else:
+                rhsvar = ((var, {v.var for v in rhs if v.var and v.var in self.endogene and v.var !=
+                          var and not v.lag}) for var, rhs in rhss)
 
             edges = ((v, e) for e, rhs in rhsvar for v in rhs)
 #            print(edges)
