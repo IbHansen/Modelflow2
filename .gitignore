@@ -18,6 +18,5 @@ graph/
 .pylint*/
 
 *.egg-info/
-build/
 dist/
 experiments/
