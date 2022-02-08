@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelmf &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>modelmf</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modelmf</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">This is a module for extending pandas dataframes with the modelflow toolbox</span>
+
+<span class="sd">Created on Sat March 2019</span>
+
+<span class="sd">@author: hanseni</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">import</span> <span class="nn">inspect</span> 
+
+
+
+<span class="kn">from</span> <span class="nn">modelclass</span> <span class="kn">import</span> <span class="n">model</span>
+<span class="kn">import</span> <span class="nn">modelvis</span> <span class="k">as</span> <span class="nn">mv</span>
+
+
+<span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="s1">&#39;mf&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="mf"><a class="viewcode-back" href="../index.html#modelmf.mf">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mf&quot;</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">mf</span><span class="p">():</span>
+        <span class="sd">&#39;&#39;&#39;A class to extend Pandas Dataframes with ModelFlow functionalities&#39;&#39;&#39;</span>
+        
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pandas_obj</span><span class="p">):</span>
+    <span class="c1">#        self._validate(pandas_obj)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span> <span class="o">=</span> <span class="n">pandas_obj</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modelopt</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">solveopt</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eq</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="c1">#        print(self._obj)</span>
+            
+        <span class="k">def</span> <span class="nf">_setmodel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">m</span><span class="p">):</span>
+            <span class="sd">&#39;&#39;&#39; a function to be prepared&#39;&#39;&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">m</span>
+      
+<div class="viewcode-block" id="mf.copy"><a class="viewcode-back" href="../index.html#modelmf.mf.copy">[docs]</a>        <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="sd">&#39;&#39;&#39; copy a modelflow extended dataframe, so it remember its model and options&#39;&#39;&#39;</span>
+            
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            
+            <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">_setmodel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">modelopt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modelopt</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">solveopt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveopt</span> 
+            <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">eq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eq</span> 
+            <span class="k">return</span> <span class="n">res</span></div>
+        
+        <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">this</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span>
+    <span class="c1">#        print(kwargs)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">solveopt</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">solveopt</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span><span class="o">**</span><span class="p">{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span><span class="n">start</span><span class="p">,</span><span class="s1">&#39;slut&#39;</span><span class="p">:</span><span class="n">slut</span><span class="p">}}</span> 
+    <span class="c1">#        print(self.solveopt)</span>
+    <span class="c1">#        print(self.solveopt)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">solveopt</span><span class="p">)</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">_setmodel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">modelopt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modelopt</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">solveopt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveopt</span> 
+            <span class="k">return</span> <span class="n">res</span> 
+                
+        <span class="k">def</span> <span class="nf">makemodel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eq</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modelopt</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">modelopt</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">}</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">eq</span> <span class="o">=</span> <span class="n">eq</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eq</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eq</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">eq</span> <span class="ow">is</span> <span class="n">eq</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">makemodel</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">mf</span>
+        
+        
+        <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+    <span class="c1">#            print(&#39;dddddd&#39;,name)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+    <span class="c1">#            print(&#39;dddddd&#39;,name)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">mv</span><span class="o">.</span><span class="n">varvis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+            <span class="k">except</span><span class="p">:</span> 
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Error calling this attribute: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span> 
+                <span class="k">pass</span>   
+                 
+        <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            
+            <span class="n">a</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">a</span>
+        
+        <span class="k">def</span> <span class="fm">__dir__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="sd">&#39;&#39;&#39; to help tab-completion &#39;&#39;&#39;</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">res</span></div>
+    
+    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mfcalc&quot;</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">mfcalc</span><span class="p">():</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pandas_obj</span><span class="p">):</span>
+    <span class="c1">#        self._validate(pandas_obj)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span> <span class="o">=</span> <span class="n">pandas_obj</span>
+    <span class="c1">#        print(self._obj)</span>
+        
+        <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eq</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1">#        print({**kwargs,**{&#39;start&#39;:start,&#39;slut&#39;:slut}})</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span><span class="o">.</span><span class="n">mf</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span><span class="o">**</span><span class="p">{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span><span class="n">start</span><span class="p">,</span><span class="s1">&#39;slut&#39;</span><span class="p">:</span><span class="n">slut</span><span class="p">,</span><span class="s1">&#39;silent&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">}})</span>
+            <span class="k">return</span> <span class="n">res</span>
+        
+<div class="viewcode-block" id="mfupdate"><a class="viewcode-back" href="../index.html#modelmf.mfupdate">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mfupdate&quot;</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">mfupdate</span><span class="p">():</span>
+        <span class="sd">&#39;&#39;&#39;Extend a dataframe to update with values from another dataframe&#39;&#39;&#39;</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pandas_obj</span><span class="p">):</span>
+    <span class="c1">#        self._validate(pandas_obj)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span> <span class="o">=</span> <span class="n">pandas_obj</span>
+    <span class="c1">#        print(self._obj)</span>
+       
+        <span class="k">def</span> <span class="nf">second</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">safe</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">this</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">col</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+            <span class="k">if</span> <span class="n">safe</span><span class="p">:</span>  <span class="c1"># if dooing many experiments, we dont want this to pappen </span>
+                <span class="k">assert</span> <span class="mi">0</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">index</span><span class="p">)),</span>  <span class="s1">&#39;Index in update not in dataframe&#39;</span>
+                <span class="k">assert</span> <span class="mi">0</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>   <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">columns</span><span class="p">)),</span><span class="s1">&#39;Column in update not in dataframe&#39;</span>
+            <span class="n">this</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">index</span><span class="p">,</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">index</span><span class="p">,</span><span class="n">col</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">this</span>
+            
+            
+        <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">(</span><span class="n">df</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ibloc"><a class="viewcode-back" href="../index.html#modelmf.ibloc">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;ibloc&quot;</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">ibloc</span><span class="p">():</span>
+        <span class="sd">&#39;&#39;&#39;Extend a dataframe with a slice method which accepot wildcards in column selection.</span>
+<span class="sd">        </span>
+<span class="sd">        The method just juse the method vlist from modelclass.model class &#39;&#39;&#39;</span>
+        
+        
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pandas_obj</span><span class="p">):</span>
+    <span class="c1">#        self._validate(pandas_obj)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span> <span class="o">=</span> <span class="n">pandas_obj</span>
+    <span class="c1">#        print(self._obj)</span>
+       
+        <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">select</span><span class="p">):</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">model</span><span class="p">()</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">lastdf</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span>
+    <span class="c1">#        print(select)</span>
+            <span class="nb">vars</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">vlist</span><span class="p">(</span><span class="n">select</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="nb">vars</span><span class="p">]</span>
+            
+        <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;hello from ibloc&#39;</span><span class="p">)</span>
+            <span class="k">return</span> </div>
+        
+
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">42</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c1">#this is for testing </span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Z&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;TY&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]</span> <span class="p">,</span><span class="s1">&#39;YD&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]},</span><span class="n">index</span><span class="o">=</span>   <span class="p">[</span><span class="mi">2017</span><span class="p">,</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2019</span><span class="p">,</span><span class="mi">2020</span><span class="p">])</span>
+        <span class="n">df1</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Z&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;TY&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]</span> <span class="p">,</span><span class="s1">&#39;YD&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]},</span><span class="n">index</span><span class="o">=</span>   <span class="p">[</span><span class="mi">2017</span><span class="p">,</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2019</span><span class="p">,</span><span class="mi">2020</span><span class="p">])</span>
+        <span class="n">df2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Z&#39;</span><span class="p">:[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">22.</span><span class="p">,</span> <span class="mi">33</span><span class="p">,</span><span class="mi">43</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;TY&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]</span> <span class="p">,</span><span class="s1">&#39;YD&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]},</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">2017</span><span class="p">,</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2019</span><span class="p">,</span><span class="mi">2020</span><span class="p">])</span>
+        <span class="n">df3</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Z&#39;</span><span class="p">:[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">22.</span><span class="p">,</span> <span class="mi">33</span><span class="p">,</span><span class="mi">43</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;TY&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]</span> <span class="p">,</span><span class="s1">&#39;YD&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]},</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">2017</span><span class="p">,</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2019</span><span class="p">,</span><span class="mi">2020</span><span class="p">])</span>
+        <span class="n">df4</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Z&#39;</span><span class="p">:[</span> <span class="mf">223.</span><span class="p">,</span> <span class="mi">333</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;TY&#39;</span><span class="p">:[</span><span class="mf">203.</span><span class="p">,</span><span class="mf">303.</span><span class="p">]</span> <span class="p">},</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2019</span><span class="p">])</span>
+        <span class="n">ftest</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39; </span>
+<span class="s1">        FRMl &lt;&gt;  ii = x+z $</span>
+<span class="s1">        frml &lt;&gt;  c=0.8*yd $</span>
+<span class="s1">        FRMl &lt;&gt;  i = ii+iy $ </span>
+<span class="s1">        FRMl &lt;&gt;  x = f(2) $ </span>
+<span class="s1">        FRMl &lt;&gt;  y = c + i + x+ i(-1)$ </span>
+<span class="s1">        FRMl &lt;&gt;  yX = 0.6 * y $</span>
+<span class="s1">        FRML &lt;&gt;  dogplace = y *4 $&#39;&#39;&#39;</span>
+            <span class="c1">#%%</span>
+        <span class="n">m2</span><span class="o">=</span><span class="n">model</span><span class="p">(</span><span class="n">ftest</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[</span><span class="n">f</span><span class="p">])</span>
+        <span class="n">aa</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">mf</span><span class="p">(</span><span class="n">ftest</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[</span><span class="n">f</span><span class="p">])</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+        <span class="n">aa</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+        <span class="n">aa</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">drawmodel</span><span class="p">()</span>
+        <span class="n">aa</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="n">aa</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">istopo</span>
+        <span class="n">aa</span><span class="o">.</span><span class="n">mf</span><span class="p">[</span><span class="s1">&#39;*&#39;</span><span class="p">]</span>
+        <span class="n">df2</span><span class="o">.</span><span class="n">mfcalc</span><span class="p">(</span><span class="n">ftest</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[</span><span class="n">f</span><span class="p">])</span>
+        <span class="n">df2</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">pdf</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1">#%%</span>
+        <span class="n">df4</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Z&#39;</span><span class="p">:[</span> <span class="mf">223.</span><span class="p">,</span> <span class="mi">333</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;YD&#39;</span><span class="p">:[</span><span class="mf">203.</span><span class="p">,</span><span class="mf">303.</span><span class="p">]</span> <span class="p">},</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2019</span><span class="p">])</span>            
+        <span class="n">x</span> <span class="o">=</span> <span class="n">df2</span><span class="o">.</span><span class="n">mfupdate</span><span class="p">(</span><span class="n">df4</span><span class="p">)</span>
+        
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

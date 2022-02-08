@@ -524,6 +524,7 @@
     
 <div class="viewcode-block" id="newton_diff.get_diff_mat_1per"><a class="viewcode-back" href="../index.html#modelnewton.newton_diff.get_diff_mat_1per">[docs]</a>    <span class="k">def</span> <span class="nf">get_diff_mat_1per</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">periode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; fetch a dict of one periode sparse jacobimatrices &#39;&#39;&#39;</span>
+        <span class="c1"># breakpoint()</span>
         <span class="n">dmelt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_diff_melted</span><span class="p">(</span><span class="n">periode</span><span class="o">=</span><span class="n">periode</span><span class="p">,</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
 
         <span class="n">dmelt</span> <span class="o">=</span> <span class="n">dmelt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span><span class="se">\</span>

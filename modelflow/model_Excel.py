@@ -5,8 +5,10 @@ Created on Fri Feb 12 07:04:02 2016
 @author: ibh
 
 Takes all formula's  from a excel work book and translates each to the equivalent expression. 
-Openpyxl is the fastest library but it can not real all values. Therefor xlwings is also used. 
+Openpyxl is the fastest library but it can not deal all values. Therefor xlwings is also used. 
 But only to read repeated formula's which inly will show as '='
+
+
 
 also defines function used whenusing xlwings to automate excel 
 
@@ -18,11 +20,11 @@ from openpyxl import load_workbook
 from openpyxl.formula import Tokenizer
 from openpyxl.utils import get_column_letter
 from openpyxl.utils import cols_from_range,rows_from_range
-try:
-    import xlwings as xw
-except:
-    ...
-import networkx as nx
+# try:
+#     import xlwings as xw
+# except:
+#     ...
+# import networkx as nx
 
 import matplotlib.pylab  as plt 
 import seaborn as sns
@@ -57,18 +59,29 @@ def findequations(name):
     '''
     outdic={}
     wb = load_workbook(name, read_only=True,data_only=False) # to read the spresdsheet first save as xml then write it again 
-    wb2 = xw.Book(name)    # the same worksheet in xlwings
-    
+    try:
+        wb2 = xw.Book(name)    # the same worksheet in xlwings
+    except:
+        ... 
     # breakpoint()
+    
     allsheets = wb.sheetnames
     for wsname in allsheets:
         ws=wb[wsname]
-        ws2=wb2.sheets(wsname)   # the same sheet but in xlwings
+        try:
+            ws2=wb2.sheets(wsname)   # the same sheet but in xlwings
+        except: 
+            ...
+            
         formulacell = [c for row in ws.rows for c in row if c.value != None and c.data_type == 'f'] 
         for cell in formulacell:
             cellref=get_column_letter(cell.column)+str(cell.row)
             if DEBUG : print('This cell:',cellref,cell.data_type,cell.value)
-            frml = cell.value if cell.value != '=' else ws2.range(cellref).formula # To avoid emty repeating formula'rs 
+            if cell.value == '=' :
+                print(f'Repeat cell = so xlwings has to be imported {cell=}')
+                frml = cell.value if cell.value != '=' else ws2.range(cellref).formula # To avoid emty repeating formula'rs 
+            else:
+                frml = cell.value 
             tok=Tokenizer(frml)
             if DEBUG and False : print("\n".join("%19s%15s%9s" % (t.value, t.type, t.subtype) for t in tok.items))
             # left hand term is <worksheet>!<column><row>= 
@@ -95,6 +108,10 @@ def findequations(name):
             equation=''.join(out).replace('!','_')
             outdic[lhs]=equation
             #print(equation)
+    try:        
+        wb2.close()
+    except: 
+        ... 
     return outdic   
     
 def showcells(name):
@@ -261,12 +278,12 @@ def sheet_to_dict(wb,name,integers=None):
 
 
     
-if __name__ == '__main__' and True:
+if __name__ == '__main__':
     testxls=Path('exceltest\lcrberegning2.xlsx')
     mmodel,para = getexcelmodel(testxls)
     eq=mmodel.equations
-    mmodel.draw('_LCR_C62',up=2,down=1)  # The LCR 
-    mmodel.draw('_LCR_C25',up=2,down=1)  # liquid assets
+    mmodel.draw('_LCR_C62',up=10,down=1,HR=0,pdf=1)  # The LCR 
+    mmodel.draw('_LCR_C25',up=4,down=1)  # liquid assets
     mmodel.draw('_LCR_C10',up=2)  # Leel 1 covered bonds 
     
     c,r = findcoordinates(testxls)

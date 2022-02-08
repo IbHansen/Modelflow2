@@ -17,7 +17,7 @@ Indices and tables
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
 
@@ -40,8 +40,12 @@ https://docs.conda.io/en/latest/miniconda.html to download the latest version 3.
  - asked to install for: select just me
  - in the start menu: select anaconda prompt 
 
+
+
 Install Modelflow in the base enviroment 
 ++++++++++++++++++++++++++++++++++++++++++
+
+kdæoijpoijasdf
 
 ::
 
@@ -82,41 +86,59 @@ To update ModelFlow
 
 
 Modules
-########
+######## 
 
 
-Modelclass 
+Modelclass, Defines the model class 
 ===================
 .. automodule:: modelclass
    :members:
 
-Modelpattern 
+Modelpattern, regular expressions to parse equations and models
 ===================
 .. automodule:: modelpattern
    :members:
 
-Modelmanipulation 
+Modelmanipulation, Tect processing of of models before they become model class instances 
 ===================
 .. automodule:: modelmanipulation 
    :members:
 
-Modelnewton 
+Modelnewton, Helper to perform Newton solution and calculate derivatives 
 ===================
 .. automodule:: modelnewton
    :members:
 
-Modelvis 
+Modelvis, Display and vizualize variables  
 ===================
 .. automodule:: modelvis
    :members:
    
-modeljupyter 
+modeljupytermagic, Defines magic functions to define models, data and graphs in jupyter cells 
 ===================
-.. automodule:: modeljupyter
+.. automodule:: modeljupytermagic
    :members:
+
 
 modelnormalize 
 ===================
 .. automodule:: modelnormalize
    :members:
+   
+modelmf 
+===================
+.. automodule:: modelmf
+   :members:
+
+modelnet 
+===================
+.. automodule:: modelnet
+   :members:
+
+
+model_cvx 
+===================
+.. automodule:: model_cvx
+   :members:
+
 

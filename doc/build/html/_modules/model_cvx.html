@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>model_cvx &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>model_cvx</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for model_cvx</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon May 26 21:11:18 2014</span>
+
+<span class="sd">@author: Ib Hansen</span>
+
+<span class="sd">A good explanation of quadradic programming in cvxopt is in </span>
+<span class="sd">http://courses.csail.mit.edu/6.867/wiki/images/a/a7/Qp-cvxopt.pdf</span>
+
+<span class="sd">This exampel calculates the efficient forntier in a small example </span>
+<span class="sd">the example is based on a mean variance model for Indonesian Rupia running in Excel </span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">cvxopt</span>         <span class="kn">import</span> <span class="n">matrix</span><span class="p">,</span>  <span class="n">spdiag</span>
+<span class="kn">from</span> <span class="nn">cvxopt.solvers</span> <span class="kn">import</span> <span class="n">qp</span>    <span class="p">,</span>  <span class="n">options</span> 
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="k">def</span> <span class="nf">MV_test</span><span class="p">(</span><span class="n">lprint</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">P</span><span class="o">=</span> <span class="n">matrix</span><span class="p">([</span>
+    <span class="p">[</span><span class="mf">0.01573635</span><span class="p">,</span>	<span class="mf">0.01436816</span><span class="p">,</span>	<span class="mf">0.01045556</span><span class="p">],</span>
+    <span class="p">[</span><span class="mf">0.01436816</span><span class="p">,</span>	<span class="mf">0.02289016</span><span class="p">,</span>	<span class="mf">0.01172995</span><span class="p">],</span>
+    <span class="p">[</span><span class="mf">0.01045556</span><span class="p">,</span>	<span class="mf">0.01172995</span><span class="p">,</span>	<span class="mf">0.01748076</span><span class="p">]])</span>   <span class="c1"># the covariance matrix</span>
+
+    <span class="n">q</span>       <span class="o">=</span>  <span class="n">matrix</span><span class="p">([</span><span class="mf">0.048</span><span class="p">,</span><span class="mf">0.040</span><span class="p">,</span><span class="mf">0.035</span><span class="p">])</span>      <span class="c1"># return vector </span>
+    <span class="n">bsum</span><span class="o">=</span><span class="mf">1.0</span>
+    
+    <span class="n">wsum1</span><span class="o">=</span><span class="mf">20.</span>   <span class="c1"># weighted sum should be less than: </span>
+    <span class="n">weights1</span><span class="o">=</span><span class="n">matrix</span><span class="p">([</span><span class="mf">2.5</span> <span class="p">,</span> <span class="mi">1</span> <span class="p">,</span> <span class="mi">1</span> <span class="p">]</span> <span class="p">,(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>     
+    
+    <span class="n">wsum2</span><span class="o">=</span> <span class="mi">1</span>    <span class="c1"># weightet sum should be greater than: </span>
+    <span class="n">weights2</span><span class="o">=</span><span class="n">matrix</span><span class="p">([</span><span class="mf">0.2</span> <span class="p">,</span> <span class="mf">2.4</span> <span class="p">,</span> <span class="mi">1</span> <span class="p">]</span> <span class="p">,(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>     
+    
+    
+    <span class="n">hmin</span>    <span class="o">=</span> <span class="o">-</span><span class="n">matrix</span><span class="p">([</span><span class="mf">0.</span> <span class="p">,</span> <span class="mi">0</span> <span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    
+    <span class="n">hmax</span>    <span class="o">=</span>  <span class="n">matrix</span><span class="p">([</span><span class="mf">1.</span> <span class="p">,</span><span class="mf">1.</span> <span class="p">,</span> <span class="mf">1.</span><span class="p">])</span>
+    
+    
+    <span class="n">options</span><span class="p">[</span><span class="s1">&#39;show_progress&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    
+    <span class="n">riskaversions</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">/</span><span class="mf">100.</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">101</span><span class="p">)]</span>             <span class="c1"># compute 100 points on the efficient frontier </span>
+    <span class="n">portefolios</span>   <span class="o">=</span> <span class="p">[</span><span class="n">mv_opt</span><span class="p">(</span><span class="n">P</span><span class="p">,</span><span class="n">q</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">bsum</span><span class="p">,[[</span><span class="n">weights1</span><span class="p">],[</span><span class="o">-</span><span class="n">weights2</span><span class="p">]],[</span><span class="n">wsum1</span><span class="p">,</span><span class="o">-</span><span class="n">wsum2</span><span class="p">],</span><span class="n">hmin</span><span class="p">,</span><span class="n">hmax</span><span class="p">)</span> <span class="k">for</span> <span class="n">riskaversion</span> <span class="ow">in</span> <span class="n">riskaversions</span><span class="p">]</span> <span class="c1"># minimize risk and maximize return </span>
+    <span class="n">p_return</span>      <span class="o">=</span> <span class="p">[</span><span class="mi">100</span>  <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">q</span>           <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">portefolios</span><span class="p">]</span>
+    <span class="n">risk</span>          <span class="o">=</span> <span class="p">[</span><span class="mi">100</span> <span class="o">*</span><span class="p">(</span> <span class="n">x</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">P</span> <span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>  <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">portefolios</span><span class="p">]</span>
+    <span class="n">res</span>           <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="o">+</span><span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">+</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="k">for</span> <span class="n">r</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">risk</span><span class="p">,</span><span class="n">p_return</span><span class="p">,</span><span class="n">portefolios</span><span class="p">)</span> <span class="p">]</span>  <span class="c1"># a row in the Dataframe </span>
+
+    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;risk&#39;</span><span class="p">,</span><span class="s1">&#39;return&#39;</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="s1">&#39;Asset&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>  <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">temp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">q</span><span class="p">)]</span>   <span class="c1"># to handle a number of assets </span>
+    <span class="n">results</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">res</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>                 <span class="c1"># create an empty pandas.Dataframe </span>
+    <span class="k">return</span> <span class="n">results</span>     
+    
+<div class="viewcode-block" id="mv_opt"><a class="viewcode-back" href="../index.html#model_cvx.mv_opt">[docs]</a><span class="k">def</span> <span class="nf">mv_opt</span><span class="p">(</span><span class="n">PP</span><span class="p">,</span><span class="n">qq</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">bsum</span><span class="p">,</span><span class="n">weights</span><span class="p">,</span><span class="n">weigthtedsum</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Performs mean variance optimization by calling a quadratic optimization function from the cvxopt \n</span>
+<span class="sd">    library </span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">q_size</span>   <span class="o">=</span>  <span class="nb">len</span><span class="p">(</span><span class="n">qq</span><span class="p">)</span>
+    <span class="n">P</span>        <span class="o">=</span>  <span class="n">matrix</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">riskaversion</span><span class="p">)</span><span class="o">*</span><span class="n">PP</span><span class="p">)</span>                 <span class="c1"># to </span>
+    <span class="n">q</span>        <span class="o">=</span>  <span class="n">matrix</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="o">*</span><span class="n">riskaversion</span><span class="o">*</span><span class="n">qq</span><span class="p">)</span>
+    <span class="n">Gmin</span>     <span class="o">=</span> <span class="o">-</span><span class="n">matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">q_size</span><span class="p">))</span>
+    <span class="n">hmin</span>     <span class="o">=</span> <span class="o">-</span><span class="n">matrix</span><span class="p">(</span><span class="n">boundsmin</span><span class="p">)</span>
+    <span class="n">Gmax</span>     <span class="o">=</span>  <span class="n">matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">q_size</span><span class="p">))</span>
+    <span class="n">hmax</span>     <span class="o">=</span>  <span class="n">matrix</span><span class="p">(</span><span class="n">boundsmax</span><span class="p">)</span>
+    <span class="n">Gweights</span> <span class="o">=</span>  <span class="n">matrix</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+    <span class="n">hweights</span> <span class="o">=</span>  <span class="n">matrix</span><span class="p">(</span><span class="n">weigthtedsum</span><span class="p">)</span>
+    <span class="n">G</span>        <span class="o">=</span>  <span class="n">matrix</span><span class="p">([</span><span class="n">Gmin</span><span class="p">,</span><span class="n">Gmax</span><span class="p">,</span><span class="n">Gweights</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>                       <span class="c1"># creates the combined inequalities </span>
+    <span class="n">h</span>        <span class="o">=</span>  <span class="n">matrix</span><span class="p">([</span><span class="n">hmin</span><span class="p">,</span><span class="n">hmax</span><span class="p">,</span><span class="n">hweights</span><span class="p">])</span>
+    <span class="n">A</span>        <span class="o">=</span>  <span class="n">matrix</span><span class="p">(</span><span class="mf">1.</span><span class="p">,(</span><span class="mi">1</span><span class="p">,</span><span class="n">q_size</span><span class="p">))</span> <span class="k">if</span> <span class="n">bsum</span> <span class="k">else</span> <span class="kc">None</span>                                <span class="c1"># sum of shares equal to bsum </span>
+    <span class="n">b</span>        <span class="o">=</span>  <span class="n">matrix</span><span class="p">([</span><span class="n">bsum</span><span class="p">])</span>        <span class="k">if</span> <span class="n">bsum</span> <span class="k">else</span> <span class="kc">None</span>   
+    <span class="n">options</span><span class="p">[</span><span class="s1">&#39;show_progress&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">options</span><span class="p">[</span><span class="s1">&#39;refinement&#39;</span><span class="p">]</span><span class="o">=</span><span class="mi">10</span>
+    <span class="n">sol</span>      <span class="o">=</span> <span class="n">qp</span><span class="p">(</span><span class="n">P</span><span class="p">,</span><span class="n">q</span><span class="p">,</span><span class="n">G</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> 
+    <span class="k">if</span> <span class="n">solget</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sol</span>
+    <span class="k">else</span><span class="p">:</span>                                     <span class="c1"># minimize risk and maximize return </span>
+        <span class="n">x</span>        <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> 
+        <span class="n">res</span>      <span class="o">=</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="n">res</span>                                                       <span class="c1"># get the solution </span></div>
+
+<div class="viewcode-block" id="mv_opt_bs"><a class="viewcode-back" href="../index.html#model_cvx.mv_opt_bs">[docs]</a><span class="k">def</span> <span class="nf">mv_opt_bs</span><span class="p">(</span><span class="n">msigma</span><span class="p">,</span><span class="n">vreturn</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">budget</span><span class="p">,</span><span class="n">risk_weights</span><span class="p">,</span><span class="n">capital</span><span class="p">,</span><span class="n">lcr_weights</span><span class="p">,</span><span class="n">lcr</span><span class="p">,</span><span class="n">leverage_weights</span><span class="p">,</span><span class="n">equity</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;performs balance sheet optimization</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">mv_opt</span><span class="p">(</span><span class="n">msigma</span><span class="p">,</span><span class="n">vreturn</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">budget</span><span class="p">,[</span><span class="n">risk_weights</span><span class="p">,</span><span class="o">-</span><span class="n">lcr_weights</span><span class="p">,</span><span class="n">leverage_weights</span><span class="p">],[</span><span class="n">capital</span><span class="p">,</span><span class="o">-</span><span class="n">lcr</span><span class="p">,</span><span class="n">equity</span><span class="p">],</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span></div>
+    
+
+<div class="viewcode-block" id="mv_opt_prop"><a class="viewcode-back" href="../index.html#model_cvx.mv_opt_prop">[docs]</a><span class="k">def</span> <span class="nf">mv_opt_prop</span><span class="p">(</span><span class="n">PP</span><span class="p">,</span><span class="n">qq</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">bsum</span><span class="p">,</span><span class="n">weights</span><span class="p">,</span><span class="n">weigthtedsum</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">probability</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; select a numner of assets/liabilities which. when the selection is feasible an Mean variance optimazation is performed\n</span>
+<span class="sd">    the selection is based on probabilities &#39;&#39;&#39;</span>
+    <span class="n">q_size</span>           <span class="o">=</span>  <span class="nb">len</span><span class="p">(</span><span class="n">qq</span><span class="p">)</span>
+    <span class="n">selectsize</span>       <span class="o">=</span> <span class="mi">2</span> 
+    <span class="n">newboundsmax</span>     <span class="o">=</span> <span class="n">matrix</span><span class="p">(</span><span class="mf">0.</span><span class="p">,(</span><span class="n">q_size</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">prop</span>             <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">probability</span><span class="o">/</span><span class="nb">sum</span><span class="p">(</span><span class="n">probability</span><span class="p">))</span> <span class="k">if</span> <span class="n">probability</span> <span class="k">else</span> <span class="p">[</span><span class="mf">1.</span><span class="o">/</span><span class="n">q_size</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">q_size</span><span class="p">)]</span>
+<span class="c1"># Find a feasible set of banks  </span>
+    <span class="k">while</span> <span class="n">selectsize</span> <span class="o">&lt;</span> <span class="n">q_size</span> <span class="p">:</span> 
+        <span class="n">selected</span>               <span class="o">=</span> <span class="p">[</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">q_size</span><span class="p">,</span><span class="n">selectsize</span><span class="p">,</span><span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="n">prop</span><span class="p">)]</span> <span class="c1"># select banks </span>
+        <span class="n">selectvector</span>           <span class="o">=</span>  <span class="n">matrix</span><span class="p">(</span><span class="mf">0.</span><span class="p">,(</span><span class="n">q_size</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">selectvector</span><span class="p">[</span><span class="n">selected</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>                                                      <span class="c1"># the selected banks is marked by 1.1</span>
+        <span class="n">newboundsmax</span>           <span class="o">=</span>  <span class="n">matrix</span><span class="p">([</span><span class="n">s</span><span class="o">*</span><span class="n">bm</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">bm</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">selectvector</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">)])</span>  <span class="c1"># elementwise multiplication, so max=0 if the bank is not selected </span>
+<span class="c1">#        print(sum(newboundsmax))</span>
+        <span class="k">if</span>  <span class="nb">sum</span><span class="p">(</span><span class="n">newboundsmax</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">bsum</span> <span class="ow">and</span> <span class="p">[</span><span class="n">weigthtedsum</span><span class="p">]</span> <span class="o">&gt;</span> <span class="nb">list</span><span class="p">(</span><span class="n">newboundsmax</span><span class="o">.</span><span class="n">T</span><span class="o">*</span><span class="n">weights</span><span class="p">):</span>
+            <span class="k">break</span>
+        <span class="n">selectsize</span><span class="o">=</span><span class="n">selectsize</span><span class="o">+</span><span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;*** Constraints to do not allow a solution&#39;</span><span class="p">)</span>
+        <span class="k">raise</span>
+<span class="c1"># now optimize </span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">sol</span><span class="o">=</span> <span class="n">mv_opt</span><span class="p">(</span><span class="n">PP</span><span class="p">,</span><span class="n">qq</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">bsum</span><span class="p">,</span><span class="n">weights</span><span class="p">,</span><span class="n">weigthtedsum</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">newboundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">shares</span><span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;** The Mean variance problem can not be solved&#39;</span><span class="p">)</span>
+        <span class="k">raise</span>
+    <span class="k">return</span> <span class="n">shares</span>         </div>
+ 
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span> 
+    <span class="n">ib</span><span class="o">=</span><span class="n">MV_test</span><span class="p">()</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="c1">#    pd.DataFrame.plot(ib,x=&#39;risk&#39;,y=&#39;return&#39;)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+    <span class="n">ib</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s1">&#39;risk&#39;</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;return&#39;</span><span class="p">],</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;area&#39;</span>                  <span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">ib</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s1">&#39;risk&#39;</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Asset0&#39;</span><span class="p">,</span><span class="s1">&#39;Asset1&#39;</span><span class="p">,</span><span class="s1">&#39;Asset2&#39;</span><span class="p">],</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;line&#39;</span><span class="p">)</span>
+    <span class="n">ib</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s1">&#39;risk&#39;</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Asset0&#39;</span><span class="p">,</span><span class="s1">&#39;Asset1&#39;</span><span class="p">,</span><span class="s1">&#39;Asset2&#39;</span><span class="p">],</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;area&#39;</span><span class="p">)</span>
+
+    
+        
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

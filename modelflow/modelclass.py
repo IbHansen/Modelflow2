@@ -47,6 +47,12 @@ except:
     pass
 import os
 
+try:
+    import xlwings as xw
+except:
+    ...
+
+
 import modelmanipulation as mp
 
 import modelvis as mv
@@ -82,7 +88,7 @@ class BaseModel():
 
        :allvar: Information regarding all variables 
        :basedf: A dataframe with first result created with this model instance
-       :altdf: A dataframe with the last result created with this model instance 
+       :lastdf: A dataframe with the last result created with this model instance 
 
    The two result dataframes are used for comparision and visualisation. The user can set both basedf and altdf.     
 
@@ -1360,6 +1366,13 @@ class Model_help_Mixin():
                     print(f'\nValues: \n {self.get_eq_values(v,showvar=1)} \n')
         self.oldkwargs = {}
 
+    @property
+    def print_model(self):
+        print(self.equations)
+
+    @property
+    def print_model_latex(self):
+        mj.get_frml_latex(self)
 
 
 class Dekomp_Mixin():
@@ -4137,10 +4150,6 @@ class Json_Mixin():
             return mmodel, lastdf
 
 
-try:
-    import xlwings as xw
-except:
-    ...
 
 
 class Excel_Mixin():
@@ -5410,10 +5419,11 @@ class Solver_Mixin():
 
         values = databank.values.copy()
         outvalues = np.empty_like(values)
-        endovar = self.coreorder if self.use_preorder else self.solveorder
+        # endovar = self.solveorder
+        # breakpoint()
         if not hasattr(self, 'newton_diff'):
             self.newton_diff = newton_diff(self, forcenum=forcenum, df=databank,
-                                           endovar=endovar, ljit=lnjit, nchunk=chunk, onlyendocur=True, silent=silent)
+                                           endovar=None, ljit=lnjit, nchunk=chunk, onlyendocur=True, silent=silent)
         if not hasattr(self, 'newun1persolver') or newton_reset:
             # breakpoint()
             self.newun1persolver = self.newton_diff.get_solve1per(
@@ -5457,7 +5467,12 @@ class Solver_Mixin():
                 for iteration in range(max_iterations):
                     with self.timer(f'sim per:{self.periode} it:{iteration}', 0) as xxtt:
                         before = values[row, newton_col_endo]
+                        
+                        self.pronew2d(values, outvalues, row,  alfa)
                         self.solvenew2d(values, outvalues, row,  alfa)
+                        self.epinew2d(values, outvalues, row,  alfa)
+                        
+                        
                         now = outvalues[row, newton_col]
                         distance = now
                         newton_conv = np.abs(distance).sum()

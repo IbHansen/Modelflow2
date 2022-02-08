@@ -787,7 +787,7 @@ def expressions_to_latex(expressions,funks=[],allign = True, disp = False):
     else:
         return latex_out
     
-def frml_as_latex(frml_in,funks=[],allign= True, name=True,disp=True):
+def frml_as_latex(frml_in,funks=[],allign= True, name=True,disp=True,linespace = False):
     ''' Display formula
     
     :funks: local functions 
@@ -796,12 +796,12 @@ def frml_as_latex(frml_in,funks=[],allign= True, name=True,disp=True):
     '''
     frmls =    frml_in if type(frml_in) == list else [frml_in ]
     out = []
-    for frml in frmls:
+    for i,frml in enumerate(frmls):
         a,fr,n,udtryk= pt.split_frml(frml)
         out_udtryk = an_expression_to_latex(udtryk,funks = funks)
         out_frmlname = vtol(n) if name and n != '<>' else ''
         if allign:
-            out_udtryk = out_udtryk.replace('=',' & = & ',1)
+            out_udtryk = out_udtryk.replace('=',' & = & ',1)+(r'\\[1em]' if linespace else '')
         out.append(f'{out_frmlname} {out_udtryk}')
     latex_out = r'\\'.join(out)
     if allign:
@@ -812,9 +812,9 @@ def frml_as_latex(frml_in,funks=[],allign= True, name=True,disp=True):
     else: 
         return latex_out
 
-def get_frml_latex(model,pat='*',name=False):
+def get_frml_latex(model,pat='*',name=True):
     
     variabler =  [var for  p in pat.split() for var in fnmatch.filter(model.nrorder,p)]
-    frmls = [model.allvar[var]['frml'] for var in variabler]
+    frmls = [model.allvar[var]['frml'] for var in variabler if not model.allvar[var]['dropfrml']]
     _=frml_as_latex(frmls,funks=model.funks,name=name)
     

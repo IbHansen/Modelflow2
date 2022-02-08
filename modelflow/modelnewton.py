@@ -461,6 +461,7 @@ class newton_diff():
     
     def get_diff_mat_1per(self,periode=None,df=None):
         ''' fetch a dict of one periode sparse jacobimatrices '''
+        # breakpoint()
         dmelt = self.get_diff_melted(periode=periode,df=df)
 
         dmelt = dmelt.eval('''\

@@ -46,13 +46,16 @@
 <li><a class="reference internal" href="#modules">Modules</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#module-modelclass">Modelclass</a></li>
-<li><a class="reference internal" href="#module-modelpattern">Modelpattern</a></li>
-<li><a class="reference internal" href="#module-modelmanipulation">Modelmanipulation</a></li>
-<li><a class="reference internal" href="#module-modelnewton">Modelnewton</a></li>
-<li><a class="reference internal" href="#module-modelvis">Modelvis</a></li>
-<li><a class="reference internal" href="#module-modeljupyter">modeljupyter</a></li>
+<li><a class="reference internal" href="#modelclass-defines-the-model-class">Modelclass, Defines the model class</a></li>
+<li><a class="reference internal" href="#modelpattern-regular-expressions-to-parse-equations-and-models">Modelpattern, regular expressions to parse equations and models</a></li>
+<li><a class="reference internal" href="#modelmanipulation-tect-processing-of-of-models-before-they-become-model-class-instances">Modelmanipulation, Tect processing of of models before they become model class instances</a></li>
+<li><a class="reference internal" href="#modelnewton-helper-to-perform-newton-solution-and-calculate-derivatives">Modelnewton, Helper to perform Newton solution and calculate derivatives</a></li>
+<li><a class="reference internal" href="#modelvis-display-and-vizualize-variables">Modelvis, Display and vizualize variables</a></li>
+<li><a class="reference internal" href="#modeljupytermagic-defines-magic-functions-to-define-models-data-and-graphs-in-jupyter-cells">modeljupytermagic, Defines magic functions to define models, data and graphs in jupyter cells</a></li>
 <li><a class="reference internal" href="#module-modelnormalize">modelnormalize</a></li>
+<li><a class="reference internal" href="#module-modelmf">modelmf</a></li>
+<li><a class="reference internal" href="#module-modelnet">modelnet</a></li>
+<li><a class="reference internal" href="#module-model_cvx">model_cvx</a></li>
 </ul>
 </div>
         </div>
@@ -107,6 +110,7 @@ og en ande kllgg</p>
 <li><p>in the start menu: select anaconda prompt</p></li>
 </ul>
 </div></blockquote>
+<p>kdæoijpoijasdf</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span>  <span class="n">install</span>  <span class="o">-</span><span class="n">c</span> <span class="n">ibh</span> <span class="o">-</span><span class="n">c</span>  <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">modelflow</span> <span class="n">jupyter</span> <span class="o">-</span><span class="n">y</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">dash_interactive_graphviz</span>
 <span class="n">jupyter</span> <span class="n">contrib</span> <span class="n">nbextension</span> <span class="n">install</span> <span class="o">--</span><span class="n">user</span>
@@ -135,9 +139,9 @@ og en ande kllgg</p>
 <h2>Modules<a class="headerlink" href="#modules" title="Permalink to this headline"></a></h2>
 </section>
 </section>
-<section id="module-modelclass">
-<span id="modelclass"></span><h1>Modelclass<a class="headerlink" href="#module-modelclass" title="Permalink to this headline"></a></h1>
-<p>Created on Mon Sep 02 19:41:11 2013</p>
+<section id="modelclass-defines-the-model-class">
+<h1>Modelclass, Defines the model class<a class="headerlink" href="#modelclass-defines-the-model-class" title="Permalink to this headline"></a></h1>
+<span class="target" id="module-modelclass"></span><p>Created on Mon Sep 02 19:41:11 2013</p>
 <p>This module creates model class instances.</p>
 <p>&#64;author: Ib</p>
 <dl class="py class">
@@ -165,7 +169,7 @@ og en ande kllgg</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.BaseModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">BaseModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelclass.html#BaseModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.BaseModel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">BaseModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safeorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelclass.html#BaseModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.BaseModel" title="Permalink to this definition"></a></dt>
 <dd><p>Class which defines a model from equations</p>
 <p>In itself the BaseModel is of no use.</p>
 <p>The <strong>model</strong> class enriches BaseModel with additional
@@ -179,7 +183,7 @@ Mixin classes which has additional methods and properties.</p>
 <dt class="field-even">basedf</dt>
 <dd class="field-even"><p>A dataframe with first result created with this model instance</p>
 </dd>
-<dt class="field-odd">altdf</dt>
+<dt class="field-odd">lastdf</dt>
 <dd class="field-odd"><p>A dataframe with the last result created with this model instance</p>
 </dd>
 </dl>
@@ -354,7 +358,8 @@ if scenarios contains * or ? they are separated by | else space</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.BaseModel.endograph">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">endograph</span></span><a class="headerlink" href="#modelclass.BaseModel.endograph" title="Permalink to this definition"></a></dt>
-<dd><p>Dependencygraph for currrent periode endogeneous variable, used for reorder the equations</p>
+<dd><p>Dependencygraph for currrent periode endogeneous variable, used for reorder the equations
+if self.safeorder is true feedback for all lags are included</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1261,7 +1266,7 @@ a session.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.model">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelclass.html#model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.model" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safeorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelclass.html#model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.model" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -1394,9 +1399,9 @@ generator function. This one will report time even if an exception occurs””�
 </dd></dl>
 
 </section>
-<section id="module-modelpattern">
-<span id="modelpattern"></span><h1>Modelpattern<a class="headerlink" href="#module-modelpattern" title="Permalink to this headline"></a></h1>
-<p>Created on Mon Sep 02 19:32:22 2013</p>
+<section id="modelpattern-regular-expressions-to-parse-equations-and-models">
+<h1>Modelpattern, regular expressions to parse equations and models<a class="headerlink" href="#modelpattern-regular-expressions-to-parse-equations-and-models" title="Permalink to this headline"></a></h1>
+<span class="target" id="module-modelpattern"></span><p>Created on Mon Sep 02 19:32:22 2013</p>
 <p>This module defines a number of pattern used in PYFS.
 If a new function is intruduced in the model definition language it should added to the
 function names in funkname</p>
@@ -1513,9 +1518,9 @@ or just an expression like x+b</p>
 </dd></dl>
 
 </section>
-<section id="module-modelmanipulation">
-<span id="modelmanipulation"></span><h1>Modelmanipulation<a class="headerlink" href="#module-modelmanipulation" title="Permalink to this headline"></a></h1>
-<p>Created on Mon Sep 02 19:41:11 2013</p>
+<section id="modelmanipulation-tect-processing-of-of-models-before-they-become-model-class-instances">
+<h1>Modelmanipulation, Tect processing of of models before they become model class instances<a class="headerlink" href="#modelmanipulation-tect-processing-of-of-models-before-they-become-model-class-instances" title="Permalink to this headline"></a></h1>
+<span class="target" id="module-modelmanipulation"></span><p>Created on Mon Sep 02 19:41:11 2013</p>
 <p>This module is a textprocessing module which is used to transforms a <em>template model</em> for a generic bank into into a unrolled and
 expande model which covers all banks - under  control of a list feature.</p>
 <p>The resulting model can be solved after beeing proccesed in the <em>modelclass</em> module.</p>
@@ -1823,9 +1828,9 @@ else the lhs_varriable is used in &lt;endo=&gt;</p>
 </dd></dl>
 
 </section>
-<section id="module-modelnewton">
-<span id="modelnewton"></span><h1>Modelnewton<a class="headerlink" href="#module-modelnewton" title="Permalink to this headline"></a></h1>
-<p>Created on Fri Jun 19 19:49:50 2020</p>
+<section id="modelnewton-helper-to-perform-newton-solution-and-calculate-derivatives">
+<h1>Modelnewton, Helper to perform Newton solution and calculate derivatives<a class="headerlink" href="#modelnewton-helper-to-perform-newton-solution-and-calculate-derivatives" title="Permalink to this headline"></a></h1>
+<span class="target" id="module-modelnewton"></span><p>Created on Fri Jun 19 19:49:50 2020</p>
 <p>&#64;author: IBH</p>
 <p>Module which handles model differentiation, construction of jacobi matrizex,
 and creates dense and sparse solving functions.</p>
@@ -1936,9 +1941,9 @@ if var ends with * all matchning variables are displayes</p>
 </dd></dl>
 
 </section>
-<section id="module-modelvis">
-<span id="modelvis"></span><h1>Modelvis<a class="headerlink" href="#module-modelvis" title="Permalink to this headline"></a></h1>
-<p>Created on Fri May 12 11:07:02 2017</p>
+<section id="modelvis-display-and-vizualize-variables">
+<h1>Modelvis, Display and vizualize variables<a class="headerlink" href="#modelvis-display-and-vizualize-variables" title="Permalink to this headline"></a></h1>
+<span class="target" id="module-modelvis"></span><p>Created on Fri May 12 11:07:02 2017</p>
 <p>&#64;author: hanseni</p>
 <p>This module creates functions and classes for visualizing results.</p>
 <dl class="py function">
@@ -2231,144 +2236,8 @@ the coulumns can optional be selected as starting with pre</p>
 </dd></dl>
 
 </section>
-<section id="module-modeljupyter">
-<span id="modeljupyter"></span><h1>modeljupyter<a class="headerlink" href="#module-modeljupyter" title="Permalink to this headline"></a></h1>
-<p>Created on Sat Jun 22 21:26:13 2019</p>
-<p>&#64;author: hanseni</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.vis_alt3">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">vis_alt3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Show</span> <span class="pre">variables'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Baseline'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Alternative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#vis_alt3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.vis_alt3" title="Permalink to this definition"></a></dt>
-<dd><p>display tabbed widget with results from different dataframes, usuallly 2 but more can be shown</p>
-<p>dfs is a list of dataframes. They should be of same dimensionalities</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.vis_alt4">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">vis_alt4</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Show</span> <span class="pre">variables'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#vis_alt4"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.vis_alt4" title="Permalink to this definition"></a></dt>
-<dd><p>display tabbed widget with results from different dataframes, usuallly 2 but more can be shown</p>
-<p>dfs is a list of dataframes. They should be of same dimensionalities</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="modeljupyter.jup_keepviz">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">jup_keepviz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Show</span> <span class="pre">variables'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showfig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#jup_keepviz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.jup_keepviz" title="Permalink to this definition"></a></dt>
-<dd><p>Class to vizualize a number of runs, primary in Jupyter
-:dfs: A dict with runs {name :{‘result’ : df}}
-:title: A title
-:trans: a translation of variable names to more redable names
-:legend: if legends has to be shown</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="modeljupyter.jupviz">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">jupviz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Show</span> <span class="pre">variables'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showfig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#jupviz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.jupviz" title="Permalink to this definition"></a></dt>
-<dd><p>Class to vizualize a number of experiments in an tabbed ipywidget in a jupyter notebook</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="modeljupyter.jupviz.vis">
-<span class="sig-name descname"><span class="pre">vis</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#jupviz.vis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.jupviz.vis" title="Permalink to this definition"></a></dt>
-<dd><p>display tabbed widget with results from different dataframes, usuallly 2 but more can be shown</p>
-<p>dfs is a list of dataframes. They should be of same dimensionalities</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.get_alt">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">get_alt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mmodel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onlyendo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#get_alt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.get_alt" title="Permalink to this definition"></a></dt>
-<dd><p>Retrieves variables matching pat from a model</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.get_alt_dic">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">get_alt_dic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mmodel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onlyendo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#get_alt_dic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.get_alt_dic" title="Permalink to this definition"></a></dt>
-<dd><p>Retrieves variables matching pat from a model</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.inputwidget">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">inputwidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basedf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slidedef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radiodef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkdef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelopt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">varpat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RFF</span> <span class="pre">XGDPN</span> <span class="pre">RFFMIN</span> <span class="pre">GFSRPN</span> <span class="pre">DMPTRSH</span> <span class="pre">XXIBDUMMY'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base1name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alt1name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">go_now</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showvar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#inputwidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.inputwidget" title="Permalink to this definition"></a></dt>
-<dd><p>Creates an input widgets for updating variables</p>
-<dl class="field-list simple">
-<dt class="field-odd">Df</dt>
-<dd class="field-odd"><p>Baseline dataframe</p>
-</dd>
-<dt class="field-even">Slidedef</dt>
-<dd class="field-even"><p>dict with definition of variables to be updated by slider</p>
-</dd>
-<dt class="field-odd">Radiodef</dt>
-<dd class="field-odd"><p>dict of lists. each at first level defines a collection of radiobuttoms
-second level defines the text for each leved and the variable to set or reset to 0</p>
-</dd>
-<dt class="field-even">Varpat</dt>
-<dd class="field-even"><p>the variables to show in the output widget</p>
-</dd>
-<dt class="field-odd">Showout</dt>
-<dd class="field-odd"><p>1 if the output widget is to be called</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.get_att_gui">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">get_att_gui</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">totdif</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'FY'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desdic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'level'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perselect</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'per'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#get_att_gui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.get_att_gui" title="Permalink to this definition"></a></dt>
-<dd><p>Creates a jupyter ipywidget to display model level
-attributions</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.get_att_gui2">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">get_att_gui2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">totdif</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desdic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'level'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bar'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#get_att_gui2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.get_att_gui2" title="Permalink to this definition"></a></dt>
-<dd><p>Creates a jupyter ipywidget to display model level
-attributions for datily dates</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.vtol">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">vtol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#vtol"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.vtol" title="Permalink to this definition"></a></dt>
-<dd><p>replaces special characters in variable name to latex</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.an_expression_to_latex">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">an_expression_to_latex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#an_expression_to_latex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.an_expression_to_latex" title="Permalink to this definition"></a></dt>
-<dd><p>Returns a latex string from a list of terms (defined in the modelpattern module)</p>
-<p>funks is a list of localy defines functions</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.expressions_to_latex">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">expressions_to_latex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expressions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#expressions_to_latex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.expressions_to_latex" title="Permalink to this definition"></a></dt>
-<dd><p>Returns a latex string from a list of a list of terms</p>
-<dl class="field-list simple">
-<dt class="field-odd">Funks</dt>
-<dd class="field-odd"><p>a list of local functions in the model</p>
-</dd>
-<dt class="field-even">Allign</dt>
-<dd class="field-even"><p>the first = is enclosed in &amp; for alligning several equations in latex</p>
-</dd>
-<dt class="field-odd">Disp</dt>
-<dd class="field-odd"><p>the result is displayed</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="modeljupyter.frml_as_latex">
-<span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">frml_as_latex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frml_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modeljupyter.html#frml_as_latex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.frml_as_latex" title="Permalink to this definition"></a></dt>
-<dd><p>Display formula</p>
-<dl class="field-list simple">
-<dt class="field-odd">Funks</dt>
-<dd class="field-odd"><p>local functions</p>
-</dd>
-<dt class="field-even">Allign</dt>
-<dd class="field-even"><p>allign =</p>
-</dd>
-<dt class="field-odd">Name</dt>
-<dd class="field-odd"><p>also display the frml name</p>
-</dd>
-</dl>
-</dd></dl>
-
+<section id="modeljupytermagic-defines-magic-functions-to-define-models-data-and-graphs-in-jupyter-cells">
+<h1>modeljupytermagic, Defines magic functions to define models, data and graphs in jupyter cells<a class="headerlink" href="#modeljupytermagic-defines-magic-functions-to-define-models-data-and-graphs-in-jupyter-cells" title="Permalink to this headline"></a></h1>
 </section>
 <section id="module-modelnormalize">
 <span id="modelnormalize"></span><h1>modelnormalize<a class="headerlink" href="#module-modelnormalize" title="Permalink to this headline"></a></h1>
@@ -2478,6 +2347,98 @@ attributions for datily dates</p>
 <dt class="sig sig-object py" id="modelnormalize.elem_trans">
 <span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">elem_trans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">udtryk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelnormalize.html#elem_trans"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.elem_trans" title="Permalink to this definition"></a></dt>
 <dd><p>Handeles expression with &#64;elem</p>
+</dd></dl>
+
+</section>
+<section id="module-modelmf">
+<span id="modelmf"></span><h1>modelmf<a class="headerlink" href="#module-modelmf" title="Permalink to this headline"></a></h1>
+<p>This is a module for extending pandas dataframes with the modelflow toolbox</p>
+<p>Created on Sat March 2019</p>
+<p>&#64;author: hanseni</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmf.mf">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelmf.</span></span><span class="sig-name descname"><span class="pre">mf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmf.html#mf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mf" title="Permalink to this definition"></a></dt>
+<dd><p>A class to extend Pandas Dataframes with ModelFlow functionalities</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modelmf.mf.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmf.html#mf.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mf.copy" title="Permalink to this definition"></a></dt>
+<dd><p>copy a modelflow extended dataframe, so it remember its model and options</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmf.mfupdate">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelmf.</span></span><span class="sig-name descname"><span class="pre">mfupdate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmf.html#mfupdate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mfupdate" title="Permalink to this definition"></a></dt>
+<dd><p>Extend a dataframe to update with values from another dataframe</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmf.ibloc">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelmf.</span></span><span class="sig-name descname"><span class="pre">ibloc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmf.html#ibloc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.ibloc" title="Permalink to this definition"></a></dt>
+<dd><p>Extend a dataframe with a slice method which accepot wildcards in column selection.</p>
+<p>The method just juse the method vlist from modelclass.model class</p>
+</dd></dl>
+
+</section>
+<section id="module-modelnet">
+<span id="modelnet"></span><h1>modelnet<a class="headerlink" href="#module-modelnet" title="Permalink to this headline"></a></h1>
+<p>Created on Wed Oct 15 14:30:44 2014</p>
+<p>Displays an adjencacy matrix
+.
+&#64;author: ibh</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnet.draw_adjacency_matrix">
+<span class="sig-prename descclassname"><span class="pre">modelnet.</span></span><span class="sig-name descname"><span class="pre">draw_adjacency_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partitions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Structure'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">10)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelnet.html#draw_adjacency_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnet.draw_adjacency_matrix" title="Permalink to this definition"></a></dt>
+<dd><ul class="simple">
+<li><p>G is a netorkx graph</p></li>
+<li><dl class="simple">
+<dt>node_order (optional) is a list of nodes, where each node in G</dt><dd><p>appears exactly once</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>partitions is a list of node lists, where each node in G appears</dt><dd><p>in exactly one node list</p>
+</dd>
+</dl>
+</li>
+<li><p>type is a list of saying “simultaneous” or something else, has to have same length as partitions</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnet.drawendoexo">
+<span class="sig-prename descclassname"><span class="pre">modelnet.</span></span><span class="sig-name descname"><span class="pre">drawendoexo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.0,</span> <span class="pre">6.0)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelnet.html#drawendoexo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnet.drawendoexo" title="Permalink to this definition"></a></dt>
+<dd><p>Draw dependency including exogeneous. Used for illustrating for small models</p>
+</dd></dl>
+
+</section>
+<section id="module-model_cvx">
+<span id="model-cvx"></span><h1>model_cvx<a class="headerlink" href="#module-model_cvx" title="Permalink to this headline"></a></h1>
+<p>Created on Mon May 26 21:11:18 2014</p>
+<p>&#64;author: Ib Hansen</p>
+<p>A good explanation of quadradic programming in cvxopt is in
+<a class="reference external" href="http://courses.csail.mit.edu/6.867/wiki/images/a/a7/Qp-cvxopt.pdf">http://courses.csail.mit.edu/6.867/wiki/images/a/a7/Qp-cvxopt.pdf</a></p>
+<p>This exampel calculates the efficient forntier in a small example
+the example is based on a mean variance model for Indonesian Rupia running in Excel</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="model_cvx.mv_opt">
+<span class="sig-prename descclassname"><span class="pre">model_cvx.</span></span><span class="sig-name descname"><span class="pre">mv_opt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PP</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">riskaversion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bsum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weigthtedsum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundsmin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundsmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solget</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/model_cvx.html#mv_opt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_cvx.mv_opt" title="Permalink to this definition"></a></dt>
+<dd><p>Performs mean variance optimization by calling a quadratic optimization function from the cvxopt</p>
+<p>library</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="model_cvx.mv_opt_bs">
+<span class="sig-prename descclassname"><span class="pre">model_cvx.</span></span><span class="sig-name descname"><span class="pre">mv_opt_bs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vreturn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">riskaversion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">risk_weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capital</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lcr_weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lcr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leverage_weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundsmin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundsmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solget</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/model_cvx.html#mv_opt_bs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_cvx.mv_opt_bs" title="Permalink to this definition"></a></dt>
+<dd><p>performs balance sheet optimization</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="model_cvx.mv_opt_prop">
+<span class="sig-prename descclassname"><span class="pre">model_cvx.</span></span><span class="sig-name descname"><span class="pre">mv_opt_prop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PP</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">riskaversion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bsum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weigthtedsum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundsmin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundsmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probability</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/model_cvx.html#mv_opt_prop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_cvx.mv_opt_prop" title="Permalink to this definition"></a></dt>
+<dd><p>select a numner of assets/liabilities which. when the selection is feasible an Mean variance optimazation is performed</p>
+<p>the selection is based on probabilities</p>
 </dd></dl>
 
 </section>
