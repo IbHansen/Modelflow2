@@ -255,14 +255,13 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
                     f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
             else:
                 result = Normalized_frml(lhs,ind_o,preprocessed,
-                    f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
+                    f'{lhs} = ({rhs} + {lhs}{add_suffix})                               ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
         else:
             if exo_adjust:
                 result = Normalized_frml(lhs,ind_o,preprocessed,
                     f'{lhs} = ({rhs})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D',fitted=out_fitted)
             else: 
                 result = Normalized_frml(lhs,ind_o,preprocessed,
-                
                     f'{lhs} = {rhs}',fitted=out_fitted)
         return result
         

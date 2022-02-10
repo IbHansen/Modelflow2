@@ -5925,12 +5925,88 @@ class WB_Mixin():
     def wb_behavioral(self):
         ''' returns endogeneous where the frml name contains a Z which signals a stocastic equation 
         '''
-        return  {vx for vx in self.endogene if 'Z' in self.allvar[vx]['frmlname']}
+        out1 =   {vx for vx in self.endogene if 'Z' in self.allvar[vx]['frmlname']}
+        alt  =   {vx for vx in self.endogene if 'Z' in self.allvar[vx]['frmlname'] 
+                  if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene }
+        # breakpoint()
+        assert out1 == alt, 'Problems wih wb behavioral '
+        return  out1
     
     @cached_property
     def wb_ident(self):
         '''returns endogeneous variables not in wb_behavioral '''
         return  self.endogene-self.wb_behavioral
+    
+    def wb_exog(self,df,pat='*',start='',end=''):
+        '''
+        Fixes variables to the current values. 
+        
+        for variables where the equation looks like 
+        
+        ´´´var = (rhs)*(1-var_d)+var_x*var_d```
+        
+        so:
+        ```     
+        var_x = var
+        var_d = 1
+        ```
+        
+        The variables fulfilling this are elements of .wb_behavioral 
+
+        Args:
+            df (TYPE): Input dataframe should contain a solution and all variables ..
+            pat (TYPE, optional): Select variables to endogenize. Defaults to '*'.
+            start (TYPE, optional):  start periode. Defaults to ''.
+            end (TYPE, optional): end periode. Defaults to ''.
+
+        Returns:
+            dataframe (TYPE): the resulting daaframe .
+
+        '''
+        '''Fix all  variables which can be exogenized to their value '''
+    
+        dataframe=df.copy() 
+        beh   = sorted(self.wb_behavioral )
+        selected  = [v for up in pat.split() for v in fnmatch.filter(beh, up.upper())]
+        exo   = [v+'_X' for v in selected ]
+        dummy = [v+'_D' for v in selected ]
+        
+        with self.set_smpl(start,end):
+            dataframe.loc[self.current_per,dummy] = 1.0 
+            selected_values = dataframe.loc[self.current_per,selected]
+            selected_values.columns = exo 
+            # breakpoint()
+            dataframe.loc[self.current_per,exo] = selected_values.loc[self.current_per,exo]
+    
+        return dataframe
+    
+    def wb_endog(self,df,pat='*',start='',end=''):
+        '''
+        Unfix (endogenize) variables 
+
+        Args:
+            df (Dataframe): Input dataframe, should contain a solution and all variables .
+            pat (string, optional): Select variables to endogenize. Defaults to '*'.
+            start (TYPE, optional): start periode. Defaults to ''.
+            end (TYPE, optional): end periode. Defaults to ''.
+
+        Returns:
+            dataframe (TYPE): A dratframe with all dummies for the selected variablse set to 0 .
+
+        '''
+        
+        
+        dataframe=df.copy() 
+    
+        beh   = sorted(self.wb_behavioral )
+        selected  = [v for up in pat.split() for v in fnmatch.filter(beh, up.upper())]
+
+        dummy = [v+'_D' for v in selected ]
+        
+        with self.set_smpl(start,end):
+            dataframe.loc[self.current_per,dummy] = 0.0      
+        return dataframe
+
          
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,

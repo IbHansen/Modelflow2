@@ -90,7 +90,7 @@ class GrapWbModel():
                         # print(f' {sec} {l[:30]} ....')
                     pbar.update(1)    
                     
-        self.all_frml = [nz.normal(l,add_adjust=(typ=='stoc'),make_fitted=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
+        self.all_frml = [nz.normal(l,add_adjust=(typ=='stoc'),make_fitted=(typ=='stoc'),exo_adjust=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
         lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
         self.rorg = [fname + f.normalized for f,fname in zip(self.all_frml,lfname) ]
