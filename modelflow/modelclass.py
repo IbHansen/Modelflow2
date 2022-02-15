@@ -96,15 +96,16 @@ class BaseModel():
 
     def __init__(self, i_eq='', modelname='testmodel', silent=False, straight=False, funks=[],
                  tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= True,
-                 var_description={}, **kwargs):
+                 var_description={},  **kwargs):
         ''' initialize a model'''
         if i_eq != '':
             self.funks = funks
-
             self.equations = i_eq if '$' in i_eq else mp.tofrml(i_eq, sep='\n')
             self.name = modelname
             # if True the dependency graph will not be called and calculation wil be in input sequence
             self.straight = straight
+            self.safeorder= safeorder 
+
             self.save = True    # saves the dataframe in self.basedf, self.lastdf
             self.analyzemodelnew(silent)  # on board the model equations
             self.maxstart = 0
@@ -113,7 +114,6 @@ class BaseModel():
             self.tabcomplete = tabcomplete
             # set basedf to the previous run instead of the first run
             self.previousbase = previousbase
-            self.safeorder= safeorder 
             if not self.istopo or self.straight:
                 self.use_preorder = use_preorder    # if prolog is used in sim2d
             else:
@@ -192,7 +192,19 @@ class BaseModel():
 
         '''
         gc.disable()
-        mega = pt.model_parse(self.equations, self.funks)
+        mega_all = pt.model_parse(self.equations, self.funks)
+        # mega = mega_all
+        # breakpoint()
+        
+        self.split_calc_adjust = any( [pt.kw_frml_name(f.frmlname, 'CALC_ADJUST') for f,nt in mega_all])
+        if self.split_calc_adjust:
+            mega = [(f,nt) for f,nt in mega_all if not pt.kw_frml_name(f.frmlname, 'CALC_ADJUST')]
+            mega_calc_adjust = [(f,nt) for f,nt in mega_all if pt.kw_frml_name(f.frmlname, 'CALC_ADJUST')]
+            calc_adjust_frml = [f'FRML <CALC> {f.expression}' for f,nt in mega_calc_adjust]
+            self.calc_adjust_model = model(' '.join(calc_adjust_frml),funks=self.funks)
+        else:
+            mega = mega_all 
+                                                                   
         termswithvar = {t for (f, nt) in mega for t in nt if t.var}
 #        varnames = list({t.var for t in termswithvar})
         termswithlag = sorted([(t.var, '0' if t.lag == '' else t.lag)
@@ -258,6 +270,7 @@ class BaseModel():
         self.v_nr = sorted([(v, self.allvar[v]['frmlnumber'])
                            for v in self.endogene], key=lambda x: x[1])
         self.nrorder = [v[0] for v in self.v_nr]
+        
         if self.straight:  # no sequencing
             self.istopo = False
             self.solveorder = self.nrorder
@@ -418,6 +431,7 @@ class BaseModel():
             rhss = ((var, term[self.allvar[var]['assigpos']:])
                     for var, term in terms)
             if self.safeorder: 
+                print('safeorder')
                 rhsvar = ((var, {v.var for v in rhs if v.var and v.var in self.endogene and v.var !=
                            var                }) for var, rhs in rhss)
             else:
@@ -425,9 +439,9 @@ class BaseModel():
                           var and not v.lag}) for var, rhs in rhss)
 
             edges = ((v, e) for e, rhs in rhsvar for v in rhs)
-#            print(edges)
             self._endograph = nx.DiGraph(edges)
             self._endograph.add_nodes_from(self.endogene)
+            # print(self._endograph)
         return self._endograph
 
     @property
@@ -6236,7 +6250,9 @@ if __name__ == '__main__':
 frml <> a = c + b $ 
 frml <> d1 = x + 3 * a(-1)+ c **2 +a  $ 
 frml <> d3 = x + 3 * a(-1)+c **3 $  
-Frml <> x = 0.5 * c +a$'''
+Frml <> xx = 0.5 * c +a$
+frml <CALC_ADJUST> a_a = a-(c+b)$
+frml <CALC_ADJUST> b_a = a-(c+b)$'''
     des = {'A': 'Bruttonationalprodukt i faste  priser',
            'X': 'Eksport <æøåÆØÅ>;',
            'C': 'Forbrug'}
@@ -6249,28 +6265,3 @@ Frml <> x = 0.5 * c +a$'''
     
     xx = mmodel(df)
     yy = mmodel(df2)
-    m2model = model.from_eq('x = 42')
-    # mmodel.drawendo()
-    # mmodel.drawendo_lag_lead(browser=1)
-    # mmodel.drawmodel(svg=1,all=True,browser=1,pdf=0,des=False,attshow=1)
-    # mmodel.draw('A',up=1, growthshow=1, down=0,svg=1,browser=1,attshow=1,fokus2={'A'},all=1,filter=0,invisible=set())
-    # mmodel.x
-    # mmodel.dekomp('X',time_att=0)
-    # print(mmodel.get_eq_des('A'))
-    # _ = mmodel.modeldash('A',growthshow = 1,all=1)
-    # x = mmodel.get_var_growth('A')
-    # y = mmodel.get_var_growth('A',showname= 1,diff=1)
-    # frmldict = {k: v['frml'] for (k,v) in mmodel.allvar.items() if k in mmodel.endogene}
-    # frmldict2 = {k: v['frml'] for (k,v) in mmodel.allvar.items() if k in m2model.endogene}
-    # newfrmldict = {**frmldict2,**frmldict}
-    # newfrml = '\n'.join([f for f in newfrmldict.values()])
-    newmodel, newdf  =  mmodel.equpdate('''\
-    <exo, jled> x = 42
-    ibhansen=33
-    ppp = a
-    ''')
-    newmodel2 = mmodel.eqdelete('D*')
-    newmodel3 = mmodel.eqflip('''\
-                                D1 C
-                                A B'''  )
-    
