@@ -275,7 +275,7 @@ class BaseModel():
                     if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene and  vx+'_A' in self.exogene)
         self.exo_addjust   = [v[:-2]+'_A' for v in self.exo_dummy]
         self.exo_value     = [v[:-2]+'_X' for v in self.exo_dummy]
-        self.exo_endo      = [v[:-2]      for v in self.exo_dummy]
+        self.exo_endo       = [v[:-2]      for v in self.exo_dummy]
                 
 
 
