@@ -195,13 +195,18 @@ class BaseModel():
         mega_all = pt.model_parse(self.equations, self.funks)
         # mega = mega_all
         # breakpoint()
-        
+        # now separate a model for calculating adjustment factors after the model is 
+        # run
+        # the adjustment model has a frmlname of CALC_ADJUST 
         self.split_calc_adjust = any( [pt.kw_frml_name(f.frmlname, 'CALC_ADJUST') for f,nt in mega_all])
         if self.split_calc_adjust:
+            # breakpoint()
             mega = [(f,nt) for f,nt in mega_all if not pt.kw_frml_name(f.frmlname, 'CALC_ADJUST')]
             mega_calc_adjust = [(f,nt) for f,nt in mega_all if pt.kw_frml_name(f.frmlname, 'CALC_ADJUST')]
             calc_adjust_frml = [f'FRML <CALC> {f.expression}' for f,nt in mega_calc_adjust]
             self.calc_adjust_model = model(' '.join(calc_adjust_frml),funks=self.funks)
+            if not self.calc_adjust_model.istopo:
+                raise Exception('The adjust factor calculation model should be recursive')
         else:
             mega = mega_all 
                                                                    
@@ -261,6 +266,18 @@ class BaseModel():
                                   for v in self.endogene))
         self.endogene_true = self.endogene if self.normalized else {
             v for v in self.exogene if v+'___RES' in self.endogene}
+
+        
+        # dummy variables  for variables for which to calculate adjustment variables 
+        
+        
+        self.exo_dummy =  sorted(vx+'_D' for vx in self.endogene 
+                    if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene and  vx+'_A' in self.exogene)
+        self.exo_addjust   = [v[:-2]+'_A' for v in self.exo_dummy]
+        self.exo_value     = [v[:-2]+'_X' for v in self.exo_dummy]
+        self.exo_endo      = [v[:-2]      for v in self.exo_dummy]
+                
+
 
 
 #        # the order as in the equations
@@ -431,7 +448,7 @@ class BaseModel():
             rhss = ((var, term[self.allvar[var]['assigpos']:])
                     for var, term in terms)
             if self.safeorder: 
-                print('safeorder')
+                # print('safeorder')
                 rhsvar = ((var, {v.var for v in rhs if v.var and v.var in self.endogene and v.var !=
                            var                }) for var, rhs in rhss)
             else:
@@ -4141,7 +4158,7 @@ class Json_Mixin():
         lastdf = pd.read_json(input['lastdf'])
         current_per = pd.read_json(input['current_per'], typ='series').values
         modelname = input['modelname']
-        mmodel = cls(frml, modelname=modelname, funks=funks)
+        mmodel = cls(frml, modelname=modelname, funks=funks,**kwargs)
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description', {}))
@@ -4334,10 +4351,36 @@ class Solver_Mixin():
                 solverguess = 'newton_un_normalized'
 
         solver = newkwargs.get('solver', solverguess)
+        silent = newkwargs.get('silent', False)
         self.model_solver = getattr(self, solver)
+        
         # print(f'solver:{solver},solverkwargs:{newkwargs}')
         # breakpoint()
         outdf = self.model_solver(*args, **newkwargs)
+        
+        
+        # now calculate adjustment factors if the calc adjust model is there 
+        if self.split_calc_adjust: 
+            # but only calculate if dummies are set
+            if (select:= outdf.loc[self.current_per,self.exo_dummy] != 0.0).any().any():
+                # breakpoint()
+                if not silent:
+                    selected_names = list(select.T[select.any()].index)
+                    print('running calc_adjust_model ')
+                    print(f'Dummies set {selected_names}')
+                self.calc_adjust_model.current_per=self.current_per   
+                out_adjust = self.calc_adjust_model(outdf,silent=silent) # calculate the adjustment factors 
+                
+                calcadjustdf = out_adjust.loc[self.current_per,self.exo_addjust] # new adjust values 
+                adjustdf     = outdf.loc        [self.current_per,self.exo_addjust].copy()  # old adjust values
+                newadjustdf  = adjustdf.mask(select.values,calcadjustdf)   # update the old adjust values with the new ones, only when dummy is != 0
+                outdf.loc[self.current_per,self.exo_addjust] = newadjustdf # plug all adjust values into the result         
+                
+        # if exogenizing factors we can calculate an adjust factor model 
+        
+        
+        
+        
         if  newkwargs.get('cache_clear', True): 
             self.dekomp.cache_clear()
             
@@ -5870,7 +5913,7 @@ class Solver_Mixin():
 
     pass
 
-    def show_iterations(self, pat='*', per='', last=0, change=False):
+    def show_iterations(self, pat='*', per='', last=0, change=False,top=.9):
         '''
         shows the last iterations for the most recent simulation. 
         iterations are dumped if ldumpvar is set to True
@@ -5900,17 +5943,18 @@ class Solver_Mixin():
             out0 = indf.query('per == @per_').set_index('iteration',
                                                         drop=True).drop('per', axis=1).copy()
             out = out0.diff() if change else out0
-            var = self.list_names(model.dumpdf.columns, pat)
-            number = len(var)
+            varnames = self.list_names(out.columns, pat)
+            number = len(varnames)
+            # breakpoint()
             if last:
-                axes = out.iloc[last:-1, :].loc[:, var].plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
+                axes = out.iloc[last:-1, :].loc[:, varnames].plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
                                                              use_index=True, title=f'Iterations in {per_} ', sharey=0)
             else:
-                axes = out.iloc[:, :].loc[:, var].plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
+                axes = out[varnames].plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
                                                        use_index=True, title=f'Iterations in {per_} ', sharey=0)
             fig = axes.flatten()[0].get_figure()
             fig.tight_layout()
-            fig.subplots_adjust(top=0.91)
+            fig.subplots_adjust(top=top)
             return fig
         except:
             print('No iteration dump')
@@ -5940,7 +5984,7 @@ class WB_Mixin():
         ''' returns endogeneous where the frml name contains a Z which signals a stocastic equation 
         '''
         out1 =   {vx for vx in self.endogene if 'Z' in self.allvar[vx]['frmlname']}
-        alt  =   {vx for vx in self.endogene if 'Z' in self.allvar[vx]['frmlname'] 
+        alt  =   {vx for vx in self.endogene if 'EXO' in self.allvar[vx]['frmlname'] 
                   if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene }
         # breakpoint()
         assert out1 == alt, 'Problems wih wb behavioral '
@@ -6020,8 +6064,59 @@ class WB_Mixin():
         with self.set_smpl(start,end):
             dataframe.loc[self.current_per,dummy] = 0.0      
         return dataframe
+    
+    @property
+    def exo_dummy_active(self):
+        ''' returns names of actiove exogenizing dummies 
+        
+        sets the property self. exodummy_per which defines the time over which the dummies are defined'''
+        dmat = self.lastdf.loc[self.current_per,self.exo_dummy].T
+        dmatset = dmat.loc[(dmat != 0.0).any(axis=1), (dmat != 0.0).any(axis=0)]
+        
+        dummyselected = list(dmatset.index)
+        if len(dmatset.columns):
+            start  = dmatset.columns[0]
+            end = dmatset.columns[-1]
+            # breakpoint()
+            per1,per2 = self.lastdf.index.slice_locs(start, end, kind='loc')
+            self.exo_dummy_per = self.lastdf.index[per1:per2]
+            # print(self.exodummy_per)
+            return dummyselected 
+        else: 
+            return []
+        
+    @property
+    def exo_addjust_active(self):
+        '''Returns the adjustment factors corrosponding to the active exogenizing dummies'''
+    
+        return [v[:-2]+'_A' for v in self.exo_dummy_active]
+    
+    @property
+    def exo_value_active(self):
+        '''Returns the exogenizing values corrosponding to the active exogenizing dummies'''
 
-         
+        return [v[:-2]+'_X' for v in self.exo_dummy_active]
+    
+    @property
+    def exo_endo_active(self):
+        '''Returns the endogeneous variables corrosponding to the active exogenizing dummies'''
+
+        return [v[:-2] for v in self.exo_dummy_active]
+    
+    def exo_inf(self):
+        ''' Display information regarding exogenizing 
+         '''
+        if not len(self.exo_dummy_active) :
+            raise Exception('No active exogenixed variables ')
+        varnameslist = zip(self.exo_endo_active,self.exo_value_active,self.exo_dummy_active,self.exo_addjust_active)   
+        for varnames in varnameslist: 
+            
+            out = self.lastdf.loc[self.exo_dummy_per,varnames]
+            res = out.applymap(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  ).T
+            display(res)         
+        
+
+        
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,WB_Mixin):
