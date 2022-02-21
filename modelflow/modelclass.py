@@ -4319,7 +4319,9 @@ class Solver_Mixin():
         if kwargs.get('antal', False):
             assert 1 == 2, 'Antal is not a valid simulation option, Use max_iterations'
         self.dumpdf = None
-
+        
+        do_calc_addjust = kwargs.get('do_calc_addjust',True)
+        
         if kwargs.get('reset_options', False):
             self.oldkwargs = {}
 
@@ -4360,22 +4362,10 @@ class Solver_Mixin():
         
         
         # now calculate adjustment factors if the calc adjust model is there 
-        if self.split_calc_adjust: 
+        if self.split_calc_adjust and do_calc_addjust: 
+            outdf = self.calc_addjust(outdf,silent) 
+            
             # but only calculate if dummies are set
-            if (select:= outdf.loc[self.current_per,self.exo_dummy] != 0.0).any().any():
-                # breakpoint()
-                if not silent:
-                    selected_names = list(select.T[select.any()].index)
-                    print('running calc_adjust_model ')
-                    print(f'Dummies set {selected_names}')
-                self.calc_adjust_model.current_per=self.current_per   
-                out_adjust = self.calc_adjust_model(outdf,silent=silent) # calculate the adjustment factors 
-                
-                calcadjustdf = out_adjust.loc[self.current_per,self.exo_addjust] # new adjust values 
-                adjustdf     = outdf.loc        [self.current_per,self.exo_addjust].copy()  # old adjust values
-                newadjustdf  = adjustdf.mask(select.values,calcadjustdf)   # update the old adjust values with the new ones, only when dummy is != 0
-                outdf.loc[self.current_per,self.exo_addjust] = newadjustdf # plug all adjust values into the result         
-                
         # if exogenizing factors we can calculate an adjust factor model 
         
         
@@ -4399,6 +4389,26 @@ class Solver_Mixin():
                 self.lastdf = outdf.copy(deep=True)
 
         return outdf
+    
+    def calc_addjust(self,outdf,silent=True):
+    
+            if (select:= outdf.loc[self.current_per,self.exo_dummy] != 0.0).any().any():
+                # breakpoint()
+                if not silent:
+                    selected_names = list(select.T[select.any()].index)
+                    print('running calc_adjust_model ')
+                    print(f'Dummies set {selected_names}')
+                self.calc_adjust_model.current_per=self.current_per   
+                out_adjust = self.calc_adjust_model(outdf,silent=silent) # calculate the adjustment factors 
+                
+                calcadjustdf = out_adjust.loc[self.current_per,self.exo_addjust] # new adjust values 
+                adjustdf     = outdf.loc        [self.current_per,self.exo_addjust].copy()  # old adjust values
+                newadjustdf  = adjustdf.mask(select.values,calcadjustdf)   # update the old adjust values with the new ones, only when dummy is != 0
+                outdf.loc[self.current_per,self.exo_addjust] = newadjustdf # plug all adjust values into the result         
+                
+            return outdf 
+
+
 
     @property
     def showstartnr(self):
