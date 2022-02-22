@@ -341,10 +341,10 @@ class BaseModel():
             # if first invocation just use the max slize
             if not hasattr(self, 'current_per'):
                 istart, islut = df_.index.slice_locs(
-                    df_.index[0-self.maxlag], df_.index[-1-self.maxlead], kind='loc')
+                    df_.index[0-self.maxlag], df_.index[-1-self.maxlead])
                 self.current_per = df_.index[istart:islut]
         else:
-            istart, islut = df_.index.slice_locs(start, slut, kind='loc')
+            istart, islut = df_.index.slice_locs(start, slut)
             per = df_.index[istart:islut]
             self.current_per = per
         self.old_current_per = copy.deepcopy(self.current_per)
@@ -391,7 +391,7 @@ class BaseModel():
 
         old_current_per = self.current_per.copy()
         old_start, old_slut = self.basedf.index.slice_locs(
-            old_current_per[0], old_current_per[-1], kind='loc')
+            old_current_per[0], old_current_per[-1])
         new_start = max(0, old_start+start_ofset)
         new_slut = min(len(self.basedf.index), old_slut+slut_ofset)
         self.current_per = self.basedf.index[new_start:new_slut]
@@ -1293,7 +1293,7 @@ class Model_help_Mixin():
                 continue
             # print(f'line:{l}:')
             var, op, *value, arg1, arg2 = l.split()
-            istart, islut = df.index.slice_locs(arg1, arg2, kind='loc')
+            istart, islut = df.index.slice_locs(arg1, arg2)
             arg = df.index[istart], df.index[islut]
            # print(var,op,value,arg,sep='|')
             update_var(df, var.upper(), op, value, *
@@ -6088,7 +6088,7 @@ class WB_Mixin():
             start  = dmatset.columns[0]
             end = dmatset.columns[-1]
             # breakpoint()
-            per1,per2 = self.lastdf.index.slice_locs(start, end, kind='loc')
+            per1,per2 = self.lastdf.index.slice_locs(start, end)
             self.exo_dummy_per = self.lastdf.index[per1:per2]
             # print(self.exodummy_per)
             return dummyselected 

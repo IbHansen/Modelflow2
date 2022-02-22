@@ -211,7 +211,7 @@ class GrapWbModel():
                 df.loc[int(pers[0]):int(pers[1]),var]=1.
         self.showduringvars = df[during_vars] 
         # breakpoint()
-        df_out = self.mmodel.insertModelVar(df).pipe(self.country_df_trans)
+        df_out = self.mmodel.insertModelVar(df).pipe(self.country_df_trans).fillna(0.0)
         return df_out
     
     def __call__(self):

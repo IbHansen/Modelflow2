@@ -245,7 +245,7 @@ class  container():
         if start =='' and slut == '':
             pass
         else:
-            istart,islut= self.lastdf.index.slice_locs(start,slut,kind='loc')
+            istart,islut= self.lastdf.index.slice_locs(start,slut)
             per=self.lastdf.index[istart:islut]
             self.current_per =  per 
         return self.current_per
