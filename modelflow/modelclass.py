@@ -195,18 +195,18 @@ class BaseModel():
         mega_all = pt.model_parse(self.equations, self.funks)
         # mega = mega_all
         # breakpoint()
-        # now separate a model for calculating adjustment factors after the model is 
+        # now separate a model for calculating add_factor  after the model is 
         # run
-        # the adjustment model has a frmlname of CALC_ADJUST 
-        self.split_calc_adjust = any( [pt.kw_frml_name(f.frmlname, 'CALC_ADJUST') for f,nt in mega_all])
-        if self.split_calc_adjust:
+        # the add factor  model has a frmlname of CALC_ADD_FACTOR  
+        self.split_calc_add_factor = any( [pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR') for f,nt in mega_all])
+        if self.split_calc_add_factor:
             # breakpoint()
-            mega = [(f,nt) for f,nt in mega_all if not pt.kw_frml_name(f.frmlname, 'CALC_ADJUST')]
-            mega_calc_adjust = [(f,nt) for f,nt in mega_all if pt.kw_frml_name(f.frmlname, 'CALC_ADJUST')]
-            calc_adjust_frml = [f'FRML <CALC> {f.expression}' for f,nt in mega_calc_adjust]
-            self.calc_adjust_model = model(' '.join(calc_adjust_frml),funks=self.funks)
-            if not self.calc_adjust_model.istopo:
-                raise Exception('The adjust factor calculation model should be recursive')
+            mega = [(f,nt) for f,nt in mega_all if not pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
+            mega_calc_add_factor = [(f,nt) for f,nt in mega_all if pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
+            calc_add_factor_frml = [f'FRML <CALC> {f.expression}' for f,nt in mega_calc_add_factor]
+            self.calc_add_factor_model = model(' '.join(calc_add_factor_frml),funks=self.funks)
+            if not self.calc_add_factor_model.istopo:
+                raise Exception('The add factor calculation model should be recursive')
         else:
             mega = mega_all 
                                                                    
@@ -273,7 +273,7 @@ class BaseModel():
         
         self.exo_dummy =  sorted(vx+'_D' for vx in self.endogene 
                     if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene and  vx+'_A' in self.exogene)
-        self.exo_addjust   = [v[:-2]+'_A' for v in self.exo_dummy]
+        self.exo_add_factor   = [v[:-2]+'_A' for v in self.exo_dummy]
         self.exo_value     = [v[:-2]+'_X' for v in self.exo_dummy]
         self.exo_endo       = [v[:-2]      for v in self.exo_dummy]
                 
@@ -1359,7 +1359,7 @@ class Model_help_Mixin():
             maxerr (int, optional): how many errors to check Defaults to 100.
             tol (float, optional): check for absolute value of difference. Defaults to 0.0001.
             showall (bolean, optional): show more . Defaults to False.
-            ref_df (DataFrame, optional): this dataframe is used for reference, used if adjustment terms has been calculated 
+            ref_df (DataFrame, optional): this dataframe is used for reference, used if add_factors has been calculated 
 
         Returns:
             None.
@@ -1783,7 +1783,7 @@ class Modify_Mixin():
         newnormalisation = [l.split() for l in lines]
         vars_before_normalization = {beforeendo.upper() for  beforeendo,afterendo in newnormalisation  }
         frml_normalize_strip = {(beforeendo.upper(),afterendo.upper()) : self.allvar[beforeendo]['frml'].replace('$','').split(' ',2)   for beforeendo,afterendo in newnormalisation }
-        frml_normalize_gross = {(beforeendo,afterendo) : (fname ,normal(expression,the_endo = afterendo,endo_lhs=False,add_adjust=False))  for (beforeendo,afterendo),(frml,fname,expression)  in frml_normalize_strip.items() }
+        frml_normalize_gross = {(beforeendo,afterendo) : (fname ,normal(expression,the_endo = afterendo,endo_lhs=False,add_factor=False))  for (beforeendo,afterendo),(frml,fname,expression)  in frml_normalize_strip.items() }
         frmldict_normalized = {afterendo : f'FRML {fname} {nexpression.normalized}$'
                                for (beforeendo,afterendo),(fname,nexpression)  in frml_normalize_gross.items() }
 #        breakpoint() 
@@ -4320,7 +4320,7 @@ class Solver_Mixin():
             assert 1 == 2, 'Antal is not a valid simulation option, Use max_iterations'
         self.dumpdf = None
         
-        do_calc_addjust = kwargs.get('do_calc_addjust',True)
+        do_calc_add_factor = kwargs.get('do_calc_add_factor',True)
         
         if kwargs.get('reset_options', False):
             self.oldkwargs = {}
@@ -4362,8 +4362,8 @@ class Solver_Mixin():
         
         
         # now calculate adjustment factors if the calc adjust model is there 
-        if self.split_calc_adjust and do_calc_addjust: 
-            outdf = self.calc_addjust(outdf,silent) 
+        if self.split_calc_add_factor and do_calc_add_factor: 
+            outdf = self.calc_add_factor(outdf,silent) 
             
             # but only calculate if dummies are set
         # if exogenizing factors we can calculate an adjust factor model 
@@ -4390,7 +4390,7 @@ class Solver_Mixin():
 
         return outdf
     
-    def calc_addjust(self,outdf,silent=True):
+    def calc_add_factor(self,outdf,silent=True):
     
             if (select:= outdf.loc[self.current_per,self.exo_dummy] != 0.0).any().any():
                 # breakpoint()
@@ -4398,13 +4398,13 @@ class Solver_Mixin():
                     selected_names = list(select.T[select.any()].index)
                     print('running calc_adjust_model ')
                     print(f'Dummies set {selected_names}')
-                self.calc_adjust_model.current_per=self.current_per   
-                out_adjust = self.calc_adjust_model(outdf,silent=silent) # calculate the adjustment factors 
+                self.calc_add_factor_model.current_per=self.current_per   
+                out_add_factor = self.calc_add_factor_model(outdf,silent=silent) # calculate the adjustment factors 
                 
-                calcadjustdf = out_adjust.loc[self.current_per,self.exo_addjust] # new adjust values 
-                adjustdf     = outdf.loc        [self.current_per,self.exo_addjust].copy()  # old adjust values
-                newadjustdf  = adjustdf.mask(select.values,calcadjustdf)   # update the old adjust values with the new ones, only when dummy is != 0
-                outdf.loc[self.current_per,self.exo_addjust] = newadjustdf # plug all adjust values into the result         
+                calc_add_factordf = out_add_factor.loc[self.current_per,self.exo_add_factor] # new adjust values 
+                add_factordf     = outdf.loc        [self.current_per,self.exo_add_factor].copy()  # old adjust values
+                new_add_factordf  = add_factordf.mask(select.values,calc_add_factordf)   # update the old adjust values with the new ones, only when dummy is != 0
+                outdf.loc[self.current_per,self.selected_names] = new_add_factordf # plug all adjust values into the result         
                 
             return outdf 
 
@@ -6096,7 +6096,7 @@ class WB_Mixin():
             return []
         
     @property
-    def exo_addjust_active(self):
+    def exo_add_factor_active(self):
         '''Returns the adjustment factors corrosponding to the active exogenizing dummies'''
     
         return [v[:-2]+'_A' for v in self.exo_dummy_active]
@@ -6118,7 +6118,7 @@ class WB_Mixin():
          '''
         if not len(self.exo_dummy_active) :
             raise Exception('No active exogenixed variables ')
-        varnameslist = zip(self.exo_endo_active,self.exo_value_active,self.exo_dummy_active,self.exo_addjust_active)   
+        varnameslist = zip(self.exo_endo_active,self.exo_value_active,self.exo_dummy_active,self.exo_add_factor_active)   
         for varnames in varnameslist: 
             
             out = self.lastdf.loc[self.exo_dummy_per,varnames]
