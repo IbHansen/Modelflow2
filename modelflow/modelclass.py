@@ -197,14 +197,24 @@ class BaseModel():
         # breakpoint()
         # now separate a model for calculating add_factor  after the model is 
         # run
+<<<<<<< Updated upstream
         # the add factor  model has a frmlname of CALC_ADD_FACTOR  
+=======
+        # the adjustment model has a frmlname of CALC_ADJUST 
+>>>>>>> Stashed changes
         self.split_calc_add_factor = any( [pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR') for f,nt in mega_all])
         if self.split_calc_add_factor:
             # breakpoint()
             mega = [(f,nt) for f,nt in mega_all if not pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
+<<<<<<< Updated upstream
             mega_calc_add_factor = [(f,nt) for f,nt in mega_all if pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
             calc_add_factor_frml = [f'FRML <CALC> {f.expression}' for f,nt in mega_calc_add_factor]
             self.calc_add_factor_model = model(' '.join(calc_add_factor_frml),funks=self.funks)
+=======
+            mega_calc_adjust = [(f,nt) for f,nt in mega_all if pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
+            calc_add_factor_frml = [f'FRML <CALC> {f.expression}' for f,nt in mega_calc_adjust]
+            self.calc_add_factor_model = model(' '.join(calc_adjust_frml),funks=self.funks)
+>>>>>>> Stashed changes
             if not self.calc_add_factor_model.istopo:
                 raise Exception('The add factor calculation model should be recursive')
         else:
@@ -4363,7 +4373,11 @@ class Solver_Mixin():
         
         # now calculate adjustment factors if the calc adjust model is there 
         if self.split_calc_add_factor and do_calc_add_factor: 
+<<<<<<< Updated upstream
             outdf = self.calc_add_factor(outdf,silent) 
+=======
+            outdf = self.calc_add_factor_model(outdf,silent) 
+>>>>>>> Stashed changes
             
             # but only calculate if dummies are set
         # if exogenizing factors we can calculate an adjust factor model 

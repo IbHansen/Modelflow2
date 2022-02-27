@@ -211,7 +211,7 @@ class compvis() :
          self.basedf   = self.model.basedf.loc[self.model.current_per,self.names]
          self.lastmelt = melt(self.lastdf,source='Scenario') 
          self.basemelt = melt(self.basedf ,source='Base') 
-         self.melted   = self.lastmelt.append(self.basemelt)
+         self.melted   = pd.concat([self.lastmelt,self.basemelt])
          return
      
      def box(self,*args, **kwargs): 
@@ -359,6 +359,7 @@ def vis_alt(grund,mul,title='Show variables',top=0.9):
     for i,(var,ax) in enumerate(zip(avar,ax2)):
         grunddata = grund.loc[:,var]
         muldata = mul.loc[:,var]
+        # breakpoint() 
         grunddata.plot(ax=ax,legend=False,fontsize=14)
         muldata.plot (ax=ax,legend=False,fontsize=14)
         ax.set_title(var,fontsize=14)
@@ -374,11 +375,35 @@ def vis_alt(grund,mul,title='Show variables',top=0.9):
     return fig
     
 
-def plotshow(df,name='',ppos=-1,kind='line',colrow=6,sharey=True,top=0.90,
+def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=True,top=0.90,
              splitchar='__',savefig='',*args,**kwargs):
+    '''
+    
+
+    Args:
+        df (TYPE): Dataframe .
+        name (TYPE, optional): title. Defaults to ''.
+        ppos (TYPE, optional): # of position to use if split. Defaults to -1.
+        kind (TYPE, optional): matplotlib kind . Defaults to 'line'.
+        colrow (TYPE, optional): columns per row . Defaults to 6.
+        sharey (TYPE, optional): Share y axis between plots. Defaults to True.
+        top (TYPE, optional): relative position of the title. Defaults to 0.90.
+        splitchar (TYPE, optional): if the name should be split . Defaults to '__'.
+        savefig (TYPE, optional): save figure. Defaults to ''.
+        xsize  (TYPE, optional): x size default to 10 
+        ysize  (TYPE, optional): y size per row, defaults to 2
+
+    Returns:
+        a matplotlib fig.
+
+    '''
+    
     ''' Plots a subplot for each column in a datafra.
     ppos determins which split by __ to use 
-    kind determins which kind of matplotlib chart to use ''' 
+    kind determins which kind of matplotlib chart to use 
+     
+    
+    ''' 
     if splitchar:
         out=df.pipe(lambda df_: df_.rename(columns={v: v.split(splitchar)[ppos] for v in df_.columns}))
     else:

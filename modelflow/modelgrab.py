@@ -103,7 +103,7 @@ class GrapWbModel():
             self.rfitmodel = []
                 
         self.rres = [f'{f.calc_adjustment}' for f in self.all_frml if len(f.calc_adjustment)]
-        self.rres_tomodel ='\n'.join([f'FRML <CALC_ADJUST> {f.calc_adjustment}$' for f in self.all_frml if len(f.calc_adjustment)])
+        self.rres_tomodel ='\n'.join([f'FRML <CALC_ADD_FACTOR> {f.calc_adjustment}$' for f in self.all_frml if len(f.calc_adjustment)])
         # self.fmodel = mp.exounroll(mp.tofrml ('\n'.join(self.rorg+self.rfitmodel)))+self.rres_tomodel
         self.fmodel = mp.tofrml ('\n'.join(self.rorg+self.rfitmodel))+self.rres_tomodel
         # breakpoint()
