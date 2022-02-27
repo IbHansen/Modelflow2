@@ -90,7 +90,7 @@ class GrapWbModel():
                         # print(f' {sec} {l[:30]} ....')
                     pbar.update(1)    
                     
-        self.all_frml = [nz.normal(l,add_adjust=(typ=='stoc'),make_fitted=(typ=='stoc'),exo_adjust=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
+        self.all_frml = [nz.normal(l,add_add_factor=(typ=='stoc'),make_fitted=(typ=='stoc'),exo_adjust=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
         lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
         self.rorg = [fname + f.normalized for f,fname in zip(self.all_frml,lfname) ]
@@ -102,15 +102,15 @@ class GrapWbModel():
         else: 
             self.rfitmodel = []
                 
-        self.rres = [f'{f.calc_adjustment}' for f in self.all_frml if len(f.calc_adjustment)]
-        self.rres_tomodel ='\n'.join([f'FRML <CALC_ADD_FACTOR> {f.calc_adjustment}$' for f in self.all_frml if len(f.calc_adjustment)])
+        self.rres = [f'{f.calc_add_factor}' for f in self.all_frml if len(f.calc_add_factor)]
+        self.rres_tomodel ='\n'.join([f'FRML <CALC_ADD_FACTOR> {f.calc_add_factor}$' for f in self.all_frml if len(f.calc_add_factor)])
         # self.fmodel = mp.exounroll(mp.tofrml ('\n'.join(self.rorg+self.rfitmodel)))+self.rres_tomodel
         self.fmodel = mp.tofrml ('\n'.join(self.rorg+self.rfitmodel))+self.rres_tomodel
         # breakpoint()
         self.fres =   ('\n'.join(self.rres))
         self.mmodel = model(self.fmodel,modelname = self.modelname)
         self.mmodel.set_var_description(self.var_description)
-        self.mres = model(self.fres,modelname = f'Adjustment factors for {self.modelname}')
+        self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.modelname}')
         # breakpoint()
         self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
         

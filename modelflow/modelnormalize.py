@@ -27,7 +27,7 @@ class Normalized_frml:
     original         : str = ''   
     preprocessed     : str = '' 
     normalized       : str = '' 
-    calc_adjustment  : str = '' 
+    calc_add_factor  : str = '' 
     un_normalized    : str = '' 
     fitted           : str = '' 
     
@@ -165,7 +165,7 @@ def fixleads(eq,check=False):
        print(f"After  {res}")
    return res
 
-def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,exo_adjust=False,make_fitted=False):
+def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,exo_adjust=False,make_fitted=False):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
     
@@ -176,7 +176,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
     Args:
         ind_o (str): input expression, no $ and no frml name just lhs=rhs
         the_endo (str, optional): the endogeneous to isolate on the left hans side. if '' the first variable in the lhs. It shoud be on the left hand side. 
-        add_adjust (bool, optional): force introduction aof adjustment term, and an expression to calculate it
+        add_add_factor (bool, optional): force introduction aof adjustment term, and an expression to calculate it
         do_preprocess (bool, optional): DESCRIPTION. preprocess the expression
         endo_lhs (bool, optional): Accept to normalize for a rhs endogeneous variable 
         exo_adjust (bool, optional): also make this equation exogenizable  
@@ -205,9 +205,9 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
         
         endo_name = the_endo.upper() if the_endo else endovar(lhs)
         endo = sympify(endo_name,clash)
-        a_name = f'{endo_name}{add_suffix}' if add_adjust else ''
-        thiseq = f'({lhs}-__RHS__ {"+" if add_adjust else ""}{a_name})'  if endo_lhs else \
-                 f'({lhs}- {rhs}  {"+" if add_adjust else ""}{a_name})'
+        a_name = f'{endo_name}{add_suffix}' if add_add_factor else ''
+        thiseq = f'({lhs}-__RHS__ {"+" if add_add_factor else ""}{a_name})'  if endo_lhs else \
+                 f'({lhs}- {rhs}  {"+" if add_add_factor else ""}{a_name})'
         transeq = pastestring(thiseq,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
         kat=sympify(transeq,clash)  
         # breakpoint()
@@ -232,7 +232,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
             out_frml   = f'{endo} = {res_rhs}'.upper() 
             
         
-        if add_adjust:
+        if add_add_factor:
             a_sym = sympify(a_name,clash)
             a_frml     = solve(kat,a_sym,simplify=False,rational=False)
             res_rhs_a  = stripstring(str(a_frml[0]),post).replace('__RHS__',f' (({rhs.strip()})) ')
@@ -249,7 +249,7 @@ def normal(ind_o,the_endo='',add_adjust=True,do_preprocess = True,add_suffix = '
     else: # no need to normalize  this equation 
         out_frml = preprocessed 
         out_fitted = f'{lhs}_fitted = {rhs}'.upper()  if make_fitted else ''
-        if add_adjust:
+        if add_add_factor:
             if exo_adjust:
                 result = Normalized_frml(lhs,ind_o,preprocessed,
                     f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
@@ -303,21 +303,21 @@ def elem_trans(udtryk, df=None):
 if __name__ == '__main__':
 
     
-    normal('DELRFF=RFF-RFF(-1)',add_adjust=1,add_suffix= '_AERR').fprint
-    normal('a = n(-1)',add_adjust=0,make_fitted = 1).fprint
-    normal('a+b = c',add_adjust=1,make_fitted=1).fprint
-    normal('PCT_growth(a) = n(-1)',add_adjust=0).fprint
-    normal('a = movavg(pct(b),2)',add_adjust=0).fprint
+    normal('DELRFF=RFF-RFF(-1)',add_add_factor=1,add_suffix= '_AERR').fprint
+    normal('a = n(-1)',add_add_factor=0,make_fitted = 1).fprint
+    normal('a+b = c',add_add_factor=1,make_fitted=1).fprint
+    normal('PCT_growth(a) = n(-1)',add_add_factor=0).fprint
+    normal('a = movavg(pct(b),2)',add_add_factor=0).fprint
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
-    normal('a = pct_growth(b)',add_adjust=0).fprint
+    normal('a = pct_growth(b)',add_add_factor=0).fprint
     normal("DLOG(SAUNECONGOVTXN) = -0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
     normal("D(a,0,1) = b").fprint
     normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
     normal('a = D( LOG(QLHP(+1)))').fprint
     normal('a = b+c',the_endo='B',endo_lhs=False,exo_adjust=True).fprint
     # breakpoint()
-    normal('zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_adjust=1).fprint
+    normal('zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_add_factor=1).fprint
     fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')
 #%%
 
