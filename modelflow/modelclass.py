@@ -4395,16 +4395,15 @@ class Solver_Mixin():
             if (select:= outdf.loc[self.current_per,self.exo_dummy] != 0.0).any().any():
                 # breakpoint()
                 if not silent:
-                    selected_names = list(select.T[select.any()].index)
-                    print('running calc_adjust_model ')
-                    print(f'Dummies set {selected_names}')
+                    print('Running calc_adjust_model ')
+                    print(f'Dummies set {self.exo_dummy_active}')
                 self.calc_add_factor_model.current_per=self.current_per   
                 out_add_factor = self.calc_add_factor_model(outdf,silent=silent) # calculate the adjustment factors 
                 
                 calc_add_factordf = out_add_factor.loc[self.current_per,self.exo_add_factor] # new adjust values 
                 add_factordf     = outdf.loc        [self.current_per,self.exo_add_factor].copy()  # old adjust values
                 new_add_factordf  = add_factordf.mask(select.values,calc_add_factordf)   # update the old adjust values with the new ones, only when dummy is != 0
-                outdf.loc[self.current_per,self.selected_names] = new_add_factordf # plug all adjust values into the result         
+                outdf.loc[self.current_per,new_add_factordf.columns] = new_add_factordf # plug all adjust values into the result         
                 
             return outdf 
 
@@ -6097,7 +6096,7 @@ class WB_Mixin():
         
     @property
     def exo_add_factor_active(self):
-        '''Returns the adjustment factors corrosponding to the active exogenizing dummies'''
+        '''Returns the add factors corrosponding to the active exogenizing dummies'''
     
         return [v[:-2]+'_A' for v in self.exo_dummy_active]
     
@@ -6122,6 +6121,9 @@ class WB_Mixin():
         for varnames in varnameslist: 
             
             out = self.lastdf.loc[self.exo_dummy_per,varnames]
+            out.style.set_caption(self.var_description[varnames[0]])
+            print(f'\n{self.var_description[varnames[0]]}')
+            print(f'\n{self.allvar[varnames[0]]["frml"]}')
             res = out.applymap(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  ).T
             display(res)         
         
