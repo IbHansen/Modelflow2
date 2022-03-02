@@ -4509,7 +4509,7 @@ class Solver_Mixin():
         return newdata, databank
 
     def sim(self, databank, start='', slut='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=5,
-            max_iterations=100, conv='*', absconv=0.01, relconv=DEFAULT_relconv,
+            max_iterations=200, conv='*', absconv=0.01, relconv=DEFAULT_relconv,
             stringjit=True, transpile_reset=False,
             dumpvar='*', init=False, ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, timeon=False,
             fairopt={'fair_max_iterations ': 1}, progressbar=False,**kwargs):
