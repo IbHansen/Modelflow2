@@ -48,8 +48,16 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
                     print('Variable not in databank, created ',var)
                 databank[var]=0.0
 
-        current_per = databank.index[databank.index.get_loc(start):databank.index.get_loc(slut)]
-        orgdata=pd.Series(databank.loc[current_per,var]).copy(deep=True)
+        current_per = databank.index[databank.index.get_slice_bound(start,'left')
+                                     :databank.index.get_slice_bound(slut,'right')]
+        if operator.upper() == '+GROWTH':
+            if databank.index.get_loc(start) == 0:
+                raise Exception(f"+growth update can't start at first row, var:{var}")
+            orgdata=pd.Series(databank.pct_change().loc[current_per,var]).copy(deep=True)
+            ...
+        else:
+            orgdata=pd.Series(databank.loc[current_per,var]).copy(deep=True)
+            
         antalper=len(current_per)
         # breakpoint()
         if isinstance(inputval,float) or isinstance(inputval,int) :
@@ -58,6 +66,8 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
             inputliste=[float(i) for i in inputval.split()]
         elif isinstance(inputval,list):
             inputliste= [float(i) for i in inputval]
+            
+            
         elif isinstance(inputval, pd.Series):
 #            inputliste= inputval.base
             inputliste= list(inputval)   #Ib for at håndtere mulitindex serier
@@ -68,7 +78,7 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
         if len(inputdata) != antalper :
             print('** Error, There should be',antalper,'values. There is:',len(inputdata))
             print('** Update =',var,'Data=',inputdata,start,slut)
-            sys.exit()
+            raise Exception('wrong number of datapoints')
         else:     
             inputserie=pd.Series(inputdata,current_per)*scale            
 #            print(' Variabel------>',var)
@@ -82,20 +92,35 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
             elif operator == '%':
                 outputserie=orgdata*(1.0+inputserie/100.0)
             elif operator == '^': # data=data(-1)+inputdata 
+                if databank.index.get_loc(start) == 0:
+                    raise Exception(f"^ update can't start at first row, var:{var}")
                 ilocrow =databank.index.get_loc(start)-1
                 iloccol = databank.columns.get_loc(var)
                 temp=databank.iloc[ilocrow,iloccol]
-                opdater=[temp+sum(inputdata[:i+1]) for i in range(len(inputdata))]
+                addon =  list(itertools.accumulate([i for i in inputserie],op.add))
+                # print(f'{addon=}')
+                opdater=[temp+add for add in addon]
                 outputserie=pd.Series(opdater,current_per) 
             elif operator.upper() == '=GROWTH': # data=data(-1)+inputdata 
+                if databank.index.get_loc(start) == 0:
+                    raise Exception(f"=growth update can't start at first row, var:{var}")
                 ilocrow =databank.index.get_loc(start)-1
                 iloccol = databank.columns.get_loc(var)
                 temp=databank.iloc[ilocrow,iloccol]
-                factor = list(itertools.accumulate([(1+i/100) for i in inputdata],op.mul))
+                factor = list(itertools.accumulate([(1+i/100) for i in inputserie],op.mul))
+                opdater=[temp * it for it in factor]
+                outputserie=pd.Series(opdater,current_per) 
+            elif operator.upper() == '+GROWTH': # data=data(-1)+inputdata 
+                if databank.index.get_loc(start) == 0:
+                    raise Exception(f"+growth update can't start at first row, var:{var}")
+                ilocrow =databank.index.get_loc(start)-1
+                iloccol = databank.columns.get_loc(var)
+                temp=databank.iloc[ilocrow,iloccol]
+                factor = list(itertools.accumulate([(1+i/100+o) for i,o in zip(inputserie,orgdata)],op.mul))
                 opdater=[temp * it for it in factor]
                 outputserie=pd.Series(opdater,current_per) 
             else:
-                print('Illegal operator in update:',operator,'Variable:',var)
+                raise Exception(f'Illegal operator in update:{operator} Variable: {var}')
                 outputserie=pd.Series(np.NaN,current_per) 
             outputserie.name=var
             databank.loc[current_per,var]=outputserie

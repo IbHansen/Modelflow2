@@ -14,7 +14,7 @@ from pathlib import Path
 from io import StringIO
 import json
 from collections import defaultdict, namedtuple
-from itertools import groupby, chain, zip_longest
+from itertools import groupby, chain, zip_longest,accumulate
 import re
 import pandas as pd
 import sys
@@ -35,6 +35,8 @@ import matplotlib.pyplot as plt
 import zipfile
 from functools import partial,cached_property,lru_cache
 from tqdm.auto import tqdm
+import operator
+
 
 
 import seaborn as sns
@@ -1288,7 +1290,7 @@ class Model_help_Mixin():
     def update_from_list_new(indf, basis, lprint=False):
         df = indf.copy(deep=True)
         for l in basis.split('\n'):
-            if len(l.strip()) == 0:
+            if len(l.strip()) == 0 or l.strip().startswith('#'):
                 continue
             # print(f'line:{l}:')
             var, op, *value, arg1, arg2 = l.split()
@@ -1297,6 +1299,71 @@ class Model_help_Mixin():
            # print(var,op,value,arg,sep='|')
             update_var(df, var.upper(), op, value, *
                        arg, create=True, lprint=lprint)
+        return df
+    
+    @staticmethod
+    def update(indf, basis, lprint=False,scale = 1.0,create=True,keep_growth=False ):
+        '''
+        
+
+        Args:
+            indf (TYPE): input dataframe.
+            basis (TYPE): lines with variable updates look below.
+            lprint (TYPE, optional): if True each update is printed  Defaults to False.
+            scale (TYPE, optional): A multiplier used on all update input . Defaults to 1.0.
+            create (TYPE, optional): Creates a variables if not in the dataframe . Defaults to True.
+
+        Returns:
+            df (TYPE): the updated dataframe .
+            
+        An update line looks like this:     
+            
+        <var> <=|+|*|%|=growth|^> <value>... [/ [[start] end]]       
+
+        '''
+       
+        df = indf.copy(deep=True)
+        for whole_line in basis.split('\n'):
+            stripped = whole_line.strip()
+            
+            if len(stripped) == 0 or stripped.startswith('#'):
+                continue
+            stripped = stripped if r'/' in stripped else stripped+r'/'
+            l,loptions = stripped.upper().split(r'/')
+            options = loptions.split() 
+            time_options = [o for o in options if not o.startswith('--')]
+            other_options = [o for o in options if  o.startswith('--')]
+
+            if len(time_options)==2:
+                arg1,arg2 = time_options
+            elif len(time_options)==1:  
+                arg1 = arg2 = time_options[0]
+            elif len(time_options)==0:
+                arg1=df.index[0]
+                arg2=df.index[-1]
+                
+            # print(f'line:{l}:{time_options=}  :{arg1=} {arg2=}')
+            istart, islut = df.index.slice_locs(arg1, arg2)
+            current = df.index[istart:islut]
+            time1,time2 = current[0],current[-1] 
+            var, op, *value = l.split()
+            update_growth = False
+
+            if (keep_growth or '--KEEP_GROWTH' in other_options) and not '--NO_KEEP_GROWTH' in other_options:
+                resttime = df.index[islut:]
+                if len(resttime):
+                    update_growth = True
+                    growth_rate = (df.loc[:,var].pct_change())[resttime].to_list()
+                    multiplier = list(accumulate([(1+i) for i in growth_rate],operator.mul))
+           
+           # print(var,op,value,arg,sep='|')
+            update_var(df, var.upper(), op, value,time1,time2 , 
+                       create=create, lprint=lprint,scale = scale)
+            
+            if update_growth:
+                lastvalue = df.loc[time2,var]
+                df.loc[resttime,var]= [lastvalue * m for m in multiplier]
+                # breakpoint()
         return df
 
     def insertModelVar(self, dataframe, addmodel=[]):
@@ -2756,7 +2823,8 @@ class Graph_Draw_Mixin():
 
         fokus = kwargs.get('fokus', '')
         fokus200 = kwargs.get('fokus2', '')
-        fokus2 = set(fokus200) if type(fokus200) == str else fokus200
+        # breakpoint() 
+        fokus2 = set(self.vlist(fokus200)) if type(fokus200) == str else fokus200
         fokus2all = kwargs.get('fokus2all', False)
         #breakpoint()
        # print('set fokus2all',fokus2all)
@@ -4513,6 +4581,62 @@ class Solver_Mixin():
             stringjit=True, transpile_reset=False,
             dumpvar='*', init=False, ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, timeon=False,
             fairopt={'fair_max_iterations ': 1}, progressbar=False,**kwargs):
+        '''
+        
+        :param databank: DESCRIPTION
+        :type databank: TYPE
+        :param start: DESCRIPTION, defaults to ''
+        :type start: TYPE, optional
+        :param slut: DESCRIPTION, defaults to ''
+        :type slut: TYPE, optional
+        :param silent: DESCRIPTION, defaults to 1
+        :type silent: TYPE, optional
+        :param samedata: DESCRIPTION, defaults to 0
+        :type samedata: TYPE, optional
+        :param alfa: DESCRIPTION, defaults to 1.0
+        :type alfa: TYPE, optional
+        :param stats: DESCRIPTION, defaults to False
+        :type stats: TYPE, optional
+        :param first_test: DESCRIPTION, defaults to 5
+        :type first_test: TYPE, optional
+        :param max_iterations: DESCRIPTION, defaults to 200
+        :type max_iterations: TYPE, optional
+        :param conv: DESCRIPTION, defaults to '*'
+        :type conv: TYPE, optional
+        :param absconv: DESCRIPTION, defaults to 0.01
+        :type absconv: TYPE, optional
+        :param relconv: DESCRIPTION, defaults to DEFAULT_relconv
+        :type relconv: TYPE, optional
+        :param stringjit: DESCRIPTION, defaults to True
+        :type stringjit: TYPE, optional
+        :param transpile_reset: DESCRIPTION, defaults to False
+        :type transpile_reset: TYPE, optional
+        :param dumpvar: DESCRIPTION, defaults to '*'
+        :type dumpvar: TYPE, optional
+        :param init: DESCRIPTION, defaults to False
+        :type init: TYPE, optional
+        :param ldumpvar: DESCRIPTION, defaults to False
+        :type ldumpvar: TYPE, optional
+        :param dumpwith: DESCRIPTION, defaults to 15
+        :type dumpwith: TYPE, optional
+        :param dumpdecimal: DESCRIPTION, defaults to 5
+        :type dumpdecimal: TYPE, optional
+        :param chunk: DESCRIPTION, defaults to 30
+        :type chunk: TYPE, optional
+        :param ljit: DESCRIPTION, defaults to False
+        :type ljit: TYPE, optional
+        :param timeon: DESCRIPTION, defaults to False
+        :type timeon: TYPE, optional
+        :param fairopt: DESCRIPTION, defaults to {'fair_max_iterations ': 1}
+        :type fairopt: TYPE, optional
+        :param progressbar: DESCRIPTION, defaults to False
+        :type progressbar: TYPE, optional
+        :param **kwargs: DESCRIPTION
+        :type **kwargs: TYPE
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        '''
         '''Evaluates this model on a databank from start to slut (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
