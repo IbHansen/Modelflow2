@@ -1311,14 +1311,16 @@ class Model_help_Mixin():
             basis (TYPE): lines with variable updates look below.
             lprint (TYPE, optional): if True each update is printed  Defaults to False.
             scale (TYPE, optional): A multiplier used on all update input . Defaults to 1.0.
-            create (TYPE, optional): Creates a variables if not in the dataframe . Defaults to True.
+            create (TYPE, optional): Creates a variables if not 
+            
+            in the dataframe . Defaults to True.
 
         Returns:
             df (TYPE): the updated dataframe .
             
         An update line looks like this:     
             
-        <var> <=|+|*|%|=growth|^> <value>... [/ [[start] end]]       
+        <var> <=|+|*|%|=growth|+growth|^> <value>... [/ [[start] end] [--keep_growth_rate]]       
 
         '''
        

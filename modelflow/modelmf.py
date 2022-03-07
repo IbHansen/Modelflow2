@@ -61,7 +61,7 @@ if not hasattr(pd.DataFrame,'mf'):
         def makemodel(self,eq,**kwargs):
             self.modelopt = {**self.modelopt,**kwargs} 
             self.eq = eq
-            self.model = model(self.eq,**kwargs)
+            self.model = model.from_eq(self.eq,**kwargs)
             return self.copy()
         
         def __call__(self,eq='',**kwargs):

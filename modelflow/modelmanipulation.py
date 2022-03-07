@@ -679,7 +679,6 @@ def normalize(in_equations,sym=False,funks=[]):
     return equations1 
 
     
-    return udrullet
 def udrul_model(model,norm=True):
     
     return explode(model, norm)
