@@ -1050,10 +1050,11 @@ class Org_model_Mixin():
         Defaults to getting the two dataframes (basedf and lastdf) internal to the model instance 
 
         Exogeneous with a name ending in <endo>__RES are not taken in, as they are part of a un_normalized model'''
-        aexo = a.loc[:, self.exogene_true] if isinstance(
-            a, pd.DataFrame) else self.basedf.loc[:, self.exogene_true]
-        bexo = b.loc[:, self.exogene_true] if isinstance(
-            b, pd.DataFrame) else self.lastdf.loc[:, self.exogene_true]
+        selected = sorted(self.exogene_true)
+        aexo = a.loc[:, selected] if isinstance(
+            a, pd.DataFrame) else self.basedf.loc[:,selected]
+        bexo = b.loc[:, selected] if isinstance(
+            b, pd.DataFrame) else self.lastdf.loc[:, selected]
         diff = pd.eval('bexo-aexo')
         out2 = diff.loc[(diff != 0.0).any(axis=1), (diff != 0.0).any(axis=0)]
 
@@ -1585,7 +1586,7 @@ class Dekomp_Mixin():
 
     def dekomp_plot_per(self, varnavn, sort=False, pct=True, per='', threshold=0.0
                          ,rename=True
-                         ,time_att=False):
+                         ,time_att=False,ysize=7):
         '''
         Returns  a waterfall diagram with attribution for a variable in one time frame 
 
@@ -1628,7 +1629,7 @@ class Dekomp_Mixin():
 #        waterdf = self.cutout(plotdf,threshold
         waterdf = plotdf
         res = mv.waterplot(waterdf, autosum=1, allsort=sort, top=0.86,
-                           sort=sort, title=ntitle, bartype='bar', threshold=threshold)
+                           sort=sort, title=ntitle, bartype='bar', threshold=threshold,ysize=ysize)
         return res
 
     def get_att_pct(self, n, filter=False, lag=True, start='', end='',time_att=False):
@@ -1757,7 +1758,7 @@ class Dekomp_Mixin():
                                         per=per, top=top, title=title, use=use, threshold=threshold)
         return fig
 
-    def get_att_gui(self, var='FY', spat='*', desdic={}, use='level'):
+    def get_att_gui(self, var='FY', spat='*', desdic={}, use='level',ysize=7):
         '''Creates a jupyter ipywidget to display model level 
         attributions '''
         if not hasattr(self, 'totdekomp'):
@@ -1767,7 +1768,7 @@ class Dekomp_Mixin():
         if self.totdekomp.go:
             xvar = var if var in self.endogene else sorted(list(self.endogene))[0]
             xx = mj.get_att_gui(self.totdekomp, var=xvar,
-                                spat=spat, desdic=desdic, use=use)
+                                spat=spat, desdic=desdic, use=use,ysize=ysize)
             display(xx)
         else:
             del self.totdekomp

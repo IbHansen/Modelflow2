@@ -161,7 +161,7 @@ def cutout(input,threshold=0.0):
             new_sum = new.sum()
             small = pd.Series(org_sum - new_sum)
             small.index = ['Small']
-            output = new.append(small)
+            output = pd.concat([new,small])
         else:
             output=input
         return output

@@ -564,11 +564,11 @@ def water(serxinput,sort=False,ascending =True,autosum=False,allsort=False,thres
     return dfatt
 
 def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',threshold=0.0,
-              allsort=False,title=f'Attribution ',top=0.9, desdic = {},zero=True, **kwarg):
+              allsort=False,title=f'Attribution ',top=0.9, desdic = {},zero=True,  ysize=5,**kwarg):
     att = [(name,water(ser,sort=sort,autosum=autosum,allsort=allsort,threshold=threshold)) 
                        for name,ser in basis.transpose().iterrows()]
     # print(att[0][1])
-    fig, axis = plt.subplots(nrows=len(att),ncols=1,figsize=(10,5*len(att)),constrained_layout=False)
+    fig, axis = plt.subplots(nrows=len(att),ncols=1,figsize=(10,ysize*len(att)),constrained_layout=False)
     width = 0.5  # the width of the barsser
     laxis = axis if isinstance(axis,numpy.ndarray) else [axis]
     for i,((name,dfatt),ax) in enumerate(zip(att,laxis)):

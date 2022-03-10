@@ -696,20 +696,21 @@ def inputwidget(model,basedf,slidedef={},radiodef=[],checkdef=[],modelopt={},var
 
 
 
-def get_att_gui(totdif,var='FY',spat = '*',desdic={},use='level',kind='bar',perselect='per'):
+def get_att_gui(totdif,var='FY',spat = '*',desdic={},use='level',kind='bar',perselect='per',ysize=10):
     '''Creates a jupyter ipywidget to display model level 
     attributions ''' 
+    xvar=var
+    # print(f'{var=}  {xvar}')
     def show_all2(Variable,Periode,Save,Use):
          # global fig1,fig2
          fig1 = totdif.totexplain(pat=Variable,top=0.87,use=Use,axvline=Periode,kind=kind)
-         fig2 = totdif.totexplain(pat=Variable,vtype='per',per = Periode,top=0.85,use=Use) 
+         fig2 = totdif.totexplain(pat=Variable,vtype='per',per = Periode,top=0.85,use=Use,ysize=ysize) 
          if Save:
             fig1.savefig(f'Attribution-{Variable}-{use}.pdf')
             fig2.savefig(f'Attribution-{Variable}-{Periode}-{use}.pdf')
             print(f'Attribution-{Variable}-{use}.pdf and Attribution-{Variable}-{Periode}-{use}.pdf aare saved' )
-
     show = widgets.interactive(show_all2,
-              Variable = widgets.Dropdown(options = sorted(totdif.model.endogene),value=var),
+              Variable = widgets.Dropdown(options = sorted(totdif.model.endogene),value=xvar),
               Periode  = widgets.Dropdown(options = totdif.model.current_per) if perselect=='per'
                                           else [f'{t.year}-{t.month}-{t.day}' for t in totdif.model.current_per],
               Use = widgets.RadioButtons(options= ['level', 'growth'],description='Use'),

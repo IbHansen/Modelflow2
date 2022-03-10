@@ -211,13 +211,13 @@ class totdif():
            fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic,threshold=threshold )
            return fig
    
-    def explain_per(self,pat='',per='',top=0.9,title='',use='level',threshold=0.0):   
+    def explain_per(self,pat='',per='',top=0.9,title='',use='level',threshold=0.0,ysize=5):   
         if self.go:        
            tper = self.res[use].columns.get_level_values(1)[0] if per == '' else per
-           self.impact = mk.GetOneImpact(self.res[use],pat=pat,per=tper).T
+           self.impact = mk.GetOneImpact(self.res[use],pat=pat,per=tper).T.rename(index=self.desdic) 
            t2per = str(tper.date()) if type(tper) == pd._libs.tslibs.timestamps.Timestamp else tper
            ntitle = f'Attribution, {use}: {t2per}' if title == '' else title
-           fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic ,threshold=threshold)
+           fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic ,threshold=threshold,ysize=ysize)
            return fig
    
             
@@ -261,6 +261,7 @@ class totdif():
 
     def explain_all(self,pat='',stacked=True,kind='bar',top=0.9,title='',use='level',
                     threshold=0.0,resample='',axvline=None): 
+        import warnings 
         if self.go:
             years = mdates.YearLocator()   # every year
             months = mdates.MonthLocator()  # every month
@@ -280,15 +281,18 @@ class totdif():
                     tempdf=cutout(dfatt.T,threshold).T.resample(resample).mean()
 #                pdb.set_trace()
                 selfstack = (kind == 'line' or kind == 'area') and stacked 
-                if selfstack:
-                    df_neg, df_pos =tempdf.clip(upper=0), tempdf.clip(lower=0)    
-                    df_pos.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
-                    ax.set_prop_cycle(None)
-                    df_neg.plot(ax=ax,legend=False,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
-                    ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
-                else:
-                    tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
-                    
+                tempdf = tempdf.rename(columns=self.desdic)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=UserWarning)
+                    if selfstack:
+                        df_neg, df_pos =tempdf.clip(upper=0), tempdf.clip(lower=0)    
+                        df_pos.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                        ax.set_prop_cycle(None)
+                        df_neg.plot(ax=ax,legend=False,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                        ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
+                    else:
+                        tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                        
                 ax.set_ylabel(name,fontsize='x-large')
 #                ax.set_xticklabels(tempdf.index.tolist(), rotation = 45,fontsize='x-large')
 ##                ax.xaxis.set_minor_locator(plt.NullLocator())
@@ -308,10 +312,10 @@ class totdif():
         
 #
     def totexplain(self,pat='*',vtype='all',stacked=True,kind='bar',per='',top=0.9,title=''
-                   ,use='level',threshold=0.0,**kwargs):
+                   ,use='level',threshold=0.0,ysize=10,**kwargs):
         
         if vtype.upper() == 'PER' : 
-            fig = self.explain_per(pat=pat,per=per,top=top,use=use,title=title,threshold=threshold)
+            fig = self.explain_per(pat=pat,per=per,top=top,use=use,title=title,threshold=threshold,ysize=ysize)
             
         elif vtype.upper() == 'LAST' : 
             fig = self.explain_last(pat=pat,top=top,use=use,title=title,threshold=threshold)
