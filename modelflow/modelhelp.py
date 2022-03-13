@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Tue Mar  7 10:38:28 2017
 
@@ -150,7 +149,8 @@ def cutout(input,threshold=0.0):
             new_sum = new.sum(axis=0)
             small = org_sum - new_sum
             small.name = 'Small'
-            output = new.append(small)
+            # breakpoint()
+            output = pd.concat([new,pd.DataFrame(small).T],axis=0)
         else:
             output = input 
         return output

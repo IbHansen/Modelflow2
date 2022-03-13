@@ -64,6 +64,8 @@ from modelnewton import newton_diff
 import modeljupyter as mj
 from modelhelp import cutout, update_var
 from modelnormalize import normal
+from modeldekom import totdif
+
 
 # functions used in BL language
 from scipy.stats import norm
@@ -1758,11 +1760,15 @@ class Dekomp_Mixin():
                                         per=per, top=top, title=title, use=use, threshold=threshold)
         return fig
 
+    def totdif(self,summaryvar='*',desdic=None,experiments = None):
+       self.totdekomp = totdif(model=self, summaryvar=summaryvar, 
+                               desdic=desdic if desdic != None else self.var_description,experiments=experiments)  
+       return self.totdekomp
+
     def get_att_gui(self, var='FY', spat='*', desdic={}, use='level',ysize=7):
         '''Creates a jupyter ipywidget to display model level 
         attributions '''
         if not hasattr(self, 'totdekomp'):
-            from modeldekom import totdif
             self.totdekomp = totdif(model=self, summaryvar=spat, desdic=self.var_description)
             print('TOTDEKOMP made')
         if self.totdekomp.go:
