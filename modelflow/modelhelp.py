@@ -27,7 +27,7 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
         \n \+ : val = val + inputval 
         \n \- : val = val - inputval 
         \n \* : val = val * inputval 
-        \n \^  : val = val(t-1)+inputval +
+        \n \=growth  : val = val(t-1)+inputval +
         \n \% : val = val(1+inputval/100)
         \n 
         \n scale scales the input variables default =1.0 
@@ -90,9 +90,9 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
                 outputserie=orgdata*inputserie
             elif operator == '%':
                 outputserie=orgdata*(1.0+inputserie/100.0)
-            elif operator == '^': # data=data(-1)+inputdata 
+            elif operator == '=DIFF': # data=data(-1)+inputdata 
                 if databank.index.get_loc(start) == 0:
-                    raise Exception(f"^ update can't start at first row, var:{var}")
+                    raise Exception(f"=diff update can't start at first row, var:{var}")
                 ilocrow =databank.index.get_loc(start)-1
                 iloccol = databank.columns.get_loc(var)
                 temp=databank.iloc[ilocrow,iloccol]

@@ -1323,7 +1323,7 @@ class Model_help_Mixin():
             
         An update line looks like this:     
             
-        <var> <=|+|*|%|=growth|+growth|^> <value>... [/ [[start] end] [--keep_growth_rate]]       
+        <var> <=|+|*|%|=growth|+growth|=diff> <value>... [/ [[start] end] [--keep_growth_rate]]       
 
         '''
        
@@ -1929,7 +1929,7 @@ class Modify_Mixin():
         ... 
 
         
-    def equpdate(self,updateeq=None,newfunks=[],add_adjust=False,calc_add=True,do_preprocess=True,newname=''):
+    def equpdate(self,updateeq=None,newfunks=[],add_add_factor=False,calc_add=True,do_preprocess=True,newname=''):
         '''
         
 
@@ -1965,14 +1965,14 @@ class Modify_Mixin():
         frml2_strip = [mp.split_frml(f+'$') for f in frml2 if len(f)>2]
         # breakpoint()
         frml2_normal = [[frml,fname, 
-                         normal(expression[:-1],do_preprocess=do_preprocess,add_adjust=add_adjust,
+                         normal(expression[:-1],do_preprocess=do_preprocess,add_add_factor=add_add_factor,
                                 exo_adjust=pt.kw_frml_name(fname.upper(),'EXO'))]
                            for allfrml,frml,fname,expression in frml2_strip] 
         frmldict_update = {nexpression.endo_var: f'{frml} {fname} {nexpression.normalized}$' for 
                            frml,fname,nexpression in frml2_normal} 
         
         
-        if add_adjust:
+        if add_add_factor:
             frmldict_calc_add = {nexpression.endovar: f'{frml} {fname} {nexpression.calc_adjustment}$' for 
                     frml,fname,nexpression in frml2_normal if nexpression.endovar in self.endogene|self.exogene|dfvars } 
         else: 
@@ -6257,6 +6257,10 @@ class WB_Mixin():
             out.style.set_caption(self.var_description[varnames[0]])
             print(f'\n{self.var_description[varnames[0]]}')
             print(f'\n{self.allvar[varnames[0]]["frml"]}')
+            try:
+                print(f'\n{self.calc_add_factor_model.allvar[varnames[3]]["frml"]}')
+            except:
+                ...
             res = out.applymap(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  ).T
             display(res)         
         
