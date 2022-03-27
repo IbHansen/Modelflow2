@@ -1305,30 +1305,31 @@ class Model_help_Mixin():
         return df
     
     @staticmethod
-    def update(indf, basis, lprint=False,scale = 1.0,create=True,keep_growth=False ):
+    def update(indf, updates, lprint=False,scale = 1.0,create=True,keep_growth=False,start='',end='' ):
         '''
+        Updates a dataframe and returns a dataframe
         
-
-        Args:
-            indf (TYPE): input dataframe.
-            basis (TYPE): lines with variable updates look below.
-            lprint (TYPE, optional): if True each update is printed  Defaults to False.
-            scale (TYPE, optional): A multiplier used on all update input . Defaults to 1.0.
-            create (TYPE, optional): Creates a variables if not 
-            
-            in the dataframe . Defaults to True.
+    Args:
+            indf (DataFrame): input dataframe.
+            basis (string): lines with variable updates look below.
+            lprint (bool, optional): if True each update is printed  Defaults to False.
+            scale (float, optional): A multiplier used on all update input . Defaults to 1.0.
+            create (bool, optional): Creates a variables if not in the dataframe . Defaults to True.
+            keep_growth(bool, optional): Keep the growth rate after the update time frame. Defaults to False.
+            start (string, optional): Global start
+            end (string, optional): Global end
 
         Returns:
             df (TYPE): the updated dataframe .
             
-        An update line looks like this:     
+        A line in updates looks like this:     
             
-        <var> <=|+|*|%|=growth|+growth|=diff> <value>... [/ [[start] end] [--keep_growth_rate]]       
+        <var> <=|+|*|%|=growth|+growth|=diff> <value>... [/ [[start] end] [--keep_growth_rate|--no_keep_growth_rate]]       
 
         '''
        
         df = indf.copy(deep=True)
-        for whole_line in basis.split('\n'):
+        for whole_line in updates.split('\n'):
             stripped0 = whole_line.strip()
             stripped = stripped0.split('#')[0]
             if len(stripped) == 0 or stripped.startswith('#'):
@@ -1339,14 +1340,25 @@ class Model_help_Mixin():
             time_options = [o for o in options if not o.startswith('--')]
             other_options = [o for o in options if  o.startswith('--')]
 
+            # breakpoint()    
             if len(time_options)==2:
                 arg1,arg2 = time_options
             elif len(time_options)==1:  
                 arg1 = arg2 = time_options[0]
+            elif start != '' and end != '':
+                arg1=start
+                arg2=end 
+            elif  (start != '' and end == ''):
+                arg1 = arg2 = start
+            elif  (start == '' and end != ''):
+                raise Exception('When end is set start should also be set ') 
             elif len(time_options)==0:
                 arg1=df.index[0]
                 arg2=df.index[-1]
+            else: 
+                raise Exception('Problems with timesetting') 
                 
+            # print(f'{start=},{end=}')    
             # print(f'line:{l}:{time_options=}  :{arg1=} {arg2=}')
             istart, islut = df.index.slice_locs(arg1, arg2)
             current = df.index[istart:islut]
