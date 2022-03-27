@@ -1329,8 +1329,8 @@ class Model_help_Mixin():
        
         df = indf.copy(deep=True)
         for whole_line in basis.split('\n'):
-            stripped = whole_line.strip()
-            
+            stripped0 = whole_line.strip()
+            stripped = stripped0.split('#')[0]
             if len(stripped) == 0 or stripped.startswith('#'):
                 continue
             stripped = stripped if r'/' in stripped else stripped+r'/'

@@ -4,13 +4,15 @@ asked to install for: select just me
 in the start menu: select anaconda prompt 
 
 # Install in the base enviorement 
-conda  install  -c ibh -c  conda-forge modelflow jupyter -y 
+conda  install  -c ibh -c  conda-forge modelflow  -y 
 pip install dash_interactive_graphviz
 jupyter contrib nbextension install --user
-jupyter nbextension enable hide_input_all/main && jupyter nbextension enable splitcell/splitcell && jupyter nbextension enable toc2/main
+jupyter nbextension enable hide_input_all/main
+jupyter nbextension enable splitcell/splitcell
+jupyter nbextension enable toc2/main
 
 # or if in separate enviroment, lets call it mf 
-conda create -n mf -c ibh -c  conda-forge modelflow jupyter -y 
+conda create -n mf -c ibh -c  conda-forge modelflow  -y 
 conda activate mf 
 pip install dash_interactive_graphviz
 jupyter contrib nbextension install --user
@@ -21,3 +23,14 @@ conda install xlwings
 
 To update
 conda update modelflow -c ibh -c conda-forge  -y
+
+#Pinned version
+# install pinned version in environment
+conda create -n mf_pinned_developement -c ibh -c  conda-forge modelflow_pinned_developement
+conda activate mf_pinned_developement
+pip install dash_interactive_graphviz
+jupyter contrib nbextension install --user
+jupyter nbextension enable hide_input_all/main
+jupyter nbextension enable splitcell/splitcell
+jupyter nbextension enable toc2/main
+
