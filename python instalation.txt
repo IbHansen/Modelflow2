@@ -1,4 +1,4 @@
-https://docs.conda.io/en/latest/miniconda.html to download the latest version 3.9 
+https://docs.conda.io/en/latest/miniconda.html to download the latest version 
 open the file to start instalation 
 asked to install for: select just me
 in the start menu: select anaconda prompt 
@@ -26,7 +26,7 @@ conda update modelflow -c ibh -c conda-forge  -y
 
 #Pinned version
 # install pinned version in environment
-conda create -n mf_pinned_developement -c ibh -c  conda-forge modelflow_pinned_developement
+conda create -n mf_pinned_developement -c ibh -c  conda-forge modelflow_pinned_developement -y
 conda activate mf_pinned_developement
 pip install dash_interactive_graphviz
 jupyter contrib nbextension install --user

@@ -1327,25 +1327,49 @@ class Model_help_Mixin():
         ´<`[[start] end]`>` <var> <=|+|*|%|=growth|+growth|=diff> <value>... [/ [[start] end] [--keep_growth_rate|--no_keep_growth_rate]]       
 
         '''
-       
+        
+         
         df = indf.copy(deep=True)
         for whole_line in updates.split('\n'):
             stripped0 = whole_line.strip()
             stripped = stripped0.split('#')[0]
             if len(stripped) == 0 or stripped.startswith('#'):
                 continue
-            stripped = stripped if r'/' in stripped else stripped+r'/'
+            
+            if r'/' in stripped:
+                ...
+            elif '--' in stripped:
+                stripped = stripped.replace('--','/ --',1) 
+            else:
+                stripped = stripped+r'/'
+
             l0,loptions = stripped.upper().split(r'/')
             options = loptions.split() 
             time_options = [o for o in options if not o.startswith('--')]
             other_options = [o for o in options if  o.startswith('--')]
-            
+            # print(f'{time_options=}')
             l=(timesplit := l0.rsplit('>'))[-1]
             if len(timesplit) == 2:
                 if len(time_options):
                     print(whole_line)
                     raise Exception(f'Do not specify time in both ends of update line\nOffending:"{whole_line}"')
                 time_options = timesplit[0].replace('<','').replace(',',' ').split()
+                
+            if '--SET_SMPL' in other_options:
+                if len(time_options)==1:
+                    start = time_options[0]
+                    end = ''
+                elif len(time_options)==2:
+                    start = time_options[0]
+                    end = time_options[1]
+                else: 
+
+                    raise Exception(f'To many times\nOffending:"{whole_line}"')
+                if len(l.strip())==0:   # if wo only want to set time 
+                    continue 
+                    
+                
+                
                 # breakpoint()
                 
 
@@ -1360,15 +1384,20 @@ class Model_help_Mixin():
             elif  (start != '' and end == ''):
                 arg1 = arg2 = start
             elif  (start == '' and end != ''):
-                raise Exception('When end is set start should also be set ') 
+                raise Exception(f'When end is set start should also be set \nOffending:"{whole_line}"') 
             elif len(time_options)==0:
                 arg1=df.index[0]
                 arg2=df.index[-1]
             else: 
-                raise Exception('Problems with timesetting') 
+                raise Exception(f'Problems with timesetting\nOffending:"{whole_line}"') 
                 
             # print(f'{start=},{end=}')    
             # print(f'line:{l}:{time_options=}  :{arg1=} {arg2=}')
+            if '--' in arg1 or '--' in arg2:
+                
+                raise Exception(f'Probably no blank after time \nOffending:"{whole_line}"')
+
+                
             istart, islut = df.index.slice_locs(arg1, arg2)
             current = df.index[istart:islut]
             time1,time2 = current[0],current[-1] 
@@ -1376,6 +1405,9 @@ class Model_help_Mixin():
             update_growth = False
 
             if (keep_growth or '--KEEP_GROWTH' in other_options) and not '--NO_KEEP_GROWTH' in other_options:
+                if var not in df.columns:
+                    raise Exception(f'Can not keep growth for created variable\nOffending:"{whole_line}"')
+
                 resttime = df.index[islut:]
                 if len(resttime):
                     update_growth = True
