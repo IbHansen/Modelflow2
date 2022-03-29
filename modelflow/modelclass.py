@@ -1324,7 +1324,7 @@ class Model_help_Mixin():
             
         A line in updates looks like this:     
             
-        <var> <=|+|*|%|=growth|+growth|=diff> <value>... [/ [[start] end] [--keep_growth_rate|--no_keep_growth_rate]]       
+        ´<`[[start] end]`>` <var> <=|+|*|%|=growth|+growth|=diff> <value>... [/ [[start] end] [--keep_growth_rate|--no_keep_growth_rate]]       
 
         '''
        
@@ -1335,10 +1335,19 @@ class Model_help_Mixin():
             if len(stripped) == 0 or stripped.startswith('#'):
                 continue
             stripped = stripped if r'/' in stripped else stripped+r'/'
-            l,loptions = stripped.upper().split(r'/')
+            l0,loptions = stripped.upper().split(r'/')
             options = loptions.split() 
             time_options = [o for o in options if not o.startswith('--')]
             other_options = [o for o in options if  o.startswith('--')]
+            
+            l=(timesplit := l0.rsplit('>'))[-1]
+            if len(timesplit) == 2:
+                if len(time_options):
+                    print(whole_line)
+                    raise Exception(f'Do not specify time in both ends of update line\nOffending:"{whole_line}"')
+                time_options = timesplit[0].replace('<','').replace(',',' ').split()
+                # breakpoint()
+                
 
             # breakpoint()    
             if len(time_options)==2:
