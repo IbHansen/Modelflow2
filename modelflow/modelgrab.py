@@ -27,6 +27,8 @@ import re
 from dataclasses import dataclass
 import functools
 from tqdm import tqdm 
+import json 
+from pathlib import Path
 
 
 from modelclass import model 
@@ -55,8 +57,10 @@ class GrapWbModel():
     country_df_trans : any = lambda x:x     # function which transforms initial dataframe 
     from_wf2  : bool = False
     make_fitted  : bool = False # if True, a clean equation for fittet variables is created
-    fit_start   : int =2000   # start of fittet model 
-    fit_end     : int = 2100  # end of fittet model 
+    fit_start   : int =2000   # start of fittet model unless overruled by mfmsa
+    fit_end     : int = 2100  # end of fittet model unless overruled by mfmsa
+    do_add_factor_calc     : bool = True  # calculate the add factors 
+    mfmsa       : str = '' # path to mfsa options 
     
     
     def __post_init__(self):
@@ -64,6 +68,9 @@ class GrapWbModel():
         
         print(f'\nProcessing the model:{self.modelname}',flush=True)
         self.rawmodel_org = open(self.frml).read()
+        eviewsline  = [l for l in self.rawmodel_org.upper().split('\n') if len(l.strip()) >=2 
+                                                               and not ('*******' in l or '----------' in l)] 
+
         self.rawmodel = self.country_trans(self.rawmodel_org)
         rawmodel6 = self.trans_eviews(self.rawmodel)
         # breakpoint()
@@ -88,8 +95,18 @@ class GrapWbModel():
                         line_type.append(sec)
                         line.append(l)
                         # print(f' {sec} {l[:30]} ....')
-                    pbar.update(1)    
+                    pbar.update(1)   
                     
+                    
+        errline1 = [(l,o,e) for l,o,e in zip(line,orgline,eviewsline) if '@' in l or '.coef' in l ]
+        if len(errline1):
+            print('Probably errors as @ in lines:')
+            for l,o,e in errline1:
+                print(f'\nEviews line      :{e}')
+                print(f'Original line     :{o}')
+                print(f'New modelflow line:{l}')
+            raise Exception('@ in lines ')
+            
         self.all_frml = [nz.normal(l,add_add_factor=(typ=='stoc'),make_fitted=(typ=='stoc'),exo_adjust=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
         lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
@@ -110,9 +127,14 @@ class GrapWbModel():
         self.fres =   ('\n'.join(self.rres))
         self.mmodel = model(self.fmodel,modelname = self.modelname)
         self.mmodel.set_var_description(self.var_description)
+        self.mmodel.wb_MFMSAOPTIONS = self.mfmsa_options
         self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.modelname}')
         # breakpoint()
-        self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
+        self.start,self.end = self.mfmsa_start_end
+        if self.do_add_factor_calc:
+            self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
+        else: 
+            self.base_input = self.dfmodel
         
     @staticmethod
     def trans_eviews(rawmodel):
@@ -121,8 +143,9 @@ class GrapWbModel():
         rawmodel1 = '\n'.join(l[1:-1] if l.startswith('"') else l for l in rawmodel0.split('\n'))
         # powers
         rawmodel2 = rawmodel1.replace('^','**').replace('""',' ').replace('"',' ').\
-            replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg').replace('@LOGIT(','LOGIT(') \
-            .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PC','PCT_GROWTH')    
+            replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg').replace('@LOGIT','logit_inverse') \
+            .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PCY','PCT_GROWTH').replace('@PC','PCT_GROWTH')\
+            .replace('@PMAX','MAX').replace('@TREND','EVIEWS_TREND')      
         # @ELEM and @DURING 
         # @ELEM and @DURING 
         rawmodel3 = nz.elem_trans(rawmodel2) 
@@ -153,8 +176,13 @@ class GrapWbModel():
         
         try:
             # breakpoint()
-            trans0 = pd.read_excel(self.des).loc[:,['mnem','Excel']].set_index('mnem').to_dict(orient = 'dict')['Excel']
-            var_description = {str(k) : str(v) for k,v in trans0.items() if 'nan' != str(v)}
+            des_file = Path(self.des)
+            if des_file.suffix == '.xlsx':
+                trans0 = pd.read_excel(self.des).loc[:,['mnem','Excel']].set_index('mnem').to_dict(orient = 'dict')['Excel']
+                var_description = {str(k) : str(v) for k,v in trans0.items() if 'nan' != str(v)}
+            else:
+                with open(des_file,'rt') as f: 
+                    var_description = json.load(f)
             add_d =   { newname : 'Add factor:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_A') in self.mmodel.exogene }
             dummy_d = { newname : 'Exo dummy:'+ var_description.get(v,v)  for v in self.mmodel.endogene if  (newname := v+'_D')  in self.mmodel.exogene }
             exo_d =   { newname : 'Exo value:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_X')  in self.mmodel.exogene }
@@ -165,6 +193,26 @@ class GrapWbModel():
             print('*** No variable description',flush=True)
             var_description = {}
         return var_description    
+    
+    @functools.cached_property
+    def mfmsa_options(self):
+        '''Grab the mfmsa options, a world bank speciality''' 
+        if self.mfmsa:
+            with open(self.mfmsa,'rt') as f:
+                options = f.read()
+        else:
+            options = ''
+        return options     
+    
+    @functools.cached_property
+    def mfmsa_start_end(self):
+        import xml
+        #%%
+        root = xml.etree.ElementTree.fromstring(self.mfmsa_options)
+        start = int(root.find('iFace').find('SolveStart').text)   
+        end = int(root.find('iFace').find('SolveEnd').text)  
+        return start,end 
+            
     
     @functools.cached_property
     def dfmodel(self):

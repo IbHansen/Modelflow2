@@ -38,8 +38,15 @@ def logit(number):
 
 def logit_inverse(number):
     ''' A function which returns the logit of a number 
+    
+    takes care of extreme values 
     '''
-    return 1/(1+exp(-number))
+    if number > 100:
+        return 1.0
+    elif number < -100:
+        return 0.0
+    else: 
+        return 1/(1+exp(-number))
 
 def normcdf(input,mu=0.0,sigma=1.0):
     return norm.cdf(input,mu,sigma)    

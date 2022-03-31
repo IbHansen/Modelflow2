@@ -1393,7 +1393,7 @@ class Model_help_Mixin():
                 
             # print(f'{start=},{end=}')    
             # print(f'line:{l}:{time_options=}  :{arg1=} {arg2=}')
-            if '--' in arg1 or '--' in arg2:
+            if '--' in str(arg1) or '--' in str(arg2):
                 
                 raise Exception(f'Probably no blank after time \nOffending:"{whole_line}"')
 
