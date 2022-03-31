@@ -13,6 +13,4 @@
 >Modelgrab GrapWbModel now raise an exception if there are @ in the modelflow model, and displays the offending equations 
 >modelgrabwf2 wf1_to_wf2 now generates a series eviews_trend for smpl @all 
 >Modelgrab GrapWbModel replace('@TREND','EVIEWS_TREND') 
->modelgrabwf2 wf1_to_wf2 now generates a series eviews_trend for smpl @all 
->modelgrabwf2 wf1_to_wf2 now accept a list of eviews statement in the parameter eviews_trans they are generates a series eviews_trend for smpl @all 
-
+>modelgrabwf2 wf1_to_wf2 now accept a list of eviews statement in the parameter eviews_run_lines,  they can be used to generate series or scalars which else wont work and are introduced to the modelflow model with model_trans 

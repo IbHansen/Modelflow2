@@ -68,9 +68,9 @@ class GrapWbModel():
         
         print(f'\nProcessing the model:{self.modelname}',flush=True)
         self.rawmodel_org = open(self.frml).read()
-        eviewsline  = [l for l in self.rawmodel_org.upper().split('\n') if len(l.strip()) >=2 
+        eviewsline  = [l for l in self.rawmodel_org.split('\n') if len(l.strip()) >=2 
                                                                and not ('*******' in l or '----------' in l)] 
-
+        # breakpoint()
         self.rawmodel = self.country_trans(self.rawmodel_org)
         rawmodel6 = self.trans_eviews(self.rawmodel)
         # breakpoint()
