@@ -149,13 +149,13 @@ class GrapWfModel():
     modelname          : any = ''
     eviews_run_lines   : list =field(default_factory=list)
     model_all_about    : dict = field(default_factory=dict)
-    start              : any = 2017
-    end                : any = 2040 
+    start              : any = None    # start of testing if not overruled by mfmsa
+    end                : any = None    # end of testing if not overruled by mfmsa 
     country_trans      : any = lambda x:x[:]    # function which transform model specification
     country_df_trans   : any = lambda x:x     # function which transforms initial dataframe 
     make_fitted        : bool = False # if True, a clean equation for fittet variables is created
-    fit_start          : any =2000   # start of fittet model unless overruled by mfmsa
-    fit_end            : any = 2100  # end of fittet model unless overruled by mfmsa
+    fit_start          : any = 2000   # start of fittet model 
+    fit_end            : any = None  # end of fittet model unless overruled by mfmsa
     do_add_factor_calc : bool = True  # calculate the add factors 
     
     
@@ -210,7 +210,11 @@ class GrapWfModel():
         self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options']
         self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')
         # breakpoint()
-        self.start,self.end = self.mfmsa_start_end
+        
+        
+        temp_start,temp_end  = self.mfmsa_start_end
+        self.start = temp_start if type(self.start) == type(None) else self.start
+        self.end   = temp_end   if type(self.end)   == type(None) else self.end 
         if self.do_add_factor_calc:
             self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
         else: 
@@ -320,6 +324,9 @@ class GrapWfModel():
         self.showduringvars = df[during_vars] 
         
         if self.make_fitted:
+            temp_start,temp_end = self.mfmsa_start_end
+            if type(self.fit_end) == type(None):
+                self.fit_end = temp_end     
             df = self.mfitmodel.res(df,self.fit_start,self.fit_end)
         
         # breakpoint()
@@ -401,7 +408,7 @@ if __name__ == '__main__':
     
 
     filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-    modelname = 'ago'
+    modelname = 'per'
     filename = filedict[modelname]
     
     
@@ -415,12 +422,14 @@ if __name__ == '__main__':
                         country_trans    =  country_trans,
                         country_df_trans =  country_df_trans,
                         make_fitted = True,
-                        do_add_factor_calc=True
+                        do_add_factor_calc=True,
+                        fit_start = 2000,          # Start of calculation of fittet model in baseline 
+                        fit_end   = None           # end of calc for fittted model, if None taken from mdmfsa options  
                         ) 
     
     assert 1==1
     print(modelname)
-    cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=1,showall=0)
+    cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
 
         
     grab_lookat = cmodel           
