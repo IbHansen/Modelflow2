@@ -289,8 +289,8 @@ class GrapWfModel():
     def mfmsa_start_end(self):
         import xml
         root = xml.etree.ElementTree.fromstring(self.mfmsa_options)
-        start = int(root.find('iFace').find('SolveStart').text)   
-        end = int(root.find('iFace').find('SolveEnd').text)  
+        start = (root.find('iFace').find('SolveStart').text)   
+        end = (root.find('iFace').find('SolveEnd').text)  
         return start,end 
             
     
