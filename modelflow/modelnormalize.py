@@ -30,7 +30,8 @@ class Normalized_frml:
     calc_add_factor  : str = '' 
     un_normalized    : str = '' 
     fitted           : str = '' 
-    
+    eviews           : str = ''   
+   
     def __str__(self):
         maxkey = max(len(k) for k in vars(self).keys())
         output = "\n".join([f'{k.capitalize():<{maxkey}} : {f}' for k,f in vars(self).items() if len(f)])

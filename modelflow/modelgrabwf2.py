@@ -1,30 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 10 21:11:08 2019
+Created on Wed Mar 30 10:06:26 2022
 
-@author: hanseni
+@author: ibhan
 
-    modules to grab models with different specifications and make them ModelFlow conforme 
+Module to handle models in wf1 files
 
-   **GrabWbModel** will take a eviews model  and transform it to Business logic
-  - Create a normalized model, add dampning for the stocastic equations 
-  - Add add-factors to the stocastic equations 
-  - Generate BL for a model which calculates add-factors so a solution will match teh existing values 
-  - Generate BL for the model   
 
-  -grap data from excel sheet 
-
-  - Make model instance for model and add-factor model 
-
-  - Run the model, check that the results match. 
-
-For debuggging valuesthe last part checs value in the order, in which they are calculated,
-and then displays the input to off mark equations  
 """
+
 
 import pandas as pd
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import functools
 from tqdm import tqdm 
 import json 
@@ -37,11 +25,123 @@ import modelmanipulation as mp
 
 import modelnormalize as nz
 
-assert 1==1
 
+
+
+def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
+    '''
+    - Opens a eviews workfile in wf1 format 
+    - calculates the eviews_trend 
+    - unlink a model and
+    - writes the workspace back to a wf2 file  
+
+    Args:
+        filename (TYPE): DESCRIPTION.
+        modelname (TYPE): default '' then the three first letters of the filenames stem are asumed to be the modelname.
+
+    Returns:
+        None.
+
+    '''
+    import pyeviews as evp
+    from pathlib import Path
+    wfpath = Path(filename)
+    if wfpath.suffix != '.wf1':
+        raise Exception(f'wf1_to_wf2 expects a .wf1 file as input\nOffending:{wfpath} {wfpath.suffix} ')
+    wf1= wfpath.absolute()
+    wf2= wf1.with_suffix('.wf2')
+    # breakpoint()
+    eviewsapp = evp.GetEViewsApp(instance='new',showwindow=True)
+    print(f'\nReading {wf1}')
+    if modelname == '':
+        modelname = wf1.stem[:3].upper() 
+        print(f'Assummed model name: {modelname}')
+       
+    evp.Run(fr'wfopen "{wf1}"',eviewsapp)
+    evp.Run( r'smpl @all',eviewsapp)
+    evp.Run( r'series eviews_trend = @TREND',eviewsapp)
+    for eviewsline in eviews_run_lines:
+        print(f'Eviewsline to run :{eviewsline}')
+        evp.Run(eviewsline,eviewsapp)
+    evp.Run(f'{modelname}.unlink @all',eviewsapp)
+    print(f'The model: {modelname} is unlinked ')
+    evp.Run(fr'wfsave(jf, nogzip) "{wf2}"',eviewsapp)
+    print(f'Writing {wf2}')
+
+    eviewsapp.hide()
+    eviewsapp = None
+    evp.Cleanup()
+    return wf2,modelname
+
+def wf2_to_clean(wf2name,modelname='',save_file = False):
+    model_all_about = {} 
+    
+    if modelname == '':
+        modelname = wf2name.stem[:3] 
+        print(f'Assummed model name: {modelname}')
+    else:     
+        print(f'Model name: {modelname}')
+    with open(wf2name) as f:
+        gen0  = f.read()
+    # gen0 = gen0.decode("ISO-8859-1") 
+    all_dict     = json.loads(gen0)
+    pages       = all_dict['_pages']
+    first_page  = pages[0]
+    object_all  = [o for o in first_page['_objects']]
+    types_set   = {o['_type'] for o in object_all}
+    object_dict = {_type : [o for o in object_all if o['_type'] == _type ] for _type in types_set}
+    object_namecounts = {_type: [o['_name'] for o in this_object] for _type,this_object in object_dict.items() }
+    assert 1==1
+    # Now extract the  model
+    thismodel_dict = object_dict['model'][0]
+    thismodel_raw = thismodel_dict['data'][0]
+    thismodel_raw_list = [l for l in thismodel_raw.split('\n') if len(l) > 1]
+    
+    this_clean = [l for l in thismodel_raw_list if l[:4] not in {'@INN','@ADD'}] # The original frmls
+    this_add_vars =  [l.split()[1] for l in thismodel_raw_list if l[:4]  in {'@ADD'}] # variable with add factors
+    this_frml = '\n'.join(this_clean)
+    # Take all series and make a dataframe 
+    index = [int(d[:4]) for d in object_dict['index'][0]['data']]
+    series_list = object_dict['series_double']
+    series_data = [pd.Series(s['data'],name=s['_name'],index=index) for s in series_list]
+    wf_df = pd.concat(series_data,axis=1)
+    
+    var_description = {s['_name']: lab2 for s in series_list 
+                  if (lab2  := s.get('_labels',{}).get('description','')) 
+                 }
+
+    
+    scalar_list = object_dict['scalar']
+    for scalar in scalar_list: 
+        wf_df.loc[:,scalar['_name']] = scalar['value']
+    scalar_data = [pd.Series(s['data'],name=s['_name'],index=index) for s in series_list]
+    string_list = object_dict['stringobj']
+    mfmsa_dict = {o['_name']:o.get('value','empty') for o in string_list if o.get('_name','').startswith('MFMSA') }
+    mfmsa_options = mfmsa_dict['MFMSAOPTIONS']
+    
+    # breakpoint()
+    model_all_about['modelname'] = modelname
+    model_all_about['frml'] = this_frml
+    model_all_about['mfmsa_options'] = mfmsa_options
+    model_all_about['var_description'] = var_description
+    model_all_about['data'] = wf_df
+    model_all_about['object_dict_from_wf'] = object_dict
+    
+
+    if save_file: 
+        with open(f'{wf2name.parent / modelname}_clean.frm','wt') as f:
+            f.writelines(this_clean)
+        with open(f'{wf2name.parent / modelname}_mfmsa_options','wt') as f:
+            f.write(mfmsa_options)
+        with open(f'{wf2name.parent / modelname}_var_descriptions.json','wt') as f:
+            json.dump(var_description,f,indent=4)
+        wf_df.to_excel(f'{wf2name.parent / modelname}soln.xlsx')
+        print(f'{wf2name.parent / modelname}.... files are saved')
+    
+    return model_all_about 
 
 @dataclass
-class GrapWbModel():
+class GrapWfModel():
     '''This class takes a world bank model specification, variable data and variable description
     and transform it to ModelFlow business language'''
     
@@ -50,12 +150,13 @@ class GrapWbModel():
     data      : str = ''          # path to data 
     des       : any = ''            # path to descriptions
     scalars   : str = ''           # path to scalars 
+    
+    model_all_about : dict = field(default_factory=dict)
     modelname : str = 'No Name'           # modelname
     start     : int = 2017
     end       : int = 2040 
     country_trans   : any = lambda x:x[:]    # function which transform model specification
     country_df_trans : any = lambda x:x     # function which transforms initial dataframe 
-    from_wf2  : bool = False
     make_fitted  : bool = False # if True, a clean equation for fittet variables is created
     fit_start   : int =2000   # start of fittet model unless overruled by mfmsa
     fit_end     : int = 2100  # end of fittet model unless overruled by mfmsa
@@ -67,39 +168,20 @@ class GrapWbModel():
         # breakpoint()
         
         print(f'\nProcessing the model:{self.modelname}',flush=True)
-        self.rawmodel_org = open(self.frml).read()
-        eviewsline  = [l for l in self.rawmodel_org.split('\n') if len(l.strip()) >=2 
-                                                               and not ('*******' in l or '----------' in l)] 
-        # breakpoint()
+        self.rawmodel_org = self.model_all_about['frml']
+        eviewsline  = self.rawmodel_org.split('\n') 
         self.rawmodel = self.country_trans(self.rawmodel_org)
         rawmodel6 = self.trans_eviews(self.rawmodel)
-        # breakpoint()
         bars = '{desc}: {percentage:3.0f}%|{bar}|{n_fmt}/{total_fmt}'
-        if self.from_wf2:
             
-            orgline = [l for l in rawmodel6.split('\n')]
-            line_type = ['ident' if l.startswith('@IDENTITY') else 'stoc' for l in orgline]
-            line = [l.replace('@IDENTITY ','').replace(' ','')  for l in orgline]
-        else:    
-            line_type = []
-            line =[] 
-            with tqdm(total=len(rawmodel6.split('\n')),desc='Reading original model',bar_format=bars) as pbar:
-                for l in rawmodel6.split('\n'):
-                    if ('*******' in l or '----------' in l)  and 'IDEN' in l.upper():
-                        sec='iden'
-                        #print(l)
-                    elif '*******' in l and 'STOC' in l:
-                        sec='stoc'
-                        #print(l)
-                    else: 
-                        line_type.append(sec)
-                        line.append(l)
-                        # print(f' {sec} {l[:30]} ....')
-                    pbar.update(1)   
-                    
+        orgline = rawmodel6.split('\n')
+        line_type = ['ident' if l.startswith('@IDENTITY') else 'stoc' for l in orgline]
+        line = [l.replace('@IDENTITY ','').replace(' ','')  for l in orgline]
+                        
+        # breakpoint()
                     
         errline1 = [(l,o,e) for l,o,e in zip(line,orgline,eviewsline) if '@' in l or '.coef' in l ]
-        if len(errline1):
+        if errline1:
             print('Probably errors as @ in lines:')
             for l,o,e in errline1:
                 print(f'\nEviews line      :{e}')
@@ -125,10 +207,11 @@ class GrapWbModel():
         self.fmodel = mp.tofrml ('\n'.join(self.rorg+self.rfitmodel))+self.rres_tomodel
         # breakpoint()
         self.fres =   ('\n'.join(self.rres))
-        self.mmodel = model(self.fmodel,modelname = self.modelname)
-        self.mmodel.set_var_description(self.var_description)
-        self.mmodel.wb_MFMSAOPTIONS = self.mfmsa_options
-        self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.modelname}')
+        
+        self.mmodel = model(self.fmodel,modelname =self.model_all_about['modelname'])
+        self.mmodel.set_var_description(self.model_all_about['var_description'])
+        self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options']
+        self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')
         # breakpoint()
         self.start,self.end = self.mfmsa_start_end
         if self.do_add_factor_calc:
@@ -197,11 +280,8 @@ class GrapWbModel():
     @functools.cached_property
     def mfmsa_options(self):
         '''Grab the mfmsa options, a world bank speciality''' 
-        if self.mfmsa:
-            with open(self.mfmsa,'rt') as f:
-                options = f.read()
-        else:
-            options = ''
+        options = self.model_all_about.get('mfmsa_options','')
+        
         return options     
     
     @functools.cached_property
@@ -213,28 +293,13 @@ class GrapWbModel():
         return start,end 
             
     
-    @functools.cached_property
+    # @functools.cached_property
+    @property
     def dfmodel(self):
         '''The original input data enriched with during variablees, variables containing 
         values for specific historic years and model specific transformation '''
         # Now the data 
-        if self.from_wf2:
-            df = pd.read_excel(self.data,index_col=0)
-        else:       
-            df = (pd.read_excel(self.data).
-                  pipe( lambda df : df.rename(columns={c:c.upper() for c in df.columns})).
-                  pipe( lambda df : df.rename(columns={'_DATE_':'DATEID'})).
-                  pipe( lambda df : df.set_index('DATEID'))
-                  )
-            df.index = [int(i.year) for i in df.index]
-        
-        try:
-            sca = pd.read_excel(self.scalars ,index_col=0,header=None).T.pipe(
-                lambda _df : _df.loc[_df.index.repeat(len(df.index)),:]).\
-                set_index(df.index)
-            df= pd.concat([df,sca],axis=1)    
-        except: 
-            print(f'{self.modelname} no Scalars prowided ')
+        df =  self.model_all_about['data']
         # breakpoint()
         if self.make_fitted:
             df = self.mfitmodel.res(df,self.fit_start,self.fit_end)
@@ -266,7 +331,7 @@ class GrapWbModel():
 
         return self.mmodel,self.base_input
     
-    def test_model(self,start=None,end=None,maxvar=1_000_000, maxerr=100,tol=0.0001,showall=False):
+    def test_model(self,start=None,end=None,maxvar=1_000_000, maxerr=100,tol=0.0001,showall=False,showinput=False):
         '''
         Compares a straight calculation with the input dataframe. 
         
@@ -280,6 +345,7 @@ class GrapWbModel():
             maxerr (TYPE, optional): how many errors to check Defaults to 100.
             tol (TYPE, optional): check for absolute value of difference. Defaults to 0.0001.
             showall (TYPE, optional): show more . Defaults to False.
+            showinput (TYPE, optional): show the input values Defaults to False.
 
         Returns:
             None.
@@ -293,6 +359,8 @@ class GrapWbModel():
         self.mmodel.basedf = self.dfmodel
         pd.options.display.float_format = '{:.10f}'.format
         err=0
+        pd.set_option('display.max_columns', None)
+        pd.set_option("display.width", 1000)
         print(f'\nChekking residuals for {self.mmodel.name} {_start} to {_end}')
         for i,v in enumerate(self.mmodel.solveorder):
             # if v.endswith('_FITTED'): continue
@@ -306,13 +374,75 @@ class GrapWbModel():
                 maxdiff = check.Difference.abs().max()
                 maxpct  = check.Pct.abs().max()
                 # breakpoint()
-                print('\nVariable with residuals above threshold')
-                print(f"{v}, Max difference:{maxdiff:15.8f} Max Pct {maxpct:15.10f}% It is number {i} in the solveorder and error number {err}")
+                if err==1 :
+                    print('\nVariable with residuals above threshold')
+                print(f"{v:{self.mmodel.maxnavlen}}, Max difference:{maxdiff:15.8f} Max Pct {maxpct:15.10f}% It is number {i:5} in the solveorder and error number {err}")
                 if showall:
-                    print(f'\n{self.mmodel.allvar[v]["frml"]}')
-                    print(f'\nResult of equation \n {check}')
-                    print(f'\nEquation values before calculations: \n {self.mmodel.get_eq_values(v,last=False,showvar=1)} \n')
+                    print(f'{self.mmodel.allvar[v]["frml"]}')
+                    print(f'\nResult of equation \n {check}\n')
+                    if showinput:
+                        print(f'\nEquation values before calculations: \n {self.mmodel.get_eq_values(v,last=False,showvar=1)} \n')
         self.mmodel.oldkwargs = {}
+        pd.reset_option('max_columns')
         
+
+if __name__ == '__main__':
+    #%% Testing 
+    pak_trans = lambda input : input.replace('- 01*D(','-1*D(')                
+     
+
+    ago_trans = lambda  input : input.replace('@MEAN(AGOBNCABFUNDCD/AGONYGDPMKTPCD,"2000 2020")','MEAN_AGOBNCABFUNDCD_DIV_AGONYGDPMKTPCD') 
+    ago_eviews_run_lines = ['smpl @ALL','series MEAN_AGOBNCABFUNDCD_DIV_AGONYGDPMKTPCD = @MEAN(AGOBNCABFUNDCD/AGONYGDPMKTPCD,"2000 2020")']
+    
+    mda_trans = lambda input: input.replace('_MDAsbbrev.@coef(2)','_MDASBBREV_at_COEF_2')         
+    mda_eviews_run_lines = ['Scalar _MDASBBREV_at_COEF_2 = _MDASBBREV.@COEF(+2)']
+    
+
+    filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
+    modelname = 'ago'
+    filename = filedict[modelname]
+    
+    
+    eviews_run_lines= globals().get(f'{modelname}_eviews_run_lines',[])
+    country_trans    =  globals().get(f'{modelname}_trans'   ,lambda x : x[:])
+    country_df_trans =  globals().get(f'{modelname}_df_trans',lambda x : x)
+    
+    wf2name,modelname  = wf1_to_wf2(filename ,modelname=modelname,eviews_run_lines= eviews_run_lines) 
+    model_all_about = wf2_to_clean(wf2name,modelname=modelname)
+    
+    cmodel = GrapWfModel(model_all_about = model_all_about,
+                                       country_trans    =  country_trans,
+                                       country_df_trans =  country_df_trans,
+                                       make_fitted = False,
+                                       do_add_factor_calc=True
+                                       ) 
+    
+    assert 1==1
+    print(modelname)
+    cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.1,showall=1)
         
+    grab_lookat = cmodel           
+    mlookat   = grab_lookat.mmodel    
+    lookat_des  = mlookat.var_description
+    lookat_equations  = mlookat.equations   
+    lookat_all_frml_dict = grab_lookat.all_frml_dict
+        #%%
+    if 0:
+        pass
+        this = lookat_all_frml_dict['PERNEGDIFPRVKN']
+        this.fprint
+        this = lookat_all_frml_dict['PERNVAGRCROPKN']
+        this.fprint
         
+    if 0: # to investigate mfmsa options 
+        ...
+        options = mlookat.wb_MFMSAOPTIONS
+        from xml.dom.minidom import parse, parseString
+        xx = parseString(options)
+        print(xx.toprettyxml())
+        
+        import xml
+        #%%
+        root = xml.etree.ElementTree.fromstring(options)
+        root.find('iFace').find('SolveStart').text   
+        root.find('iFace').find('SolveEnd').text   
