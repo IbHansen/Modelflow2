@@ -145,27 +145,24 @@ class GrapWfModel():
     '''This class takes a world bank model specification, variable data and variable description
     and transform it to ModelFlow business language'''
     
-    
-    frml      : str = ''            # path to model 
-    data      : str = ''          # path to data 
-    des       : any = ''            # path to descriptions
-    scalars   : str = ''           # path to scalars 
-    
-    model_all_about : dict = field(default_factory=dict)
-    modelname : str = 'No Name'           # modelname
-    start     : int = 2017
-    end       : int = 2040 
-    country_trans   : any = lambda x:x[:]    # function which transform model specification
-    country_df_trans : any = lambda x:x     # function which transforms initial dataframe 
-    make_fitted  : bool = False # if True, a clean equation for fittet variables is created
-    fit_start   : int =2000   # start of fittet model unless overruled by mfmsa
-    fit_end     : int = 2100  # end of fittet model unless overruled by mfmsa
-    do_add_factor_calc     : bool = True  # calculate the add factors 
-    mfmsa       : str = '' # path to mfsa options 
+    filename           : any = ''  #wf1 name 
+    modelname          : any = ''
+    eviews_run_lines   : list =field(default_factory=list)
+    model_all_about    : dict = field(default_factory=dict)
+    start              : any = 2017
+    end                : any = 2040 
+    country_trans      : any = lambda x:x[:]    # function which transform model specification
+    country_df_trans   : any = lambda x:x     # function which transforms initial dataframe 
+    make_fitted        : bool = False # if True, a clean equation for fittet variables is created
+    fit_start          : any =2000   # start of fittet model unless overruled by mfmsa
+    fit_end            : any = 2100  # end of fittet model unless overruled by mfmsa
+    do_add_factor_calc : bool = True  # calculate the add factors 
     
     
     def __post_init__(self):
         # breakpoint()
+        wf2name,self.modelname  = wf1_to_wf2(filename ,modelname=self.modelname,eviews_run_lines= self.eviews_run_lines) 
+        self.model_all_about = wf2_to_clean(wf2name,modelname=self.modelname)
         
         print(f'\nProcessing the model:{self.modelname}',flush=True)
         self.rawmodel_org = self.model_all_about['frml']
@@ -301,8 +298,6 @@ class GrapWfModel():
         # Now the data 
         df =  self.model_all_about['data']
         # breakpoint()
-        if self.make_fitted:
-            df = self.mfitmodel.res(df,self.fit_start,self.fit_end)
 
             
         #% Now set the vars with fixedvalues 
@@ -323,8 +318,14 @@ class GrapWfModel():
             else:
                 df.loc[int(pers[0]):int(pers[1]),varname]=1.
         self.showduringvars = df[during_vars] 
+        
+        if self.make_fitted:
+            df = self.mfitmodel.res(df,self.fit_start,self.fit_end)
+        
         # breakpoint()
         df_out = self.mmodel.insertModelVar(df).pipe(self.country_df_trans).fillna(0.0)
+        
+        
         return df_out
     
     def __call__(self):
@@ -355,7 +356,7 @@ class GrapWfModel():
         _end    = end if end else self.end
         # breakpoint()
     
-        resresult = self.mmodel(self.base_input,_start,_end,reset_options=True,silent=0,solver='base_res')
+        resresult = self.mmodel(self.base_input,_start,_end,reset_options=True,silent=0,solver='res')
         self.mmodel.basedf = self.dfmodel
         pd.options.display.float_format = '{:.10f}'.format
         err=0
@@ -384,6 +385,7 @@ class GrapWfModel():
                         print(f'\nEquation values before calculations: \n {self.mmodel.get_eq_values(v,last=False,showvar=1)} \n')
         self.mmodel.oldkwargs = {}
         pd.reset_option('max_columns')
+        pd.reset_option('max_columns')
         
 
 if __name__ == '__main__':
@@ -407,19 +409,19 @@ if __name__ == '__main__':
     country_trans    =  globals().get(f'{modelname}_trans'   ,lambda x : x[:])
     country_df_trans =  globals().get(f'{modelname}_df_trans',lambda x : x)
     
-    wf2name,modelname  = wf1_to_wf2(filename ,modelname=modelname,eviews_run_lines= eviews_run_lines) 
-    model_all_about = wf2_to_clean(wf2name,modelname=modelname)
     
-    cmodel = GrapWfModel(model_all_about = model_all_about,
-                                       country_trans    =  country_trans,
-                                       country_df_trans =  country_df_trans,
-                                       make_fitted = False,
-                                       do_add_factor_calc=True
-                                       ) 
+    cmodel = GrapWfModel(filename, 
+                        eviews_run_lines= eviews_run_lines,
+                        country_trans    =  country_trans,
+                        country_df_trans =  country_df_trans,
+                        make_fitted = True,
+                        do_add_factor_calc=True
+                        ) 
     
     assert 1==1
     print(modelname)
-    cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.1,showall=1)
+    cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=1,showall=0)
+
         
     grab_lookat = cmodel           
     mlookat   = grab_lookat.mmodel    

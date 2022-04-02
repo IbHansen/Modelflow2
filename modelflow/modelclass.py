@@ -357,15 +357,11 @@ class BaseModel():
         """Checks if the current period (the SMPL) is can contain the lags and the leads"""
 
         if 0 > databank.index.get_loc(self.current_per[0])+self.maxlag:
-            print('***** Warning: You are solving the model before all lags are avaiable')
-            print('Maxlag:', self.maxlag, 'First solveperiod:',
-                  self.current_per[0], 'First dataframe index', databank.index[0])
-            sys.exit()
+            war = 'You are trying to solve the model before all lags are avaiable'
+            raise Exception(f'{war}\nMaxlag:{self.maxlag}, First solveperiod:{self.current_per[0]}, First dataframe index:{databank.index[0]}')  
         if len(databank.index) <= databank.index.get_loc(self.current_per[-1])+self.maxlead:
-            print('***** Warning: You are solving the model after all leads are avaiable')
-            print('Maxlag:', self.maxlead, 'Last solveperiod:',
-                  self.current_per[-1], 'Last dataframe index', databank.index[-1])
-            sys.exit()
+            war = 'You are trying to solve the model after all leads are avaiable'
+            raise Exception(f'{war}\nMaxLeead:{self.maxlead}, Last solveperiod:{self.current_per[-1]}, Last dataframe index:{databank.index[-1]}')  
 
     @contextmanager
     def set_smpl(self, start='', slut='', df=None):
@@ -6006,19 +6002,8 @@ class Solver_Mixin():
         starttimesetup = time.time()
         sol_periode = self.smpl(start, slut, databank)
         # breakpoint()
-        if self.maxlag and not (self.current_per[0]+self.maxlag) in databank.index:
-            print('***** Warning: You are solving the model before all lags are avaiable')
-            print('Maxlag:', self.maxlag, 'First solveperiod:',
-                  self.current_per[0], 'First dataframe index', databank.index[0])
-            sys.exit()
-        if self.maxlead and not (self.current_per[-1]-self.maxlead) in databank.index:
-            print(
-                '***** Warning: You are solving the model before all leads are avaiable')
-            print('Maxlag:', self.maxlead, 'Last solveperiod:',
-                  self.current_per[0], 'Last dataframe index', databank.index[1])
-            sys.exit()
-        if not silent:
-            print('Will start calculating: ' + self.name)
+        self.check_sim_smpl(databank)
+
         # fill all Missing value with 0.0
         databank = insertModelVar(databank, self)
         newdata, databank = self.is_newdata(databank)
