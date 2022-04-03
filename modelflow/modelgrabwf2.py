@@ -206,7 +206,8 @@ class GrapWfModel():
         self.fres =   ('\n'.join(self.rres))
         
         self.mmodel = model(self.fmodel,modelname =self.model_all_about['modelname'])
-        self.mmodel.set_var_description(self.model_all_about['var_description'])
+        # self.mmodel.set_var_description(self.model_all_about['var_description'])
+        self.mmodel.set_var_description(self.var_description)
         self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options']
         self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')
         # breakpoint()
@@ -249,24 +250,14 @@ class GrapWfModel():
         ldif = '\n'.join(l for l in rawmodel6.split('\n') if 'DIFF(' in l )
         return rawmodel6
     
-    @property 
+    @functools.cached_property
     def var_description(self):
         '''
         Adds var descriptions for add factors, exogenizing dummies and exoggenizing values
         '''
         
-        if isinstance(self.des,dict):
-            return self.des
-        
         try:
-            # breakpoint()
-            des_file = Path(self.des)
-            if des_file.suffix == '.xlsx':
-                trans0 = pd.read_excel(self.des).loc[:,['mnem','Excel']].set_index('mnem').to_dict(orient = 'dict')['Excel']
-                var_description = {str(k) : str(v) for k,v in trans0.items() if 'nan' != str(v)}
-            else:
-                with open(des_file,'rt') as f: 
-                    var_description = json.load(f)
+            var_description = self.model_all_about['var_description']
             add_d =   { newname : 'Add factor:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_A') in self.mmodel.exogene }
             dummy_d = { newname : 'Exo dummy:'+ var_description.get(v,v)  for v in self.mmodel.endogene if  (newname := v+'_D')  in self.mmodel.exogene }
             exo_d =   { newname : 'Exo value:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_X')  in self.mmodel.exogene }
@@ -408,7 +399,7 @@ if __name__ == '__main__':
     
 
     filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-    modelname = 'per'
+    modelname = 'ago'
     filename = filedict[modelname]
     
     
@@ -427,8 +418,6 @@ if __name__ == '__main__':
                         fit_end   = None           # end of calc for fittted model, if None taken from mdmfsa options  
                         ) 
     
-    assert 1==1
-    print(modelname)
     cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
 
         
@@ -437,23 +426,3 @@ if __name__ == '__main__':
     lookat_des  = mlookat.var_description
     lookat_equations  = mlookat.equations   
     lookat_all_frml_dict = grab_lookat.all_frml_dict
-        #%%
-    if 0:
-        pass
-        this = lookat_all_frml_dict['PERNEGDIFPRVKN']
-        this.fprint
-        this = lookat_all_frml_dict['PERNVAGRCROPKN']
-        this.fprint
-        
-    if 0: # to investigate mfmsa options 
-        ...
-        options = mlookat.wb_MFMSAOPTIONS
-        from xml.dom.minidom import parse, parseString
-        xx = parseString(options)
-        print(xx.toprettyxml())
-        
-        import xml
-        #%%
-        root = xml.etree.ElementTree.fromstring(options)
-        root.find('iFace').find('SolveStart').text   
-        root.find('iFace').find('SolveEnd').text   
