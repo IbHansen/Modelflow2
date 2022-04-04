@@ -157,15 +157,19 @@ class GrapWfModel():
     fit_start          : any = 2000   # start of fittet model 
     fit_end            : any = None  # end of fittet model unless overruled by mfmsa
     do_add_factor_calc : bool = True  # calculate the add factors 
-    
+    test_frml          : str =''    # a testmodel as string if used no wf processing 
     
     def __post_init__(self):
+        if self.test_frml: 
+            self.rawmodel_org =self.test_frml 
+        else:     
         # breakpoint()
-        wf2name,self.modelname  = wf1_to_wf2(filename ,modelname=self.modelname,eviews_run_lines= self.eviews_run_lines) 
-        self.model_all_about = wf2_to_clean(wf2name,modelname=self.modelname)
-        
-        print(f'\nProcessing the model:{self.modelname}',flush=True)
-        self.rawmodel_org = self.model_all_about['frml']
+            wf2name,self.modelname  = wf1_to_wf2(filename ,modelname=self.modelname,eviews_run_lines= self.eviews_run_lines) 
+            self.model_all_about = wf2_to_clean(wf2name,modelname=self.modelname)
+            
+            print(f'\nProcessing the model:{self.modelname}',flush=True)
+            self.rawmodel_org = self.model_all_about['frml']
+            
         eviewsline  = self.rawmodel_org.split('\n') 
         self.rawmodel = self.country_trans(self.rawmodel_org)
         rawmodel6 = self.trans_eviews(self.rawmodel)
@@ -186,7 +190,9 @@ class GrapWfModel():
                 print(f'New modelflow line:{l}')
             raise Exception('@ in lines ')
             
-        self.all_frml = [nz.normal(l,add_add_factor=(typ=='stoc'),make_fitted=(typ=='stoc'),exo_adjust=(typ=='stoc')) for l,typ in tqdm(zip(line,line_type),desc='Normalizing model',total=len(line),bar_format=bars)]
+        self.all_frml = [nz.normal(l,add_add_factor=(typ=='stoc'),make_fitted=(typ=='stoc'),exo_adjust=(typ=='stoc'),eviews=e) 
+                         for l,typ,e in tqdm(zip(line,line_type,eviewsline),desc='Normalizing model',total=len(line),bar_format=bars)]
+
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
         lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
         self.rorg = [fname + f.normalized for f,fname in zip(self.all_frml,lfname) ]

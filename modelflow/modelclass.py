@@ -1449,7 +1449,7 @@ class Model_help_Mixin():
         '''
         # start experiments for including pattern and wildcards in an updateline to update several variables in one line  
         
-        # operatorpat  = '('+ ('|'.join(f' {o} ' for o in r'\=|\+|\*|%|\=growth|\+growth|\=diff'.split('|'))) + ')'
+        operatorpat  = '('+ ('|'.join(f' {o} ' for o in r'=|\+|\*|%|=growth|\+growth|=diff'.upper().split('|'))) + ')'
         # testline = ' PAKGGREVCO2CE* PAKGGREVCO2CER PAKGGREVCO2CER = 29 '
         # re.split(operatorpat,testline)
         
@@ -1470,8 +1470,11 @@ class Model_help_Mixin():
                 stripped = stripped.replace('--','/ --',1) # The first option 
             else:
                 stripped = stripped+r'/'
+            try:     
+                l0,loptions = stripped.upper().split(r'/')
+            except: 
+                raise Exception(f'Probably to many /\nOffending:"{whole_line}"')
 
-            l0,loptions = stripped.upper().split(r'/')
             options = loptions.split() 
             
             for o in options:
@@ -1480,7 +1483,7 @@ class Model_help_Mixin():
             
             l=(timesplit := l0.rsplit('>'))[-1]
             if len(timesplit) == 2:
-                time_options = timesplit[0].replace('<','').replace(',',' ').replace(':',' ').split()
+                time_options = timesplit[0].replace('<','').replace(',',' ').replace(':',' ').replace('/',' ').split()
                 
                 if len(time_options)==1:
                     start = time_options[0]
@@ -1489,7 +1492,7 @@ class Model_help_Mixin():
                     start,end = time_options
                 else: 
     
-                    raise Exception(f'To many times\nOffending:"{whole_line}"')
+                    raise Exception(f'To many times \nOffending:"{whole_line}"')
                 if len(l.strip())==0:   # if wo only want to set time 
                     continue 
 
@@ -1503,27 +1506,37 @@ class Model_help_Mixin():
             istart, islut = df.index.slice_locs(arg1, arg2)
             current = df.index[istart:islut]
             time1,time2 = current[0],current[-1] 
-            var, op, *value = l.split()
-            
-            update_growth = False
-            if (keep_growth or '--KEEP_GROWTH' in options) and not '--NO_KEEP_GROWTH' in options:
-                if var not in df.columns:
-                    raise Exception(f'Can not keep growth for created variable\nOffending:"{whole_line}"')
+            varstring,opstring,valuestring =re.split(operatorpat,l)
+                 
+            value=valuestring.split()
+            op= opstring.strip()
+            varlist = varstring.split() 
+            if not len(varlist):
+                  raise Exception(f'No variables to update \nOffending:"{whole_line}"')
 
-                resttime = df.index[islut:]
-                if len(resttime):
-                    update_growth = True
-                    growth_rate = (df.loc[:,var].pct_change())[resttime].to_list()
-                    multiplier = list(accumulate([(1+i) for i in growth_rate],operator.mul))
-           
-           # print(var,op,value,arg,sep='|')
-            update_var(df, var.upper(), op, value,time1,time2 , 
-                       create=create, lprint=lprint,scale = scale)
-            
-            if update_growth:
-                lastvalue = df.loc[time2,var]
-                df.loc[resttime,var]= [lastvalue * m for m in multiplier]
-                # breakpoint()
+            for varname0 in varlist: 
+                varname = varname0.strip() 
+                if not len(varname):
+                    raise Exception(f'No variable name  \nOffending:"{whole_line}"')
+                update_growth = False
+                if (keep_growth or '--KEEP_GROWTH' in options) and not '--NO_KEEP_GROWTH' in options:
+                    if varname not in df.columns:
+                        raise Exception(f'Can not keep growth for created variable\nOffending:"{whole_line}"')
+    
+                    resttime = df.index[islut:]
+                    if len(resttime):
+                        update_growth = True
+                        growth_rate = (df.loc[:,varname].pct_change())[resttime].to_list()
+                        multiplier = list(accumulate([(1+i) for i in growth_rate],operator.mul))
+               
+               # print(varname,op,value,arg,sep='|')
+                update_var(df, varname.upper(), op, value,time1,time2 , 
+                           create=create, lprint=lprint,scale = scale)
+                
+                if update_growth:
+                    lastvalue = df.loc[time2,varname]
+                    df.loc[resttime,varname]= [lastvalue * m for m in multiplier]
+                    # breakpoint()
         return df
 
 

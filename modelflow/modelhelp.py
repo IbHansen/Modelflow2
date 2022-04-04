@@ -33,15 +33,11 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
         \n scale scales the input variables default =1.0 
         
         """ 
-        import sys 
-        import numpy as np 
         var = xvar.upper()
         if var not in databank: 
             if not create:
-                print('** Error, variable not found:',var)
-                print('** Update =',var,'Data=',inputval)
-                print('Create=True if you want to create the variable in the databank')
-                sys.exit()
+                errmsg = f'Variable to update not found:{var}, timespan = [{start} {slut}] \nSet create=True if you want the variable created: '
+                raise Exception(errmsg)
             else:
                 if 0:
                     print('Variable not in databank, created ',var)

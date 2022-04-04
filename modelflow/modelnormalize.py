@@ -166,7 +166,7 @@ def fixleads(eq,check=False):
        print(f"After  {res}")
    return res
 
-def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,exo_adjust=False,make_fitted=False):
+def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,exo_adjust=False,make_fitted=False,eviews=''):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
     
@@ -246,7 +246,9 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
     
         result = Normalized_frml(str(endo),ind_o,preprocessed,out_frml,out_a,fitted=out_fitted) 
         
+        result.eviews=eviews
         return result
+    
     else: # no need to normalize  this equation 
         out_frml = preprocessed 
         out_fitted = f'{lhs}_fitted = {rhs}'.upper()  if make_fitted else ''
@@ -264,6 +266,8 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
             else: 
                 result = Normalized_frml(lhs,ind_o,preprocessed,
                     f'{lhs} = {rhs}',fitted=out_fitted)
+
+        result.eviews=eviews
         return result
         
 def elem_trans(udtryk, df=None):
