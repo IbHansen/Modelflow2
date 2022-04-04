@@ -1301,7 +1301,7 @@ class Model_help_Mixin():
         return df
     
     @staticmethod
-    def update(indf, updates, lprint=False,scale = 1.0,create=True,keep_growth=False,start='',end='' ):
+    def update_old(indf, updates, lprint=False,scale = 1.0,create=True,keep_growth=False,start='',end='' ):
         '''
         Updates a dataframe and returns a dataframe
         
@@ -1323,12 +1323,17 @@ class Model_help_Mixin():
         ´<`[[start] end]`>` <var> <=|+|*|%|=growth|+growth|=diff> <value>... [/ [[start] end] [--keep_growth_rate|--no_keep_growth_rate]]       
 
         '''
+        # start experiments for including pattern and wildcards in an updateline to update several variables in one line  
         
+        # operatorpat  = '('+ ('|'.join(f' {o} ' for o in r'\=|\+|\*|%|\=growth|\+growth|\=diff'.split('|'))) + ')'
+        # testline = ' PAKGGREVCO2CE* PAKGGREVCO2CER PAKGGREVCO2CER = 29 '
+        # re.split(operatorpat,testline)
          
         df = indf.copy(deep=True)
         for whole_line in updates.split('\n'):
             stripped0 = whole_line.strip()
             stripped = stripped0.split('#')[0]
+            
             if len(stripped) == 0 or stripped.startswith('#'):
                 continue
             
@@ -1344,14 +1349,14 @@ class Model_help_Mixin():
             time_options = [o for o in options if not o.startswith('--')]
             other_options = [o for o in options if  o.startswith('--')]
             # print(f'{time_options=}')
+            
             l=(timesplit := l0.rsplit('>'))[-1]
             if len(timesplit) == 2:
                 if len(time_options):
                     print(whole_line)
                     raise Exception(f'Do not specify time in both ends of update line\nOffending:"{whole_line}"')
-                time_options = timesplit[0].replace('<','').replace(',',' ').split()
+                time_options = timesplit[0].replace('<','').replace(',',' ').replace(':',' ').split()
                 
-            if '--SET_SMPL' in other_options:
                 if len(time_options)==1:
                     start = time_options[0]
                     end = ''
@@ -1359,7 +1364,7 @@ class Model_help_Mixin():
                     start = time_options[0]
                     end = time_options[1]
                 else: 
-
+    
                     raise Exception(f'To many times\nOffending:"{whole_line}"')
                 if len(l.strip())==0:   # if wo only want to set time 
                     continue 
@@ -1399,6 +1404,7 @@ class Model_help_Mixin():
             time1,time2 = current[0],current[-1] 
             var, op, *value = l.split()
             update_growth = False
+            
 
             if (keep_growth or '--KEEP_GROWTH' in other_options) and not '--NO_KEEP_GROWTH' in other_options:
                 if var not in df.columns:
@@ -1419,6 +1425,108 @@ class Model_help_Mixin():
                 df.loc[resttime,var]= [lastvalue * m for m in multiplier]
                 # breakpoint()
         return df
+
+    @staticmethod
+    def update(indf, updates, lprint=False,scale = 1.0,create=True,keep_growth=False,):
+        '''
+        Updates a dataframe and returns a dataframe
+        
+    Args:
+            indf (DataFrame): input dataframe.
+            basis (string): lines with variable updates look below.
+            lprint (bool, optional): if True each update is printed  Defaults to False.
+            scale (float, optional): A multiplier used on all update input . Defaults to 1.0.
+            create (bool, optional): Creates a variables if not in the dataframe . Defaults to True.
+            keep_growth(bool, optional): Keep the growth rate after the update time frame. Defaults to False.
+
+        Returns:
+            df (TYPE): the updated dataframe .
+            
+        A line in updates looks like this:     
+            
+        ´<`[[start] end]`>` <var> <=|+|*|%|=growth|+growth|=diff> <value>... [--keep_growth_rate|--no_keep_growth_rate]       
+
+        '''
+        # start experiments for including pattern and wildcards in an updateline to update several variables in one line  
+        
+        # operatorpat  = '('+ ('|'.join(f' {o} ' for o in r'\=|\+|\*|%|\=growth|\+growth|\=diff'.split('|'))) + ')'
+        # testline = ' PAKGGREVCO2CE* PAKGGREVCO2CER PAKGGREVCO2CER = 29 '
+        # re.split(operatorpat,testline)
+        
+        legal_options = {'--KEEP_GROWTH','--NO_KEEP_GROWTH'}
+        start = '-0' # start of dataframe 
+        end   = '-1' # end of dataframe  
+        
+        df = indf.copy(deep=True)
+        
+        for whole_line in updates.split('\n'):
+            stripped0 = whole_line.strip()
+            stripped = stripped0.split('#')[0]
+            
+            if len(stripped) == 0 :
+                continue
+            
+            if  '--' in stripped:
+                stripped = stripped.replace('--','/ --',1) # The first option 
+            else:
+                stripped = stripped+r'/'
+
+            l0,loptions = stripped.upper().split(r'/')
+            options = loptions.split() 
+            
+            for o in options:
+                if o not in legal_options:
+                    raise Exception(f'Illegal option:{o}')
+            
+            l=(timesplit := l0.rsplit('>'))[-1]
+            if len(timesplit) == 2:
+                time_options = timesplit[0].replace('<','').replace(',',' ').replace(':',' ').split()
+                
+                if len(time_options)==1:
+                    start = time_options[0]
+                    end = time_options[0]
+                elif len(time_options)==2:
+                    start,end = time_options
+                else: 
+    
+                    raise Exception(f'To many times\nOffending:"{whole_line}"')
+                if len(l.strip())==0:   # if wo only want to set time 
+                    continue 
+
+            # breakpoint()    
+            arg1=df.index[0]  if start == '-0' else start 
+            arg2=df.index[-1] if end ==  '-1' else end 
+                
+            # print(f'{start=},{end=}')    
+            # print(f'line:{l}:{time_options=}  :{arg1=} {arg2=}')
+                
+            istart, islut = df.index.slice_locs(arg1, arg2)
+            current = df.index[istart:islut]
+            time1,time2 = current[0],current[-1] 
+            var, op, *value = l.split()
+            
+            update_growth = False
+            if (keep_growth or '--KEEP_GROWTH' in options) and not '--NO_KEEP_GROWTH' in options:
+                if var not in df.columns:
+                    raise Exception(f'Can not keep growth for created variable\nOffending:"{whole_line}"')
+
+                resttime = df.index[islut:]
+                if len(resttime):
+                    update_growth = True
+                    growth_rate = (df.loc[:,var].pct_change())[resttime].to_list()
+                    multiplier = list(accumulate([(1+i) for i in growth_rate],operator.mul))
+           
+           # print(var,op,value,arg,sep='|')
+            update_var(df, var.upper(), op, value,time1,time2 , 
+                       create=create, lprint=lprint,scale = scale)
+            
+            if update_growth:
+                lastvalue = df.loc[time2,var]
+                df.loc[resttime,var]= [lastvalue * m for m in multiplier]
+                # breakpoint()
+        return df
+
+
 
     def insertModelVar(self, dataframe, addmodel=[]):
         """Inserts all variables from this model, not already in the dataframe.

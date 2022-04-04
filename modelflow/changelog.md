@@ -14,3 +14,6 @@
 >modelgrabwf2 wf1_to_wf2 now generates a series eviews_trend for smpl @all 
 >Modelgrab GrapWbModel replace('@TREND','EVIEWS_TREND') 
 >modelgrabwf2 wf1_to_wf2 now accept a list of eviews statement in the parameter eviews_run_lines,  they can be used to generate series or scalars which else wont work and are introduced to the modelflow model with model_trans 
+model.update --set_smpl is dropped, now time persists when set in <> 
+model.update time can only be set in <> at start of line
+model.update only legal options is --keep_growth and --no_keep_growth 
