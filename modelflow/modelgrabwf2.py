@@ -17,6 +17,7 @@ import functools
 from tqdm import tqdm 
 import json 
 from pathlib import Path
+import gzip 
 
 
 from modelclass import model 
@@ -43,13 +44,18 @@ def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
         None.
 
     '''
-    import pyeviews as evp
+    try:
+        import pyeviews as evp
+    except:
+        raise Exception('You have not pyeviews installed try:\n'+
+                        '!conda install pyeviews -c conda-forge -y')
     from pathlib import Path
     wfpath = Path(filename)
     if wfpath.suffix != '.wf1':
         raise Exception(f'wf1_to_wf2 expects a .wf1 file as input\nOffending:{wfpath} {wfpath.suffix} ')
     wf1= wfpath.absolute()
-    wf2= wf1.with_suffix('.wf2')
+    # wf2 = wf1.with_suffix('.wf2')
+    wf2 = (wf1.resolve().parent / (wf1.stem + '_modelflow')).with_suffix('.wf2')
     # breakpoint()
     eviewsapp = evp.GetEViewsApp(instance='new',showwindow=True)
     print(f'\nReading {wf1}')
@@ -65,7 +71,7 @@ def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
         evp.Run(eviewsline,eviewsapp)
     evp.Run(f'{modelname}.unlink @all',eviewsapp)
     print(f'The model: {modelname} is unlinked ')
-    evp.Run(fr'wfsave(jf, nogzip) "{wf2}"',eviewsapp)
+    evp.Run(fr'wfsave(jf) "{wf2}"',eviewsapp)
     print(f'Writing {wf2}')
 
     eviewsapp.hide()
@@ -81,7 +87,9 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
         print(f'Assummed model name: {modelname}')
     else:     
         print(f'Model name: {modelname}')
-    with open(wf2name) as f:
+    # with open(wf2name) as f:
+    with gzip.open(wf2name, mode="rt") as f:
+    
         gen0  = f.read()
     # gen0 = gen0.decode("ISO-8859-1") 
     all_dict     = json.loads(gen0)
@@ -164,7 +172,7 @@ class GrapWfModel():
             self.rawmodel_org =self.test_frml 
         else:     
         # breakpoint()
-            wf2name,self.modelname  = wf1_to_wf2(filename ,modelname=self.modelname,eviews_run_lines= self.eviews_run_lines) 
+            wf2name,self.modelname  = wf1_to_wf2(self.filename ,modelname=self.modelname,eviews_run_lines= self.eviews_run_lines) 
             self.model_all_about = wf2_to_clean(wf2name,modelname=self.modelname)
             
             print(f'\nProcessing the model:{self.modelname}',flush=True)
@@ -405,7 +413,7 @@ if __name__ == '__main__':
     
 
     filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-    modelname = 'ago'
+    modelname = 'per'
     filename = filedict[modelname]
     
     
