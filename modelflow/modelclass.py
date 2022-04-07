@@ -6247,12 +6247,13 @@ class Solver_Mixin():
             varnames = self.list_names(out.columns, pat)
             number = len(varnames)
             # breakpoint()
+            tchange = 'delta pr iteration ' if change else ' levels '
             if last:
-                axes = out.iloc[last:-1, :].loc[:, varnames].plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
-                                                             use_index=True, title=f'Iterations in {per_} ', sharey=0)
+                axes = out.iloc[last:-1, :].loc[:, varnames].rename(columns=self.var_description).plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
+                                                             use_index=True, title=f'Iterations in {per_} {tchange}', sharey=0)
             else:
-                axes = out[varnames].plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
-                                                       use_index=True, title=f'Iterations in {per_} ', sharey=0)
+                axes = out[varnames].rename(columns=self.var_description).plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
+                                                       use_index=True, title=f'Iterations in {per_}  {tchange}', sharey=0)
             fig = axes.flatten()[0].get_figure()
             fig.tight_layout()
             fig.subplots_adjust(top=top)
