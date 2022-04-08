@@ -149,7 +149,7 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
     return model_all_about 
 
 @dataclass
-class GrapWfModel():
+class GrabWfModel():
     '''This class takes a world bank model specification, variable data and variable description
     and transform it to ModelFlow business language'''
     
@@ -422,7 +422,7 @@ if __name__ == '__main__':
     country_df_trans =  globals().get(f'{modelname}_df_trans',lambda x : x)
     
     
-    cmodel = GrapWfModel(filename, 
+    cmodel = GrabWfModel(filename, 
                         eviews_run_lines= eviews_run_lines,
                         country_trans    =  country_trans,
                         country_df_trans =  country_df_trans,

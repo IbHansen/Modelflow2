@@ -36,6 +36,7 @@ def logit(number):
     '''
     return(-log(1.0/number-1.0)) 
 
+@jit("f8(f8)",fastmath=True,cache=True)
 def logit_inverse(number):
     ''' A function which returns the logit of a number 
     
@@ -62,6 +63,8 @@ def clognorm(input,mu=0.0,sigma=1.0):
     res = lognorm.cdf(input,mu,sigma)
     return res    
 
-
+if __name__ == '__main__' and 1:
+    xx = logit_inverse(3)
+    print(xx)
 
 
