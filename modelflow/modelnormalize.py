@@ -193,8 +193,9 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
         names like e '''
         
         lhs_var = {t.var for t in udtryk_parse(f) if t.var }
-        lhs_var_clash = {var : None for var in lhs_var}
+        lhs_var_clash = {var : Symbol(var) for var in lhs_var}
         return lhs_var_clash
+        # return {}
     post = '___LAG'
     # breakpoint()
     preprocessed = preprocess(fixleads(ind_o)) if do_preprocess else fixleads(ind_o[:])
@@ -320,7 +321,7 @@ if __name__ == '__main__':
     normal("D(a,0,1) = b").fprint
     normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
     normal('a = D( LOG(QLHP(+1)))').fprint
-    normal('a = b+c',the_endo='B',endo_lhs=False,exo_adjust=True).fprint
+    normal('a = gamma+ f+O',the_endo='f',endo_lhs=False,exo_adjust=True).fprint
     # breakpoint()
     normal('zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_add_factor=1).fprint
     fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')

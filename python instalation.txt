@@ -29,6 +29,7 @@ conda update modelflow -c ibh -c conda-forge  -y
 conda create -n mf_pinned_developement -c ibh -c  conda-forge modelflow_pinned_developement -y
 conda activate mf_pinned_developement
 pip install dash_interactive_graphviz
+conda install pyeviews 
 jupyter contrib nbextension install --user
 jupyter nbextension enable hide_input_all/main
 jupyter nbextension enable splitcell/splitcell
