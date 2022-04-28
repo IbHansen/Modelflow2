@@ -270,18 +270,15 @@ class GrabWfModel():
         Adds var descriptions for add factors, exogenizing dummies and exoggenizing values
         '''
         
+
+        
         try:
-            var_description = self.model_all_about['var_description']
-            add_d =   { newname : 'Add factor:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_A') in self.mmodel.exogene }
-            dummy_d = { newname : 'Exo dummy:'+ var_description.get(v,v)  for v in self.mmodel.endogene if  (newname := v+'_D')  in self.mmodel.exogene }
-            exo_d =   { newname : 'Exo value:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_X')  in self.mmodel.exogene }
-            fitted_d =   { newname : 'Fitted  value:'+ var_description.get(v,v)      for v in self.mmodel.endogene if  (newname := v+'_FITTED')  in self.mmodel.endogene }
-            var_description =  {**var_description,**add_d,**dummy_d,**exo_d,**fitted_d}
-            self.mmodel.set_var_description(var_description)
+            this = self.model_all_about['var_description']
+            this_new  = self.mmodel.enrich_var_description(this)
         except:
             print('*** No variable description',flush=True)
-            var_description = {}
-        return var_description    
+            this_new  = {}
+        return this_new    
     
     @functools.cached_property
     def mfmsa_options(self):
@@ -413,7 +410,7 @@ if __name__ == '__main__':
     
 
     filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-    modelname = 'per'
+    modelname = 'pak'
     filename = filedict[modelname]
     
     

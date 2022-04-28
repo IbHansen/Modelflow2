@@ -1994,6 +1994,49 @@ class Description_Mixin():
             return f'{self.html_replace(out)}'
         else:
             return f'{var}'
+        
+        
+    @staticmethod    
+    def read_wb_xml_var_des(filename):
+        '''Read a xml file with variable description world bank style '''
+        import xml
+
+        with open( filename,'rt') as f:
+            xmltext = f.read()
+        root = xml.etree.ElementTree.fromstring(xmltext)
+        variables = root.findall('variable')
+        vardes= { v.find('Mnem').text :  {c.tag: c.text for c in v.find('Languages')}  for v in variables if type(des:= v.find('Languages')) != type(None)  }    
+        description_dic = {k : vardes[k] for k in sorted(vardes.keys()) }
+        return description_dic 
+    
+    @staticmethod
+    def languages_wb_xml_var_des(filename):
+        '''Find languages in a xml file with variable description world bank style'''
+        description_dic  = mmodel.read_wb_xml_var_des(filename)
+        languages = {l for var,descriptions in description_dic.items() for l in descriptions}
+        return languages 
+    
+    
+    def set_wb_xml_var_description(self,filename,language='English'):  
+        ''' set variable descriptions from a xml file with variable description world bank style'''
+        description_dic  = mmodel.read_wb_xml_var_des(filename)
+        this_description = {var : descriptions['English'] for var,descriptions in description_dic.items() if language in descriptions.keys()}
+        enriched_var_description = self.enrich_var_description(this_description)
+        self.set_var_description(enriched_var_description)
+        
+    def enrich_var_description(self,var_description):
+        '''Takes a dict of variable descriptions and enhance it for the standard suffixes for generated variables''' 
+        
+        add_d =   { newname : 'Add factor:'+ var_description.get(v,v)        for v in self.endogene if  (newname := v+'_A') in self.exogene }
+        dummy_d = { newname : 'Exo dummy:'+ var_description.get(v,v)         for v in self.endogene if  (newname := v+'_D')  in self.exogene }
+        exo_d =   { newname : 'Exo value:'+ var_description.get(v,v)         for v in self.endogene if  (newname := v+'_X')  in self.exogene }
+        fitted_d =   { newname : 'Fitted  value:'+ var_description.get(v,v)  for v in self.endogene if  (newname := v+'_FITTED')  in self.endogene }
+        # breakpoint() 
+        var_description_new =  {**var_description,**add_d,**dummy_d,**exo_d,**fitted_d}
+        return var_description_new
+        
+        
+
 
 class Modify_Mixin():
     '''Class to modify a model with new equations, (later alse delete, and new normalization)'''

@@ -297,7 +297,7 @@ class varvis():
          des = self.model.var_description[var]
          return des if des != var else ''
          
-     def _showall(self,all=1,dif=0,last=0,show_all=True):
+     def _showall_old(self,all=1,dif=0,last=0,show_all=True):
             if self.endo:
                 des_string = self.model.get_eq_des(self.var,show_all)
                 out1,out2 = '',''
@@ -322,6 +322,30 @@ class varvis():
                 out   = f'Exogeneous : {self.var}: {self.var_des(self.var)}  \n Values : \n{self.model.get_values(self.var)}\n' 
             return out
     
+     def _showall(self,all=1,dif=0,last=0,show_all=True):
+            from IPython.display import SVG, display, Image, IFrame, HTML, Markdown
+ 
+            if self.endo:
+                des_string = self.model.get_eq_des(self.var,show_all)
+                out0,out1,out2 = '','',''
+                display(Markdown(f'Endogeneous: **{self.var}**: {self.var_des(self.var)}'))
+                print(f'Formular: {self.model.allvar[self.var]["frml"]}\n\n{des_string}\n')
+                try:                                            
+                    if dif or all or last: print('Values :')
+                    if dif or all or last: display(HTML(self.model.get_values(self.var).to_html())) 
+                    if        all or last: print('Input last run:')
+                    if        all or last: display(self.model.get_eq_values(self.var))
+                    if        all        : print('Input base run:')
+                    if        all        : display(self.model.get_eq_values(self.var,last=False))
+                    if        all or dif: print('Difference for input variables')
+                    if        all or dif: display(HTML(self.model.get_eq_dif(self.var,filter=False).to_html()))
+                except Exception as e:
+                    print(e)
+                    pass 
+                out=out0+out1+out2
+            else: 
+                out   = f'Exogeneous : {self.var}: {self.var_des(self.var)}  \n Values : \n{self.model.get_values(self.var)}\n' 
+            return out
      
     
      @property

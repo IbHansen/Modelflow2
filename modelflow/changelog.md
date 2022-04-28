@@ -17,3 +17,5 @@
 model.update --set_smpl is dropped, now time persists when set in <> 
 model.update time can only be set in <> at start of line
 model.update only legal options is --keep_growth and --no_keep_growth 
+model. read_wb_xml_var_des .languages_wb_xml_var_des  .set_wb_xml_var_description to read xmlfiles from wb
+model.enrich_var_description to creaate variable descriptions for _X,_D,_X and _FITTED variables   
