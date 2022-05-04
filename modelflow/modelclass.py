@@ -1143,7 +1143,6 @@ class Org_model_Mixin():
         return df
 
     def __getitem__(self, name):
-
         a = self.vis(name)
         return a
 
@@ -3419,13 +3418,49 @@ class Display_Mixin():
         if the user has another vis class she can place it in _vis, then that will be used'''
         if not hasattr(self, '_vis'):
             self._vis = mv.vis
-        return self._vis(self, *args, **kwargs)
+        return self._vis(self, *args, **kwargs)    
 
     def varvis(self, *args, **kwargs):
         return mv.varvis(self, *args, **kwargs)
 
     def compvis(self, *args, **kwargs):
         return mv.compvis(self, *args, **kwargs)
+    
+    def ibsstyle(self,df,description_dict = None, dec=2,transpose=None):
+        '''
+        
+
+        Args:
+            df (TYPE): Dataframe.
+            description_dict (TYPE, optional):  Defaults to None then the var_description else this dict .
+            dec (TYPE, optional): decimals. Defaults to 2. Deciu
+            transpose (TYPE, optional): if Trus then rows are time else thje. Defaults to 0.
+
+        Returns:
+            TYPE: DESCRIPTION.
+
+        '''
+        # breakpoint()
+        if self.in_notebook():
+            if type(transpose) == type(None):
+                xtranspose = (df.index[0] in self.lastdf.index)
+            else:
+                xtranspose = transpose 
+            des = self.var_description if type(description_dict)==type(None) else description_dict
+            if not xtranspose:
+                tt = pd.DataFrame([[des.get(v,v) for t in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
+            else:
+                tt = pd.DataFrame([[des.get(v,v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
+            xdec = f'{dec}'
+            result = df.style.format('{:.'+xdec+'f}').\
+            set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'
+                            'background-color: white; color: #000066; font-size: 0.8em;width:100%'
+                            'transform: translate(0px, -24px); padding: 0.6em; border-radius: 0.5em;')
+            return result
+        else: 
+            return df
+
+
 
     def write_eq(self, name='My_model.fru', lf=True):
         ''' writes the formulas to file, can be input into model 
@@ -6480,6 +6515,21 @@ class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin
 
 
 # wrapper'
+if not hasattr(pd.DataFrame,'upd'):
+    @pd.api.extensions.register_dataframe_accessor("upd")
+    class upd():
+        '''Extend a dataframe to update variables from string '''
+        def __init__(self, pandas_obj):
+    #        self._validate(pandas_obj)
+            self._obj = pandas_obj
+            self.__doc__ = model.update.__doc__
+    #        print(self._obj)
+       
+        def __call__(self,updates, lprint=False,scale = 1.0,create=True,keep_growth=False,):
+    
+            indf = self._obj
+            result =   model.update(indf, updates=updates, lprint=lprint,scale = scale,create=create,keep_growth=keep_growth,)   
+            return result 
 
 
 def ttimer(*args, **kwargs):

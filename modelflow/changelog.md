@@ -19,3 +19,6 @@ model.update time can only be set in <> at start of line
 model.update only legal options is --keep_growth and --no_keep_growth 
 model. read_wb_xml_var_des .languages_wb_xml_var_des  .set_wb_xml_var_description to read xmlfiles from wb
 model.enrich_var_description to creaate variable descriptions for _X,_D,_X and _FITTED variables   
+model.update is wrapped in @pd.api.extensions.register_dataframe_accessor to make a dataframe method when modelclass is imported 
+vis.plot new format for y axis to make it more nice. but without thousand separator 
+model.ibsstyle styles a dataframe to jupyter notebook with tooltiops 

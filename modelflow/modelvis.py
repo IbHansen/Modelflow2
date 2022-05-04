@@ -173,7 +173,15 @@ class vis():
      
      def __repr__(self):
          return self.thisdf.loc[self.model.current_per,:].to_string() 
-     
+
+     @property
+     def show(self):
+         if self.model.in_notebook():
+             display(self.model.ibsstyle(self.thisdf.loc[self.model.current_per,:],transpose=True))
+         else:     
+             print(self.thisdf.loc[self.model.current_per,:].to_string()) 
+
+        
      def __mul__(self,other):
          ''' Multiply the curent result with other '''
          muldf = self.thisdf * other 
@@ -321,24 +329,35 @@ class varvis():
             else: 
                 out   = f'Exogeneous : {self.var}: {self.var_des(self.var)}  \n Values : \n{self.model.get_values(self.var)}\n' 
             return out
-    
+ 
+     # def ibsstyle(self,df,dec=2):
+     #     ''' display a dataframe with tooltip'''
+         
+     #     tt = pd.DataFrame([[self.model.var_description[v] for c in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
+     #     xdec = f'{dec}'
+     #     result = df.style.format('{:.'+xdec+'f}').\
+     #     set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'
+     #                     'background-color: white; color: #000066; font-size: 0.8em;'
+     #                     'transform: translate(0px, -24px); padding: 0.6em; border-radius: 0.5em;')
+     #     return result
+ 
      def _showall(self,all=1,dif=0,last=0,show_all=True):
             from IPython.display import SVG, display, Image, IFrame, HTML, Markdown
  
             if self.endo:
                 des_string = self.model.get_eq_des(self.var,show_all)
                 out0,out1,out2 = '','',''
-                display(Markdown(f'Endogeneous: **{self.var}**: {self.var_des(self.var)}'))
+                print(f'Endogeneous: {self.var}: {self.var_des(self.var)}')
                 print(f'Formular: {self.model.allvar[self.var]["frml"]}\n\n{des_string}\n')
                 try:                                            
                     if dif or all or last: print('Values :')
-                    if dif or all or last: display(HTML(self.model.get_values(self.var).to_html())) 
+                    if dif or all or last: display(self.model.ibsstyle(self.model.get_values(self.var))) 
                     if        all or last: print('Input last run:')
-                    if        all or last: display(self.model.get_eq_values(self.var))
+                    if        all or last: display(self.model.ibsstyle(self.model.get_eq_values(self.var)))
                     if        all        : print('Input base run:')
-                    if        all        : display(self.model.get_eq_values(self.var,last=False))
+                    if        all        : display(self.model.ibsstyle(self.model.get_eq_values(self.var,last=False)))
                     if        all or dif: print('Difference for input variables')
-                    if        all or dif: display(HTML(self.model.get_eq_dif(self.var,filter=False).to_html()))
+                    if        all or dif: display(self.model.ibsstyle(self.model.get_eq_dif(self.var,filter=False)))
                 except Exception as e:
                     print(e)
                     pass 
@@ -399,7 +418,7 @@ def vis_alt(grund,mul,title='Show variables',top=0.9):
     return fig
     
 
-def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=True,top=0.90,
+def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=0.90,
              splitchar='__',savefig='',*args,**kwargs):
     '''
     
@@ -440,7 +459,7 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=True,top=0.90,
     for ax in axes.flatten():
         pass
         # dec=finddec(dfatt)
-        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda value,number: f'{value:,}'))
+        # ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda value,number: f'{value:,}'))
 
         ax.xaxis.set_minor_locator(plt.NullLocator())
         ax.tick_params(axis='x', labelleft=True)
