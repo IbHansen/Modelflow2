@@ -17,6 +17,7 @@ import seaborn as sns
 import fnmatch 
 from matplotlib import dates
 import matplotlib.ticker as ticker
+from IPython.display import display
 
 import numpy 
 

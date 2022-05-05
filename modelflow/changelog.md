@@ -22,3 +22,7 @@ model.enrich_var_description to creaate variable descriptions for _X,_D,_X and _
 model.update is wrapped in @pd.api.extensions.register_dataframe_accessor to make a dataframe method when modelclass is imported 
 vis.plot new format for y axis to make it more nice. but without thousand separator 
 model.ibsstyle styles a dataframe to jupyter notebook with tooltiops 
+modelmf.mfcalc keyword showeq=False, if True will display the equations 
+mfmodel.mfcalc time can be set by starting equations with <start end> 
+modelclass get_totgraph make sure that orphaned endogeneous also are includes as nodes. 
+todo modelclass makedotnew dows not draw orphans, only nodes connected to edges. 

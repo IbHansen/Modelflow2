@@ -18,7 +18,7 @@ from modelclass import model
 import modelvis as mv
 
 
-if not hasattr(pd.DataFrame,'mf'):
+if not hasattr(pd.DataFrame,'mf') or 0:
     @pd.api.extensions.register_dataframe_accessor("mf")
     class mf():
         '''A class to extend Pandas Dataframes with ModelFlow functionalities'''
@@ -109,9 +109,42 @@ if not hasattr(pd.DataFrame,'mf'):
             self._obj = pandas_obj
     #        print(self._obj)
         
-        def __call__(self,eq,start='',slut='',**kwargs):
+        def __call__(self,eq,start='',slut='',showeq=False, **kwargs):
+            '''
+            
+
+            Args:
+                eq (TYPE): Equations one on each line. can be started with <start end> to control calculation sample .
+                start (TYPE, optional): DESCRIPTION. Defaults to ''. 
+                slut (TYPE, optional): DESCRIPTION. Defaults to ''.
+                showeq (TYPE, optional): If True the equations will be printed. Defaults to False.
+                **kwargs (TYPE): Here all solve options can be provided.
+
+            Returns:
+                None.
+
+            '''
+            
     #        print({**kwargs,**{'start':start,'slut':slut}})
-            res = self._obj.mf(eq,**kwargs).solve(**{**kwargs,**{'start':start,'slut':slut,'silent':True}})
+            if (l0:=eq.strip()).startswith('<'):
+                timesplit = l0.split('>',1)
+                time_options = timesplit[0].replace('<','').replace(',',' ').replace(':',' ').replace('/',' ').split()
+                
+                if len(time_options)==1:
+                    start = time_options[0]
+                    slut = time_options[0]
+                elif len(time_options)==2:
+                    start,slut = time_options
+                else:     
+                    raise Exception(f'To many times \nOffending:"{l0}"')
+                xeq = timesplit[1]
+            else: 
+                xeq=eq
+
+            res = self._obj.mf(xeq,**kwargs).solve(**{**kwargs,**{'start':start,'slut':slut,'silent':True}})
+            # print('jddd')
+            if showeq: 
+                print(self._obj.mf.equations)
             return res
         
     @pd.api.extensions.register_dataframe_accessor("mfupdate")
@@ -171,24 +204,30 @@ if __name__ == '__main__':
         df3 = pd.DataFrame({'Z':[1., 22., 33,43] , 'TY':[10.,20.,30.,40.] ,'YD':[10.,20.,30.,40.]},index=[2017,2018,2019,2020])
         df4 = pd.DataFrame({'Z':[ 223., 333] , 'TY':[203.,303.] },index=[2018,2019])
         ftest = ''' 
-        FRMl <>  ii = x+z $
-        frml <>  c=0.8*yd $
-        FRMl <>  i = ii+iy $ 
-        FRMl <>  x = f(2) $ 
-        FRMl <>  y = c + i + x+ i(-1)$ 
-        FRMl <>  yX = 0.6 * y $
-        FRML <>  dogplace = y *4 $'''
+        ii = x+z 
+        c=0.8*yd 
+        i = ii+iy 
+        x = f(2)  
+        y = c + i + x+ i(-1) 
+        yX  = 0.02  
+        dogplace = y *4 '''
+        assert 1==1
             #%%
-        m2=model(ftest,funks=[f])
+        d22=(m2:=model.from_eq(ftest,funks=[f]))(df4)
         aa = df.mf(ftest,funks=[f]).solve()
         aa.mf.solve()
-        aa.mf.drawmodel()
-        aa.mf.Y.draw()
+        aa.mf.drawmodel() 
+        aa.mf.drawendo() 
+        # aa.mf.YX.draw()
         aa.mf.istopo
         aa.mf['*']
-        df2.mfcalc(ftest,funks=[f])
+        df2.mfcalc(ftest,funks=[f],showeq=1)
         df2.mf.Y.draw(all=True,pdf=0)
         #%%
         df4 = pd.DataFrame({'Z':[ 223., 333] , 'YD':[203.,303.] },index=[2018,2019])            
         x = df2.mfupdate(df4)
+        #%% test graph 
+        import networkx as nx
+        zz = df2.mf.totgraph
+        nx.draw(zz)
         

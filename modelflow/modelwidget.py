@@ -450,7 +450,31 @@ class updatewidget:
         self.a_datawidget.reset(g) 
 
   
- 
+@dataclass
+class htmlwidget:
+    ''' class displays a dataframe in a html widget '''
+    
+    mmodel : any     # a model 
+    df_var         : any = pd.DataFrame()         # definition 
+    trans          : any = lambda x : x      # renaming of variables 
+    transpose      : bool = False            # orientation of dataframe 
+    expname      : str =  "Baseline values"
+   
+    
+    def __post_init__(self):
+        ...
+        
+        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+   
+    
+        newnamedf = self.df_var.copy().rename(columns=self.trans)
+        self.org_df_var = newnamedf.T if self.transpose else newnamedf
+        image = self.mmodel.ibsstyle(self.org_df_var).to_html()
+        self.whtml = widgets.HTML(image)
+        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.wsheet
+
+         
+
 if __name__ == '__main__':
     if 'masia' not in locals(): 
         print('loading model')

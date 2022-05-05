@@ -355,7 +355,7 @@ class BaseModel():
 
     def check_sim_smpl(self, databank):
         """Checks if the current period (the SMPL) is can contain the lags and the leads"""
-
+        # breakpoint() 
         if 0 > databank.index.get_loc(self.current_per[0])+self.maxlag:
             war = 'You are trying to solve the model before all lags are avaiable'
             raise Exception(f'{war}\nMaxlag:{self.maxlag}, First solveperiod:{self.current_per[0]}, First dataframe index:{databank.index[0]}')  
@@ -2594,6 +2594,7 @@ class Graph_Mixin():
         edges = (((v, e) for e, rhs in rhsvar for v in rhs))
     #        edgeslag = [(v,v+lagvar(lag)) for v,inf in m2test.allvar.items() for lag in range(inf['maxlag'],0)]
         totgraph = nx.DiGraph(chain(edges, edgeslag, edgeslead))
+        totgraph.add_nodes_from(self.endogene)
 
         return totgraph
 
@@ -3426,7 +3427,7 @@ class Display_Mixin():
     def compvis(self, *args, **kwargs):
         return mv.compvis(self, *args, **kwargs)
     
-    def ibsstyle(self,df,description_dict = None, dec=2,transpose=None):
+    def ibsstyle_old(self,df,description_dict = None, dec=2,transpose=None):
         '''
         
 
@@ -3460,6 +3461,47 @@ class Display_Mixin():
         else: 
             return df
 
+    def ibsstyle(self,df,description_dict = None, dec=2,
+                 transpose=None,use_tooltip=True):
+        '''
+        
+
+        Args:
+            df (TYPE): Dataframe.
+            description_dict (TYPE, optional):  Defaults to None then the var_description else this dict .
+            dec (TYPE, optional): decimals. Defaults to 2. Deciu
+            transpose (TYPE, optional): if Trus then rows are time else thje. Defaults to 0.
+
+        Returns:
+            TYPE: DESCRIPTION.
+
+        '''
+        # breakpoint()
+        if self.in_notebook():
+            if type(transpose) == type(None):
+                xtranspose = (df.index[0] in self.lastdf.index)
+            else:
+                xtranspose = transpose 
+            des = self.var_description if type(description_dict)==type(None) else description_dict
+            if not xtranspose:
+                tt = pd.DataFrame([[des.get(v,v) for t in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
+            else:
+                tt = pd.DataFrame([[des.get(v,v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
+            xdec = f'{dec}'
+            result = df.style\
+            .set_table_attributes('class="table"')\
+            .format('{:.'+xdec+'f}')
+            if use_tooltip:
+                try:
+                    result=result.set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'
+                                    'background-color: white; color: #000066; font-size: 0.8em;width:100%'
+                                    'transform: translate(0px, -24px); padding: 0.6em; border-radius: 0.5em;')
+                except:
+                    ...
+                
+            return result
+        else: 
+            return df
 
 
     def write_eq(self, name='My_model.fru', lf=True):
