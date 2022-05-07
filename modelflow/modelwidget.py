@@ -449,16 +449,24 @@ class updatewidget:
     def reset(self,g):
         self.a_datawidget.reset(g) 
 
+def fig_to_image(figs,format='svg'):
+    from io import StringIO
+    f = StringIO()
+    figs.savefig(f,format=format)
+    f.seek(0)
+    image= f.read()
+    return image
   
 @dataclass
-class htmlwidget:
+class htmlwidget_df:
     ''' class displays a dataframe in a html widget '''
     
-    mmodel : any     # a model 
+    mmodel : any     # a model   
     df_var         : any = pd.DataFrame()         # definition 
     trans          : any = lambda x : x      # renaming of variables 
     transpose      : bool = False            # orientation of dataframe 
     expname      : str =  "Baseline values"
+    percent      : bool = False 
    
     
     def __post_init__(self):
@@ -469,9 +477,65 @@ class htmlwidget:
     
         newnamedf = self.df_var.copy().rename(columns=self.trans)
         self.org_df_var = newnamedf.T if self.transpose else newnamedf
-        image = self.mmodel.ibsstyle(self.org_df_var).to_html()
+        image = self.mmodel.ibsstyle(self.org_df_var,percent = self.percent).to_html()
         self.whtml = widgets.HTML(image)
         self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.wsheet
+
+@dataclass
+class htmlwidget_fig:
+    ''' class displays a dataframe in a html widget '''
+    
+    figs : any     # a model   
+    expname      : str =  "Charts"
+    format       : str =  "svg"
+  
+    
+    def __post_init__(self):
+        ...
+        
+        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+   
+    
+        image = fig_to_image(self.figs,format=self.format)
+        self.whtml = widgets.HTML(image)
+        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.wsheet
+
+@dataclass
+class visshow:
+    mmodel : any     # a model 
+    varpat    : str ='*'
+    showvarpat  : bool = True 
+    exodif   : any = pd.DataFrame()         # definition 
+    out_dict : dict = field(default_factory=dict)
+ 
+        
+    def __post_init__(self):
+        ...
+        this_vis = self.mmodel[self.varpat]
+        self.out_dict['Baseline'] ={'df':this_vis.base.df}        
+        self.out_dict['Alternative'] ={'df':this_vis.df} 
+        self.out_dict['Difference'] ={'df':this_vis.dif.df} 
+        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100.df,'percent':True} 
+        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpct.mul100.df,'percent':True} 
+        
+        self.out_to_tab = {key:
+            htmlwidget_df(self.mmodel,value['df'],expname=key,
+                         percent=value.get('percent',False))                           
+                           for key,value in self.out_dict.items()}
+        
+        out=widgets.Output()  
+        with out:
+            plt.ion()
+            figs = this_vis.rename().plot(title='Impact')
+            plt.ioff() 
+        clear_output()
+            
+        self.out_to_tab['Charts'] = htmlwidget_fig((figs))
+        
+        
+        self.datawidget = tabwidget(self.out_to_tab,selected_index=0).datawidget  
+            
+        
 
          
 

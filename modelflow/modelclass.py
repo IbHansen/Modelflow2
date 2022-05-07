@@ -3462,7 +3462,7 @@ class Display_Mixin():
             return df
 
     def ibsstyle(self,df,description_dict = None, dec=2,
-                 transpose=None,use_tooltip=True):
+                 transpose=None,use_tooltip=True,percent=False):
         '''
         
 
@@ -3488,9 +3488,10 @@ class Display_Mixin():
             else:
                 tt = pd.DataFrame([[des.get(v,v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
             xdec = f'{dec}'
+            xpct = '%' if percent else ''
             result = df.style\
             .set_table_attributes('class="table"')\
-            .format('{:.'+xdec+'f}')
+            .format('{:.'+xdec+'f}'+xpct)
             if use_tooltip:
                 try:
                     result=result.set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'
