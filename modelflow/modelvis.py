@@ -455,6 +455,7 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=0.90,
     number = out.shape[1] 
     row=-((-number)//colrow)
     # breakpoint()
+    
     axes=out.plot(kind=kind,subplots=True,layout=(row,colrow),figsize = (kwargs.get('xsize',10), row*kwargs.get('ysize',2)),
                  use_index=True,title=name,sharey=sharey)
     for ax in axes.flatten():

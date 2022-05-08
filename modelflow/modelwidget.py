@@ -512,28 +512,29 @@ class visshow:
     def __post_init__(self):
         ...
         this_vis = self.mmodel[self.varpat]
-        self.out_dict['Baseline'] ={'df':this_vis.base.df}        
-        self.out_dict['Alternative'] ={'df':this_vis.df} 
-        self.out_dict['Difference'] ={'df':this_vis.dif.df} 
-        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100.df,'percent':True} 
-        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpct.mul100.df,'percent':True} 
+        self.out_dict['Baseline'] ={'df':this_vis.base}        
+        self.out_dict['Alternative'] ={'df':this_vis} 
+        self.out_dict['Difference'] ={'df':this_vis.dif} 
+        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
+        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpct.mul100,'percent':True} 
         
         self.out_to_tab = {key:
-            htmlwidget_df(self.mmodel,value['df'],expname=key,
+            htmlwidget_df(self.mmodel,value['df'].df,expname=key,
                          percent=value.get('percent',False))                           
                            for key,value in self.out_dict.items()}
         
-        out=widgets.Output()  
-        with out:
-            plt.ion()
-            figs = this_vis.rename().plot(title='Impact')
-            plt.ioff() 
-        clear_output()
+        self.out_to_figs ={key:
+             htmlwidget_fig(value['df'].rename().plot(),expname=key)               
+                          for key,value in self.out_dict.items() }
             
-        self.out_to_tab['Charts'] = htmlwidget_fig((figs))
+        tab1 =   tabwidget(self.out_to_tab,selected_index=0)   
+        tab0 =   tabwidget(self.out_to_figs,selected_index=0) 
         
+        this =   tabwidget({'charts':tab0,'Data':tab1},selected_index=0)
+            
+            
         
-        self.datawidget = tabwidget(self.out_to_tab,selected_index=0).datawidget  
+        self.datawidget = this.datawidget  
             
         
 
