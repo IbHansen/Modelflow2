@@ -3490,8 +3490,10 @@ class Display_Mixin():
             xdec = f'{dec}'
             xpct = '%' if percent else ''
             result = df.style\
+            .set_sticky(axis='columns')\
             .set_table_attributes('class="table"')\
-            .format('{:.'+xdec+'f}'+xpct)
+            .format('{:.'+xdec+'f}'+xpct)\
+                
             if use_tooltip:
                 try:
                     result=result.set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'

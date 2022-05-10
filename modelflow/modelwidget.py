@@ -465,7 +465,7 @@ class htmlwidget_df:
     df_var         : any = pd.DataFrame()         # definition 
     trans          : any = lambda x : x      # renaming of variables 
     transpose      : bool = False            # orientation of dataframe 
-    expname      : str =  "Baseline values"
+    expname      : str =  ""
     percent      : bool = False 
    
     
@@ -479,14 +479,14 @@ class htmlwidget_df:
         self.org_df_var = newnamedf.T if self.transpose else newnamedf
         image = self.mmodel.ibsstyle(self.org_df_var,percent = self.percent).to_html()
         self.whtml = widgets.HTML(image)
-        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.wsheet
+        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
 
 @dataclass
 class htmlwidget_fig:
     ''' class displays a dataframe in a html widget '''
     
     figs : any     # a model   
-    expname      : str =  "Charts"
+    expname      : str =  ""
     format       : str =  "svg"
   
     
@@ -498,7 +498,7 @@ class htmlwidget_fig:
     
         image = fig_to_image(self.figs,format=self.format)
         self.whtml = widgets.HTML(image)
-        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.wsheet
+        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
 
 @dataclass
 class visshow:
@@ -518,26 +518,35 @@ class visshow:
         self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
         self.out_dict['Diff. pct. level'] ={'df':this_vis.difpct.mul100,'percent':True} 
         
-        self.out_to_tab = {key:
-            htmlwidget_df(self.mmodel,value['df'].df,expname=key,
+        out = widgets.Output() 
+        self.out_to_data = {key:
+            htmlwidget_df(self.mmodel,value['df'].df.T,expname=key,
                          percent=value.get('percent',False))                           
                            for key,value in self.out_dict.items()}
-        
-        self.out_to_figs ={key:
-             htmlwidget_fig(value['df'].rename().plot(),expname=key)               
-                          for key,value in self.out_dict.items() }
             
-        tab1 =   tabwidget(self.out_to_tab,selected_index=0)   
-        tab0 =   tabwidget(self.out_to_figs,selected_index=0) 
+        with out: # to suppress the display of matplotlib creation 
+            self.out_to_figs ={key:
+                 htmlwidget_fig(value['df'].rename().plot(top=1,title=''),expname='')               
+                              for key,value in self.out_dict.items() }
+                
+       
+        tabnew =  {key: tabwidget({'Charts':self.out_to_figs[key],'Data':self.out_to_data[key]},selected_index=0) for key in self.out_to_figs.keys()}
+       
+        out_exodif = htmlwidget_df(self.mmodel,self.mmodel.exodif().T)
         
-        this =   tabwidget({'charts':tab0,'Data':tab1},selected_index=0)
+        out_tab_info = tabwidget({'Delta exogenous':out_exodif},selected_index=0)
+        
+        tabnew['Info'] = out_tab_info
+        
+        this =   tabwidget(tabnew,selected_index=0)
             
             
         
         self.datawidget = this.datawidget  
-            
-        
+        display(self.datawidget)
 
+    def __repr__(self):
+        return ''
          
 
 if __name__ == '__main__':
