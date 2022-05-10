@@ -274,11 +274,11 @@ class BaseModel():
         # dummy variables  for variables for which to calculate adjustment variables 
         
         
-        self.exo_dummy =  sorted(vx+'_D' for vx in self.endogene 
+        self.fix_dummy =  sorted(vx+'_D' for vx in self.endogene 
                     if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene and  vx+'_A' in self.exogene)
-        self.exo_add_factor   = [v[:-2]+'_A' for v in self.exo_dummy]
-        self.exo_value     = [v[:-2]+'_X' for v in self.exo_dummy]
-        self.exo_endo       = [v[:-2]      for v in self.exo_dummy]
+        self.fix_add_factor   = [v[:-2]+'_A' for v in self.fix_dummy]
+        self.fix_value     = [v[:-2]+'_X' for v in self.fix_dummy]
+        self.fix_endo       = [v[:-2]      for v in self.fix_dummy]
                 
 
 
@@ -2027,11 +2027,11 @@ class Description_Mixin():
         '''Takes a dict of variable descriptions and enhance it for the standard suffixes for generated variables''' 
         
         add_d =   { newname : 'Add factor:'+ var_description.get(v,v)        for v in self.endogene if  (newname := v+'_A') in self.exogene }
-        dummy_d = { newname : 'Exo dummy:'+ var_description.get(v,v)         for v in self.endogene if  (newname := v+'_D')  in self.exogene }
-        exo_d =   { newname : 'Exo value:'+ var_description.get(v,v)         for v in self.endogene if  (newname := v+'_X')  in self.exogene }
+        dummy_d = { newname : 'Fix dummy:'+ var_description.get(v,v)         for v in self.endogene if  (newname := v+'_D')  in self.exogene }
+        fix_d =   { newname : 'Fix value:'+ var_description.get(v,v)         for v in self.endogene if  (newname := v+'_X')  in self.exogene }
         fitted_d =   { newname : 'Fitted  value:'+ var_description.get(v,v)  for v in self.endogene if  (newname := v+'_FITTED')  in self.endogene }
         # breakpoint() 
-        var_description_new =  {**var_description,**add_d,**dummy_d,**exo_d,**fitted_d}
+        var_description_new =  {**var_description,**add_d,**dummy_d,**fix_d,**fitted_d}
         return var_description_new
         
         
@@ -2178,7 +2178,7 @@ class Modify_Mixin():
         # breakpoint()
         frml2_normal = [[frml,fname, 
                          normal(expression[:-1],do_preprocess=do_preprocess,add_add_factor=add_add_factor,
-                                exo_adjust=pt.kw_frml_name(fname.upper(),'EXO'))]
+                                fix_adjust=pt.kw_frml_name(fname.upper(),'EXO'))]
                            for allfrml,frml,fname,expression in frml2_strip] 
         frmldict_update = {nexpression.endo_var: f'{frml} {fname} {nexpression.normalized}$' for 
                            frml,fname,nexpression in frml2_normal} 
@@ -3477,13 +3477,18 @@ class Display_Mixin():
 
         '''
         # breakpoint()
+        # breakpoint()    
         if self.in_notebook():
+            des = self.var_description if type(description_dict)==type(None) else description_dict
+            keys= set(des.keys())
             if type(transpose) == type(None):
                 xtranspose = (df.index[0] in self.lastdf.index)
             else:
                 xtranspose = transpose 
-            des = self.var_description if type(description_dict)==type(None) else description_dict
-            if not xtranspose:
+                
+                
+            if any([i in keys for i in df.index]) :
+            # if not xtranspose:
                 tt = pd.DataFrame([[des.get(v,v) for t in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
             else:
                 tt = pd.DataFrame([[des.get(v,v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
@@ -3491,9 +3496,14 @@ class Display_Mixin():
             xpct = '%' if percent else ''
             result = df.style\
             .set_sticky(axis='columns')\
-            .set_table_attributes('class="table"')\
-            .format('{:.'+xdec+'f}'+xpct)\
-                
+            .set_sticky(axis='index')\
+            .set_table_attributes('class="table"')
+            
+            if any(df.dtypes == 'object'):
+                result = result
+            else:
+                result = result.format('{:,.'+xdec+'f}'+xpct)
+
             if use_tooltip:
                 try:
                     result=result.set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'
@@ -3505,6 +3515,7 @@ class Display_Mixin():
             return result
         else: 
             return df
+        
 
 
     def write_eq(self, name='My_model.fru', lf=True):
@@ -4762,16 +4773,16 @@ class Solver_Mixin():
     
     def calc_add_factor(self,outdf,silent=True):
     
-            if (select:= outdf.loc[self.current_per,self.exo_dummy] != 0.0).any().any():
+            if (select:= outdf.loc[self.current_per,self.fix_dummy] != 0.0).any().any():
                 # breakpoint()
                 if not silent:
                     print('Running calc_adjust_model ')
-                    print(f'Dummies set {self.exo_dummy_active}')
+                    print(f'Dummies set {self.fix_dummy_fixed}')
                 self.calc_add_factor_model.current_per=self.current_per   
                 out_add_factor = self.calc_add_factor_model(outdf,silent=silent) # calculate the adjustment factors 
                 
-                calc_add_factordf = out_add_factor.loc[self.current_per,self.exo_add_factor] # new adjust values 
-                add_factordf     = outdf.loc        [self.current_per,self.exo_add_factor].copy()  # old adjust values
+                calc_add_factordf = out_add_factor.loc[self.current_per,self.fix_add_factor] # new adjust values 
+                add_factordf     = outdf.loc        [self.current_per,self.fix_add_factor].copy()  # old adjust values
                 new_add_factordf  = add_factordf.mask(select.values,calc_add_factordf)   # update the old adjust values with the new ones, only when dummy is != 0
                 outdf.loc[self.current_per,new_add_factordf.columns] = new_add_factordf # plug all adjust values into the result         
                 
@@ -6420,7 +6431,7 @@ class WB_Mixin():
         '''returns endogeneous variables not in wb_behavioral '''
         return  self.endogene-self.wb_behavioral
     
-    def wb_exog(self,df,pat='*',start='',end=''):
+    def fix(self,df,pat='*',start='',end=''):
         '''
         Fixes variables to the current values. 
         
@@ -6463,7 +6474,7 @@ class WB_Mixin():
     
         return dataframe
     
-    def wb_endog(self,df,pat='*',start='',end=''):
+    def unfix(self,df,pat='*',start='',end=''):
         '''
         Unfix (endogenize) variables 
 
@@ -6491,11 +6502,11 @@ class WB_Mixin():
         return dataframe
     
     @property
-    def exo_dummy_active(self):
+    def fix_dummy_fixed(self):
         ''' returns names of actiove exogenizing dummies 
         
         sets the property self. exodummy_per which defines the time over which the dummies are defined'''
-        dmat = self.lastdf.loc[self.current_per,self.exo_dummy].T
+        dmat = self.lastdf.loc[self.current_per,self.fix_dummy].T
         dmatset = dmat.loc[(dmat != 0.0).any(axis=1), (dmat != 0.0).any(axis=0)]
         
         dummyselected = list(dmatset.index)
@@ -6504,39 +6515,39 @@ class WB_Mixin():
             end = dmatset.columns[-1]
             # breakpoint()
             per1,per2 = self.lastdf.index.slice_locs(start, end)
-            self.exo_dummy_per = self.lastdf.index[per1:per2]
+            self.fix_dummy_per = self.lastdf.index[per1:per2]
             # print(self.exodummy_per)
             return dummyselected 
         else: 
             return []
         
     @property
-    def exo_add_factor_active(self):
+    def fix_add_factor_fixed(self):
         '''Returns the add factors corrosponding to the active exogenizing dummies'''
     
-        return [v[:-2]+'_A' for v in self.exo_dummy_active]
+        return [v[:-2]+'_A' for v in self.fix_dummy_fixed]
     
     @property
-    def exo_value_active(self):
+    def fix_value_fixed(self):
         '''Returns the exogenizing values corrosponding to the active exogenizing dummies'''
 
-        return [v[:-2]+'_X' for v in self.exo_dummy_active]
+        return [v[:-2]+'_X' for v in self.fix_dummy_fixed]
     
     @property
-    def exo_endo_active(self):
+    def fix_endo_fixed(self):
         '''Returns the endogeneous variables corrosponding to the active exogenizing dummies'''
 
-        return [v[:-2] for v in self.exo_dummy_active]
+        return [v[:-2] for v in self.fix_dummy_fixed]
     
-    def exo_inf(self):
+    def fix_inf(self):
         ''' Display information regarding exogenizing 
          '''
-        if not len(self.exo_dummy_active) :
+        if not len(self.fix_dummy_fixed) :
             raise Exception('No active exogenixed variables ')
-        varnameslist = zip(self.exo_endo_active,self.exo_value_active,self.exo_dummy_active,self.exo_add_factor_active)   
+        varnameslist = zip(self.fix_endo_fixed,self.fix_value_fixed,self.fix_dummy_fixed,self.fix_add_factor_fixed)   
         for varnames in varnameslist: 
             
-            out = self.lastdf.loc[self.exo_dummy_per,varnames]
+            out = self.lastdf.loc[self.fix_dummy_per,varnames]
             out.style.set_caption(self.var_description[varnames[0]])
             print(f'\n{self.var_description[varnames[0]]}')
             print(f'\n{self.allvar[varnames[0]]["frml"]}')

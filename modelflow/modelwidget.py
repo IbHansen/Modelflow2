@@ -480,6 +480,11 @@ class htmlwidget_df:
         image = self.mmodel.ibsstyle(self.org_df_var,percent = self.percent).to_html()
         self.whtml = widgets.HTML(image)
         self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+        
+    @property
+    def show(self):
+        display(self.datawidget)
+        
 
 @dataclass
 class htmlwidget_fig:
@@ -548,6 +553,10 @@ class visshow:
     def __repr__(self):
         return ''
          
+    @property
+    def show(self):
+        display(self.datawidget)
+    
 
 if __name__ == '__main__':
     if 'masia' not in locals(): 
