@@ -156,6 +156,7 @@ class vis():
          ''' Returns the differens between the basedf and lastdf'''
          difdf = self.thisdf-self.model.basedf.loc[:,self.names]
          return vis(model=self.model,df=difdf,pat=self.__pat__)
+     
      @property
      def difpctlevel(self):
          ''' Returns the differens between the basedf and lastdf'''
@@ -173,12 +174,37 @@ class vis():
          return 
      
      def __repr__(self):
-         return self.thisdf.loc[self.model.current_per,:].to_string() 
 
+#         return self.thisdf.loc[self.model.current_per,:].to_string() 
+
+         if self.model.in_notebook():
+           #  from modelwidget import visshow
+            # visshow(self.model,self.__pat__)
+             return ''
+         else:     
+             return self.thisdf.loc[self.model.current_per,:].to_string() 
+             
+        
+
+     def _repr_html_(self):
+         from modelwidget import visshow
+         visshow(self.model,self.__pat__)
+         return ''
+
+         # return self.model.ibsstyle(self.thisdf.loc[self.model.current_per,:]).to_html(doctype_html=True) 
+
+
+     # @property
+     # def show(self):
+     #     if self.model.in_notebook():
+     #         display(self.model.ibsstyle(self.thisdf.loc[self.model.current_per,:],transpose=True))
+     #     else:     
+     #         print(self.thisdf.loc[self.model.current_per,:].to_string()) 
      @property
      def show(self):
          if self.model.in_notebook():
-             display(self.model.ibsstyle(self.thisdf.loc[self.model.current_per,:],transpose=True))
+             from modelwidget import visshow
+             visshow(self.model,self.__pat__)
          else:     
              print(self.thisdf.loc[self.model.current_per,:].to_string()) 
 

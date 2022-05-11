@@ -508,20 +508,19 @@ class htmlwidget_fig:
 @dataclass
 class visshow:
     mmodel : any     # a model 
-    varpat    : str ='*'
+    varpat    : str ='*' 
     showvarpat  : bool = True 
-    exodif   : any = pd.DataFrame()         # definition 
-    out_dict : dict = field(default_factory=dict)
- 
+    show_on   : bool = True  # Display when called 
         
     def __post_init__(self):
         ...
         this_vis = self.mmodel[self.varpat]
+        self.out_dict = {}
         self.out_dict['Baseline'] ={'df':this_vis.base}        
         self.out_dict['Alternative'] ={'df':this_vis} 
         self.out_dict['Difference'] ={'df':this_vis.dif} 
         self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
-        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpct.mul100,'percent':True} 
+        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpctlevel.mul100,'percent':True} 
         
         out = widgets.Output() 
         self.out_to_data = {key:
@@ -537,9 +536,19 @@ class visshow:
        
         tabnew =  {key: tabwidget({'Charts':self.out_to_figs[key],'Data':self.out_to_data[key]},selected_index=0) for key in self.out_to_figs.keys()}
        
-        out_exodif = htmlwidget_df(self.mmodel,self.mmodel.exodif().T)
+        exodif = self.mmodel.exodif()
+        exonames = exodif.columns
+        exoindex = exodif.index
+        exobase = self.mmodel.basedf.loc[exoindex,exonames]
+        exolast = self.mmodel.lastdf.loc[exoindex,exonames]
         
-        out_tab_info = tabwidget({'Delta exogenous':out_exodif},selected_index=0)
+        out_exodif = htmlwidget_df(self.mmodel,exodif.T)
+        out_exobase = htmlwidget_df(self.mmodel,exobase.T)
+        out_exolast = htmlwidget_df(self.mmodel,exolast.T)
+        
+        out_tab_info = tabwidget({'Delta exogenous':out_exodif,
+                                  'Baseline exogenous':out_exobase,
+                                  'Alt. exogenous':out_exolast},selected_index=0)
         
         tabnew['Info'] = out_tab_info
         
@@ -548,10 +557,15 @@ class visshow:
             
         
         self.datawidget = this.datawidget  
-        display(self.datawidget)
+        if self.show_on:
+            ...
+            display(self.datawidget)
 
     def __repr__(self):
         return ''
+
+    def _html_repr_(self):  
+        return self.datawidget 
          
     @property
     def show(self):

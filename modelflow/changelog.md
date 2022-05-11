@@ -26,3 +26,7 @@ modelmf.mfcalc keyword showeq=False, if True will display the equations
 mfmodel.mfcalc time can be set by starting equations with <start end> 
 modelclass get_totgraph make sure that orphaned endogeneous also are includes as nodes. 
 todo modelclass makedotnew dows not draw orphans, only nodes connected to edges. 
+modelwidget fig_to_image returns a html render of a matplotlib figure
+modelwidget htmlwidget_df widget to display ibsstyle'ed dataframe in widgets 
+modelwidget htmlwidget_fig  widget to display figure in widgets 
+modelwidget.visshow shows all from a [] operator in jupyter notebook
