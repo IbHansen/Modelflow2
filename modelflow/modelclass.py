@@ -1347,6 +1347,9 @@ class Model_help_Mixin():
             options = loptions.split() 
             time_options = [o for o in options if not o.startswith('--')]
             other_options = [o for o in options if  o.startswith('--')]
+            if len(other_options) > 1:
+                    raise Exception(f'To many options\nOffending:"{whole_line}"')
+            other_options[0] = '--keep_growth' if other_options[0] =='--KG' else  other_options[0]     
             # print(f'{time_options=}')
             
             l=(timesplit := l0.rsplit('>'))[-1]
@@ -1452,7 +1455,7 @@ class Model_help_Mixin():
         # testline = ' PAKGGREVCO2CE* PAKGGREVCO2CER PAKGGREVCO2CER = 29 '
         # re.split(operatorpat,testline)
         
-        legal_options = {'--KEEP_GROWTH','--NO_KEEP_GROWTH'}
+        legal_options = {'--KEEP_GROWTH','--NO_KEEP_GROWTH','--KG','--NKG'}
         start = '-0' # start of dataframe 
         end   = '-1' # end of dataframe  
         
@@ -1476,9 +1479,12 @@ class Model_help_Mixin():
 
             options = loptions.split() 
             
+            if len(options) > 1:
+                    raise Exception(f'To many options :{options}')
+
             for o in options:
                 if o not in legal_options:
-                    raise Exception(f'Illegal option:{o}')
+                    raise Exception(f'Illegal option:{o}, legal is:{legal_options}')
             
             l=(timesplit := l0.rsplit('>'))[-1]
             if len(timesplit) == 2:
@@ -1518,7 +1524,8 @@ class Model_help_Mixin():
                 if not len(varname):
                     raise Exception(f'No variable name  \nOffending:"{whole_line}"')
                 update_growth = False
-                if (keep_growth or '--KEEP_GROWTH' in options) and not '--NO_KEEP_GROWTH' in options:
+                if (keep_growth or '--KEEP_GROWTH' in options or '--KG' in options) and \
+                  not ('--NO_KEEP_GROWTH' in options or '--NKG' in options):
                     if varname not in df.columns:
                         raise Exception(f'Can not keep growth for created variable\nOffending:"{whole_line}"')
     
@@ -3488,7 +3495,6 @@ class Display_Mixin():
                 
                 
             if any([i in keys for i in df.index]) :
-            # if not xtranspose:
                 tt = pd.DataFrame([[des.get(v,v) for t in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
             else:
                 tt = pd.DataFrame([[des.get(v,v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
@@ -5386,6 +5392,7 @@ class Solver_Mixin():
                         itbefore = itafter
                 else:
                     print(f'{self.periode} not converged in {iteration} iterations')
+                    
                 this_epi1d(a,  1.0)
 
                 self.saveeval3(values, row, a)
@@ -5420,7 +5427,7 @@ class Solver_Mixin():
                     f'Floating point operations per second : {numberfloats/self.simtime:>15,.1f}')
 
         if not silent:
-            print(self.name + ' solved  ')
+            print(self.name + ' finished ')
         return outdf
 
     def outsolve1dcunk(self, debug=0, chunk=None, ljit=False, cache='False'):
@@ -6299,7 +6306,7 @@ class Solver_Mixin():
                 f'Simulation time (seconds)            :{self.simtime:>15,.2f}')
 
         if not silent:
-            print(self.name + ' solved  ')
+            print(self.name + ' calculated  ')
         return outdf
 
     def invert(self, databank, targets, instruments, silent=1,
@@ -6555,8 +6562,8 @@ class WB_Mixin():
                 print(f'\n{self.calc_add_factor_model.allvar[varnames[3]]["frml"]}')
             except:
                 ...
-            res = out.applymap(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  ).T
-            display(res)         
+            res = out.applymap(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  )
+            display(self.ibsstyle(res) )         
         
 
         

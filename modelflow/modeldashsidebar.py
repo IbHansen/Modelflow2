@@ -193,7 +193,7 @@ class Dash_graph():
      
      def __post_init__(self):
         self.fokusvar = set()
-        print('Still worlking on the layout of this')
+        # print('Still worlking on the layout of this')
         self.firstsession = True
         selected_var = self.pre_var if self.pre_var else sorted(self.mmodel.allvar.keys())[0] 
         self.outvar_state =  selected_var

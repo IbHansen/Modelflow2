@@ -16,6 +16,8 @@ from sympy import sympify, solve, Symbol
 import re
 from dataclasses import dataclass, field, asdict
 import dataclasses 
+from IPython.display import SVG, display, Image, IFrame, HTML
+
 
 from modelmanipulation import lagone, find_arg,pastestring,stripstring
 from modelpattern import udtryk_parse, namepat
@@ -44,8 +46,14 @@ class Normalized_frml:
     @property
     def fdict(self):
         return dataclasses.asdict(self)
-        
     
+    def _repr_html_(self):
+        print(f'{self}')
+        
+    def __repr__(self):
+        return ''
+        
+        
     
 def endovar(f):
     '''Finds the first variable in a expression'''
@@ -54,6 +62,8 @@ def endovar(f):
             ud=t.var
             break
     return ud
+
+
 
 
 def funk_in(funk,a_string):
@@ -176,14 +186,17 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
     
     Args:
         ind_o (str): input expression, no $ and no frml name just lhs=rhs
-        the_endo (str, optional): the endogeneous to isolate on the left hans side. if '' the first variable in the lhs. It shoud be on the left hand side. 
+        the_endo (str, optional): the endogeneous to isolate on the left hans side. if the first variable in the lhs. 
+                                  It shoud be on the left hand side. 
         add_add_factor (bool, optional): force introduction aof adjustment term, and an expression to calculate it
         do_preprocess (bool, optional): DESCRIPTION. preprocess the expression
-        endo_lhs (bool, optional): Accept to normalize for a rhs endogeneous variable 
+        endo_lhs (bool, optional): If false, accept to normalize for a rhs endogeneous variable 
         exo_adjust (bool, optional): also make this equation exogenizable  
         fitted (bool,optional) : create a fitted equations, without exo and adjustment 
         
-
+    preprocessing handels 
+        
+    
     Returns:
          An instance of the class: Normalized_frml which will contain the different relevant expressions 
 
@@ -208,8 +221,9 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
         endo_name = the_endo.upper() if the_endo else endovar(lhs)
         endo = sympify(endo_name,clash)
         a_name = f'{endo_name}{add_suffix}' if add_add_factor else ''
-        thiseq = f'({lhs}-__RHS__ {"+" if add_add_factor else ""}{a_name})'  if endo_lhs else \
-                 f'({lhs}- {rhs}  {"+" if add_add_factor else ""}{a_name})'
+        thiseq = f'({lhs}-(__RHS__ {"+" if add_add_factor else ""}{a_name}))'  if endo_lhs else \
+                 f'({lhs}- ({rhs}  {"+" if add_add_factor else ""}{a_name}))'
+        # print(thiseq)         
         transeq = pastestring(thiseq,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
         kat=sympify(transeq,clash)  
         # breakpoint()

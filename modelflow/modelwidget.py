@@ -504,6 +504,22 @@ class htmlwidget_fig:
         image = fig_to_image(self.figs,format=self.format)
         self.whtml = widgets.HTML(image)
         self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+        
+@dataclass
+class htmlwidget_label:
+    ''' class displays a dataframe in a html widget '''
+    
+    expname      : str =  ""
+    format       : str =  "svg"
+  
+    
+    def __post_init__(self):
+        ...
+        
+        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+ 
+    
+        self.datawidget=self.wexp
 
 @dataclass
 class visshow:
@@ -519,13 +535,16 @@ class visshow:
         self.out_dict['Baseline'] ={'df':this_vis.base}        
         self.out_dict['Alternative'] ={'df':this_vis} 
         self.out_dict['Difference'] ={'df':this_vis.dif} 
-        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
         self.out_dict['Diff. pct. level'] ={'df':this_vis.difpctlevel.mul100,'percent':True} 
+        self.out_dict['Base growth'] ={'df':this_vis.base.pct.mul100,'percent':True} 
+        self.out_dict['Alt. growth'] ={'df':this_vis.pct.mul100,'percent':True} 
+        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
         
         out = widgets.Output() 
         self.out_to_data = {key:
             htmlwidget_df(self.mmodel,value['df'].df.T,expname=key,
-                         percent=value.get('percent',False))                           
+
+                          percent=value.get('percent',False))                           
                            for key,value in self.out_dict.items()}
             
         with out: # to suppress the display of matplotlib creation 
@@ -537,14 +556,20 @@ class visshow:
         tabnew =  {key: tabwidget({'Charts':self.out_to_figs[key],'Data':self.out_to_data[key]},selected_index=0) for key in self.out_to_figs.keys()}
        
         exodif = self.mmodel.exodif()
-        exonames = exodif.columns
+        exonames = exodif.columns        
         exoindex = exodif.index
-        exobase = self.mmodel.basedf.loc[exoindex,exonames]
-        exolast = self.mmodel.lastdf.loc[exoindex,exonames]
-        
-        out_exodif = htmlwidget_df(self.mmodel,exodif.T)
-        out_exobase = htmlwidget_df(self.mmodel,exobase.T)
-        out_exolast = htmlwidget_df(self.mmodel,exolast.T)
+        if len(exonames):
+            exobase = self.mmodel.basedf.loc[exoindex,exonames]
+            exolast = self.mmodel.lastdf.loc[exoindex,exonames]
+            
+            out_exodif = htmlwidget_df(self.mmodel,exodif.T)
+            out_exobase = htmlwidget_df(self.mmodel,exobase.T)
+            out_exolast = htmlwidget_df(self.mmodel,exolast.T)
+        else: 
+            out_exodif = htmlwidget_label(expname = 'No difference in exogenous')
+            out_exobase =  htmlwidget_label(expname = 'No difference in exogenous')
+            out_exolast =  htmlwidget_label(expname = 'No difference in exogenous')
+            
         
         out_tab_info = tabwidget({'Delta exogenous':out_exodif,
                                   'Baseline exogenous':out_exobase,

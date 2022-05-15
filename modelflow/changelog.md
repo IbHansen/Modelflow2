@@ -29,4 +29,8 @@ todo modelclass makedotnew dows not draw orphans, only nodes connected to edges.
 modelwidget fig_to_image returns a html render of a matplotlib figure
 modelwidget htmlwidget_df widget to display ibsstyle'ed dataframe in widgets 
 modelwidget htmlwidget_fig  widget to display figure in widgets 
-modelwidget.visshow shows all from a [] operator in jupyter notebook
+modelwidget.visshow shows all from a [] operator in jupyter tabbed widget notebook 
+modelwidget.visshow shows used for _repr_html_ of class vis used in [] operator 
+modelnormalize.normal add_factor was wrongly computet ad subtract_factor fixed (but result the same)
+modelnormalize.Normalized_frml has implemented _repl_html_ to display automatecly in notebooks 
+dataframe.upd --keep_growth = --kg --non_keep_growth = --nkg

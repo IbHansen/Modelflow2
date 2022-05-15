@@ -120,12 +120,17 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
 
     
     scalar_list = object_dict['scalar']
-    for scalar in scalar_list: 
-        wf_df.loc[:,scalar['_name']] = scalar['value']
-    scalar_data = [pd.Series(s['data'],name=s['_name'],index=index) for s in series_list]
+    # for scalar in scalar_list: 
+    #     if 'value' in scalar.keys():
+    #         wf_df.loc[:,scalar['_name']] = scalar['value']
+    scalar_data = [pd.Series(s['value'],name=s['_name'],index=index) 
+                   for s in scalar_list if 'value' in s.keys()]
+    # breakpoint()
+    wf_df = pd.concat([wf_df]+scalar_data,axis=1)
     string_list = object_dict['stringobj']
+    # breakpoint()
     mfmsa_dict = {o['_name']:o.get('value','empty') for o in string_list if o.get('_name','').startswith('MFMSA') }
-    mfmsa_options = mfmsa_dict['MFMSAOPTIONS']
+    mfmsa_options = mfmsa_dict.get('MFMSAOPTIONS','')
     
     # breakpoint()
     model_all_about['modelname'] = modelname
@@ -166,6 +171,7 @@ class GrabWfModel():
     fit_end            : any = None  # end of fittet model unless overruled by mfmsa
     do_add_factor_calc : bool = True  # calculate the add factors 
     test_frml          : str =''    # a testmodel as string if used no wf processing 
+    disable_progress   : bool = False # Disable progress bar
     
     def __post_init__(self):
         if self.test_frml: 
@@ -199,7 +205,10 @@ class GrabWfModel():
             raise Exception('@ in lines ')
             
         self.all_frml = [nz.normal(l,add_add_factor=(typ=='stoc'),make_fitted=(typ=='stoc'),exo_adjust=(typ=='stoc'),eviews=e) 
-                         for l,typ,e in tqdm(zip(line,line_type,eviewsline),desc='Normalizing model',total=len(line),bar_format=bars)]
+                         for l,typ,e in tqdm(zip(line,line_type,eviewsline),
+                    desc='Normalizing model',total=len(line),bar_format=bars,disable=self.disable_progress)]
+
+
 
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
         lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
@@ -226,8 +235,13 @@ class GrabWfModel():
         self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')
         # breakpoint()
         
+        try:
+            temp_start,temp_end  = self.mfmsa_start_end
+        except: 
+            if  type(self.start) == type(None) or type(self.end)   == type(None):
+                raise Exception('Can not read start and end from MFMSA. Provide start and end in call ')
+              
         
-        temp_start,temp_end  = self.mfmsa_start_end
         self.start = temp_start if type(self.start) == type(None) else self.start
         self.end   = temp_end   if type(self.end)   == type(None) else self.end 
         if self.do_add_factor_calc:
@@ -295,9 +309,9 @@ class GrabWfModel():
         end = (root.find('iFace').find('SolveEnd').text)  
         return start,end 
             
+    # @property
     
-    # @functools.cached_property
-    @property
+    @functools.cached_property
     def dfmodel(self):
         '''The original input data enriched with during variablees, variables containing 
         values for specific historic years and model specific transformation '''
@@ -326,9 +340,16 @@ class GrabWfModel():
         self.showduringvars = df[during_vars] 
         
         if self.make_fitted:
-            temp_start,temp_end = self.mfmsa_start_end
+            # try: 
+            #     temp_start,temp_end = self.mfmsa_start_end
+            # except:
+            #     if type(self.fit_end) == type(None):
+            #        raise Exception('Can not read end period from  MFMSA. Provide fit_end in call ')
+                  
             if type(self.fit_end) == type(None):
-                self.fit_end = temp_end     
+                self.fit_end = self.end     
+            if type(self.fit_start) == type(None):
+                self.fit_start = self.start     
             df = self.mfitmodel.res(df,self.fit_start,self.fit_end)
         
         # breakpoint()
@@ -410,7 +431,7 @@ if __name__ == '__main__':
     
 
     filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-    modelname = 'pak'
+    modelname = 'kaz'
     filename = filedict[modelname]
     
     
@@ -425,8 +446,10 @@ if __name__ == '__main__':
                         country_df_trans =  country_df_trans,
                         make_fitted = True,
                         do_add_factor_calc=True,
+                        start = 2020,
+                        end = 2100, 
                         fit_start = 2000,          # Start of calculation of fittet model in baseline 
-                        fit_end   = None           # end of calc for fittted model, if None taken from mdmfsa options  
+                        fit_end   = 2030           # end of calc for fittted model, if None taken from mdmfsa options  
                         ) 
     
     cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
@@ -437,3 +460,5 @@ if __name__ == '__main__':
     lookat_des  = mlookat.var_description
     lookat_equations  = mlookat.equations   
     lookat_all_frml_dict = grab_lookat.all_frml_dict
+    base_input = cmodel.base_input
+    mlookat(2020,2021, )
