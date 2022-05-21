@@ -275,7 +275,7 @@ class BaseModel():
         
         
         self.fix_dummy =  sorted(vx+'_D' for vx in self.endogene 
-                    if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene and  vx+'_A' in self.exogene)
+                    if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene )
         self.fix_add_factor   = [v[:-2]+'_A' for v in self.fix_dummy]
         self.fix_value     = [v[:-2]+'_X' for v in self.fix_dummy]
         self.fix_endo       = [v[:-2]      for v in self.fix_dummy]
@@ -2185,7 +2185,7 @@ class Modify_Mixin():
         # breakpoint()
         frml2_normal = [[frml,fname, 
                          normal(expression[:-1],do_preprocess=do_preprocess,add_add_factor=add_add_factor,
-                                fix_adjust=pt.kw_frml_name(fname.upper(),'EXO'))]
+                                make_fixable = pt.kw_frml_name(fname.upper(),'FIXABLE'))]
                            for allfrml,frml,fname,expression in frml2_strip] 
         frmldict_update = {nexpression.endo_var: f'{frml} {fname} {nexpression.normalized}$' for 
                            frml,fname,nexpression in frml2_normal} 
@@ -6427,11 +6427,11 @@ class WB_Mixin():
         ''' returns endogeneous where the frml name contains a Z which signals a stocastic equation 
         '''
         out1 =   {vx for vx in self.endogene if 'Z' in self.allvar[vx]['frmlname']}
-        alt  =   {vx for vx in self.endogene if 'EXO' in self.allvar[vx]['frmlname'] 
-                  if   vx+'_X' in self.exogene and  vx+'_D' in self.exogene }
+        alt  =   {vx for vx in self.endogene if ('EXO' in self.allvar[vx]['frmlname'] or 'FIXABLE' in self.allvar[vx]['frmlname'])  
+                  and    vx+'_X' in self.exogene and  vx+'_D' in self.exogene }
         # breakpoint()
-        assert out1 == alt, 'Problems wih wb behavioral '
-        return  out1
+        # assert out1 == alt, 'Problems wih wb behavioral '
+        return  alt
     
     @cached_property
     def wb_ident(self):
@@ -6471,8 +6471,8 @@ class WB_Mixin():
         selected  = [v for up in pat.split() for v in fnmatch.filter(beh, up.upper())]
         exo   = [v+'_X' for v in selected ]
         dummy = [v+'_D' for v in selected ]
-        
-        with self.set_smpl(start,end):
+        # breakpoint()
+        with self.set_smpl(start,end,df=dataframe):
             dataframe.loc[self.current_per,dummy] = 1.0 
             selected_values = dataframe.loc[self.current_per,selected]
             selected_values.columns = exo 
@@ -6515,7 +6515,7 @@ class WB_Mixin():
         sets the property self. exodummy_per which defines the time over which the dummies are defined'''
         dmat = self.lastdf.loc[self.current_per,self.fix_dummy].T
         dmatset = dmat.loc[(dmat != 0.0).any(axis=1), (dmat != 0.0).any(axis=0)]
-        
+        # breakpoint() 
         dummyselected = list(dmatset.index)
         if len(dmatset.columns):
             start  = dmatset.columns[0]
@@ -6532,7 +6532,7 @@ class WB_Mixin():
     def fix_add_factor_fixed(self):
         '''Returns the add factors corrosponding to the active exogenizing dummies'''
     
-        return [v[:-2]+'_A' for v in self.fix_dummy_fixed]
+        return [v[:-2]+'_A' for v in self.fix_dummy_fixed if v[:-2]+'_A' in self.exogene]
     
     @property
     def fix_value_fixed(self):
@@ -6546,15 +6546,20 @@ class WB_Mixin():
 
         return [v[:-2] for v in self.fix_dummy_fixed]
     
-    def fix_inf(self):
+    def fix_inf(self,df=None):
         ''' Display information regarding exogenizing 
          '''
+        thisdf = self.lastdf if type(df) == type(None) else df  
         if not len(self.fix_dummy_fixed) :
             raise Exception('No active exogenixed variables ')
-        varnameslist = zip(self.fix_endo_fixed,self.fix_value_fixed,self.fix_dummy_fixed,self.fix_add_factor_fixed)   
+        if len(self.fix_add_factor_fixed):
+            varnameslist = zip(self.fix_endo_fixed,self.fix_value_fixed,self.fix_dummy_fixed,self.fix_add_factor_fixed)   
+        else: 
+            varnameslist = zip(self.fix_endo_fixed,self.fix_value_fixed,self.fix_dummy_fixed)   
+            
         for varnames in varnameslist: 
             
-            out = self.lastdf.loc[self.fix_dummy_per,varnames]
+            out = thisdf.loc[self.fix_dummy_per,varnames]
             out.style.set_caption(self.var_description[varnames[0]])
             print(f'\n{self.var_description[varnames[0]]}')
             print(f'\n{self.allvar[varnames[0]]["frml"]}')

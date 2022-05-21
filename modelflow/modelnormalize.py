@@ -176,7 +176,7 @@ def fixleads(eq,check=False):
        print(f"After  {res}")
    return res
 
-def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,exo_adjust=False,make_fitted=False,eviews=''):
+def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,make_fixable =False,make_fitted=False,eviews=''):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
     
@@ -191,7 +191,7 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
         add_add_factor (bool, optional): force introduction aof adjustment term, and an expression to calculate it
         do_preprocess (bool, optional): DESCRIPTION. preprocess the expression
         endo_lhs (bool, optional): If false, accept to normalize for a rhs endogeneous variable 
-        exo_adjust (bool, optional): also make this equation exogenizable  
+        make_fixable  (bool, optional): also make this equation exogenizable  
         fitted (bool,optional) : create a fitted equations, without exo and adjustment 
         
     preprocessing handels 
@@ -242,7 +242,7 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
             res_rhs_fit    =stripstring(str(endo_frml_fit[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
                     stripstring(str(endo_frml_fit[0]),post)
                     
-        if exo_adjust:
+        if make_fixable :
             out_frml   = f'{endo} = ({res_rhs}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
         else: 
             out_frml   = f'{endo} = {res_rhs}'.upper() 
@@ -268,14 +268,14 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
         out_frml = preprocessed 
         out_fitted = f'{lhs}_fitted = {rhs}'.upper()  if make_fitted else ''
         if add_add_factor:
-            if exo_adjust:
+            if make_fixable :
                 result = Normalized_frml(lhs,ind_o,preprocessed,
                     f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
             else:
                 result = Normalized_frml(lhs,ind_o,preprocessed,
                     f'{lhs} = ({rhs} + {lhs}{add_suffix})                               ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
         else:
-            if exo_adjust:
+            if make_fixable :
                 result = Normalized_frml(lhs,ind_o,preprocessed,
                     f'{lhs} = ({rhs})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D',fitted=out_fitted)
             else: 
@@ -335,7 +335,7 @@ if __name__ == '__main__':
     normal("D(a,0,1) = b").fprint
     normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
     normal('a = D( LOG(QLHP(+1)))').fprint
-    normal('a = gamma+ f+O',the_endo='f',endo_lhs=False,exo_adjust=True).fprint
+    normal('a = gamma+ f+O',the_endo='f',endo_lhs=False,make_fixable =True).fprint
     # breakpoint()
     normal('zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_add_factor=1).fprint
     fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')

@@ -204,7 +204,7 @@ class GrabWfModel():
                 print(f'New modelflow line:{l}')
             raise Exception('@ in lines ')
             
-        self.all_frml = [nz.normal(l,add_add_factor=(typ=='stoc'),make_fitted=(typ=='stoc'),exo_adjust=(typ=='stoc'),eviews=e) 
+        self.all_frml = [nz.normal(l,add_add_factor=(typ=='stoc'),make_fitted=(typ=='stoc'),make_fixable =(typ=='stoc'),eviews=e) 
                          for l,typ,e in tqdm(zip(line,line_type,eviewsline),
                     desc='Normalizing model',total=len(line),bar_format=bars,disable=self.disable_progress)]
 
