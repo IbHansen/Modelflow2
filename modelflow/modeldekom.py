@@ -292,7 +292,7 @@ class totdif():
                         ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
                     else:
                         tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
-                        
+                        ax.xaxis.set_major_locator(plt.MaxNLocator(10))
                 ax.set_ylabel(name,fontsize='x-large')
 #                ax.set_xticklabels(tempdf.index.tolist(), rotation = 45,fontsize='x-large')
 ##                ax.xaxis.set_minor_locator(plt.NullLocator())

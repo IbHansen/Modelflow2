@@ -1898,7 +1898,8 @@ class Dekomp_Mixin():
         ddf.T.plot(ax=ax, stacked=True, kind='bar')
         ax.set_ylabel(self.var_description[varnavn], fontsize='x-large')
         ax.set_xticklabels(ddf.T.index.tolist(),
-                           rotation=45, fontsize='x-large')
+                          rotation=45, fontsize='x-large')
+        ax.xaxis.set_major_locator(plt.MaxNLocator(10))
         nthreshold = '' if threshold == 0.0 else f', threshold = {threshold}'
 
         ntitle = f'Attribution{nthreshold}' 
