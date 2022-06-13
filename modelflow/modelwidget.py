@@ -530,6 +530,9 @@ class visshow:
         
     def __post_init__(self):
         ...
+        from IPython import get_ipython
+        get_ipython().magic('matplotlib notebook') 
+        # print(plt.get_backend())
         this_vis = self.mmodel[self.varpat]
         self.out_dict = {}
         self.out_dict['Baseline'] ={'df':this_vis.base}        
@@ -575,7 +578,7 @@ class visshow:
                                   'Baseline exogenous':out_exobase,
                                   'Alt. exogenous':out_exolast},selected_index=0)
         
-        tabnew['Info'] = out_tab_info
+        tabnew['Exo info'] = out_tab_info
         
         this =   tabwidget(tabnew,selected_index=0)
             
@@ -585,6 +588,8 @@ class visshow:
         if self.show_on:
             ...
             display(self.datawidget)
+        get_ipython().magic('matplotlib inline') 
+    
 
     def __repr__(self):
         return ''

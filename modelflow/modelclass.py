@@ -1735,10 +1735,10 @@ class Dekomp_Mixin():
         if lprint:
             print('\nFormula        :', mfrml.allvar[varnavn]['frml'], '\n')
             print(res2df.to_string(
-                float_format=lambda x: '{0:10.6f}'.format(x)))
+                float_format=lambda x: '{0:10.2f}'.format(x)))
             print('\n Contributions to differende for ', varnavn)
             print(resdf.to_string(
-                float_format=lambda x: '{0:10.6f}'.format(x)))
+                float_format=lambda x: '{0:10.2f}'.format(x)))
             print('\n Share of contributions to differende for ', varnavn)
             print(pctendo.to_string(
                 float_format=lambda x: '{0:10.0f}%'.format(x)))
@@ -4090,7 +4090,7 @@ class Display_Mixin():
             xtrans = trans if trans else self.var_description
             figs = {v: self.plot_basis(v,  df*mul, legend=legend,
                                        scale=scale, trans=xtrans,
-                                       title=f'Difference{aspct}to "{df.columns[0] if keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
+                                       title=f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
                                        yunit=yunit,
                                        ylabel='Percent' if showtype == 'growth' else ylabel,
                                        xlabel='',
@@ -4740,7 +4740,7 @@ class Solver_Mixin():
                 solverguess = 'newton_un_normalized'
 
         solver = newkwargs.get('solver', solverguess)
-        silent = newkwargs.get('silent', False)
+        silent = newkwargs.get('silent', True)
         self.model_solver = getattr(self, solver)
         
         # print(f'solver:{solver},solverkwargs:{newkwargs}')
