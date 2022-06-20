@@ -8,8 +8,11 @@ This module creates model class instances.
 
 @author: Ib
 """
-
-import model_Excel as me
+try:
+    # if in linux 
+    import model_Excel as me
+except: 
+    ...
 from pathlib import Path
 from io import StringIO
 import json
@@ -99,7 +102,7 @@ class BaseModel():
     """
 
     def __init__(self, i_eq='', modelname='testmodel', silent=False, straight=False, funks=[],
-                 tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= True,
+                 tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= False,
                  var_description={},  **kwargs):
         ''' initialize a model'''
         if i_eq != '':
@@ -207,7 +210,7 @@ class BaseModel():
             mega = [(f,nt) for f,nt in mega_all if not pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
             mega_calc_add_factor = [(f,nt) for f,nt in mega_all if pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
             calc_add_factor_frml = [f'FRML <CALC> {f.expression}' for f,nt in mega_calc_add_factor]
-            self.calc_add_factor_model = model(' '.join(calc_add_factor_frml),funks=self.funks)
+            self.calc_add_factor_model = model(' '.join(calc_add_factor_frml),funks=self.funks,modelname='Calculate add factors')
             if not self.calc_add_factor_model.istopo:
                 raise Exception('The add factor calculation model should be recursive')
         else:
@@ -439,7 +442,10 @@ class BaseModel():
     @property
     def endograph(self):
         ''' Dependencygraph for currrent periode endogeneous variable, used for reorder the equations
-        if self.safeorder is true feedback for all lags are included '''
+        if self.safeorder is true feedback for all lags are included 
+        
+        safeorder was a fix to handle lags = -0 which unexpected was used in WB models. Now it is handeled in modelpattern
+        '''
         if not hasattr(self, '_endograph'):
             terms = ((var, inf['terms'])
                      for var, inf in self.allvar.items() if inf['endo'])
@@ -4784,12 +4790,12 @@ class Solver_Mixin():
                 # breakpoint()
                 if not silent:
                     print('Running calc_adjust_model ')
-                    print(f'Dummies set {self.fix_dummy_fixed}')
+                    print(f'Dummies set {self.find_fix_dummy_fixed(outdf)}')
                 self.calc_add_factor_model.current_per=self.current_per   
                 out_add_factor = self.calc_add_factor_model(outdf,silent=silent) # calculate the adjustment factors 
                 
                 calc_add_factordf = out_add_factor.loc[self.current_per,self.fix_add_factor] # new adjust values 
-                add_factordf     = outdf.loc        [self.current_per,self.fix_add_factor].copy()  # old adjust values
+                add_factordf      = outdf.loc         [self.current_per,self.fix_add_factor].copy()  # old adjust values
                 new_add_factordf  = add_factordf.mask(select.values,calc_add_factordf)   # update the old adjust values with the new ones, only when dummy is != 0
                 outdf.loc[self.current_per,new_add_factordf.columns] = new_add_factordf # plug all adjust values into the result         
                 
@@ -6508,9 +6514,38 @@ class WB_Mixin():
         with self.set_smpl(start,end):
             dataframe.loc[self.current_per,dummy] = 0.0      
         return dataframe
-    
+
+    def find_fix_dummy_fixed(self,df=None):
+        ''' returns names of actiove exogenizing dummies 
+        
+        sets the property self. exodummy_per which defines the time over which the dummies are defined'''
+        dmat = df.loc[self.current_per,self.fix_dummy].T
+        dmatset = dmat.loc[(dmat != 0.0).any(axis=1), (dmat != 0.0).any(axis=0)]
+        # breakpoint() 
+        dummyselected = list(dmatset.index)
+        if len(dmatset.columns):
+            start  = dmatset.columns[0]
+            end = dmatset.columns[-1]
+            # breakpoint()
+            per1,per2 = df.index.slice_locs(start, end)
+            self.fix_dummy_per = self.lastdf.index[per1:per2]
+            # print(self.exodummy_per)
+            return dummyselected 
+        else: 
+            return []
+
+
+   
     @property
     def fix_dummy_fixed(self):
+        ''' returns names of actiove exogenizing dummies 
+        
+        sets the property self. exodummy_per which defines the time over which the dummies are defined'''
+        return self.find_fix_dummy_fixed(self.lastdf)
+
+    
+    @property
+    def fix_dummy_fixed_old(self):
         ''' returns names of actiove exogenizing dummies 
         
         sets the property self. exodummy_per which defines the time over which the dummies are defined'''
@@ -6528,6 +6563,8 @@ class WB_Mixin():
             return dummyselected 
         else: 
             return []
+
+
         
     @property
     def fix_add_factor_fixed(self):

@@ -36,7 +36,7 @@ def logit(number):
     '''
     return(-log(1.0/number-1.0)) 
 
-# @jit("f8(f8)")
+@jit("f8(f8)")
 def logit_inverse(number):
     ''' A function which returns the logit of a number 
     

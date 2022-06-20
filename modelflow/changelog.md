@@ -34,3 +34,6 @@ modelwidget.visshow shows used for _repr_html_ of class vis used in [] operator
 modelnormalize.normal add_factor was wrongly computet ad subtract_factor fixed (but result the same)
 modelnormalize.Normalized_frml has implemented _repl_html_ to display automatecly in notebooks 
 dataframe.upd --keep_growth = --kg --non_keep_growth = --nkg
+Fix modelpattern to take into acount lags of -0 or +0 
+@jit on inverse_logit to facilitate ljit=True on modelrun for WB/PAK model
+protected import of excel import for linux uses 

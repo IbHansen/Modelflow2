@@ -116,7 +116,7 @@ def find_statements(a_model):
     '''
     return(re.findall(statementpat, a_model))
     
-def model_parse(equations,funks=[]):
+def model_parse_old(equations,funks=[]):
     '''Takes a model returns a list of tupels. Each tupel contains:
         :the compleete formular: 
         :FRML:
@@ -130,6 +130,26 @@ def model_parse(equations,funks=[]):
     # nterm = namedtuple('nterm', [ 'number', 'op', 'var', 'lag'])
     expressionre= udtrykre(funks)
     ibh = [(fatoms(*c),[nterm(*t) for t in expressionre.findall(c[3])])  for c in (split_frml(f)  for f in find_frml(equations.upper()) )]
+    return ibh
+
+def model_parse(equations,funks=[]):
+    '''Takes a model returns a list of tupels. Each tupel contains:
+        :the compleete formular: 
+        :FRML:
+        :formular name:
+        :the expression:
+        :list of terms from the expression:  
+            
+     The purpose of this function is to make model analysis faster. this is 20 times faster than looping over espressions in a model
+     
+     This new model_parse handels lags of -0 or +0 which ocours in some models from world bank. 
+   '''
+    fatoms = namedtuple('fatoms', 'whole, frml ,frmlname, expression')
+    # nterm = namedtuple('nterm', [ 'number', 'op', 'var', 'lag'])
+    expressionre= udtrykre(funks)
+    ibh = [(fatoms(*c),
+            [ nterm(t[0],t[1],t[2], '' if t[3] == '-0' or t[3]=='+0' else t[3]) for t in expressionre.findall(c[3])])  
+           for c in (split_frml(f)  for f in find_frml(equations.upper()) )]
     return ibh
 
 
@@ -206,6 +226,12 @@ def f2():
     return 103
 
 if __name__ == '__main__' and 1 :
-    model_parse('frml <> a= b+c(-1)+3.444 $')
-    model_parse('frml <> a+b+b+b=x(-1)+y(-33) $ frml <> a= b+c(-1)+3.444 $')
- 
+    #%%  nterm = namedtuple('nterm', ['number', 'op', 'var', 'lag'])
+
+    model_parse('frml <> a= b+c(     + 0)+3.444 $')
+    xx = model_parse('frml <> a+b+b+b=x(-1)+y(-33) $ frml <> a= b+c(-0)+3.444 $')
+    for ((frml, fr, n, udtryk), nt) in xx: 
+        print(f'{udtryk=}')
+        for t in nt: 
+            print(f'{t=}   ')
+            
