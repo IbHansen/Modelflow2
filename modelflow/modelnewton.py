@@ -314,7 +314,7 @@ class newton_diff():
             udtryk=r'\frac{\partial '+ mj.an_expression_to_latex(v)+'}{\partial '+mj.an_expression_to_latex(k)+'}'
             return udtryk
          
-        _ = self.get_diff_values_all()
+        if show_values: _ = self.get_diff_values_all()
             
         
         for v in  [var for  p in pat.split() for var in fnmatch.filter(self.declared_endo_set,p)]:
@@ -357,7 +357,7 @@ class newton_diff():
                 return f'{vterm.var}___lag___0'
             
         with ttimer('Generates a model which calculatews the derivatives for a model',self.timeit):
-            out = '\n'.join([f'{lhsvar}__p__{makelag(rhsvar)} = {self.diffendocur[lhsvar][rhsvar]}  '
+            out = '\n'.join([f'{lhsvar}__P__{makelag(rhsvar)} = {self.diffendocur[lhsvar][rhsvar]}  '
                     for lhsvar in sorted(self.diffendocur)
                       for rhsvar in sorted(self.diffendocur[lhsvar])
                     ] )
@@ -396,11 +396,11 @@ class newton_diff():
         with ttimer('calculate derivatives',self.timeit):
             self.difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk).loc[_per,self.diff_model.endogene]
         with ttimer('Prepare wide input to sparse matrix',self.timeit):
-        
+            # breakpoint()
             cname = namedtuple('cname','var,pvar,lag')
-            self.coltup = [cname(i.rsplit('__P__',1)[0], 
-                            i.rsplit('__P__',1)[1].split('___L',1)[0],
-                  get_lagnr(i.rsplit('__P__',1)[1].split('___L',1)[1])) 
+            self.coltup = [cname(i.split('__P__',1)[0], 
+                            i.split('__P__',1)[1].split('___L',1)[0],
+                  get_lagnr(i.split('__P__',1)[1].split('___L',1)[1])) 
                    for i in self.difres.columns]
             # breakpoint()
             self.coltupnum = [(self.placdic[var],self.placdic[pvar+'___RES' if (pvar+'___RES' in self.mmodel.endogene) else pvar],lag) 

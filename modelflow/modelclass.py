@@ -4038,10 +4038,10 @@ class Display_Mixin():
            showfig (TYPE, optional): Time will come . Defaults to False.
            vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
            savefig (string,optional): folder to save figures in. Can include folder name, if needed the folder will be created 
-       Returns:
-           figs (dict): dict of the generated Matplotlib figures. 
            keep_dim (bool,True): if True each line is a scenario else each line is a variable 
            dataonly = False: If True only the resulting dataframes are returned 
+       Returns:
+           figs (dict): dict of the generated Matplotlib figures. 
        """
 
         try:
@@ -6374,21 +6374,21 @@ class Solver_Mixin():
             per (TYPE, optional): The time frame for which to show iterations, Defaults to the last projection .
             last (TYPE, optional): Only show the last iterations . Defaults to 0.
             change (TYPE, optional): show the changes from iteration to iterations instead of the levels. Defaults to False.
+            top (float,optional): top of chartss between 1 and 0
 
         Returns:
             fig (TYPE): DESCRIPTION.
 
         '''
 
-        model = self
         try:
             if per == '':
-                per_ = model.current_per[-1]
+                per_ = self.current_per[-1]
             else:
                 relevantindex = pd.Index(self.dumpdf['per']).unique()
                 per_ = relevantindex[relevantindex.get_loc(per)]
             # breakpoint()
-            indf = model.dumpdf.query('per == @per_')
+            indf = self.dumpdf.query('per == @per_')
             out0 = indf.query('per == @per_').set_index('iteration',
                                                         drop=True).drop('per', axis=1).copy()
             out = out0.diff() if change else out0

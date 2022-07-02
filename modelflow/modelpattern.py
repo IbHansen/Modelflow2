@@ -199,7 +199,8 @@ def udtryk_parse(udtryk,funks=[]):
     temp=re.sub(r'\s+', '', udtryk.upper()) # remove all blanks 
     xxx = udtrykre(funks=funks).findall(temp) # the compiled re pattern is importet from pattern 
  # her laver vi det til en named tuple
-    ibh = [nterm._make(t) for t in xxx]   # Easier to remember by using named tupels . 
+    ibh = [nterm(t[0],t[1],t[2], '' if t[3] == '-0' or t[3]=='+0' else t[3]) for t in xxx]
+    # ibh = [nterm._make(t) for t in xxx]   # Easier to remember by using named tupels . 
     return ibh
 
 def kw_frml_name(frml_name0, kw,default=None):
@@ -234,4 +235,6 @@ if __name__ == '__main__' and 1 :
         print(f'{udtryk=}')
         for t in nt: 
             print(f'{t=}   ')
-            
+           
+    print(*udtryk_parse('frml <> a+b+b+b=x(+0)+y(-33) + b+c(-0)+3.444 $'),sep=' \n')        
+    print(kw_frml_name('<ib, yy>','ib'))       

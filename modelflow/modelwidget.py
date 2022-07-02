@@ -552,7 +552,7 @@ class visshow:
             
         with out: # to suppress the display of matplotlib creation 
             self.out_to_figs ={key:
-                 htmlwidget_fig(value['df'].rename().plot(top=1,title=''),expname='')               
+                 htmlwidget_fig(value['df'].rename().plot(top=0.9,title=''),expname='')               
                               for key,value in self.out_dict.items() }
                 
        
