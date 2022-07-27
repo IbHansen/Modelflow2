@@ -38,4 +38,6 @@ Fix model_parse in modelpattern to take into acount lags of -0 or +0
 @jit on inverse_logit to facilitate ljit=True on modelrun for WB/PAK model
 protected import of excel import for linux uses 
 Fix udtryk_parse  in modelpattern to take care of lags of -0 or +0
-modelnewton made error when a variable was called P fixed 
+modelnewton made error when a variable was called P, fixed 
+modelnewton warning when using set (model.endogene) in dataframe.loc fixed by using sorted(model.endogene)
+modelnewton get_eigen_vectors can not handle NaN in Jacobi it can be set to 0 

@@ -76,6 +76,13 @@ from math import isclose, sqrt, erf
 from scipy.special import erfinv, ndtri
 
 node = namedtuple('node', 'lev,parent,child')
+'''A named tuple used when to drawing the logical structure. Describes an edge of the dependency graph 
+
+:lev: Level from start
+:parent: The parent
+:child: The child  
+
+'''
 
 np.seterr(all='ignore')
 
@@ -138,20 +145,18 @@ class BaseModel():
 
         That is the model specification is first exploded. 
 
-        Args:
-            :equations: The model
-            :modelname: Name of the model. Defaults to 'testmodel'.
-            :silent: Suppress messages. Defaults to False.
-            :straigth: Don't reorder the model. Defaults to False.
-            :funks: Functions incorporated in the model specification . Defaults to [].
-            :params: For later use. Defaults to {}.
-            :tabcomplete: Allow tab compleetion in editor, for large model time consuming. Defaults to True.
-            :previousbase: Use previous run as basedf not the first. Defaults to False.
-            :norm: Normalize the model. Defaults to True.
-            :sym: If normalize do it symbolic. Defaults to False.
-            :sep: Seperate the equations. Defaults to newline '\n'.
-
-        :Returns:  A model instance: 
+        :parameter equations: The model
+        :parameter modelname: Name of the model. Defaults to 'testmodel'.
+        :parameter silent: Suppress messages. Defaults to False.
+        :parameter straigth: Don't reorder the model. Defaults to False.
+        :parameter funks: Functions incorporated in the model specification . Defaults to [].
+        :parameter params: For later use. Defaults to {}.
+        :parameter tabcomplete: Allow tab compleetion in editor, for large model time consuming. Defaults to True.
+        :parameter previousbase: Use previous run as basedf not the first. Defaults to False.
+        :parameter norm: Normalize the model. Defaults to True.
+        :parameter sym: If normalize do it symbolic. Defaults to False.
+        :parameter sep: Seperate the equations. Defaults to newline.        
+        :return:  A model instance 
 
         """
 
@@ -165,7 +170,11 @@ class BaseModel():
 
     def get_histmodel(self):
         """ return a model instance with a model which generates historic values for equations 
-        marked by a frml name I or IDENT """
+        marked by a frml name I or IDENT
+        
+        Uses :any:`find_hist_model`
+        
+        """
         hist_eq = mp.find_hist_model(self.equations)
         return type(self)(hist_eq, funks=self.funks)
 
@@ -196,7 +205,8 @@ class BaseModel():
         :maxnavlen: The longest variable name 
         :blank: An emty string which can contain the longest variable name 
         :solveorder: The order in which the model is solved - initaly the order of the equations in the model 
-
+        :normalized: This model is normalized
+        :endogene_true: Set of endogeneous variables in model if normalized, else the set of declared endogeneous variables 
         '''
         gc.disable()
         mega_all = pt.model_parse(self.equations, self.funks)
@@ -775,26 +785,27 @@ class BaseModel():
 
         The default options are resonable for most use:
 
-        :start,slut: Start and end of simulation, default as much as possible taking max lag into acount  
-        :max_iterations : Max interations
-        :first_test: First iteration where convergence is tested
-        :ljit: If True Numba is used to compile just in time - takes time but speeds solving up 
-        :new: Force creation a new version of the solver (for testing)
-        :exclude: Don't use use theese foormulas
-        :silent: Suppres solving informations 
-        :conv: Variables on which to measure if convergence has been achived 
-        :samedata: If False force a remap of datatrframe to solving vector (for testing) 
-        :dumpvar: Variables to dump 
-        :ldumpvar: toggels dumping of dumpvar 
-        :dumpwith: with of dumps
-        :dumpdecimal: decimals in dumps 
-        :lcython: Use Cython to compile the model (experimental )
-        :alfa: Dampning of formulas marked for dampning (<Z> in frml name)
-        :sim: For later use
-        :absconv: Treshold for applying relconv to test convergence 
-        :relconv: Test for convergence 
-        :debug:  Output debug information 
-        :stats:  Output solving statistics
+        :parameter start,slut: Start and end of simulation, default as much as possible taking max lag into acount  
+        :parameter max_iterations: Max interations
+        :parameter first_test: First iteration where convergence is tested
+        :parameter ljit: If True Numba is used to compile just in time - takes time but speeds solving up 
+        :parameter new: Force creation a new version of the solver (for testing)
+        :parameter exclude: Don't use use theese foormulas
+        :parameter silent: Suppres solving informations 
+        :parameter conv: Variables on which to measure if convergence has been achived 
+        :parameter samedata: If False force a remap of datatrframe to solving vector (for testing) 
+        :parameter dumpvar: Variables to dump 
+        :parameter ldumpvar: toggels dumping of dumpvar 
+        :parameter dumpwith: with of dumps
+        :parameter dumpdecimal: decimals in dumps 
+        :parameter lcython: Use Cython to compile the model (experimental )
+        :parameter alfa: Dampning of formulas marked for dampning (<Z> in frml name)
+        :parameter sim: For later use
+        :parameter absconv: Treshold for applying relconv to test convergence 
+        :parameter relconv: Test for convergence 
+        :parameter debug:  Output debug information 
+        :parameter stats:  Output solving statistics
+        :return outdf: A dataframe with the solution 
 
 
        '''
@@ -931,9 +942,12 @@ class BaseModel():
     def make_res(self, order='', exclude=[]):
         ''' makes a function which performs a Gaus-Seidle iteration
         if ljit=True a Jittet function will also be created.
-        The functions will be placed in: 
-        model.solve 
-        model.solve_jit '''
+        The functions will be placed in\: 
+            
+        - model.solve 
+        - model.solve_jit 
+         
+         '''
 
         xxx = self.outres(order, exclude)  # find the text of the solve
         exec(xxx, globals())  # make the factory defines
@@ -996,6 +1010,13 @@ class Org_model_Mixin():
 
     @property
     def lister(self):
+        '''
+       lists used in the equations
+
+        Returns:
+            dict: Dictionary of lists defined in the input equations.
+
+        '''
         return pt.list_extract(self.equations)   # lists used in the equations
 
     @property
@@ -1018,7 +1039,17 @@ class Org_model_Mixin():
         return ''.join(udlist)
 
     def vlist(self, pat):
-        '''returns a list of variable in the model matching the pattern, the pattern can be a list of patterns'''
+        '''
+        Returns a list of variable in the model matching the pattern, the pattern can be a list of patterns
+
+        Args:
+            pat (string or list of strings): One or more pattern seperated by space wildcards * and ?, special pattern\: #ENDO  
+        
+        Returns:
+            out (list): list of variable names matching the pat.
+
+        '''
+        ''''''
         if isinstance(pat, list):
             upat = pat
         else:
@@ -1050,10 +1081,22 @@ class Org_model_Mixin():
         return out
 
     def exodif(self, a=None, b=None):
-        ''' Finds the differences between two dataframes in exogeneous variables for the model
+        '''
+        Finds the differences between two dataframes in exogeneous variables for the model
         Defaults to getting the two dataframes (basedf and lastdf) internal to the model instance 
 
-        Exogeneous with a name ending in <endo>__RES are not taken in, as they are part of a un_normalized model'''
+        Exogeneous with a name ending in <endo>__RES are not taken in, as they are part of a un_normalized model
+
+        Args:
+            a (TYPE, optional): DESCRIPTION. Defaults to None. If None model.basedf will be used.
+            b (TYPE, optional): DESCRIPTION. Defaults to None. If None model.lastdf will be used.
+
+        Returns:
+            DataFrame: the difference between the models exogenous variables in a and b.
+
+        '''
+
+
         selected = sorted(self.exogene_true)
         aexo = a.loc[:, selected] if isinstance(
             a, pd.DataFrame) else self.basedf.loc[:,selected]
@@ -1149,6 +1192,12 @@ class Org_model_Mixin():
         return df
 
     def __getitem__(self, name):
+        '''
+        To execute the index operator []
+        
+        Uses the :any:`vis` operator        
+
+        '''
         a = self.vis(name)
         return a
 
@@ -1437,9 +1486,9 @@ class Model_help_Mixin():
     @staticmethod
     def update(indf, updates, lprint=False,scale = 1.0,create=True,keep_growth=False,):
         '''
-        Updates a dataframe and returns a dataframe
+         Updates a dataframe and returns a dataframe
         
-    Args:
+        Args:
             indf (DataFrame): input dataframe.
             basis (string): lines with variable updates look below.
             lprint (bool, optional): if True each update is printed  Defaults to False.
@@ -1450,9 +1499,9 @@ class Model_help_Mixin():
         Returns:
             df (TYPE): the updated dataframe .
             
-        A line in updates looks like this:     
+        A line in updates looks like this::    
             
-        ´<`[[start] end]`>` <var> <=|+|*|%|=growth|+growth|=diff> <value>... [--keep_growth_rate|--no_keep_growth_rate]       
+          [<[[start] end]>] <var> <=|+|*|%|=growth|+growth|=diff> <value>... [--keep_growth_rate|--kg|--no_keep_growth_rate|--nkg]       
 
         '''
         # start experiments for including pattern and wildcards in an updateline to update several variables in one line  
@@ -1915,6 +1964,16 @@ class Dekomp_Mixin():
         return fig
 
     def get_dekom_gui(self, var=''):
+        '''
+        Interactive wrapper around :any:`dekomp_plot` and :any:`dekomp_plot_per`
+
+        Args:
+            var (TYPE, optional): start variable . Defaults to ''.
+
+        Returns:
+            show (TYPE): dict of matplotlib figs .
+
+        '''
 
         def show_dekom(Variable, Pct, Periode, Threshold=0.0):
             print(self.allvar[Variable]['frml'].replace('  ', ' '))
@@ -1935,6 +1994,24 @@ class Dekomp_Mixin():
         return show
 
     def totexplain(self, pat='*', vtype='all', stacked=True, kind='bar', per='', top=0.9, title='', use='level', threshold=0.0):
+        '''
+        makes a total explanation for the variables defined by pat 
+
+        Args:
+            pat (TYPE, optional): DESCRIPTION. Defaults to '*'.
+            vtype (TYPE, optional): DESCRIPTION. Defaults to 'all'.
+            stacked (TYPE, optional): DESCRIPTION. Defaults to True.
+            kind (TYPE, optional): DESCRIPTION. Defaults to 'bar'.
+            per (TYPE, optional): DESCRIPTION. Defaults to ''.
+            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.
+            title (TYPE, optional): DESCRIPTION. Defaults to ''.
+            use (TYPE, optional): DESCRIPTION. Defaults to 'level'.
+            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.
+
+        Returns:
+            fig (TYPE): DESCRIPTION.
+
+        '''
         if not hasattr(self, 'totdekomp'):
             from modeldekom import totdif
             self.totdekomp = totdif(self, summaryvar='*', desdic={})
@@ -2335,7 +2412,9 @@ class Modify_Mixin():
             
     
 class Graph_Mixin():
-    '''This class defines graph related methods and properties
+    '''
+    This class defines graph related methods and properties
+    
     '''
 
     @staticmethod
@@ -2670,6 +2749,18 @@ class Graph_Draw_Mixin():
         return self.todot2(alllinks, **kwargs)
 
     def plotadjacency(self, size=(5, 5), title='Structure', nolag=False):
+        '''
+        Draws an adjacendy matrix 
+
+        Args:
+            size (TYPE, optional): DESCRIPTION. Defaults to (5, 5).
+            title (TYPE, optional): DESCRIPTION. Defaults to 'Structure'.
+            nolag (TYPE, optional): DESCRIPTION. Defaults to False.
+
+        Returns:
+            fig (matplotlib figure): A adjacency matrix drawing.
+
+        '''
         if nolag:
             G = self.endograph_nolag
             order, blocks, blocktype = self.create_strong_network(
@@ -4577,6 +4668,7 @@ class Json_Mixin():
 
 
 class Excel_Mixin():
+    '''This Mixin handels dumps and loads models into excel ''' 
 
     def modeldump_excel(self, file, fromfile='control.xlsm', keep_open=False):
         '''
@@ -4633,6 +4725,23 @@ class Excel_Mixin():
 
     @classmethod
     def modelload_excel(cls, infile='pak', funks=[], run=False, keep_open=False, **kwargs):
+        '''
+        Loads a model from a excel workbook dumped by :any:`modeldump_excel`
+
+        Args:
+            cls (TYPE): DESCRIPTION.
+            infile (TYPE, optional): DESCRIPTION. Defaults to 'pak'.
+            funks (TYPE, optional): DESCRIPTION. Defaults to [].
+            run (TYPE, optional): DESCRIPTION. Defaults to False.
+            keep_open (TYPE, optional): DESCRIPTION. Defaults to False.
+            **kwargs (TYPE): DESCRIPTION.
+
+        Returns:
+            mmodel (TYPE): DESCRIPTION.
+            res (TYPE): DESCRIPTION.
+            TYPE: DESCRIPTION.
+
+        '''
         if isinstance(infile, xw.main.Book):
             wb = infile
         else:
@@ -4672,6 +4781,7 @@ class Excel_Mixin():
 
 
 class Zip_Mixin():
+    '''This experimental class zips a dumped file '''
     def modeldump2(self, outfile=''):
         outname = self.name if outfile == '' else outfile
 
@@ -4694,6 +4804,7 @@ class Zip_Mixin():
 
 
 class Solver_Mixin():
+    '''This Mixin handels the solving of models. '''
     DEFAULT_relconv = 0.0000001
 
     def __call__(self, *args, **kwargs):
@@ -4908,72 +5019,71 @@ class Solver_Mixin():
             dumpvar='*', init=False, ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, timeon=False,
             fairopt={'fair_max_iterations ': 1}, progressbar=False,**kwargs):
         '''
-        
-        :param databank: DESCRIPTION
-        :type databank: TYPE
-        :param start: DESCRIPTION, defaults to ''
-        :type start: TYPE, optional
-        :param slut: DESCRIPTION, defaults to ''
-        :type slut: TYPE, optional
-        :param silent: DESCRIPTION, defaults to 1
-        :type silent: TYPE, optional
-        :param samedata: DESCRIPTION, defaults to 0
-        :type samedata: TYPE, optional
-        :param alfa: DESCRIPTION, defaults to 1.0
-        :type alfa: TYPE, optional
-        :param stats: DESCRIPTION, defaults to False
-        :type stats: TYPE, optional
-        :param first_test: DESCRIPTION, defaults to 5
-        :type first_test: TYPE, optional
-        :param max_iterations: DESCRIPTION, defaults to 200
-        :type max_iterations: TYPE, optional
-        :param conv: DESCRIPTION, defaults to '*'
-        :type conv: TYPE, optional
-        :param absconv: DESCRIPTION, defaults to 0.01
-        :type absconv: TYPE, optional
-        :param relconv: DESCRIPTION, defaults to DEFAULT_relconv
-        :type relconv: TYPE, optional
-        :param stringjit: DESCRIPTION, defaults to True
-        :type stringjit: TYPE, optional
-        :param transpile_reset: DESCRIPTION, defaults to False
-        :type transpile_reset: TYPE, optional
-        :param dumpvar: DESCRIPTION, defaults to '*'
-        :type dumpvar: TYPE, optional
-        :param init: DESCRIPTION, defaults to False
-        :type init: TYPE, optional
-        :param ldumpvar: DESCRIPTION, defaults to False
-        :type ldumpvar: TYPE, optional
-        :param dumpwith: DESCRIPTION, defaults to 15
-        :type dumpwith: TYPE, optional
-        :param dumpdecimal: DESCRIPTION, defaults to 5
-        :type dumpdecimal: TYPE, optional
-        :param chunk: DESCRIPTION, defaults to 30
-        :type chunk: TYPE, optional
-        :param ljit: DESCRIPTION, defaults to False
-        :type ljit: TYPE, optional
-        :param timeon: DESCRIPTION, defaults to False
-        :type timeon: TYPE, optional
-        :param fairopt: DESCRIPTION, defaults to {'fair_max_iterations ': 1}
-        :type fairopt: TYPE, optional
-        :param progressbar: DESCRIPTION, defaults to False
-        :type progressbar: TYPE, optional
-        :param **kwargs: DESCRIPTION
-        :type **kwargs: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        '''
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        Evaluates this model on a databank from start to slut (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
-        (:func:`modelclass.model.fouteval`) 
-        then it evaluates the function and returns the values to a the Dataframe in the databank.
+        
+        Then it evaluates the function and returns the values to a the Dataframe in the databank.
 
         The text for the evaluater function is placed in the model property **make_los_text** 
         where it can be inspected 
-        in case of problems.         
-
+        in case of problems.      
+        
+        Solves using Gauss-Seidle 
+        
+        
+        :param databank: Input dataframe 
+        :type databank: dataframe
+        :param start: start of simulation, defaults to ''
+        :type start: optional
+        :param slut: end of simulation, defaults to ''
+        :type slut:  optional
+        :param silent: keep simulation silent , defaults to 1
+        :type silent: bool, optional
+        :param samedata: the inputdata has exactly same structure as last simulation , defaults to 0
+        :type samedata: bool, optional
+        :param alfa: Dampeing factor, defaults to 1.0
+        :type alfa: float, optional
+        :param stats: Show statistic after finish, defaults to False
+        :type stats: bool, optional
+        :param first_test: Start testing af number og simulation, defaults to 5
+        :type first_test: int, optional
+        :param max_iterations: Max iterations, defaults to 200
+        :type max_iterations: int, optional
+        :param conv: variables to test for convergence, defaults to '*'
+        :type conv: str, optional
+        :param absconv: Test convergence for values above this, defaults to 0.01
+        :type absconv: float, optional
+        :param relconv: If relative movement is less, then convergence , defaults to DEFAULT_relconv
+        :type relconv: float, optional
+        :param stringjit: If just in time compilation do it on a string not a file to import, defaults to True
+        :type stringjit: bool, optional
+        :param transpile_reset: Ingnore previous transpiled model, defaults to False
+        :type transpile_reset: bool, optional
+        :param dumpvar: Variables for which to dump the iterations, defaults to '*'
+        :type dumpvar: str, optional
+        :param init: If True take previous periods value as starting value, defaults to False
+        :type init: bool, optional
+        :param ldumpvar: Dump iterations, defaults to False
+        :type ldumpvar: bool, optional
+        :param dumpwith: DESCRIPTION, defaults to 15
+        :type dumpwith: int, optional
+        :param dumpdecimal: DESCRIPTION, defaults to 5
+        :type dumpdecimal: int, optional
+        :param chunk: Chunk size of transpiled model, defaults to 30
+        :type chunk: int, optional
+        :param ljit: Use just in time compilation, defaults to False
+        :type ljit: bool, optional
+        :param timeon: Time the elements, defaults to False
+        :type timeon: bool, optional
+        :param fairopt: Fair taylor options, defaults to {'fair_max_iterations': 1}
+        :type fairopt: TYPE, optional
+        :param progressbar: Show progress bar , defaults to False
+        :type progressbar: TYPE, optional
+        :return: A dataframe wilt the results 
+        
         '''
+        
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
                                kwargs}.get('fair_max_iterations ', 1)
@@ -6318,6 +6428,7 @@ class Solver_Mixin():
 
     def invert(self, databank, targets, instruments, silent=1,
                DefaultImpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, **kwargs):
+        '''Solves instruments for targets'''
         from modelinvert import targets_instruments
         t_i = targets_instruments(databank, targets, instruments, self, silent=silent,
                                   DefaultImpuls=DefaultImpuls, defaultconv=defaultconv, nonlin=nonlin, maxiter=maxiter)
@@ -6422,6 +6533,7 @@ class Solver_Mixin():
 #         ...
         
 class Dash_Mixin():
+    '''This mixin wraps call the Dash dashboard '''
     def modeldash(self,*arg,**kwargs):
         from modeldashsidebar import Dash_graph
         ...
@@ -6429,6 +6541,8 @@ class Dash_Mixin():
         return out 
 
 class WB_Mixin():
+    '''This mixin handles a number of enhancements '''
+    
     @cached_property
     def wb_behavioral(self):
         ''' returns endogeneous where the frml name contains a Z which signals a stocastic equation 
@@ -6449,15 +6563,15 @@ class WB_Mixin():
         '''
         Fixes variables to the current values. 
         
-        for variables where the equation looks like 
+        for variables where the equation looks like::
         
-        ´´´var = (rhs)*(1-var_d)+var_x*var_d```
+          var = (rhs)*(1-var_d)+var_x*var_d
         
-        so:
-        ```     
-        var_x = var
-        var_d = 1
-        ```
+        The values in the smpl set by *start* and *end* will be set to::
+            
+            var_x = var
+            var_d = 1
+        
         
         The variables fulfilling this are elements of .wb_behavioral 
 
@@ -6613,6 +6727,8 @@ class WB_Mixin():
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,WB_Mixin):
+    '''This is the main model definition'''
+
     pass
 
 
@@ -6624,7 +6740,13 @@ class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin
 if not hasattr(pd.DataFrame,'upd'):
     @pd.api.extensions.register_dataframe_accessor("upd")
     class upd():
-        '''Extend a dataframe to update variables from string '''
+        '''Extend a dataframe to update variables from string 
+        
+        look at :any:`Model_help_Mixin.update`  for syntax 
+        
+
+        
+        '''
         def __init__(self, pandas_obj):
     #        self._validate(pandas_obj)
             self._obj = pandas_obj

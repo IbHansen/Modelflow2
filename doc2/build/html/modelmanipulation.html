@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelmanipulation module &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">modelmanipulation module</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>modelmanipulation module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modelmanipulation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="module-modelmanipulation">
+<span id="modelmanipulation-module"></span><h1>modelmanipulation module<a class="headerlink" href="#module-modelmanipulation" title="Permalink to this headline"></a></h1>
+<p>Created on Mon Sep 02 19:41:11 2013</p>
+<p>This module is a textprocessing module which is used to transforms a <em>template model</em> for a generic bank into into a unrolled and
+expande model which covers all banks - under  control of a list feature.</p>
+<p>The resulting model can be solved after beeing proccesed in the <em>modelclass</em> module.</p>
+<p>In addition to creating a model for forecasting, the module can also create a model which calculates residulas and and variables
+in historic periods.  This model can also be solved by the <em>modelclass</em> module.</p>
+<p>&#64;author: Ib</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmanipulation.safesub">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">safesub</span></span><a class="reference internal" href="_modules/modelmanipulation.html#safesub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.safesub" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<p>A subclass of dict.
+if a <em>safesub</em> is indexed by a nonexisting keyword it just return the keyword
+this alows missing keywords when substitution text inspired by Python cookbook</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.sub">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">sub</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">katalog</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#sub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.sub" title="Permalink to this definition"></a></dt>
+<dd><p>Substitutes keywords from dictionary by returning
+text.format_map(safesub(katalog))
+Allows missing keywords by using safesub subclass</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.oldsub_frml">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">oldsub_frml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ibdic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#oldsub_frml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.oldsub_frml" title="Permalink to this definition"></a></dt>
+<dd><p>to repeat substitution from list</p>
+<ul class="simple">
+<li><p><em>plus</em> is a seperator, used for creating sums</p></li>
+<li><p><em>var</em> and <em>lig</em> Determins for which items the substitution should take place
+by var=abe, lig=’ko’ substitution is only performed for entries where var==’ko’</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.sub_frml">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">sub_frml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ibdic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xvar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#sub_frml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.sub_frml" title="Permalink to this definition"></a></dt>
+<dd><p>to repeat substitution from list</p>
+<ul class="simple">
+<li><p><em>plus</em> is a seperator, used for creating sums</p></li>
+<li><p><em>xvar</em> and <em>lig</em> Determins for which items the substitution should take place
+by var=abe, lig=’ko’ substitution is only performed for entries where var==’ko’</p></li>
+<li><p><em>xvar</em> is the variable to chek against selected in list</p></li>
+<li><p><em>select list</em> is a list of elements in the xvar list to be included</p></li>
+<li><p><em>matc</em> is the entry in <em>select list</em> from which to select from xvar</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.find_res">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">find_res</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#find_res"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.find_res" title="Permalink to this definition"></a></dt>
+<dd><p>Finds the expression which calculates the residual in a formel. FRML &lt;res=a,endo=b&gt; x=a*b+c $</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.find_res_dynare">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">find_res_dynare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">equations</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#find_res_dynare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.find_res_dynare" title="Permalink to this definition"></a></dt>
+<dd><p>equations to calculat _res formulas
+FRML &lt;&gt; x=a*b+c +x_RES  $ -&gt; FRML &lt;&gt; x_res =x-a*b+c  $</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.find_res_dynare_new">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">find_res_dynare_new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">equations</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#find_res_dynare_new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.find_res_dynare_new" title="Permalink to this definition"></a></dt>
+<dd><p>equations to calculat _res formulas
+FRML &lt;&gt; x=a*b+c +x_RES  $ -&gt; FRML &lt;&gt; x_res =x-a*b+c  $
+not finished to speed time up</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.find_hist_model">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">find_hist_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">equations</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#find_hist_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.find_hist_model" title="Permalink to this definition"></a></dt>
+<dd><p>takes a unrolled model and create a model which can be run for historic periode</p>
+<p>and the identities are also calculeted</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.exounroll">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">exounroll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#exounroll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.exounroll" title="Permalink to this definition"></a></dt>
+<dd><p>takes a model and makes a new model by enhancing frml’s with &lt;exo=,j=,jr=&gt;
+in their frml name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Exo</dt>
+<dd class="field-odd"><p>the value can be fixed in to a value valuename_x by setting valuename_d=1</p>
+</dd>
+<dt class="field-even">Jled</dt>
+<dd class="field-even"><p>a additiv adjustment element is added to the frml</p>
+</dd>
+<dt class="field-odd">Jrled</dt>
+<dd class="field-odd"><p>a multiplicativ adjustment element is added to the frml</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.tofrml">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">tofrml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expressions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#tofrml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.tofrml" title="Permalink to this definition"></a></dt>
+<dd><p>a function, wich adds FRML to all expressions seperated by &lt;sep&gt;
+if no start is specified the max lag will be used</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.dounloop">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">dounloop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#dounloop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.dounloop" title="Permalink to this definition"></a></dt>
+<dd><p>Expands (unrolls  do loops in a model template
+goes trough a model template until there is no more nested do loops</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.find_arg">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">find_arg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">funk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">streng</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#find_arg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.find_arg" title="Permalink to this definition"></a></dt>
+<dd><p>chops a string in 3 parts</p>
+<ol class="arabic simple">
+<li><p>before ‘funk(‘</p></li>
+<li><p>in the matching parantesis</p></li>
+<li><p>after the last matching parenthesis</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.sumunroll_old">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">sumunroll_old</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#sumunroll_old"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.sumunroll_old" title="Permalink to this definition"></a></dt>
+<dd><p>expands all sum(list,’expression’) in a model
+returns a new model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.lagarray_unroll">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">lagarray_unroll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#lagarray_unroll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.lagarray_unroll" title="Permalink to this definition"></a></dt>
+<dd><p>expands all sum(list,’expression’) in a model
+returns a new model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.sumunroll">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">sumunroll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#sumunroll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.sumunroll" title="Permalink to this definition"></a></dt>
+<dd><p>expands all sum(list,’expression’) in a model
+if sum(list xvar=lig,’expression’) only list elements where the condition is
+satisfied wil be summed</p>
+<p>returns a new model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.argunroll">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">argunroll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#argunroll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.argunroll" title="Permalink to this definition"></a></dt>
+<dd><p>expands all ARGEXPAND(list,’expression’) in a model
+returns a new model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.creatematrix">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">creatematrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#creatematrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.creatematrix" title="Permalink to this definition"></a></dt>
+<dd><p>expands all ARGEXPAND(list,’expression’) in a model
+returns a new model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.createarray">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">createarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#createarray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.createarray" title="Permalink to this definition"></a></dt>
+<dd><p>expands all to_array(list) in a model
+returns a new model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.kaedeunroll">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">kaedeunroll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#kaedeunroll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.kaedeunroll" title="Permalink to this definition"></a></dt>
+<dd><p>unrolls a chain (kaede) expression - used in the SMEC moedel</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.check_syntax_frml">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">check_syntax_frml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frml</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#check_syntax_frml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.check_syntax_frml" title="Permalink to this definition"></a></dt>
+<dd><p>check syntax of frml</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.normalize_a_frml">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">normalize_a_frml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frml</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#normalize_a_frml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.normalize_a_frml" title="Permalink to this definition"></a></dt>
+<dd><p>Normalize and show a frml</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.nomalize_a_model">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">nomalize_a_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">equations</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#nomalize_a_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.nomalize_a_model" title="Permalink to this definition"></a></dt>
+<dd><p>a symbolic normalization is performed if there is a syntaxerror</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.normalize">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#normalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.normalize" title="Permalink to this definition"></a></dt>
+<dd><p>Normalize an equation with log or several variables at the left hand side, the first variable is considerd the endogeneeus</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.udrul_model">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">udrul_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#udrul_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.udrul_model" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.explode">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">explode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#explode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.explode" title="Permalink to this definition"></a></dt>
+<dd><p>prepares a model from a model template.</p>
+<p>Returns a expanded model which is ready to solve</p>
+<p>Eksempel: model = udrul_model(MinModel.txt)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.modelprint">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">modelprint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span> <span class="pre">A</span> <span class="pre">model'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">udfil</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">short</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#modelprint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.modelprint" title="Permalink to this definition"></a></dt>
+<dd><p>prettyprinter for a a model.
+:udfil: if present is output file
+:short: if present condences the model
+Can handle both model templates and models</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.lagone">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">lagone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">laglead</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#lagone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.lagone" title="Permalink to this definition"></a></dt>
+<dd><p>All variables in a string i
+s lagged one more time</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.lag_n">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">lag_n</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">udtryk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">laglead</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#lag_n"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.lag_n" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.lag_n_tup">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">lag_n_tup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">udtryk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#lag_n_tup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.lag_n_tup" title="Permalink to this definition"></a></dt>
+<dd><p>return a tuppel og lagged expressions from lag = 0 to lag = n)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.pastestring">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">pastestring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onlylags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#pastestring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.pastestring" title="Permalink to this definition"></a></dt>
+<dd><p>All variable names in a  in a string <strong>ind</strong> is pasted with the string <strong>post</strong></p>
+<p>This function can be used to awoid variable name conflict with the internal variable names in sympy.</p>
+<p>an advanced function</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.stripstring">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">stripstring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#stripstring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.stripstring" title="Permalink to this definition"></a></dt>
+<dd><p>All variable names in a  in a string is <strong>ind</strong> is stripped of the string <strong>post</strong>.</p>
+<p>This function reverses the pastestring process</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.findindex">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">findindex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind00</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#findindex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.findindex" title="Permalink to this definition"></a></dt>
+<dd><p>find the index variables meaning variables on the left hand side of = braced by {}</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.doablelist">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">doablelist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expressions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#doablelist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.doablelist" title="Permalink to this definition"></a></dt>
+<dd><p>create a list of tupels from expressions seperated by sep,
+each element in the list is a tupel (index, number og expression, the expression)</p>
+<p>we want make group the expressions acording to index
+index is elements on the left of = braced by {}</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.dosubst">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">dosubst</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">formular</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#dosubst"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.dosubst" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.doablekeep">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">doablekeep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">formulars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#doablekeep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.doablekeep" title="Permalink to this definition"></a></dt>
+<dd><p>takes index in the lhs and creates a do loop around the lines with same indexes
+on the right side you can use %0_, %1_ an so on to indicate the index, just to awoid typing to much</p>
+<p>Also %i_ will be changed to all the indexes</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.doable">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">doable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">formulars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#doable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.doable" title="Permalink to this definition"></a></dt>
+<dd><p>takes index in the lhs and creates a do loop around the line
+on the right side you can use %0_, %1_ an so on to indicate the index, just to awoid typing to much</p>
+<p>Also %i_ will be changed to all the indexes</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.findindex_gams">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">findindex_gams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind00</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#findindex_gams"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.findindex_gams" title="Permalink to this definition"></a></dt>
+<dd><blockquote>
+<div><ul class="simple">
+<li><p>an equation looks like this</p></li>
+<li><p>&lt;frmlname&gt; [index] lhs = rhs</p></li>
+</ul>
+</div></blockquote>
+<p>this function find frmlname and index variables on the left hand side. meaning variables braced by {}</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.un_normalize_expression">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">un_normalize_expression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frml</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#un_normalize_expression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.un_normalize_expression" title="Permalink to this definition"></a></dt>
+<dd><p>This function makes sure that all formulas are unnormalized.
+if the formula is already decorated with &lt;endo=name&gt; this is kept
+else the lhs_varriable is used in &lt;endo=&gt;</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.un_normalize_model">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">un_normalize_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#un_normalize_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.un_normalize_model" title="Permalink to this definition"></a></dt>
+<dd><p>un normalize a model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.un_normalize_simpel">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">un_normalize_simpel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#un_normalize_simpel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.un_normalize_simpel" title="Permalink to this definition"></a></dt>
+<dd><p>un-normalize expressions delimeted by linebreaks</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmanipulation.eksempel">
+<span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">eksempel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelmanipulation.html#eksempel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.eksempel" title="Permalink to this definition"></a></dt>
+<dd><p>takes a template model as input, creates a model and a histmodel and prints the models</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

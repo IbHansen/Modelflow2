@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelgrab &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>modelgrab</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modelgrab</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon Jun 10 21:11:08 2019</span>
+
+<span class="sd">@author: hanseni</span>
+
+<span class="sd">    modules to grab models with different specifications and make them ModelFlow conforme </span>
+
+<span class="sd">   **GrabWbModel** will take a eviews model  and transform it to Business logic</span>
+<span class="sd">  - Create a normalized model, add dampning for the stocastic equations </span>
+<span class="sd">  - Add add-factors to the stocastic equations </span>
+<span class="sd">  - Generate BL for a model which calculates add-factors so a solution will match teh existing values </span>
+<span class="sd">  - Generate BL for the model   </span>
+
+<span class="sd">  -grap data from excel sheet </span>
+
+<span class="sd">  - Make model instance for model and add-factor model </span>
+
+<span class="sd">  - Run the model, check that the results match. </span>
+
+<span class="sd">For debuggging valuesthe last part checs value in the order, in which they are calculated,</span>
+<span class="sd">and then displays the input to off mark equations  </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span> 
+<span class="kn">import</span> <span class="nn">json</span> 
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+
+<span class="kn">from</span> <span class="nn">modelclass</span> <span class="kn">import</span> <span class="n">model</span> 
+<span class="kn">import</span> <span class="nn">modelmf</span> 
+<span class="kn">import</span> <span class="nn">modelmanipulation</span> <span class="k">as</span> <span class="nn">mp</span> 
+
+<span class="kn">import</span> <span class="nn">modelnormalize</span> <span class="k">as</span> <span class="nn">nz</span>
+
+<span class="k">assert</span> <span class="mi">1</span><span class="o">==</span><span class="mi">1</span>
+
+
+<div class="viewcode-block" id="GrapWbModel"><a class="viewcode-back" href="../modelgrab.html#modelgrab.GrapWbModel">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">GrapWbModel</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39;This class takes a world bank model specification, variable data and variable description</span>
+<span class="sd">    and transform it to ModelFlow business language&#39;&#39;&#39;</span>
+    
+    
+    <span class="n">frml</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>            <span class="c1"># path to model </span>
+    <span class="n">data</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>          <span class="c1"># path to data </span>
+    <span class="n">des</span>       <span class="p">:</span> <span class="nb">any</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>            <span class="c1"># path to descriptions</span>
+    <span class="n">scalars</span>   <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>           <span class="c1"># path to scalars </span>
+    <span class="n">modelname</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;No Name&#39;</span>           <span class="c1"># modelname</span>
+    <span class="n">start</span>     <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2017</span>
+    <span class="n">end</span>       <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2040</span> 
+    <span class="n">country_trans</span>   <span class="p">:</span> <span class="nb">any</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[:]</span>    <span class="c1"># function which transform model specification</span>
+    <span class="n">country_df_trans</span> <span class="p">:</span> <span class="nb">any</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span>     <span class="c1"># function which transforms initial dataframe </span>
+    <span class="n">from_wf2</span>  <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">make_fitted</span>  <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># if True, a clean equation for fittet variables is created</span>
+    <span class="n">fit_start</span>   <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span><span class="mi">2000</span>   <span class="c1"># start of fittet model unless overruled by mfmsa</span>
+    <span class="n">fit_end</span>     <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2100</span>  <span class="c1"># end of fittet model unless overruled by mfmsa</span>
+    <span class="n">do_add_factor_calc</span>     <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># calculate the add factors </span>
+    <span class="n">mfmsa</span>       <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="c1"># path to mfsa options </span>
+    
+    
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># breakpoint()</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Processing the model:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rawmodel_org</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frml</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">eviewsline</span>  <span class="o">=</span> <span class="p">[</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rawmodel_org</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;=</span><span class="mi">2</span> 
+                                                               <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="s1">&#39;*******&#39;</span> <span class="ow">in</span> <span class="n">l</span> <span class="ow">or</span> <span class="s1">&#39;----------&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="p">)]</span> 
+        <span class="c1"># breakpoint()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rawmodel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">country_trans</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rawmodel_org</span><span class="p">)</span>
+        <span class="n">rawmodel6</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trans_eviews</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rawmodel</span><span class="p">)</span>
+        <span class="c1"># breakpoint()</span>
+        <span class="n">bars</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{desc}</span><span class="s1">: </span><span class="si">{percentage:3.0f}</span><span class="s1">%|</span><span class="si">{bar}</span><span class="s1">|</span><span class="si">{n_fmt}</span><span class="s1">/</span><span class="si">{total_fmt}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_wf2</span><span class="p">:</span>
+            
+            <span class="n">orgline</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel6</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)]</span>
+            <span class="n">line_type</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ident&#39;</span> <span class="k">if</span> <span class="n">l</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@IDENTITY&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;stoc&#39;</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">orgline</span><span class="p">]</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@IDENTITY &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>  <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">orgline</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>    
+            <span class="n">line_type</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">line</span> <span class="o">=</span><span class="p">[]</span> 
+            <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rawmodel6</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)),</span><span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Reading original model&#39;</span><span class="p">,</span><span class="n">bar_format</span><span class="o">=</span><span class="n">bars</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel6</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;*******&#39;</span> <span class="ow">in</span> <span class="n">l</span> <span class="ow">or</span> <span class="s1">&#39;----------&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="p">)</span>  <span class="ow">and</span> <span class="s1">&#39;IDEN&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+                        <span class="n">sec</span><span class="o">=</span><span class="s1">&#39;iden&#39;</span>
+                        <span class="c1">#print(l)</span>
+                    <span class="k">elif</span> <span class="s1">&#39;*******&#39;</span> <span class="ow">in</span> <span class="n">l</span> <span class="ow">and</span> <span class="s1">&#39;STOC&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="p">:</span>
+                        <span class="n">sec</span><span class="o">=</span><span class="s1">&#39;stoc&#39;</span>
+                        <span class="c1">#print(l)</span>
+                    <span class="k">else</span><span class="p">:</span> 
+                        <span class="n">line_type</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sec</span><span class="p">)</span>
+                        <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+                        <span class="c1"># print(f&#39; {sec} {l[:30]} ....&#39;)</span>
+                    <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>   
+                    
+                    
+        <span class="n">errline1</span> <span class="o">=</span> <span class="p">[(</span><span class="n">l</span><span class="p">,</span><span class="n">o</span><span class="p">,</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span><span class="n">o</span><span class="p">,</span><span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="n">orgline</span><span class="p">,</span><span class="n">eviewsline</span><span class="p">)</span> <span class="k">if</span> <span class="s1">&#39;@&#39;</span> <span class="ow">in</span> <span class="n">l</span> <span class="ow">or</span> <span class="s1">&#39;.coef&#39;</span> <span class="ow">in</span> <span class="n">l</span> <span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">errline1</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Probably errors as @ in lines:&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">l</span><span class="p">,</span><span class="n">o</span><span class="p">,</span><span class="n">e</span> <span class="ow">in</span> <span class="n">errline1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Eviews line      :</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Original line     :</span><span class="si">{</span><span class="n">o</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;New modelflow line:</span><span class="si">{</span><span class="n">l</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;@ in lines &#39;</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_frml</span> <span class="o">=</span> <span class="p">[</span><span class="n">nz</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">add_add_factor</span><span class="o">=</span><span class="p">(</span><span class="n">typ</span><span class="o">==</span><span class="s1">&#39;stoc&#39;</span><span class="p">),</span><span class="n">make_fitted</span><span class="o">=</span><span class="p">(</span><span class="n">typ</span><span class="o">==</span><span class="s1">&#39;stoc&#39;</span><span class="p">),</span><span class="n">make_fixable</span> <span class="o">=</span><span class="p">(</span><span class="n">typ</span><span class="o">==</span><span class="s1">&#39;stoc&#39;</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span><span class="n">typ</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="n">line_type</span><span class="p">),</span><span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Normalizing model&#39;</span><span class="p">,</span><span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">),</span><span class="n">bar_format</span><span class="o">=</span><span class="n">bars</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_frml_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">endo_var</span><span class="p">:</span> <span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_frml</span><span class="p">}</span>
+        <span class="n">lfname</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;Z,EXO&gt; &quot;</span> <span class="k">if</span> <span class="n">typ</span> <span class="o">==</span> <span class="s1">&#39;stoc&#39;</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span> <span class="k">for</span> <span class="n">typ</span> <span class="ow">in</span> <span class="n">line_type</span> <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rorg</span> <span class="o">=</span> <span class="p">[</span><span class="n">fname</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">normalized</span> <span class="k">for</span> <span class="n">f</span><span class="p">,</span><span class="n">fname</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_frml</span><span class="p">,</span><span class="n">lfname</span><span class="p">)</span> <span class="p">]</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_fitted</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rfitmodel</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;FIT&gt; &#39;</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">fitted</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_frml</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fitted</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mfitmodel</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rfitmodel</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mfitmodel</span><span class="o">.</span><span class="n">modelname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modelname</span> <span class="o">+</span> <span class="s1">&#39; calc fittet values&#39;</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">rfitmodel</span> <span class="o">=</span> <span class="p">[]</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">rres</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">calc_add_factor</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_frml</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">calc_add_factor</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rres_tomodel</span> <span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;FRML &lt;CALC_ADD_FACTOR&gt; </span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">calc_add_factor</span><span class="si">}</span><span class="s1">$&#39;</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_frml</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">calc_add_factor</span><span class="p">)])</span>
+        <span class="c1"># self.fmodel = mp.exounroll(mp.tofrml (&#39;\n&#39;.join(self.rorg+self.rfitmodel)))+self.rres_tomodel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fmodel</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">tofrml</span> <span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rorg</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">rfitmodel</span><span class="p">))</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">rres_tomodel</span>
+        <span class="c1"># breakpoint()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fres</span> <span class="o">=</span>   <span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rres</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fmodel</span><span class="p">,</span><span class="n">modelname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">set_var_description</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var_description</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">wb_MFMSAOPTIONS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mfmsa_options</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mres</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fres</span><span class="p">,</span><span class="n">modelname</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Calculation of add factors for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="c1"># breakpoint()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mfmsa_start_end</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_add_factor_calc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mres</span><span class="o">.</span><span class="n">res</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dfmodel</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfmodel</span>
+        
+<div class="viewcode-block" id="GrapWbModel.trans_eviews"><a class="viewcode-back" href="../modelgrab.html#modelgrab.GrapWbModel.trans_eviews">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">trans_eviews</span><span class="p">(</span><span class="n">rawmodel</span><span class="p">):</span>
+        <span class="n">rawmodel0</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># trailing and leading &quot;</span>
+        <span class="n">rawmodel1</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">l</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel0</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">))</span>
+        <span class="c1"># powers</span>
+        <span class="n">rawmodel2</span> <span class="o">=</span> <span class="n">rawmodel1</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;^&#39;</span><span class="p">,</span><span class="s1">&#39;**&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&quot;&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span>\
+            <span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@EXP&#39;</span><span class="p">,</span><span class="s1">&#39;exp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@RECODE&#39;</span><span class="p">,</span><span class="s1">&#39;recode&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@MOVAV&#39;</span><span class="p">,</span><span class="s1">&#39;movavg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@LOGIT&#39;</span><span class="p">,</span><span class="s1">&#39;logit_inverse&#39;</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@MEAN(@PC(&#39;</span><span class="p">,</span><span class="s1">&#39;@AVERAGE_GROWTH((&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@PCY&#39;</span><span class="p">,</span><span class="s1">&#39;PCT_GROWTH&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@PC&#39;</span><span class="p">,</span><span class="s1">&#39;PCT_GROWTH&#39;</span><span class="p">)</span>\
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@PMAX&#39;</span><span class="p">,</span><span class="s1">&#39;MAX&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;@TREND&#39;</span><span class="p">,</span><span class="s1">&#39;EVIEWS_TREND&#39;</span><span class="p">)</span>      
+        <span class="c1"># @ELEM and @DURING </span>
+        <span class="c1"># @ELEM and @DURING </span>
+        <span class="n">rawmodel3</span> <span class="o">=</span> <span class="n">nz</span><span class="o">.</span><span class="n">elem_trans</span><span class="p">(</span><span class="n">rawmodel2</span><span class="p">)</span> 
+        <span class="n">rawmodel4</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;@DURING\( *([0-9]+) *\)&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;during_\1&#39;</span><span class="p">,</span><span class="n">rawmodel3</span><span class="p">)</span> 
+        <span class="n">rawmodel5</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;@DURING\( *([0-9]+) *([0-9]+) *\)&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;during_\1_\2&#39;</span><span class="p">,</span><span class="n">rawmodel4</span><span class="p">)</span> 
+        
+        <span class="c1"># during check </span>
+        <span class="n">ldur</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel5</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="s1">&#39;@DURING&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="p">)</span>
+        <span class="n">ldur2</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel5</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="s1">&#39;during&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="p">)</span>
+        
+        <span class="c1"># check D( </span>
+        <span class="n">ld</span>  <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel5</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;([^A-Z]|^)D\(&#39;</span><span class="p">,</span><span class="n">l</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">ld1</span>  <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel5</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;([^A-Z0-9_]|^)D\(&#39;</span><span class="p">,</span><span class="n">l</span><span class="p">)</span> <span class="p">)</span>
+        <span class="c1"># breakpoint()</span>
+        <span class="n">rawmodel6</span> <span class="o">=</span> <span class="n">nz</span><span class="o">.</span><span class="n">funk_replace</span><span class="p">(</span><span class="s1">&#39;D&#39;</span><span class="p">,</span><span class="s1">&#39;DIFF&#39;</span><span class="p">,</span><span class="n">rawmodel5</span><span class="p">)</span> 
+        <span class="c1"># did we get all the lines </span>
+        <span class="n">ldif</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rawmodel6</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="s1">&#39;DIFF(&#39;</span> <span class="ow">in</span> <span class="n">l</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">rawmodel6</span></div>
+    
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">var_description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Adds var descriptions for add factors, exogenizing dummies and exoggenizing values</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">des</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">des</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># breakpoint()</span>
+            <span class="n">des_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">des</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">des_file</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s1">&#39;.xlsx&#39;</span><span class="p">:</span>
+                <span class="n">trans0</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">des</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s1">&#39;mnem&#39;</span><span class="p">,</span><span class="s1">&#39;Excel&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;mnem&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span> <span class="o">=</span> <span class="s1">&#39;dict&#39;</span><span class="p">)[</span><span class="s1">&#39;Excel&#39;</span><span class="p">]</span>
+                <span class="n">var_description</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">trans0</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="s1">&#39;nan&#39;</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">des_file</span><span class="p">,</span><span class="s1">&#39;rt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span> 
+                    <span class="n">var_description</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">add_d</span> <span class="o">=</span>   <span class="p">{</span> <span class="n">newname</span> <span class="p">:</span> <span class="s1">&#39;Add factor:&#39;</span><span class="o">+</span> <span class="n">var_description</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>      <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">endogene</span> <span class="k">if</span>  <span class="p">(</span><span class="n">newname</span> <span class="o">:=</span> <span class="n">v</span><span class="o">+</span><span class="s1">&#39;_A&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">exogene</span> <span class="p">}</span>
+            <span class="n">dummy_d</span> <span class="o">=</span> <span class="p">{</span> <span class="n">newname</span> <span class="p">:</span> <span class="s1">&#39;Exo dummy:&#39;</span><span class="o">+</span> <span class="n">var_description</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>  <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">endogene</span> <span class="k">if</span>  <span class="p">(</span><span class="n">newname</span> <span class="o">:=</span> <span class="n">v</span><span class="o">+</span><span class="s1">&#39;_D&#39;</span><span class="p">)</span>  <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">exogene</span> <span class="p">}</span>
+            <span class="n">exo_d</span> <span class="o">=</span>   <span class="p">{</span> <span class="n">newname</span> <span class="p">:</span> <span class="s1">&#39;Exo value:&#39;</span><span class="o">+</span> <span class="n">var_description</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>      <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">endogene</span> <span class="k">if</span>  <span class="p">(</span><span class="n">newname</span> <span class="o">:=</span> <span class="n">v</span><span class="o">+</span><span class="s1">&#39;_X&#39;</span><span class="p">)</span>  <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">exogene</span> <span class="p">}</span>
+            <span class="n">fitted_d</span> <span class="o">=</span>   <span class="p">{</span> <span class="n">newname</span> <span class="p">:</span> <span class="s1">&#39;Fitted  value:&#39;</span><span class="o">+</span> <span class="n">var_description</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>      <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">endogene</span> <span class="k">if</span>  <span class="p">(</span><span class="n">newname</span> <span class="o">:=</span> <span class="n">v</span><span class="o">+</span><span class="s1">&#39;_FITTED&#39;</span><span class="p">)</span>  <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">endogene</span> <span class="p">}</span>
+            <span class="n">var_description</span> <span class="o">=</span>  <span class="p">{</span><span class="o">**</span><span class="n">var_description</span><span class="p">,</span><span class="o">**</span><span class="n">add_d</span><span class="p">,</span><span class="o">**</span><span class="n">dummy_d</span><span class="p">,</span><span class="o">**</span><span class="n">exo_d</span><span class="p">,</span><span class="o">**</span><span class="n">fitted_d</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">set_var_description</span><span class="p">(</span><span class="n">var_description</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;*** No variable description&#39;</span><span class="p">,</span><span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">var_description</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">var_description</span>    
+    
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">cached_property</span>
+    <span class="k">def</span> <span class="nf">mfmsa_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Grab the mfmsa options, a world bank speciality&#39;&#39;&#39;</span> 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mfmsa</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mfmsa</span><span class="p">,</span><span class="s1">&#39;rt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">options</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">options</span>     
+    
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">cached_property</span>
+    <span class="k">def</span> <span class="nf">mfmsa_start_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">xml</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">xml</span><span class="o">.</span><span class="n">etree</span><span class="o">.</span><span class="n">ElementTree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mfmsa_options</span><span class="p">)</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;iFace&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;SolveStart&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>   
+        <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;iFace&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;SolveEnd&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>  
+        <span class="k">return</span> <span class="n">start</span><span class="p">,</span><span class="n">end</span> 
+            
+    
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">cached_property</span>
+    <span class="k">def</span> <span class="nf">dfmodel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;The original input data enriched with during variablees, variables containing </span>
+<span class="sd">        values for specific historic years and model specific transformation &#39;&#39;&#39;</span>
+        <span class="c1"># Now the data </span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_wf2</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>       
+            <span class="n">df</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span>
+                  <span class="n">pipe</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">df</span> <span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">c</span><span class="p">:</span><span class="n">c</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">}))</span><span class="o">.</span>
+                  <span class="n">pipe</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">df</span> <span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;_DATE_&#39;</span><span class="p">:</span><span class="s1">&#39;DATEID&#39;</span><span class="p">}))</span><span class="o">.</span>
+                  <span class="n">pipe</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">df</span> <span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;DATEID&#39;</span><span class="p">))</span>
+                  <span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">year</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sca</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalars</span> <span class="p">,</span><span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">_df</span> <span class="p">:</span> <span class="n">_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)),:])</span><span class="o">.</span>\
+                <span class="n">set_index</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span><span class="n">sca</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>    
+        <span class="k">except</span><span class="p">:</span> 
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="si">}</span><span class="s1"> no Scalars prowided &#39;</span><span class="p">)</span>
+        <span class="c1"># breakpoint()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_fitted</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mfitmodel</span><span class="o">.</span><span class="n">res</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_start</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_end</span><span class="p">)</span>
+
+            
+        <span class="c1">#% Now set the vars with fixedvalues </span>
+        <span class="n">value_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">vlist</span><span class="p">(</span><span class="s1">&#39;*_value_*&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span><span class="n">val</span><span class="p">,</span><span class="n">year</span> <span class="ow">in</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value_vars</span><span class="p">)</span> <span class="p">:</span> 
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">),</span><span class="n">var</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">showvaluevars</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">value_vars</span><span class="p">]</span> 
+        
+        <span class="c1">#% now set the values of the dummies   </span>
+        <span class="c1"># breakpoint() </span>
+        <span class="n">during_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">vlist</span><span class="p">(</span><span class="s1">&#39;*during_*&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">varname</span><span class="p">,(</span><span class="n">dur</span><span class="p">,</span><span class="n">per</span><span class="p">)</span> <span class="ow">in</span> <span class="p">((</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">during_vars</span><span class="p">):</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">varname</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
+            <span class="c1"># print(varname,dur,per)</span>
+            <span class="n">pers</span> <span class="o">=</span> <span class="n">per</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">pers</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">varname</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">pers</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span><span class="nb">int</span><span class="p">(</span><span class="n">pers</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span><span class="n">varname</span><span class="p">]</span><span class="o">=</span><span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">showduringvars</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">during_vars</span><span class="p">]</span> 
+        <span class="c1"># breakpoint()</span>
+        <span class="n">df_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">insertModelVar</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">country_df_trans</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df_out</span>
+    
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">base_input</span>
+    
+<div class="viewcode-block" id="GrapWbModel.test_model"><a class="viewcode-back" href="../modelgrab.html#modelgrab.GrapWbModel.test_model">[docs]</a>    <span class="k">def</span> <span class="nf">test_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">maxvar</span><span class="o">=</span><span class="mi">1_000_000</span><span class="p">,</span> <span class="n">maxerr</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">tol</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span><span class="n">showall</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Compares a straight calculation with the input dataframe. </span>
+<span class="sd">        </span>
+<span class="sd">        shows which variables dont have the same value </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df (TYPE): dataframe to run.</span>
+<span class="sd">            start (TYPE, optional): start period. Defaults to None.</span>
+<span class="sd">            end (TYPE, optional): end period. Defaults to None.</span>
+<span class="sd">            maxvar (TYPE, optional): how many variables are to be chekked. Defaults to 1_000_000.</span>
+<span class="sd">            maxerr (TYPE, optional): how many errors to check Defaults to 100.</span>
+<span class="sd">            tol (TYPE, optional): check for absolute value of difference. Defaults to 0.0001.</span>
+<span class="sd">            showall (TYPE, optional): show more . Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">_start</span> <span class="o">=</span> <span class="n">start</span> <span class="k">if</span> <span class="n">start</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span>
+        <span class="n">_end</span>    <span class="o">=</span> <span class="n">end</span> <span class="k">if</span> <span class="n">end</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span>
+        <span class="c1"># breakpoint()</span>
+    
+        <span class="n">resresult</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_input</span><span class="p">,</span><span class="n">_start</span><span class="p">,</span><span class="n">_end</span><span class="p">,</span><span class="n">reset_options</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;base_res&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">basedf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfmodel</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">float_format</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{:.10f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span>
+        <span class="n">err</span><span class="o">=</span><span class="mi">0</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Chekking residuals for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">_start</span><span class="si">}</span><span class="s1"> to </span><span class="si">{</span><span class="n">_end</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">solveorder</span><span class="p">):</span>
+            <span class="c1"># if v.endswith(&#39;_FITTED&#39;): continue</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">maxvar</span> <span class="p">:</span> <span class="k">break</span>
+            <span class="k">if</span> <span class="n">err</span> <span class="o">&gt;</span> <span class="n">maxerr</span> <span class="p">:</span> <span class="k">break</span>
+            <span class="n">check</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">pct</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">T</span> 
+            <span class="n">check</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Before check&#39;</span><span class="p">,</span><span class="s1">&#39;After calculation&#39;</span><span class="p">,</span><span class="s1">&#39;Difference&#39;</span><span class="p">,</span><span class="s1">&#39;Pct&#39;</span><span class="p">]</span>
+            <span class="c1"># breakpoint()</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">check</span><span class="o">.</span><span class="n">Difference</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>                
+                <span class="n">err</span><span class="o">=</span><span class="n">err</span><span class="o">+</span><span class="mi">1</span>
+                <span class="n">maxdiff</span> <span class="o">=</span> <span class="n">check</span><span class="o">.</span><span class="n">Difference</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+                <span class="n">maxpct</span>  <span class="o">=</span> <span class="n">check</span><span class="o">.</span><span class="n">Pct</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+                <span class="c1"># breakpoint()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Variable with residuals above threshold&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">, Max difference:</span><span class="si">{</span><span class="n">maxdiff</span><span class="si">:</span><span class="s2">15.8f</span><span class="si">}</span><span class="s2"> Max Pct </span><span class="si">{</span><span class="n">maxpct</span><span class="si">:</span><span class="s2">15.10f</span><span class="si">}</span><span class="s2">% It is number </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> in the solveorder and error number </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">showall</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s2">&quot;frml&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Result of equation </span><span class="se">\n</span><span class="s1"> </span><span class="si">{</span><span class="n">check</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Equation values before calculations: </span><span class="se">\n</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">get_eq_values</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">last</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">showvar</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">oldkwargs</span> <span class="o">=</span> <span class="p">{}</span></div></div>
+        
+        
+        
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

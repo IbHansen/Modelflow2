@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelwidget &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>modelwidget</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modelwidget</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon Aug  9 14:46:11 2021</span>
+
+<span class="sd">To define Jupyter widgets to update and show variables. </span>
+<span class="sd">@author: Ib </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span>  <span class="nn">ipywidgets</span> <span class="k">as</span> <span class="nn">widgets</span>  
+
+<span class="kn">from</span>  <span class="nn">ipysheet</span> <span class="kn">import</span> <span class="n">sheet</span><span class="p">,</span> <span class="n">cell</span><span class="p">,</span> <span class="n">current</span> 
+<span class="kn">from</span> <span class="nn">ipysheet.pandas_loader</span> <span class="kn">import</span> <span class="n">from_dataframe</span><span class="p">,</span> <span class="n">to_dataframe</span>
+
+<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span><span class="p">,</span> <span class="n">clear_output</span><span class="p">,</span><span class="n">Latex</span><span class="p">,</span> <span class="n">Markdown</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span><span class="n">field</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pylab</span>  <span class="k">as</span> <span class="nn">plt</span> 
+
+
+
+<span class="kn">from</span> <span class="nn">modelclass</span> <span class="kn">import</span> <span class="n">insertModelVar</span>
+<span class="kn">from</span> <span class="nn">modelclass</span> <span class="kn">import</span> <span class="n">model</span> 
+<span class="kn">from</span> <span class="nn">modeljupyter</span> <span class="kn">import</span> <span class="n">jupviz</span>
+
+
+<div class="viewcode-block" id="basewidget"><a class="viewcode-back" href="../modelwidget.html#modelwidget.basewidget">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">basewidget</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39; basis for widget updating in jupyter&#39;&#39;&#39;</span>
+    
+    
+    <span class="n">datachildren</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span> <span class="c1"># list of children widgets </span>
+    
+<div class="viewcode-block" id="basewidget.update_df"><a class="viewcode-back" href="../modelwidget.html#modelwidget.basewidget.update_df">[docs]</a>    <span class="k">def</span> <span class="nf">update_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">current_per</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; will update container widgets&#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datachildren</span><span class="p">:</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">update_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">current_per</span><span class="p">)</span></div></div>
+    
+    
+<div class="viewcode-block" id="tabwidget"><a class="viewcode-back" href="../modelwidget.html#modelwidget.tabwidget">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">tabwidget</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;A widget to create tab or acordium contaners&#39;&#39;&#39;</span>
+    
+    <span class="n">tabdefdict</span> <span class="p">:</span> <span class="nb">dict</span> <span class="c1"># =  field(default_factory = lambda: ({}))</span>
+    <span class="n">tab</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span> 
+    <span class="n">selected_index</span> <span class="p">:</span><span class="nb">any</span> <span class="o">=</span> <span class="kc">None</span>
+    
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+        <span class="n">thiswidget</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Tab</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tab</span> <span class="k">else</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Accordion</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datachildren</span> <span class="o">=</span> <span class="p">[</span><span class="n">tabcontent</span> 
+                             <span class="k">for</span> <span class="n">tabcontent</span>  <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tabdefdict</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span> <span class="o">=</span> <span class="n">thiswidget</span><span class="p">([</span><span class="n">child</span><span class="o">.</span><span class="n">datawidget</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datachildren</span><span class="p">],</span> 
+                                     <span class="n">selected_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_index</span><span class="p">,</span>                               
+                                     <span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="s1">&#39;max-content&#39;</span><span class="p">})</span>  
+         
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tabdefdict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">key</span><span class="p">)</span>
+           
+           
+<div class="viewcode-block" id="tabwidget.update_df"><a class="viewcode-back" href="../modelwidget.html#modelwidget.tabwidget.update_df">[docs]</a>    <span class="k">def</span> <span class="nf">update_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">current_per</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; will update container widgets&#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datachildren</span><span class="p">:</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">update_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">current_per</span><span class="p">)</span></div>
+            
+            
+<div class="viewcode-block" id="tabwidget.reset"><a class="viewcode-back" href="../modelwidget.html#modelwidget.tabwidget.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; will reset  container widgets&#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datachildren</span><span class="p">:</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">g</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="sheetwidget"><a class="viewcode-back" href="../modelwidget.html#modelwidget.sheetwidget">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">sheetwidget</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39; class defining a widget which updates from a sheet &#39;&#39;&#39;</span>
+    <span class="n">df_var</span>         <span class="p">:</span> <span class="nb">any</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>         <span class="c1"># definition </span>
+    <span class="n">trans</span>          <span class="p">:</span> <span class="nb">any</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="n">x</span>      <span class="c1"># renaming of variables </span>
+    <span class="n">transpose</span>      <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>            <span class="c1"># orientation of dataframe </span>
+    <span class="n">expname</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;Carbon tax rate, US$ per tonn &quot;</span>
+   
+    
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">wexp</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;54%&#39;</span><span class="p">})</span>
+
+    
+        <span class="n">newnamedf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_var</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trans</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">org_df_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">newnamedf</span><span class="o">.</span><span class="n">T</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transpose</span> <span class="k">else</span> <span class="n">newnamedf</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">wsheet</span> <span class="o">=</span> <span class="n">sheet</span><span class="p">(</span><span class="n">from_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">org_df_var</span><span class="p">),</span><span class="n">column_resizing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">org_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wsheet</span><span class="o">.</span><span class="n">cells</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span><span class="o">=</span><span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">wexp</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">wsheet</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">wsheet</span>
+
+<div class="viewcode-block" id="sheetwidget.update_df"><a class="viewcode-back" href="../modelwidget.html#modelwidget.sheetwidget.update_df">[docs]</a>    <span class="k">def</span> <span class="nf">update_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">current_per</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># breakpoint()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df_new_var</span> <span class="o">=</span> <span class="n">to_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wsheet</span><span class="p">)</span><span class="o">.</span><span class="n">T</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transpose</span> <span class="k">else</span> <span class="n">to_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wsheet</span><span class="p">)</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">df_new_var</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_var</span><span class="o">.</span><span class="n">columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df_new_var</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_var</span><span class="o">.</span><span class="n">index</span>
+        
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">df_new_var</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">df_new_var</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span>  <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_new_var</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">df_new_var</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_new_var</span> 
+        <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+    
+    
+<div class="viewcode-block" id="sheetwidget.reset"><a class="viewcode-back" href="../modelwidget.html#modelwidget.sheetwidget.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wsheet</span><span class="o">.</span><span class="n">cells</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">org_values</span><span class="p">):</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">v</span></div></div>
+        
+
+
+<div class="viewcode-block" id="slidewidget"><a class="viewcode-back" href="../modelwidget.html#modelwidget.slidewidget">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">slidewidget</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39; class defefining a widget with lines of slides &#39;&#39;&#39;</span>
+    <span class="n">slidedef</span>     <span class="p">:</span> <span class="nb">dict</span>         <span class="c1"># definition </span>
+    <span class="n">altname</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Alternative&#39;</span>
+    <span class="n">basename</span>     <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s1">&#39;Baseline&#39;</span>
+    <span class="n">expname</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;Carbon tax rate, US$ per tonn &quot;</span>
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        
+        <span class="n">wexp</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;54%&#39;</span><span class="p">})</span>
+        <span class="n">walt</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">altname</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;8%&#39;</span><span class="p">,</span> <span class="s1">&#39;border&#39;</span><span class="p">:</span><span class="s2">&quot;hide&quot;</span><span class="p">})</span>
+        <span class="n">wbas</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">basename</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;10%&#39;</span><span class="p">,</span> <span class="s1">&#39;border&#39;</span><span class="p">:</span><span class="s2">&quot;hide&quot;</span><span class="p">})</span>
+        <span class="n">whead</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">HBox</span><span class="p">([</span><span class="n">wexp</span><span class="p">,</span><span class="n">walt</span><span class="p">,</span><span class="n">wbas</span><span class="p">])</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wset</span>  <span class="o">=</span> <span class="p">[</span><span class="n">widgets</span><span class="o">.</span><span class="n">FloatSlider</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">des</span><span class="p">,</span>
+                <span class="nb">min</span><span class="o">=</span><span class="n">cont</span><span class="p">[</span><span class="s1">&#39;min&#39;</span><span class="p">],</span>
+                <span class="nb">max</span><span class="o">=</span><span class="n">cont</span><span class="p">[</span><span class="s1">&#39;max&#39;</span><span class="p">],</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">cont</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">],</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">cont</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;step&#39;</span><span class="p">,</span><span class="mf">0.01</span><span class="p">),</span>
+                <span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;60%&#39;</span><span class="p">},</span><span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;description_width&#39;</span><span class="p">:</span><span class="s1">&#39;40%&#39;</span><span class="p">},</span>
+                <span class="n">readout_format</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;:&gt;,.</span><span class="si">{</span><span class="n">cont</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dec&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">f&quot;</span><span class="p">,</span>
+                <span class="n">continuous_update</span><span class="o">=</span><span class="kc">False</span>
+                <span class="p">)</span>
+             <span class="k">for</span> <span class="n">des</span><span class="p">,</span><span class="n">cont</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        
+            
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">:</span> 
+            <span class="n">w</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_slide_value</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;change&#39;</span><span class="p">)</span>
+        
+        <span class="n">waltval</span><span class="o">=</span> <span class="p">[</span><span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cont</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;,.</span><span class="si">{</span><span class="n">cont</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dec&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">layout</span><span class="o">=</span><span class="n">widgets</span><span class="o">.</span><span class="n">Layout</span><span class="p">(</span><span class="n">display</span><span class="o">=</span><span class="s2">&quot;flex&quot;</span><span class="p">,</span> <span class="n">justify_content</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s2">&quot;10%&quot;</span><span class="p">,</span> <span class="n">border</span><span class="o">=</span><span class="s2">&quot;hide&quot;</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">des</span><span class="p">,</span><span class="n">cont</span>  <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            
+            <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wslide</span> <span class="o">=</span> <span class="p">[</span><span class="n">widgets</span><span class="o">.</span><span class="n">HBox</span><span class="p">([</span><span class="n">s</span><span class="p">,</span><span class="n">v</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">,</span><span class="n">waltval</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slidewidget</span> <span class="o">=</span>  <span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="n">whead</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wslide</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span> <span class="o">=</span>  <span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="n">whead</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wslide</span><span class="p">)</span>
+      
+        <span class="c1"># define the result object </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">des</span><span class="p">:</span>
+             <span class="p">{</span><span class="n">key</span> <span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span><span class="o">==</span><span class="s1">&#39;var&#39;</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">cont</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">,</span><span class="s1">&#39;var&#39;</span><span class="p">,</span><span class="s1">&#39;op&#39;</span><span class="p">}}</span> 
+             <span class="k">for</span> <span class="n">des</span><span class="p">,</span><span class="n">cont</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span> 
+            
+<div class="viewcode-block" id="slidewidget.reset"><a class="viewcode-back" href="../modelwidget.html#modelwidget.slidewidget.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span> 
+        <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">des</span><span class="p">,</span><span class="n">cont</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">cont</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span></div>
+            
+        
+            
+<div class="viewcode-block" id="slidewidget.update_df"><a class="viewcode-back" href="../modelwidget.html#modelwidget.slidewidget.update_df">[docs]</a>    <span class="k">def</span> <span class="nf">update_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">current_per</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; updates a dataframe with the values from the widget&#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">des</span><span class="p">,</span><span class="n">cont</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="n">cont</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">cont</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">cont</span><span class="p">[</span><span class="s1">&#39;var&#39;</span><span class="p">]:</span>
+                <span class="k">if</span>  <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">,</span><span class="n">var</span><span class="p">]</span>    <span class="o">=</span>  <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">,</span><span class="n">var</span><span class="p">]</span> <span class="o">+</span> <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;+impulse&#39;</span><span class="p">:</span>    
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span>  <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">var</span><span class="p">]</span> <span class="o">+</span> <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;=start-&#39;</span><span class="p">:</span>   
+                    <span class="n">startindex</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">current_per</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">varloc</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+                    <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="n">startindex</span><span class="p">,</span><span class="n">varloc</span><span class="p">]</span> <span class="o">=</span>  <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;=&#39;</span><span class="p">:</span>    
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">,</span><span class="n">var</span><span class="p">]</span>    <span class="o">=</span>   <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;=impulse&#39;</span><span class="p">:</span>    
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span>   <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;%&#39;</span><span class="p">:</span>    
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">,</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span>   <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">,</span><span class="n">var</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">value</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Wrong operator in </span><span class="si">{</span><span class="n">cont</span><span class="si">}</span><span class="s1">.</span><span class="se">\n</span><span class="s1">Not updated&#39;</span><span class="p">)</span>
+                    <span class="k">assert</span> <span class="mi">1</span><span class="o">==</span><span class="mi">3</span><span class="p">,</span><span class="s1">&#39;wRONG OPERATOR&#39;</span></div>
+        
+  
+<div class="viewcode-block" id="slidewidget.set_slide_value"><a class="viewcode-back" href="../modelwidget.html#modelwidget.slidewidget.set_slide_value">[docs]</a>    <span class="k">def</span> <span class="nf">set_slide_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; updates the new values to the self.current_vlues</span>
+<span class="sd">        will be used in update_df</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">line_des</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;owner&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">description</span>
+        <span class="k">if</span> <span class="mi">0</span><span class="p">:</span> 
+          <span class="nb">print</span><span class="p">()</span>
+          <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+         
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="p">[</span><span class="n">line_des</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;new&#39;</span><span class="p">]</span></div></div>
+
+<div class="viewcode-block" id="sumslidewidget"><a class="viewcode-back" href="../modelwidget.html#modelwidget.sumslidewidget">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">sumslidewidget</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39; class defefining a widget with lines of slides &#39;&#39;&#39;</span>
+    <span class="n">slidedef</span>     <span class="p">:</span> <span class="nb">dict</span>         <span class="c1"># definition</span>
+    <span class="n">maxsum</span>          <span class="p">:</span> <span class="nb">any</span>  <span class="o">=</span> <span class="kc">None</span> 
+    <span class="n">altname</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Alternative&#39;</span>
+    <span class="n">basename</span>     <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s1">&#39;Baseline&#39;</span>
+    <span class="n">expname</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;Carbon tax rate, US$ per tonn &quot;</span>
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">first</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">keys</span><span class="p">())[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">lastdes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>     
+
+        <span class="n">wexp</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;54%&#39;</span><span class="p">})</span>
+        <span class="n">walt</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">altname</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;8%&#39;</span><span class="p">,</span> <span class="s1">&#39;border&#39;</span><span class="p">:</span><span class="s2">&quot;hide&quot;</span><span class="p">})</span>
+        <span class="n">wbas</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">basename</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;10%&#39;</span><span class="p">,</span> <span class="s1">&#39;border&#39;</span><span class="p">:</span><span class="s2">&quot;hide&quot;</span><span class="p">})</span>
+        <span class="n">whead</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">HBox</span><span class="p">([</span><span class="n">wexp</span><span class="p">,</span><span class="n">walt</span><span class="p">,</span><span class="n">wbas</span><span class="p">])</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wset</span>  <span class="o">=</span> <span class="p">[</span><span class="n">widgets</span><span class="o">.</span><span class="n">FloatSlider</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">des</span><span class="p">,</span>
+                <span class="nb">min</span><span class="o">=</span><span class="n">cont</span><span class="p">[</span><span class="s1">&#39;min&#39;</span><span class="p">],</span>
+                <span class="nb">max</span><span class="o">=</span><span class="n">cont</span><span class="p">[</span><span class="s1">&#39;max&#39;</span><span class="p">],</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">cont</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">],</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">cont</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;step&#39;</span><span class="p">,</span><span class="mf">0.01</span><span class="p">),</span>
+                <span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;60%&#39;</span><span class="p">},</span><span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;description_width&#39;</span><span class="p">:</span><span class="s1">&#39;40%&#39;</span><span class="p">},</span>
+                <span class="n">readout_format</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;:&gt;,.</span><span class="si">{</span><span class="n">cont</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dec&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">f&quot;</span><span class="p">,</span>
+                <span class="n">continuous_update</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">disabled</span><span class="o">=</span> <span class="kc">False</span>
+                <span class="p">)</span>
+             <span class="k">for</span> <span class="n">des</span><span class="p">,</span><span class="n">cont</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        
+             
+            
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">:</span> 
+            <span class="n">w</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_slide_value</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;change&#39;</span><span class="p">)</span>
+        
+        <span class="n">waltval</span><span class="o">=</span> <span class="p">[</span><span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cont</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;,.</span><span class="si">{</span><span class="n">cont</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dec&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">layout</span><span class="o">=</span><span class="n">widgets</span><span class="o">.</span><span class="n">Layout</span><span class="p">(</span><span class="n">display</span><span class="o">=</span><span class="s2">&quot;flex&quot;</span><span class="p">,</span> <span class="n">justify_content</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s2">&quot;10%&quot;</span><span class="p">,</span> <span class="n">border</span><span class="o">=</span><span class="s2">&quot;hide&quot;</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">des</span><span class="p">,</span><span class="n">cont</span>  <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            
+            <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wslide</span> <span class="o">=</span> <span class="p">[</span><span class="n">widgets</span><span class="o">.</span><span class="n">HBox</span><span class="p">([</span><span class="n">s</span><span class="p">,</span><span class="n">v</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">,</span><span class="n">waltval</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slidewidget</span> <span class="o">=</span>  <span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="n">whead</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wslide</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span> <span class="o">=</span>  <span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="n">whead</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wslide</span><span class="p">)</span>
+      
+        <span class="c1"># define the result object </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">des</span><span class="p">:</span>
+             <span class="p">{</span><span class="n">key</span> <span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span><span class="o">==</span><span class="s1">&#39;var&#39;</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">cont</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">,</span><span class="s1">&#39;var&#39;</span><span class="p">,</span><span class="s1">&#39;op&#39;</span><span class="p">,</span><span class="s1">&#39;min&#39;</span><span class="p">,</span><span class="s1">&#39;max&#39;</span><span class="p">}}</span> 
+             <span class="k">for</span> <span class="n">des</span><span class="p">,</span><span class="n">cont</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span> 
+            
+<div class="viewcode-block" id="sumslidewidget.reset"><a class="viewcode-back" href="../modelwidget.html#modelwidget.sumslidewidget.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span> 
+        <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">des</span><span class="p">,</span><span class="n">cont</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slidedef</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">cont</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span></div>
+            
+        
+            
+<div class="viewcode-block" id="sumslidewidget.update_df"><a class="viewcode-back" href="../modelwidget.html#modelwidget.sumslidewidget.update_df">[docs]</a>    <span class="k">def</span> <span class="nf">update_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">current_per</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; updates a dataframe with the values from the widget&#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">des</span><span class="p">,</span><span class="n">cont</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="n">cont</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">cont</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">cont</span><span class="p">[</span><span class="s1">&#39;var&#39;</span><span class="p">]:</span>
+                <span class="k">if</span>  <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">,</span><span class="n">var</span><span class="p">]</span>    <span class="o">=</span>  <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">,</span><span class="n">var</span><span class="p">]</span> <span class="o">+</span> <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;+impulse&#39;</span><span class="p">:</span>    
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span>  <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">var</span><span class="p">]</span> <span class="o">+</span> <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;=start-&#39;</span><span class="p">:</span>   
+                    <span class="n">startindex</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">current_per</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">varloc</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+                    <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="n">startindex</span><span class="p">,</span><span class="n">varloc</span><span class="p">]</span> <span class="o">=</span>  <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;=&#39;</span><span class="p">:</span>    
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">,</span><span class="n">var</span><span class="p">]</span>    <span class="o">=</span>   <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;=impulse&#39;</span><span class="p">:</span>    
+                    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_per</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span>   <span class="n">value</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Wrong operator in </span><span class="si">{</span><span class="n">cont</span><span class="si">}</span><span class="s1">.</span><span class="se">\n</span><span class="s1">Not updated&#39;</span><span class="p">)</span>
+                    <span class="k">assert</span> <span class="mi">1</span><span class="o">==</span><span class="mi">3</span><span class="p">,</span><span class="s1">&#39;wRONG OPERATOR&#39;</span></div>
+        
+  
+<div class="viewcode-block" id="sumslidewidget.set_slide_value"><a class="viewcode-back" href="../modelwidget.html#modelwidget.sumslidewidget.set_slide_value">[docs]</a>    <span class="k">def</span> <span class="nf">set_slide_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; updates the new values to the self.current_vlues</span>
+<span class="sd">        will be used in update_df</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">line_des</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;owner&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">description</span>
+        <span class="n">line_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">line_des</span><span class="p">)</span>
+        <span class="k">if</span> <span class="mi">0</span><span class="p">:</span> 
+          <span class="nb">print</span><span class="p">()</span>
+          <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+         
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="p">[</span><span class="n">line_des</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;new&#39;</span><span class="p">]</span>
+        <span class="c1"># print(self.current_values)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maxsum</span><span class="p">)</span> <span class="o">==</span> <span class="nb">float</span><span class="p">:</span>
+            <span class="n">allvalues</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span>  <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+            <span class="n">thissum</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">allvalues</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">thissum</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxsum</span><span class="p">:</span>
+                <span class="c1"># print(f&#39;{allvalues=}&#39;)</span>
+                <span class="c1"># print(f&quot;{self.current_values[self.lastdes][&#39;min&#39;]=}&quot;)</span>
+                <span class="n">newlast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxsum</span><span class="o">-</span><span class="nb">sum</span><span class="p">(</span><span class="n">allvalues</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">newlast</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">newlast</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">lastdes</span><span class="p">][</span><span class="s1">&#39;min&#39;</span><span class="p">])</span>
+                <span class="c1"># print(f&#39;{newlast=}&#39;)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">lastdes</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">newlast</span>
+    
+                <span class="n">newsum</span><span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span>  <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span> 
+                <span class="c1"># print(f&#39;{newsum=}&#39;)</span>
+                <span class="c1"># print(f&#39;{line_index=}&#39;)</span>
+                <span class="k">if</span> <span class="n">newsum</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxsum</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="p">[</span><span class="n">line_des</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">[</span><span class="n">line_index</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">-</span><span class="n">newsum</span> <span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">maxsum</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">[</span><span class="n">line_index</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_values</span><span class="p">[</span><span class="n">line_des</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> 
+                    
+                <span class="bp">self</span><span class="o">.</span><span class="n">wset</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">newlast</span></div></div>
+                
+
+                      
+<div class="viewcode-block" id="updatewidget"><a class="viewcode-back" href="../modelwidget.html#modelwidget.updatewidget">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">updatewidget</span><span class="p">:</span>   
+    <span class="sd">&#39;&#39;&#39; class to input and run a model&#39;&#39;&#39;</span>
+    
+    <span class="n">mmodel</span> <span class="p">:</span> <span class="nb">any</span>     <span class="c1"># a model </span>
+    <span class="n">a_datawidget</span> <span class="p">:</span> <span class="nb">any</span> <span class="c1"># a tab to update from  </span>
+    <span class="n">basename</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;Business as usual&#39;</span>
+    <span class="n">keeppat</span>   <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
+    <span class="n">varpat</span>    <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;*&#39;</span>
+    <span class="n">showvarpat</span>  <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span> 
+    <span class="n">exodif</span>   <span class="p">:</span> <span class="nb">any</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>         <span class="c1"># definition </span>
+    <span class="n">lwrun</span>    <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">lwupdate</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">lwreset</span>  <span class="p">:</span>  <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">lwsetbas</span>  <span class="p">:</span>  <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">lwshow</span>    <span class="p">:</span><span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span> 
+    <span class="n">outputwidget</span> <span class="p">:</span> <span class="nb">str</span>  <span class="o">=</span> <span class="s1">&#39;jupviz&#39;</span>
+    <span class="n">prefix_dict</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">display_first</span> <span class="p">:</span><span class="nb">any</span> <span class="o">=</span> <span class="kc">None</span> 
+    <span class="n">vline</span>  <span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">relativ_start</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span> 
+    <span class="n">short</span> <span class="p">:</span><span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span> 
+    <span class="n">legend</span> <span class="p">:</span><span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">basedf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">wrun</span>   <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run scenario&quot;</span><span class="p">)</span>
+        <span class="n">wrun</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+        
+        <span class="n">wupdate</span>   <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Update the dataset &quot;</span><span class="p">)</span>
+        <span class="n">wupdate</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">)</span>
+        
+        <span class="n">wreset</span>   <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Reset to start&quot;</span><span class="p">)</span>
+        <span class="n">wreset</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">)</span>
+
+        <span class="n">wshow</span>   <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Show results&quot;</span><span class="p">)</span>
+        <span class="n">wshow</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">)</span>
+        
+        <span class="n">wsetbas</span>   <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Use as baseline&quot;</span><span class="p">)</span>
+        <span class="n">wsetbas</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">setbasis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span> <span class="o">=</span> <span class="mi">0</span> 
+        
+        <span class="n">lbut</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lwrun</span><span class="p">:</span> <span class="n">lbut</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wrun</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lwshow</span><span class="p">:</span>  <span class="n">lbut</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wshow</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lwupdate</span><span class="p">:</span> <span class="n">lbut</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wupdate</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lwreset</span><span class="p">:</span> <span class="n">lbut</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wreset</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lwsetbas</span> <span class="p">:</span> <span class="n">lbut</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wsetbas</span><span class="p">)</span>
+        
+        <span class="n">wbut</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">HBox</span><span class="p">(</span><span class="n">lbut</span><span class="p">)</span>
+        
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">wname</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">basename</span><span class="p">,</span><span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Type something&#39;</span><span class="p">,</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;Scenario name:&#39;</span><span class="p">,</span>
+                        <span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;30%&#39;</span><span class="p">},</span><span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;description_width&#39;</span><span class="p">:</span><span class="s1">&#39;50%&#39;</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wpat</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="n">value</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">varpat</span><span class="p">,</span><span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Type something&#39;</span><span class="p">,</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;Display variables:&#39;</span><span class="p">,</span>
+                        <span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;65%&#39;</span><span class="p">},</span><span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;description_width&#39;</span><span class="p">:</span><span class="s1">&#39;30%&#39;</span><span class="p">})</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">wpat</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">visibility</span> <span class="o">=</span> <span class="s1">&#39;visible&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">showvarpat</span> <span class="k">else</span> <span class="s1">&#39;hidden&#39;</span>
+        
+
+        <span class="n">winputstring</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">HBox</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">wname</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">wpat</span><span class="p">])</span>
+       
+        <span class="bp">self</span><span class="o">.</span><span class="n">wtotal</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">a_datawidget</span><span class="o">.</span><span class="n">datawidget</span><span class="p">,</span><span class="n">winputstring</span><span class="p">,</span><span class="n">wbut</span><span class="p">])</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_solutions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_solutions</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">wname</span><span class="o">.</span><span class="n">value</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_exodif</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span> <span class="o">+=</span>  <span class="mi">1</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">wname</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Experiment </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="si">}</span><span class="s1">&#39;</span>
+
+    
+<div class="viewcode-block" id="updatewidget.update"><a class="viewcode-back" href="../modelwidget.html#modelwidget.updatewidget.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thisexperiment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a_datawidget</span><span class="o">.</span><span class="n">update_df</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thisexperiment</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">current_per</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exodif</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">exodif</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">thisexperiment</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="updatewidget.show"><a class="viewcode-back" href="../modelwidget.html#modelwidget.updatewidget.show">[docs]</a>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputwidget</span> <span class="o">==</span> <span class="s1">&#39;jupviz&#39;</span><span class="p">:</span>
+            <span class="n">clear_output</span><span class="p">()</span>
+            <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wtotal</span><span class="p">)</span>
+
+            <span class="n">displaydict</span> <span class="o">=</span>  <span class="p">{</span><span class="n">k</span> <span class="p">:</span><span class="n">v</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">current_per</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">wpat</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span> 
+                            <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_solutions</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="n">jupviz</span><span class="p">(</span><span class="n">displaydict</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="mi">0</span><span class="p">)()</span>
+            
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputwidget</span> <span class="o">==</span> <span class="s1">&#39;keep_viz&#39;</span><span class="p">:</span>
+
+            <span class="n">selectfrom</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">vlist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wpat</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> 
+                          <span class="nb">set</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_solutions</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="p">)]</span>
+            <span class="n">clear_output</span><span class="p">()</span>
+            <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wtotal</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_viz</span><span class="p">(</span><span class="n">pat</span><span class="o">=</span><span class="n">selectfrom</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">selectfrom</span><span class="o">=</span><span class="n">selectfrom</span><span class="p">,</span><span class="n">vline</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vline</span><span class="p">)</span>
+            
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputwidget</span> <span class="o">==</span> <span class="s1">&#39;keep_viz_prefix&#39;</span><span class="p">:</span>
+
+            <span class="n">selectfrom</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">vlist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wpat</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> 
+                          <span class="nb">set</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_solutions</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="p">)]</span>
+            <span class="n">clear_output</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_first</span><span class="p">:</span>
+                <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">display_first</span><span class="p">)</span>
+            <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wtotal</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">set_smpl_relative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relativ_start</span><span class="p">,</span><span class="mi">0</span><span class="p">):</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_viz_prefix</span><span class="p">(</span><span class="n">pat</span><span class="o">=</span><span class="n">selectfrom</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">selectfrom</span><span class="o">=</span><span class="n">selectfrom</span><span class="p">,</span><span class="n">prefix_dict</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix_dict</span><span class="p">,</span><span class="n">vline</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vline</span><span class="p">,</span><span class="n">short</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">short</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">legend</span><span class="p">)</span></div>
+            
+        
+<div class="viewcode-block" id="updatewidget.run"><a class="viewcode-back" href="../modelwidget.html#modelwidget.updatewidget.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+        <span class="n">clear_output</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wtotal</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thisexperiment</span><span class="p">,</span><span class="n">progressbar</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">keep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wname</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>                    
+                <span class="n">keep_variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keeppat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_exodif</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">wname</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exodif</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">inputwidget_alternativerun</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_experiment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wname</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span> <span class="o">+=</span>  <span class="mi">1</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">wname</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Experiment </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">g</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="updatewidget.setbasis"><a class="viewcode-back" href="../modelwidget.html#modelwidget.updatewidget.setbasis">[docs]</a>    <span class="k">def</span> <span class="nf">setbasis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+        <span class="n">clear_output</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wtotal</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_solutions</span><span class="o">=</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_experiment</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_solutions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_experiment</span><span class="p">]}</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">keep_exodif</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_experiment</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exodif</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">inputwidget_alternativerun</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+        
+        
+         
+<div class="viewcode-block" id="updatewidget.reset"><a class="viewcode-back" href="../modelwidget.html#modelwidget.updatewidget.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a_datawidget</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> </div></div>
+
+<div class="viewcode-block" id="fig_to_image"><a class="viewcode-back" href="../modelwidget.html#modelwidget.fig_to_image">[docs]</a><span class="k">def</span> <span class="nf">fig_to_image</span><span class="p">(</span><span class="n">figs</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;svg&#39;</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+    <span class="n">figs</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">image</span><span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">image</span></div>
+  
+<div class="viewcode-block" id="htmlwidget_df"><a class="viewcode-back" href="../modelwidget.html#modelwidget.htmlwidget_df">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">htmlwidget_df</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39; class displays a dataframe in a html widget &#39;&#39;&#39;</span>
+    
+    <span class="n">mmodel</span> <span class="p">:</span> <span class="nb">any</span>     <span class="c1"># a model   </span>
+    <span class="n">df_var</span>         <span class="p">:</span> <span class="nb">any</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>         <span class="c1"># definition </span>
+    <span class="n">trans</span>          <span class="p">:</span> <span class="nb">any</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="n">x</span>      <span class="c1"># renaming of variables </span>
+    <span class="n">transpose</span>      <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>            <span class="c1"># orientation of dataframe </span>
+    <span class="n">expname</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;&quot;</span>
+    <span class="n">percent</span>      <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span> 
+   
+    
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">wexp</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;54%&#39;</span><span class="p">})</span>
+   
+    
+        <span class="n">newnamedf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_var</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trans</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">org_df_var</span> <span class="o">=</span> <span class="n">newnamedf</span><span class="o">.</span><span class="n">T</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transpose</span> <span class="k">else</span> <span class="n">newnamedf</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">ibsstyle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">org_df_var</span><span class="p">,</span><span class="n">percent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">percent</span><span class="p">)</span><span class="o">.</span><span class="n">to_html</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">whtml</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">HTML</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span><span class="o">=</span><span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">wexp</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">whtml</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">whtml</span>
+        
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span><span class="p">)</span></div>
+        
+
+<div class="viewcode-block" id="htmlwidget_fig"><a class="viewcode-back" href="../modelwidget.html#modelwidget.htmlwidget_fig">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">htmlwidget_fig</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39; class displays a dataframe in a html widget &#39;&#39;&#39;</span>
+    
+    <span class="n">figs</span> <span class="p">:</span> <span class="nb">any</span>     <span class="c1"># a model   </span>
+    <span class="n">expname</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;&quot;</span>
+    <span class="nb">format</span>       <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;svg&quot;</span>
+  
+    
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">wexp</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;54%&#39;</span><span class="p">})</span>
+   
+    
+        <span class="n">image</span> <span class="o">=</span> <span class="n">fig_to_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">figs</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">whtml</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">HTML</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span><span class="o">=</span><span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">wexp</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">whtml</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">whtml</span></div>
+        
+<div class="viewcode-block" id="htmlwidget_label"><a class="viewcode-back" href="../modelwidget.html#modelwidget.htmlwidget_label">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">htmlwidget_label</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39; class displays a dataframe in a html widget &#39;&#39;&#39;</span>
+    
+    <span class="n">expname</span>      <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;&quot;</span>
+    <span class="nb">format</span>       <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;svg&quot;</span>
+  
+    
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">wexp</span>  <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expname</span><span class="p">,</span><span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span><span class="s1">&#39;54%&#39;</span><span class="p">})</span>
+ 
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">wexp</span></div>
+
+<div class="viewcode-block" id="visshow"><a class="viewcode-back" href="../modelwidget.html#modelwidget.visshow">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">visshow</span><span class="p">:</span>
+    <span class="n">mmodel</span> <span class="p">:</span> <span class="nb">any</span>     <span class="c1"># a model </span>
+    <span class="n">varpat</span>    <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;*&#39;</span> 
+    <span class="n">showvarpat</span>  <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span> 
+    <span class="n">show_on</span>   <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Display when called </span>
+        
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+        <span class="kn">from</span> <span class="nn">IPython</span> <span class="kn">import</span> <span class="n">get_ipython</span>
+        <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">magic</span><span class="p">(</span><span class="s1">&#39;matplotlib notebook&#39;</span><span class="p">)</span> 
+        <span class="c1"># print(plt.get_backend())</span>
+        <span class="n">this_vis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">varpat</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;Baseline&#39;</span><span class="p">]</span> <span class="o">=</span><span class="p">{</span><span class="s1">&#39;df&#39;</span><span class="p">:</span><span class="n">this_vis</span><span class="o">.</span><span class="n">base</span><span class="p">}</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;Alternative&#39;</span><span class="p">]</span> <span class="o">=</span><span class="p">{</span><span class="s1">&#39;df&#39;</span><span class="p">:</span><span class="n">this_vis</span><span class="p">}</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;Difference&#39;</span><span class="p">]</span> <span class="o">=</span><span class="p">{</span><span class="s1">&#39;df&#39;</span><span class="p">:</span><span class="n">this_vis</span><span class="o">.</span><span class="n">dif</span><span class="p">}</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;Diff. pct. level&#39;</span><span class="p">]</span> <span class="o">=</span><span class="p">{</span><span class="s1">&#39;df&#39;</span><span class="p">:</span><span class="n">this_vis</span><span class="o">.</span><span class="n">difpctlevel</span><span class="o">.</span><span class="n">mul100</span><span class="p">,</span><span class="s1">&#39;percent&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">}</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;Base growth&#39;</span><span class="p">]</span> <span class="o">=</span><span class="p">{</span><span class="s1">&#39;df&#39;</span><span class="p">:</span><span class="n">this_vis</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pct</span><span class="o">.</span><span class="n">mul100</span><span class="p">,</span><span class="s1">&#39;percent&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">}</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;Alt. growth&#39;</span><span class="p">]</span> <span class="o">=</span><span class="p">{</span><span class="s1">&#39;df&#39;</span><span class="p">:</span><span class="n">this_vis</span><span class="o">.</span><span class="n">pct</span><span class="o">.</span><span class="n">mul100</span><span class="p">,</span><span class="s1">&#39;percent&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">}</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;Diff. in growth&#39;</span><span class="p">]</span> <span class="o">=</span><span class="p">{</span><span class="s1">&#39;df&#39;</span><span class="p">:</span><span class="n">this_vis</span><span class="o">.</span><span class="n">difpct</span><span class="o">.</span><span class="n">mul100</span><span class="p">,</span><span class="s1">&#39;percent&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">}</span> 
+        
+        <span class="n">out</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Output</span><span class="p">()</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_to_data</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span>
+            <span class="n">htmlwidget_df</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="p">,</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;df&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">expname</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+
+                          <span class="n">percent</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;percent&#39;</span><span class="p">,</span><span class="kc">False</span><span class="p">))</span>                           
+                           <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            
+        <span class="k">with</span> <span class="n">out</span><span class="p">:</span> <span class="c1"># to suppress the display of matplotlib creation </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">out_to_figs</span> <span class="o">=</span><span class="p">{</span><span class="n">key</span><span class="p">:</span>
+                 <span class="n">htmlwidget_fig</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;df&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">rename</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">),</span><span class="n">expname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>               
+                              <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="p">}</span>
+                
+       
+        <span class="n">tabnew</span> <span class="o">=</span>  <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">tabwidget</span><span class="p">({</span><span class="s1">&#39;Charts&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">out_to_figs</span><span class="p">[</span><span class="n">key</span><span class="p">],</span><span class="s1">&#39;Data&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">out_to_data</span><span class="p">[</span><span class="n">key</span><span class="p">]},</span><span class="n">selected_index</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_to_figs</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+       
+        <span class="n">exodif</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">exodif</span><span class="p">()</span>
+        <span class="n">exonames</span> <span class="o">=</span> <span class="n">exodif</span><span class="o">.</span><span class="n">columns</span>        
+        <span class="n">exoindex</span> <span class="o">=</span> <span class="n">exodif</span><span class="o">.</span><span class="n">index</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exonames</span><span class="p">):</span>
+            <span class="n">exobase</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">basedf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">exoindex</span><span class="p">,</span><span class="n">exonames</span><span class="p">]</span>
+            <span class="n">exolast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="o">.</span><span class="n">lastdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">exoindex</span><span class="p">,</span><span class="n">exonames</span><span class="p">]</span>
+            
+            <span class="n">out_exodif</span> <span class="o">=</span> <span class="n">htmlwidget_df</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="p">,</span><span class="n">exodif</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="n">out_exobase</span> <span class="o">=</span> <span class="n">htmlwidget_df</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="p">,</span><span class="n">exobase</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="n">out_exolast</span> <span class="o">=</span> <span class="n">htmlwidget_df</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mmodel</span><span class="p">,</span><span class="n">exolast</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">out_exodif</span> <span class="o">=</span> <span class="n">htmlwidget_label</span><span class="p">(</span><span class="n">expname</span> <span class="o">=</span> <span class="s1">&#39;No difference in exogenous&#39;</span><span class="p">)</span>
+            <span class="n">out_exobase</span> <span class="o">=</span>  <span class="n">htmlwidget_label</span><span class="p">(</span><span class="n">expname</span> <span class="o">=</span> <span class="s1">&#39;No difference in exogenous&#39;</span><span class="p">)</span>
+            <span class="n">out_exolast</span> <span class="o">=</span>  <span class="n">htmlwidget_label</span><span class="p">(</span><span class="n">expname</span> <span class="o">=</span> <span class="s1">&#39;No difference in exogenous&#39;</span><span class="p">)</span>
+            
+        
+        <span class="n">out_tab_info</span> <span class="o">=</span> <span class="n">tabwidget</span><span class="p">({</span><span class="s1">&#39;Delta exogenous&#39;</span><span class="p">:</span><span class="n">out_exodif</span><span class="p">,</span>
+                                  <span class="s1">&#39;Baseline exogenous&#39;</span><span class="p">:</span><span class="n">out_exobase</span><span class="p">,</span>
+                                  <span class="s1">&#39;Alt. exogenous&#39;</span><span class="p">:</span><span class="n">out_exolast</span><span class="p">},</span><span class="n">selected_index</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        
+        <span class="n">tabnew</span><span class="p">[</span><span class="s1">&#39;Exo info&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_tab_info</span>
+        
+        <span class="n">this</span> <span class="o">=</span>   <span class="n">tabwidget</span><span class="p">(</span><span class="n">tabnew</span><span class="p">,</span><span class="n">selected_index</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            
+            
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">datawidget</span>  
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_on</span><span class="p">:</span>
+            <span class="o">...</span>
+            <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span><span class="p">)</span>
+        <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">magic</span><span class="p">(</span><span class="s1">&#39;matplotlib inline&#39;</span><span class="p">)</span> 
+    
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">_html_repr_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span> 
+         
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datawidget</span><span class="p">)</span></div>
+    
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s1">&#39;masia&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span> 
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loading model&#39;</span><span class="p">)</span>
+        <span class="n">masia</span><span class="p">,</span><span class="n">baseline</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">modelload</span><span class="p">(</span><span class="s1">&#39;C:/wb Dawn/UNESCAP-/Asia/Asia.pcim&#39;</span><span class="p">,</span><span class="n">run</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>    
+    <span class="c1"># test = slidewidget(masia,{})</span>
+     
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -10,7 +10,13 @@ But only to read repeated formula's which inly will show as '='
 
 
 
-also defines function used whenusing xlwings to automate excel 
+Also defines function used when using xlwings to automate excel.
+
+These are used in :any:`modeldump_excel` and :any:`modelload_excel`  
+
+Some of the docstring are not very informative, to be improved. 
+
+
 
 """
 import pandas as pd 
@@ -142,6 +148,7 @@ def findvalues(name):
     return values 
     
 def wstrans(wsname):
+    'Translates workspace names'
     res = '_'+wsname.replace("'","").replace(' - ','_').replace(' ','_').replace('-','_')+'_'
     return res.upper() 
 
@@ -222,6 +229,19 @@ def indextrans(index):
     return out 
 
 def df_to_sheet(name,df,wb,after=None):
+    '''
+    Dataframe to sheet 
+
+    Args:
+        name (TYPE): DESCRIPTION.
+        df (TYPE): DESCRIPTION.
+        wb (TYPE): DESCRIPTION.
+        after (TYPE, optional): DESCRIPTION. Defaults to None.
+
+    Returns:
+        sht (TYPE): DESCRIPTION.
+
+    '''
     try:
         wb.sheets[name].delete()
     except:
@@ -244,6 +264,19 @@ def df_to_sheet(name,df,wb,after=None):
     return sht
 
 def obj_to_sheet(name,obj,wb,after=None):
+    '''
+    An python object to sheet
+
+    Args:
+        name (TYPE): DESCRIPTION.
+        obj (TYPE): DESCRIPTION.
+        wb (TYPE): DESCRIPTION.
+        after (TYPE, optional): DESCRIPTION. Defaults to None.
+
+    Returns:
+        None.
+
+    '''
     # breakpoint()
     try:
         wb.sheets[name].delete()
@@ -259,6 +292,17 @@ def obj_to_sheet(name,obj,wb,after=None):
     
 
 def sheet_to_df(wb,name):
+    '''
+    Sheet to df
+
+    Args:
+        wb (TYPE): DESCRIPTION.
+        name (TYPE): DESCRIPTION.
+
+    Returns:
+        df (TYPE): DESCRIPTION.
+
+    '''
     df = wb.sheets[name].range('A1').options(pd.DataFrame, expand='table').value.T
     df.index = indextrans(df.index)
     return df 

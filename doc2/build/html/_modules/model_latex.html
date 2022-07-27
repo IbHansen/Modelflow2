@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>model_latex &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>model_latex</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for model_latex</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Sun Dec  3 19:07:03 2017</span>
+
+<span class="sd">@author: hanseni</span>
+
+<span class="sd">Mostly to eat latex models and translate to business logic</span>
+
+<span class="sd">The routines are specific to a style of latex and should be inspected before use </span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span><span class="p">,</span> <span class="n">Math</span><span class="p">,</span> <span class="n">Latex</span><span class="p">,</span> <span class="n">Markdown</span> <span class="p">,</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">IPython.lib.latextools</span> <span class="kn">import</span> <span class="n">latex_to_png</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">modelmanipulation</span> <span class="k">as</span> <span class="nn">mp</span>
+<span class="kn">import</span> <span class="nn">modelclass</span>        <span class="k">as</span> <span class="nn">mc</span>
+<span class="kn">import</span> <span class="nn">modelpattern</span> <span class="k">as</span> <span class="nn">pt</span> 
+<div class="viewcode-block" id="rebank"><a class="viewcode-back" href="../model_latex.html#model_latex.rebank">[docs]</a><span class="k">def</span> <span class="nf">rebank</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; All variable names are decorated by a {bank}</span>
+<span class="sd">    The {bank} is injected as the first dimension &#39;&#39;&#39;</span> 
+    
+    <span class="n">ypat</span>    <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">namepat</span><span class="o">+</span><span class="n">pt</span><span class="o">.</span><span class="n">lagpat</span><span class="p">)</span>
+    <span class="n">funk</span>    <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">funkname</span><span class="p">)</span> <span class="o">|</span> <span class="p">{</span><span class="s1">&#39;SUM&#39;</span><span class="p">}</span>
+    <span class="n">nobank</span>  <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="s1">&#39;N S T __</span><span class="si">{bank}</span><span class="s1"> NORM PPF CDF&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>  <span class="c1"># specific variable names not to be decorated </span>
+    <span class="n">notouch</span> <span class="o">=</span> <span class="n">funk</span> <span class="o">|</span> <span class="n">nobank</span>  <span class="c1"># names not to be decorated </span>
+    <span class="k">def</span> <span class="nf">trans</span><span class="p">(</span><span class="n">matchobj</span><span class="p">):</span>
+            <span class="sd">&#39;&#39;&#39;  The function recieves a matchobj entity. The matching groups can be accesed by matchobj.group() </span>
+<span class="sd">            it returns a string with a bankname added at the end or at the first __ which marks dimensions  &#39;&#39;&#39;</span>            
+            <span class="n">var</span> <span class="o">=</span> <span class="n">matchobj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">lag</span> <span class="o">=</span> <span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="n">matchobj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span><span class="k">if</span> <span class="n">matchobj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+            <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="n">notouch</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">var</span><span class="o">+</span><span class="n">lag</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;__&#39;</span> <span class="ow">in</span> <span class="n">var</span><span class="p">:</span>
+                    <span class="n">pre</span><span class="p">,</span><span class="n">post</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">post</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">+</span><span class="n">post</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">pre</span>  <span class="o">=</span> <span class="n">var</span>
+                    <span class="n">post</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> 
+
+                <span class="k">return</span> <span class="p">(</span><span class="n">pre</span><span class="o">+</span><span class="s1">&#39;__</span><span class="si">{bank}</span><span class="s1">&#39;</span><span class="o">+</span><span class="n">post</span> <span class="o">+</span> <span class="n">lag</span><span class="p">)</span>
+
+    <span class="n">banked</span>  <span class="o">=</span> <span class="n">ypat</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">trans</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span> 
+    <span class="k">return</span> <span class="n">banked</span></div>
+
+<span class="c1">#print(rebank(&#39;a+b&#39;))</span>
+<span class="c1">#print(rebank(&#39;a(-1)+yyy+cc+bb__x&#39;))</span>
+
+<div class="viewcode-block" id="txttolatex"><a class="viewcode-back" href="../model_latex.html#model_latex.txttolatex">[docs]</a><span class="k">def</span> <span class="nf">txttolatex</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="c1"># takes a template model to latex</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">model</span><span class="p">[:]</span>
+    <span class="c1">#tpoc2 = re.sub(r&#39;((list)|(do)|(enddo)|(ppppend))[^$]+[$]&#39;,&#39;&#39;,tpoc2)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;((list)|(do)|(enddo)|(ppppend))([^$]*) [$]&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39; \mbox{\1 \6}  </span><span class="se">\\\\</span><span class="s1"> \n&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;__</span><span class="si">{bank}</span><span class="s1">&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;^</span><span class="si">{bank}</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;diff()&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;\Delta &#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;norm.ppf&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;\Phi &#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;norm.cdf&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;\Phi^{-1} &#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;__</span><span class="si">{CrCountry}</span><span class="s1">__</span><span class="si">{PortSeg}</span><span class="s1">&#39;</span> <span class="p">,</span><span class="sa">r</span><span class="s1">&#39;_{CrCountry,PortSeg}&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span> <span class="c1"># two subscribt indexes</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;__</span><span class="si">{CrModelGeo}</span><span class="s1">__</span><span class="si">{CrModel}</span><span class="s1">&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;_{CrModelGeo,CrModel}&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span> <span class="c1"># two subscribt indexes</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\$&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39; </span><span class="se">\\\\</span><span class="s1">[10pt] &#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>    
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;!([^\n]*\n)&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39; &amp; \mbox{ ! \1 } &amp; </span><span class="se">\\\\</span><span class="s1">[10pt]&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="c1">#tpoc2 = re.sub(r&#39;\n&#39;,r&#39;&#39;,tpoc2)       # remove all linebreaks </span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;frml &lt;&gt;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;sum\(([a-zA-Z</span><span class="si">{}</span><span class="s1">]+),&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">sum_{\mbox{\1 }}&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[(]-1[)]&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;{\small[t-1]}&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;=&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39; &amp;=&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;([a-zA-Z])_([a-zA-Z])&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;\1\_\2&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;([a-zA-Z])__([a-zA-Z])&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;\1\_\_\2&#39;</span><span class="p">,</span><span class="n">tpoc2</span><span class="p">)</span>
+    <span class="n">tpoc2</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\begin{align*}&#39;</span><span class="o">+</span><span class="n">tpoc2</span><span class="o">+</span><span class="sa">r</span><span class="s1">&#39;\end{align*}&#39;</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">tpoc2</span><span class="p">)</span>    </div>
+
+<div class="viewcode-block" id="defrack"><a class="viewcode-back" href="../model_latex.html#model_latex.defrack">[docs]</a><span class="k">def</span> <span class="nf">defrack</span><span class="p">(</span><span class="n">streng</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;  </span>
+<span class="sd">    \frac{xxx}{yyy} = ((xxx)/(yyy))</span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">tstreng</span> <span class="o">=</span> <span class="n">streng</span><span class="p">[:]</span>
+    <span class="n">tfunk</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\frac{&#39;</span>
+    <span class="k">while</span> <span class="n">tfunk</span> <span class="ow">in</span> <span class="n">tstreng</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">tstreng</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">tfunk</span><span class="p">)</span>
+        <span class="c1"># first find the first matching {}</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">tstreng</span><span class="p">[</span><span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">tfunk</span><span class="p">):]</span>  <span class="c1"># the rest of the string in which we have to match }</span>
+        <span class="nb">open</span> <span class="o">=</span> <span class="mi">1</span>                              <span class="c1"># we already found the first {</span>
+        <span class="k">for</span> <span class="n">index1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">match</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">match</span><span class="p">[</span><span class="n">index1</span><span class="p">]</span> <span class="ow">in</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">:</span>
+                <span class="nb">open</span> <span class="o">=</span> <span class="p">(</span><span class="nb">open</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">match</span><span class="p">[</span><span class="n">index1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;{&#39;</span> <span class="k">else</span> <span class="p">(</span><span class="nb">open</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">open</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="c1"># now find the second matching {}    </span>
+        <span class="n">match2</span> <span class="o">=</span>  <span class="n">match</span><span class="p">[</span><span class="n">index1</span> <span class="o">+</span> <span class="mi">1</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span> <span class="c1"># the string from the location of second { to the end of string </span>
+        <span class="nb">open</span><span class="o">=</span><span class="mi">1</span> 
+        <span class="k">for</span> <span class="n">index2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">match2</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">match2</span><span class="p">[</span><span class="n">index2</span><span class="p">]</span> <span class="ow">in</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">:</span>
+                <span class="nb">open</span> <span class="o">=</span> <span class="p">(</span><span class="nb">open</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">match2</span><span class="p">[</span><span class="n">index2</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;{&#39;</span> <span class="k">else</span> <span class="p">(</span><span class="nb">open</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">open</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="n">tstreng</span> <span class="o">=</span> <span class="n">tstreng</span><span class="p">[:</span><span class="n">start</span><span class="p">]</span><span class="o">+</span> <span class="s1">&#39;((&#39;</span><span class="o">+</span> <span class="n">match</span><span class="p">[:</span><span class="n">index1</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;)/(&#39;</span><span class="o">+</span> <span class="n">match2</span><span class="p">[:</span><span class="n">index2</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;))&#39;</span><span class="o">+</span><span class="n">match2</span><span class="p">[</span><span class="n">index2</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="n">tstreng</span> </div>
+<div class="viewcode-block" id="debrace"><a class="viewcode-back" href="../model_latex.html#model_latex.debrace">[docs]</a><span class="k">def</span> <span class="nf">debrace</span><span class="p">(</span><span class="n">streng</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; </span>
+<span class="sd">    Eliminates  underbrace{xxx}_{yyy} in a string </span>
+<span class="sd">    underbrace{xxx}_{yyy}  =&gt; (xxx)</span>
+<span class="sd">    As there can be nested {} we need to match the braces</span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">tstreng</span> <span class="o">=</span> <span class="n">streng</span><span class="p">[:]</span>
+    <span class="n">tfunk</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\underbrace{&#39;</span>
+    <span class="k">while</span> <span class="n">tfunk</span> <span class="ow">in</span> <span class="n">tstreng</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">tstreng</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">tfunk</span><span class="p">)</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">tstreng</span><span class="p">[</span><span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">tfunk</span><span class="p">):]</span>
+        <span class="nb">open</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">index1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">match</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">match</span><span class="p">[</span><span class="n">index1</span><span class="p">]</span> <span class="ow">in</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">:</span>
+                <span class="nb">open</span> <span class="o">=</span> <span class="p">(</span><span class="nb">open</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">match</span><span class="p">[</span><span class="n">index1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;{&#39;</span> <span class="k">else</span> <span class="p">(</span><span class="nb">open</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">open</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="n">goodstuf</span> <span class="o">=</span> <span class="n">tstreng</span><span class="p">[:</span><span class="n">start</span><span class="p">]</span><span class="o">+</span><span class="n">match</span><span class="p">[</span><span class="n">index1</span><span class="p">]</span>    
+        <span class="n">match2</span> <span class="o">=</span>  <span class="n">match</span><span class="p">[</span><span class="n">index1</span> <span class="o">+</span> <span class="mi">1</span><span class="o">+</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="nb">open</span><span class="o">=</span><span class="mi">1</span> 
+        <span class="k">for</span> <span class="n">index2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">match2</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">match2</span><span class="p">[</span><span class="n">index2</span><span class="p">]</span> <span class="ow">in</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">:</span>
+                <span class="nb">open</span> <span class="o">=</span> <span class="p">(</span><span class="nb">open</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">match2</span><span class="p">[</span><span class="n">index2</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;{&#39;</span> <span class="k">else</span> <span class="p">(</span><span class="nb">open</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">open</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="n">tstreng</span> <span class="o">=</span> <span class="n">tstreng</span><span class="p">[:</span><span class="n">start</span><span class="p">]</span><span class="o">+</span> <span class="s1">&#39;&#39;</span><span class="o">+</span> <span class="n">match</span><span class="p">[:</span><span class="n">index1</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;&#39;</span><span class="o">+</span> <span class="n">match2</span><span class="p">[</span><span class="n">index2</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>    
+    <span class="k">return</span> <span class="n">tstreng</span></div>
+
+<div class="viewcode-block" id="defunk"><a class="viewcode-back" href="../model_latex.html#model_latex.defunk">[docs]</a><span class="k">def</span> <span class="nf">defunk</span><span class="p">(</span><span class="n">funk</span><span class="p">,</span> <span class="n">subs</span> <span class="p">,</span> <span class="n">streng</span><span class="p">,</span><span class="n">startp</span><span class="o">=</span><span class="s1">&#39;{&#39;</span><span class="p">,</span><span class="n">slutp</span><span class="o">=</span><span class="s1">&#39;}&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; </span>
+<span class="sd">    \funk{xxx}  =&gt; subs(xxx) </span>
+<span class="sd">    </span>
+<span class="sd">    in a string </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">tfunk</span><span class="p">,</span> <span class="n">tstreng</span> <span class="o">=</span> <span class="n">funk</span><span class="p">[:]</span> <span class="p">,</span> <span class="n">streng</span><span class="p">[:]</span>
+    <span class="n">tfunk</span> <span class="o">=</span> <span class="n">tfunk</span> <span class="o">+</span> <span class="n">startp</span>
+    <span class="k">while</span> <span class="n">tfunk</span> <span class="ow">in</span> <span class="n">tstreng</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">tstreng</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">tfunk</span><span class="p">)</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">tstreng</span><span class="p">[</span><span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">tfunk</span><span class="p">):]</span>
+        <span class="nb">open</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">match</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">match</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="ow">in</span> <span class="n">startp</span><span class="o">+</span><span class="n">slutp</span><span class="p">:</span>
+                <span class="nb">open</span> <span class="o">=</span> <span class="p">(</span><span class="nb">open</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">match</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="n">startp</span> <span class="k">else</span> <span class="p">(</span><span class="nb">open</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">open</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="n">tstreng</span> <span class="o">=</span> <span class="n">tstreng</span><span class="p">[:</span><span class="n">start</span><span class="p">]</span><span class="o">+</span><span class="n">subs</span><span class="o">+</span><span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="n">match</span><span class="p">[:</span><span class="n">index</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;)&#39;</span> <span class="o">+</span> <span class="n">match</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="n">tstreng</span></div>
+<span class="c1">#print(defunk(r&#39;\sqrt&#39;,r&#39;sqrt&#39;,r&#39;a=\sqrt{b+ \sqrt{f+y}}&#39;))</span>
+<span class="c1">#print(defunk(r&#39;\log&#39;,r&#39;log&#39;,r&#39;a=\log(b(-1)+ \log({f+y}))&#39;,startp=&#39;(&#39;,slutp=&#39;)&#39;))</span>
+
+<div class="viewcode-block" id="findindex"><a class="viewcode-back" href="../model_latex.html#model_latex.findindex">[docs]</a><span class="k">def</span> <span class="nf">findindex</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; find the index variables on the left hand side. meaning variables braced by {} &#39;&#39;&#39;</span>
+    <span class="n">lhs</span><span class="o">=</span><span class="n">ind</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span>  <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s1">&#39;\{([A-Za-z][\w]*)\}&#39;</span><span class="p">,</span><span class="n">lhs</span> <span class="p">)</span> <span class="c1"># all the index variables </span></div>
+
+<div class="viewcode-block" id="doable"><a class="viewcode-back" href="../model_latex.html#model_latex.doable">[docs]</a><span class="k">def</span> <span class="nf">doable</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; find all dimensions in the left hand side of = and and decorate with the nessecary do .. enddo &#39;&#39;&#39;</span> 
+    
+    <span class="n">xxy</span> <span class="o">=</span> <span class="n">findindex</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>  <span class="c1"># all the index variables </span>
+    <span class="n">xxx</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;n_</span><span class="si">{bank}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="s1">&#39;n&#39;</span> <span class="k">else</span> <span class="n">index</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">xxy</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">xxx</span> <span class="p">:</span> 
+        <span class="n">pre</span> <span class="o">=</span> <span class="s1">&#39; $ &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Do &#39;</span><span class="o">+</span><span class="n">i</span> <span class="k">for</span> <span class="n">level</span><span class="p">,</span><span class="n">i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">xxx</span><span class="p">)])</span><span class="o">+</span><span class="s1">&#39; $ </span><span class="se">\n</span><span class="s1"> &#39;</span>
+        <span class="n">post</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;enddo $ &#39;</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">xxx</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">pre</span><span class="o">+</span><span class="n">ind</span> <span class="o">+</span> <span class="n">post</span>
+        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Before doable&#39;</span><span class="p">,</span><span class="n">ind</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;After doable&#39;</span><span class="p">,</span><span class="n">out</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">out</span><span class="o">=</span><span class="n">ind</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+<div class="viewcode-block" id="findlists"><a class="viewcode-back" href="../model_latex.html#model_latex.findlists">[docs]</a><span class="k">def</span> <span class="nf">findlists</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;extracte liste from latex&#39;&#39;&#39;</span>
+    <span class="n">relevant</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;LIST \s*\$[^$]*\$&#39;</span><span class="p">,</span><span class="nb">input</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>  
+    <span class="n">temp1</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;$&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">)</span> 
+         <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;}&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>                                 
+         <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">relevant</span><span class="p">]</span>
+    <span class="n">temp2</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39; = &#39;</span>
+           <span class="o">+</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">4</span><span class="p">:]</span>
+           <span class="o">+</span><span class="s1">&#39; : &#39;</span><span class="o">+</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;$&#39;</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">temp1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">temp2</span></div>
+
+<span class="k">if</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">listtest</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;      </span>
+<span class="s1">    List $stage=\{stage1, stage2,stage3\}$</span>
+<span class="s1">    </span>
+<span class="s1">    List $stage\_from=\{stage1, stage2,stage3\}$</span>
+<span class="s1">    </span>
+<span class="s1">    List $stage\_to=\{stage1, stage2,stage3\}$</span>
+<span class="s1">    </span>
+<span class="s1">    List $stage\_to2=\{stage1, stage2,stage3\}$</span>
+<span class="s1">    &#39;&#39;&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">findlists</span><span class="p">(</span><span class="n">listtest</span><span class="p">))</span>
+
+<div class="viewcode-block" id="latextotxt"><a class="viewcode-back" href="../model_latex.html#model_latex.latextotxt">[docs]</a><span class="k">def</span> <span class="nf">latextotxt</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">dynare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">bankadd</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Translates a latex input to a BL output </span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># breakpoint()</span>
+    <span class="n">ex12</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">label\{eq:(.*?)\}\n(.*?)</span><span class="se">\\</span><span class="s1">end\{&#39;</span><span class="p">,</span><span class="nb">input</span><span class="p">,</span><span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span> <span class="c1"># select the relevant equations </span>
+    <span class="n">org</span>  <span class="o">=</span> <span class="p">[(</span><span class="n">name</span><span class="p">,</span><span class="n">eq</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">))</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">ex</span> <span class="ow">in</span> <span class="n">ex12</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">ex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\\\</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="mi">2</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">eq</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">))]</span>
+<span class="c1">#    ex15 = [(&#39;frml &#39;+name+&#39;  &#39;+eq) for (name,ex) in ex12 for eq in ex.splitlines()]</span>
+    <span class="n">ex15</span> <span class="o">=</span> <span class="p">[</span><span class="n">eq</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">eq</span><span class="p">)</span> <span class="ow">in</span> <span class="n">org</span><span class="p">]</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ex15</span><span class="p">)</span>
+    <span class="n">trans</span><span class="o">=</span><span class="p">{</span><span class="sa">r</span><span class="s1">&#39;\left&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\right&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\min&#39;</span><span class="p">:</span><span class="s1">&#39;min&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\max&#39;</span><span class="p">:</span><span class="s1">&#39;max&#39;</span><span class="p">,</span>   
+           <span class="sa">r</span><span class="s1">&#39;\rho&#39;</span><span class="p">:</span><span class="s1">&#39;rho&#39;</span><span class="p">,</span>   
+           <span class="sa">r</span><span class="s1">&#39;&amp;&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;[&#39;</span><span class="p">:</span><span class="s1">&#39;(&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;]&#39;</span><span class="p">:</span><span class="s1">&#39;)&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;&amp;&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\nonumber&#39;</span>  <span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\_&#39;</span>      <span class="p">:</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;</span><span class="si">{n}</span><span class="s1">&#39;</span>      <span class="p">:</span> <span class="s1">&#39;__</span><span class="si">{n}</span><span class="s1">&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;_</span><span class="si">{t}</span><span class="s1">&#39;</span>      <span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;{n,s}&#39;</span>      <span class="p">:</span> <span class="s1">&#39;__</span><span class="si">{n}</span><span class="s1">__</span><span class="si">{s}</span><span class="s1">&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;{n,s,t}&#39;</span>    <span class="p">:</span> <span class="s1">&#39;__</span><span class="si">{n}</span><span class="s1">__</span><span class="si">{s}</span><span class="s1">__</span><span class="si">{t}</span><span class="s1">&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;logit^{-1}&#39;</span> <span class="p">:</span> <span class="s1">&#39;logit_inverse&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\{&#39;</span>      <span class="p">:</span> <span class="s1">&#39;{&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\}&#39;</span>      <span class="p">:</span> <span class="s1">&#39;}&#39;</span><span class="p">,</span>
+
+          
+           <span class="p">}</span>
+    <span class="n">ftrans</span> <span class="o">=</span> <span class="p">{</span>       
+           <span class="sa">r</span><span class="s1">&#39;\sqrt&#39;</span><span class="p">:</span><span class="s1">&#39;sqrt&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\Delta&#39;</span><span class="p">:</span><span class="s1">&#39;diff&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\sum_&#39;</span><span class="p">:</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\Phi&#39;</span><span class="p">:</span><span class="s1">&#39;NORM.CDF&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\Phi^{-1}&#39;</span><span class="p">:</span><span class="s1">&#39;NORM.PDF&#39;</span>
+           <span class="p">}</span>
+    <span class="n">regtrans</span> <span class="o">=</span> <span class="p">{</span>
+           <span class="sa">r</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">Delta ([A-Za-z_][\w</span><span class="si">{}</span><span class="s1">,\^]*)&#39;</span><span class="p">:</span><span class="sa">r</span><span class="s1">&#39;diff(\1)&#39;</span><span class="p">,</span> <span class="c1"># \Delta xy =&gt; diff(xy)</span>
+           <span class="sa">r</span><span class="s1">&#39;_{t-([1-9])}&#39;</span>                   <span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;(-\1)&#39;</span><span class="p">,</span>      <span class="c1"># _{t-x}        =&gt; (-x)</span>
+
+           <span class="c1"># r&#39;\^([\w])&#39;                   : r&#39;_\1&#39;,      # ^x        =&gt; _x</span>
+           <span class="c1"># r&#39;\^\{([\w]+)\}(\w)&#39;          : r&#39;_\1_\2&#39;,   # ^{xx}y    =&gt; _xx_y</span>
+           <span class="sa">r</span><span class="s1">&#39;\^\{([\w]+)\}&#39;</span>              <span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;_{\1}&#39;</span><span class="p">,</span>      <span class="c1"># ^{xx}     =&gt; _xx</span>
+           <span class="sa">r</span><span class="s1">&#39;\^\{([\w]+),([\w]+)\}&#39;</span>      <span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;_{\1}_{\2}&#39;</span><span class="p">,</span>    <span class="c1"># ^{xx,yy}     =&gt; _xx_yy</span>
+           <span class="sa">r</span><span class="s1">&#39;\s*</span><span class="se">\\</span><span class="s1">times\s*&#39;</span><span class="p">:</span><span class="s1">&#39;*&#39;</span> <span class="p">,</span>
+            <span class="p">}</span>
+   <span class="c1"># breakpoint()</span>
+    <span class="k">for</span> <span class="n">before</span><span class="p">,</span><span class="n">to</span> <span class="ow">in</span> <span class="n">ftrans</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+         <span class="n">temp</span> <span class="o">=</span> <span class="n">defunk</span><span class="p">(</span><span class="n">before</span><span class="p">,</span><span class="n">to</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">before</span><span class="p">,</span><span class="n">to</span> <span class="ow">in</span> <span class="n">trans</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">before</span><span class="p">,</span><span class="n">to</span><span class="p">)</span>        
+    <span class="k">for</span> <span class="n">before</span><span class="p">,</span><span class="n">to</span> <span class="ow">in</span> <span class="n">regtrans</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">before</span><span class="p">,</span><span class="n">to</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">debrace</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">defrack</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">bankadd</span><span class="p">:</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">rebank</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span>
+    
+    <span class="c1"># breakpoint()</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;sum\(n,s,t\)&#39;</span><span class="o">+</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">namepat</span><span class="p">),</span><span class="sa">r</span><span class="s1">&#39;sum(n_</span><span class="si">{bank}</span><span class="s1">,sum(s,sum(t,\1)))&#39;</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;sum\(n\)sum\(s\)sum\(t\)&#39;</span><span class="o">+</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">namepat</span><span class="p">),</span><span class="sa">r</span><span class="s1">&#39;sum(n_</span><span class="si">{bank}</span><span class="s1">,sum(s,sum(t,\1)))&#39;</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;sum\(n\)&#39;</span><span class="o">+</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">namepat</span><span class="p">),</span><span class="sa">r</span><span class="s1">&#39;sum(n_</span><span class="si">{bank}</span><span class="s1">,\1)&#39;</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">fr</span><span class="s1">&#39;sum\(</span><span class="si">{</span><span class="n">pt</span><span class="o">.</span><span class="n">namepat</span><span class="si">}</span><span class="s1">\)\(&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;sum(\1,&#39;</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span>
+    
+    <span class="n">ltemp</span>  <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">temp</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()]</span> <span class="c1"># remove blanks in the ends and split each line at =   </span>
+    <span class="c1"># breakpoint()</span>
+    <span class="n">ltemp</span>  <span class="o">=</span> <span class="p">[</span><span class="n">lhs</span> <span class="o">+</span> <span class="s1">&#39; = &#39;</span><span class="o">+</span>  <span class="n">rhs</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">lhs</span><span class="p">,</span><span class="n">rhs</span> <span class="ow">in</span> <span class="n">ltemp</span><span class="p">]</span>      <span class="c1"># change &#39; &#39; to * on the rhs. </span>
+    <span class="n">ltemp</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Frml &#39;</span><span class="o">+</span><span class="n">fname</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="n">eq</span> <span class="o">+</span> <span class="s1">&#39; $ &#39;</span><span class="k">for</span> <span class="n">eq</span><span class="p">,(</span><span class="n">fname</span><span class="p">,</span><span class="n">__</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ltemp</span><span class="p">,</span><span class="n">org</span><span class="p">)]</span>
+    
+    <span class="n">ltemp</span>  <span class="o">=</span> <span class="p">[</span><span class="n">doable</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">ltemp</span><span class="p">]</span>
+    
+    
+    <span class="n">out</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ltemp</span><span class="o">+</span><span class="n">findlists</span><span class="p">(</span><span class="nb">input</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+<div class="viewcode-block" id="dynlatextotxt"><a class="viewcode-back" href="../model_latex.html#model_latex.dynlatextotxt">[docs]</a><span class="k">def</span> <span class="nf">dynlatextotxt</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Translates a latex input to a BL output </span>
+<span class="sd">    The latex input is the latex output of Dynare </span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">with</span> <span class="n">mc</span><span class="o">.</span><span class="n">ttimer</span><span class="p">(</span><span class="s1">&#39;Findall&#39;</span><span class="p">,</span><span class="n">show</span><span class="p">):</span>
+        <span class="n">ex12</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">begin</span><span class="si">{dmath}</span><span class="s1">\n(.*?)\n</span><span class="se">\\</span><span class="s1">end</span><span class="si">{dmath}</span><span class="s1">&#39;</span><span class="p">,</span><span class="nb">input</span><span class="p">,</span><span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span> <span class="c1"># select the relevant equations </span>
+
+    <span class="k">with</span> <span class="n">mc</span><span class="o">.</span><span class="n">ttimer</span><span class="p">(</span><span class="s1">&#39;Split&#39;</span><span class="p">,</span><span class="n">show</span><span class="p">):</span>
+        <span class="n">org</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39; = &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">side</span><span class="p">[:]</span> <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)])</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ex12</span><span class="p">]</span>
+<span class="c1">#    ex15 = [(&#39;frml &#39;+name+&#39;  &#39;+eq) for (name,ex) in ex12 for eq in ex.splitlines()]</span>
+    <span class="k">with</span> <span class="n">mc</span><span class="o">.</span><span class="n">ttimer</span><span class="p">(</span><span class="s1">&#39;Strip&#39;</span><span class="p">,</span><span class="n">show</span><span class="p">):</span>
+        <span class="n">ex15</span> <span class="o">=</span> <span class="p">[</span><span class="n">defrack</span><span class="p">(</span><span class="n">eq</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">org</span><span class="p">]</span>
+    <span class="k">with</span> <span class="n">mc</span><span class="o">.</span><span class="n">ttimer</span><span class="p">(</span><span class="s1">&#39;join&#39;</span><span class="p">,</span><span class="n">show</span><span class="p">):</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ex15</span><span class="p">)</span>
+
+
+    <span class="n">trans</span><span class="o">=</span><span class="p">{</span><span class="sa">r</span><span class="s1">&#39;\left&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\right&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\min&#39;</span><span class="p">:</span><span class="s1">&#39;min&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\max&#39;</span><span class="p">:</span><span class="s1">&#39;max&#39;</span><span class="p">,</span>   
+           <span class="sa">r</span><span class="s1">&#39;&amp;&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\_&#39;</span><span class="p">:</span><span class="s1">&#39;_&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;[&#39;</span><span class="p">:</span><span class="s1">&#39;(&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;]&#39;</span><span class="p">:</span><span class="s1">&#39;)&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;&amp;&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;_</span><span class="si">{t}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\,&#39;</span><span class="p">:</span> <span class="s1">&#39; *&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\leq&#39;</span><span class="p">:</span> <span class="s1">&#39; &lt;= &#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\neq&#39;</span><span class="p">:</span> <span class="s1">&#39; != &#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\geq&#39;</span><span class="p">:</span> <span class="s1">&#39; &gt;= &#39;</span><span class="p">,</span>
+          
+           <span class="p">}</span>
+    <span class="n">ftrans</span> <span class="o">=</span> <span class="p">{</span>                    <span class="c1"># before{expression} ==&gt; after(expression)</span>
+           <span class="sa">r</span><span class="s1">&#39;\sqrt&#39;</span><span class="p">:</span><span class="s1">&#39;sqrt&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\Delta&#39;</span><span class="p">:</span><span class="s1">&#39;diff&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;^&#39;</span><span class="p">:</span><span class="s1">&#39;^&#39;</span><span class="p">,</span>
+           <span class="sa">r</span><span class="s1">&#39;\sum_&#39;</span><span class="p">:</span><span class="s1">&#39;sum&#39;</span>
+           <span class="p">}</span>
+    <span class="n">ftransp</span> <span class="o">=</span> <span class="p">{</span>       
+           <span class="sa">r</span><span class="s1">&#39;\log&#39;</span><span class="p">:</span><span class="s1">&#39;log&#39;</span><span class="p">,</span>
+           <span class="p">}</span>
+    <span class="n">regtrans</span> <span class="o">=</span> <span class="p">{</span>
+           <span class="sa">r</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">Delta ([A-Za-z][\w</span><span class="si">{}</span><span class="s1">,\^]*)&#39;</span><span class="p">:</span><span class="sa">r</span><span class="s1">&#39;diff(\1)&#39;</span><span class="p">,</span> <span class="c1"># \Delta xy =&gt; diff(xy)</span>
+           <span class="sa">r</span><span class="s1">&#39;_{t-([1-9])}&#39;</span>                   <span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;(-\1)&#39;</span><span class="p">,</span>      <span class="c1"># _{t-x}        =&gt; (-x)</span>
+           <span class="s1">&#39;{&#39;</span><span class="o">+</span><span class="n">pt</span><span class="o">.</span><span class="n">namepat</span><span class="o">+</span><span class="s1">&#39;}&#39;</span>   <span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\1&#39;</span><span class="p">,</span>                 <span class="c1"># </span>
+           <span class="s1">&#39;{&#39;</span><span class="o">+</span><span class="n">pt</span><span class="o">.</span><span class="n">namepat</span><span class="o">+</span><span class="s1">&#39;(?:</span><span class="se">\\</span><span class="s1">(([+-][0-9]+)</span><span class="se">\\</span><span class="s1">))}&#39;</span>   <span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\1(\2)&#39;</span><span class="p">,</span> 
+            <span class="p">}</span>
+    
+<span class="c1">#    with mc.ttimer(&#39;Defrac&#39;,show):</span>
+<span class="c1">#        temp = defrack(temp) </span>
+    <span class="k">for</span> <span class="n">before</span><span class="p">,</span><span class="n">to</span> <span class="ow">in</span> <span class="n">trans</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+         <span class="k">with</span> <span class="n">mc</span><span class="o">.</span><span class="n">ttimer</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;replace </span><span class="si">{</span><span class="n">before</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">show</span><span class="p">):</span>
+             <span class="n">temp</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">before</span><span class="p">,</span><span class="n">to</span><span class="p">)</span>   
+        
+    <span class="k">for</span> <span class="n">before</span><span class="p">,</span><span class="n">to</span> <span class="ow">in</span> <span class="n">ftrans</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+         <span class="k">with</span> <span class="n">mc</span><span class="o">.</span><span class="n">ttimer</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;defunk </span><span class="si">{</span><span class="n">before</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">show</span><span class="p">):</span>
+             <span class="n">temp</span> <span class="o">=</span> <span class="n">defunk</span><span class="p">(</span><span class="n">before</span><span class="p">,</span><span class="n">to</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span>
+         
+    <span class="k">for</span> <span class="n">before</span><span class="p">,</span><span class="n">to</span> <span class="ow">in</span> <span class="n">ftransp</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+         <span class="k">with</span> <span class="n">mc</span><span class="o">.</span><span class="n">ttimer</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;defunk </span><span class="si">{</span><span class="n">before</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">show</span><span class="p">):</span>
+             <span class="n">temp</span> <span class="o">=</span> <span class="n">defunk</span><span class="p">(</span><span class="n">before</span><span class="p">,</span><span class="n">to</span><span class="p">,</span><span class="n">temp</span><span class="p">,</span><span class="s1">&#39;(&#39;</span><span class="p">,</span><span class="s1">&#39;)&#39;</span><span class="p">)</span>
+         
+    <span class="k">for</span> <span class="n">before</span><span class="p">,</span><span class="n">to</span> <span class="ow">in</span> <span class="n">regtrans</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">with</span> <span class="n">mc</span><span class="o">.</span><span class="n">ttimer</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Regtrans </span><span class="si">{</span><span class="n">before</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">):</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">before</span><span class="p">,</span><span class="n">to</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span>
+<span class="c1">#    temp = debrace(temp)</span>
+    
+    <span class="k">if</span> <span class="n">show</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Translation from Latex to BLL finished&#39;</span><span class="p">)</span>
+<span class="c1">#    temp = re.sub(r&#39;sum\(n,s,t\)&#39;+(pt.namepat),r&#39;sum(n_{bank},sum(s,sum(t,\1)))&#39;,temp)</span>
+<span class="c1">#    temp = re.sub(r&#39;sum\(n\)sum\(s\)sum\(t\)&#39;+(pt.namepat),r&#39;sum(n_{bank},sum(s,sum(t,\1)))&#39;,temp)</span>
+<span class="c1">#    temp = re.sub(r&#39;sum\(n\)&#39;+(pt.namepat),r&#39;sum(n_{bank},\1)&#39;,temp)</span>
+    
+    <span class="n">ltemp</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Frml &lt;&gt; &#39;</span> <span class="o">+</span> <span class="n">eq</span> <span class="o">+</span> <span class="s1">&#39; $ &#39;</span><span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">temp</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="p">]</span>
+    
+<span class="c1">#    ltemp  = [doable(l) for l in ltemp]</span>
+    
+    <span class="n">out</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ltemp</span><span class="p">)</span> 
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span>  <span class="p">:</span>
+     <span class="n">test</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;&#39;&#39;\</span>
+<span class="s1">Loans can be in 3 stages, 1,2 3. </span>
+<span class="s1">New loans will be generated and loans will mature. </span>
+
+
+<span class="s1">\begin</span><span class="si">{equation}</span><span class="s1"></span>
+<span class="s1">\label{eq:Norm}</span>
+<span class="s1">TR^{stage\_from,stage} =  \frac{TR\_U^{stage\_from,stage}}{1+0*\sum_{stage\_from2}(TR\_U^{stage\_from2,stage})}</span>
+<span class="s1">\times(1-M^</span><span class="si">{stage}</span><span class="s1">-WRO^</span><span class="si">{stage}</span><span class="s1">)</span>
+<span class="s1">\end</span><span class="si">{equation}</span><span class="s1"></span>
+
+<span class="s1">List $stage=\{s1, s2,s3\}$</span>
+
+<span class="s1">List $stage\_from=\{s1, s2,s3\}$</span>
+
+<span class="s1">List $stage\_from2=\{s1, s2,s3\}$</span>
+
+<span class="s1">List $stage\_to=\{s1, s2,s3\}$</span>
+
+<span class="s1">&#39;&#39;&#39;</span>
+     <span class="n">res</span> <span class="o">=</span> <span class="n">latextotxt</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>    
+     
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

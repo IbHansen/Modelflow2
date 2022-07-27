@@ -1,12 +1,14 @@
-import dash_interactive_graphviz
-from jupyter_dash import JupyterDash
-import dash
-from dash.dependencies import Input, Output, State
-import dash_html_components as html
-import dash_core_components as dcc
-import dash_bootstrap_components as dbc
-import plotly.graph_objs as go
-
+try:
+    import dash_interactive_graphviz
+    from jupyter_dash import JupyterDash
+    import dash
+    from dash.dependencies import Input, Output, State
+    import dash_html_components as html
+    import dash_core_components as dcc
+    import dash_bootstrap_components as dbc
+    import plotly.graph_objs as go
+except:
+    ...
 
 import webbrowser
 from threading import Timer

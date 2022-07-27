@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>model_dynare &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>model_dynare</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for model_dynare</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Wed Jan  9 16:05:56 2019</span>
+<span class="sd">Reads a list of expanded modfile (outputtet from dynare) </span>
+
+<span class="sd">    </span>
+<span class="sd">@author: hanseni</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">sys</span> 
+
+
+<span class="kn">import</span> <span class="nn">modelclass</span> <span class="k">as</span> <span class="nn">mc</span>
+<span class="kn">import</span> <span class="nn">modelmanipulation</span> <span class="k">as</span> <span class="nn">mp</span>
+<span class="kn">import</span> <span class="nn">modelpattern</span> <span class="k">as</span> <span class="nn">pt</span>
+
+<div class="viewcode-block" id="grap_modfile"><a class="viewcode-back" href="../model_dynare.html#model_dynare.grap_modfile">[docs]</a><span class="k">class</span> <span class="nc">grap_modfile</span><span class="p">():</span>
+    
+    
+    <span class="sd">&#39;&#39;&#39;Accept filenames as argument. The first file is asumed to be the main model</span>
+<span class="sd">and gives the model its name</span>
+
+<span class="sd">Instead of filenames a string with a .mod file can be accepted</span>
+
+<span class="sd">    :savepath: (path of first file ) Where to save </span>
+<span class="sd">    :save:  (True) save the frm and mod files </span>
+<span class="sd">    :modelname: (name from first model file else &quot;testmodel&quot; for strings), name of model  </span>
+
+<span class="sd">The class contains among other:  </span>
+
+<span class="sd"> :mthismodel: The actual model </span>
+<span class="sd"> :mresmodel:  A model to calculate the _res variables before the actual calculations</span>
+<span class="sd"> :mparamodel: A model to inject parameter values into a dataframe before calculation</span>
+<span class="sd"> :fthismodel: String with the model  </span>
+<span class="sd"> :fresmodel:  String with the model for calculating residuals </span>
+<span class="sd"> :fparamodel: String with the model for injecting parameters </span>
+<span class="sd"> :modout:  String with the consolidated .mod file </span>
+
+<span class="sd"> </span>
+<span class="sd">creates 5 files: </span>
+<span class="sd">    </span>
+<span class="sd">    :{modelname}.frm: Formulas in modelflow business language </span>
+<span class="sd">    :{modelname}_res.frm: Formulas for mresmodel</span>
+<span class="sd">    :{modelname}_para.frm: Formulas for mparamodel  </span>
+<span class="sd">    :{modelname}_cons.mod: A consolidated .mod file defining the model and parameters </span>
+<span class="sd">    :{modelname}.inf: A with model information - also displayes after execution</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">,</span><span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">savepath</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">modelname</span> <span class="o">=</span> <span class="s1">&#39;testmodel&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; initialize a model&#39;&#39;&#39;</span>
+ 
+         
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">modfilenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.mod&#39;</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filenames</span>     <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">modfilenames</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;param.mod&#39;</span><span class="p">)</span> <span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parafilenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">modfilenames</span> <span class="k">if</span>  <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;param.mod&#39;</span><span class="p">)</span> <span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">alllines</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alllines</span><span class="o">=</span>  <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">open</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="s1">&#39;rt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filenames</span><span class="p">])</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>    
+            <span class="bp">self</span><span class="o">.</span><span class="n">paralines</span><span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">open</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="s1">&#39;rt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parafilenames</span><span class="p">])</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>    
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filenames</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">savepath</span> <span class="o">=</span> <span class="n">savepath</span> <span class="k">if</span> <span class="n">savepath</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>  
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alllines</span> <span class="o">=</span> <span class="n">files</span> <span class="c1"># we got a string </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">savepath</span> <span class="o">=</span> <span class="n">savepath</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">modelname</span> <span class="o">=</span> <span class="n">modelname</span>    
+    
+    <span class="c1">#%% get rid of comments</span>
+        <span class="n">rest</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;//&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alllines</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> 
+                          <span class="k">if</span> <span class="mi">0</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;//&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())]</span> 
+        
+        <span class="c1">#%% get the model and make it  </span>
+        <span class="n">restmod</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span>
+        <span class="n">modelpat</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;model(.*?)end&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">modellist</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">modelpat</span><span class="p">,</span><span class="n">restmod</span><span class="p">)</span> <span class="c1"># extract all model segments </span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">modellist</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">([</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rest</span> <span class="k">if</span> <span class="s1">&#39;model&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="o">.</span><span class="n">lower</span><span class="p">()]),</span><span class="s1">&#39;Some model segments missing&#39;</span>
+        
+        <span class="n">lthismodel</span>  <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;frml &lt;&gt; </span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s1"> $&#39;</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">modellist</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">)</span> 
+                          <span class="k">if</span> <span class="mi">0</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">strip</span><span class="p">())]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fthismodel</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lthismodel</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;^&#39;</span><span class="p">,</span><span class="s1">&#39;**&#39;</span><span class="p">)</span>
+        
+        <span class="k">assert</span> <span class="n">pt</span><span class="o">.</span><span class="n">check_syntax_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fthismodel</span><span class="p">),</span><span class="s1">&#39;Syntax error in file&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fthismodel</span><span class="p">,</span><span class="n">modelname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="p">)</span>
+        
+        <span class="c1">#%% get the resmodel </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fresmodel</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">find_res_dynare_new</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fthismodel</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mresmodel</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fresmodel</span><span class="p">,</span><span class="n">modelname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="o">+</span><span class="s1">&#39;_res&#39;</span><span class="p">)</span>
+        
+        <span class="n">modelresvar</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">allvar</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;_RES&#39;</span><span class="p">)]</span>
+        <span class="n">resmodelresvar</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mresmodel</span><span class="o">.</span><span class="n">endogene</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">modelresvar</span><span class="p">)</span><span class="o">==</span><span class="nb">set</span><span class="p">(</span><span class="n">resmodelresvar</span><span class="p">),</span><span class="s1">&#39;Residual model does not match residuals in the model&#39;</span>
+
+        
+        <span class="c1">#%% get a model for injecting parameters </span>
+        <span class="n">parampat</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;parameters(.*?)(?:(?:model)|(?:var)|(?:exovar)|(?:$))&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">paramlist</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">parampat</span><span class="p">,</span><span class="n">restmod</span><span class="p">)</span><span class="o">+</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">paralines</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">paramlist</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span> <span class="o">==</span> <span class="nb">len</span><span class="p">([</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">rest</span> <span class="k">if</span> <span class="s1">&#39;parameters&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="n">l</span><span class="p">]),</span><span class="s1">&#39;Some parameter segments missing&#39;</span>
+        
+        <span class="c1">#new get all the parameter settings and make a model for injecting theese</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paravalues</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">paramlist</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="mi">0</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="ow">and</span> <span class="s1">&#39;=&#39;</span> <span class="ow">in</span> <span class="n">f</span> <span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fparamodel</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;frml &lt;&gt; </span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s1"> $&#39;</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">paravalues</span> <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mparamodel</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fparamodel</span><span class="p">,</span><span class="n">modelname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="o">+</span><span class="s1">&#39;_para&#39;</span><span class="p">)</span>
+        
+        <span class="c1"># now get all the parameter names:</span>
+        <span class="n">llparavars</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">f</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">paramlist</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">)</span> <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paravars</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">llparavars</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span> <span class="k">if</span> <span class="mi">0</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">())})</span>
+        
+        <span class="c1">##% Variables </span>
+        <span class="n">varpat</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;var[^e](.*?);&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">varlist</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">varpat</span><span class="p">,</span><span class="n">restmod</span><span class="p">)</span>
+        <span class="nb">vars</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">varlist</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span> <span class="k">if</span> <span class="mi">0</span> <span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">vars</span><span class="p">)</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">endogene</span><span class="p">),</span><span class="s1">&#39;Not all endogenous variables are declared&#39;</span>
+        
+        <span class="n">exovarpat</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;varexo(.*?);&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">exovarlist</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">exovarpat</span><span class="p">,</span><span class="n">restmod</span><span class="p">)</span>
+        <span class="n">exovars</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">exovarlist</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span> <span class="k">if</span> <span class="mi">0</span> <span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
+        
+        
+        
+        <span class="c1">#%% Output model </span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">modout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">todynare</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paravars</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">paravalues</span><span class="p">)</span>
+        
+        
+        <span class="c1">#%%</span>
+        <span class="n">newline</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inf</span><span class="o">=</span> <span class="p">(</span>    
+         <span class="sa">f</span><span class="s1">&#39;Model file(s)                             : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filenames</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Contemporaneous feedback (simultaneous)   : </span><span class="si">{</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">istopo</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Var equal to left hand variables          : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">endogene</span> <span class="o">==</span>  <span class="nb">set</span><span class="p">(</span><span class="nb">vars</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Number of endogeneous                     : </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">endogene</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Number of exogenous                       : </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">exogene</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Parameters                                : </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paravars</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Parameters set to values                  : </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paravalues</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Exovar not in model                       : </span><span class="si">{</span> <span class="nb">set</span><span class="p">(</span><span class="n">exovars</span><span class="p">)</span><span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">exogene</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Model exogenous not in exovar or parameter: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">exogene</span><span class="o">-</span> <span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">exovars</span><span class="p">)</span><span class="o">|</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paravars</span><span class="p">))</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Parameters also in exovar                 : </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">exovars</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paravars</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="o">+</span><span class="sa">f</span><span class="s1">&#39;Parameters not in model                   : </span><span class="se">\n</span><span class="si">{</span><span class="n">newline</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paravars</span><span class="p">)</span><span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">exogene</span><span class="p">))</span><span class="si">}</span><span class="s1"> </span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="p">)</span>
+        <span class="c1">#print(inf)</span>
+        <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">savepath</span><span class="si">}</span><span class="s1">\</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="si">}</span><span class="s1">.inf&#39;</span><span class="p">,</span><span class="s1">&#39;wt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">inffile</span><span class="p">:</span>
+                <span class="n">inffile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">savepath</span><span class="si">}</span><span class="s1">\</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="si">}</span><span class="s1">.frm&#39;</span><span class="p">,</span><span class="s1">&#39;wt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">frmfile</span><span class="p">:</span>
+                <span class="n">frmfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fthismodel</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">savepath</span><span class="si">}</span><span class="s1">\</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="si">}</span><span class="s1">_para.frm&#39;</span><span class="p">,</span><span class="s1">&#39;wt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">frmfile</span><span class="p">:</span>
+                <span class="n">frmfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fparamodel</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">savepath</span><span class="si">}</span><span class="s1">\</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="si">}</span><span class="s1">_res.frm&#39;</span><span class="p">,</span><span class="s1">&#39;wt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">frmfile</span><span class="p">:</span>
+                <span class="n">frmfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fresmodel</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">savepath</span><span class="si">}</span><span class="s1">\</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">modelname</span><span class="si">}</span><span class="s1">_cons.mod&#39;</span><span class="p">,</span><span class="s1">&#39;wt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">consfile</span><span class="p">:</span>
+                <span class="n">consfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">modout</span><span class="p">)</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span> <span class="p">:</span>
+
+    <span class="n">dmodel</span> <span class="o">=</span> <span class="n">grap_modfile</span><span class="p">([</span><span class="sa">r</span><span class="s1">&#39;j:\mpptest\CRPLMANII-macroexp.mod&#39;</span><span class="p">])</span>
+    <span class="n">modmod</span> <span class="o">=</span> <span class="n">dmodel</span><span class="o">.</span><span class="n">modout</span>
+<span class="c1">#%%</span>
+    <span class="k">if</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1">#%%</span>
+        <span class="n">dmodel</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">AT_SHOCK1</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">down</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">up</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">pdf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">browser</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">HR</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">endo</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">dmodel</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">TR_13_HHCC_AT_DENLG</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">down</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">up</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">pdf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">HR</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">endo</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">dmodel</span><span class="o">.</span><span class="n">mthismodel</span><span class="o">.</span><span class="n">LOANSUPPLY_HHCC_AT_ATVLK</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">down</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">up</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">pdf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">HR</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">endo</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

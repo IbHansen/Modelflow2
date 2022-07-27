@@ -2,9 +2,8 @@
 """
 Created on Mon Aug  9 14:46:11 2021
 
-To inject methods and properties into a asia model instance, so we dont have to recreate it
-
-@author: bruger
+To define Jupyter widgets to update and show variables. 
+@author: Ib 
 """
 
 import pandas as pd
@@ -39,6 +38,7 @@ class basewidget:
     
 @dataclass
 class tabwidget:
+    '''A widget to create tab or acordium contaners'''
     
     tabdefdict : dict # =  field(default_factory = lambda: ({}))
     tab : bool = True 
@@ -71,7 +71,7 @@ class tabwidget:
 
 @dataclass
 class sheetwidget:
-    ''' class defefining a widget which updates from a sheet '''
+    ''' class defining a widget which updates from a sheet '''
     df_var         : any = pd.DataFrame()         # definition 
     trans          : any = lambda x : x      # renaming of variables 
     transpose      : bool = False            # orientation of dataframe 

@@ -2,11 +2,13 @@
 """
 Created on Thu Sep 21 12:41:10 2017
 
-@author: hanseni
+@author: IBH
 
     Class to handle general target/instrument problems. 
+    
     Number of targets should be equal to number of instruments 
-    an instrument can comprice of severeral variables 
+    
+    An instrument can comprice of severeral variables 
     instruments are inputtet as a list of instruments
 
 """
@@ -145,18 +147,27 @@ class targets_instruments_old():
         
             
 class targets_instruments():
-    ''' Class to handle general target/instrument problems. where the responce is delayed
-    Number of targets should be equal to number of instruments 
-    an instrument can comprice of severeral variables 
-    instruments are inputtet as a list of instruments
-    To calculate the jacobian each instrument variable has a impuls, which is used as delta when evaluating the jacobi matrix. 
-    [ 'QO_J','TG']   Simple list each variable are shocked by the default impulse 
-    [ ('QO_J',0.5), 'TG']  Here QO_J is getting its own impuls (0.5)
-    [ [('QO_J',0.5),('ORLOV',1.)] , ('TG',0.01)] here an impuls is given for each variable, and the first instrument consiste of two variables 
+    ''' Class to handle general target/instrument problems. 
+    Where the response is delayed specify this with delay.
     
-    Targets are list of variables 
-    convergence is achieved when all targets are within convergens distance from the target value
-    convergencedistance can be set individual for a target variable by setting a value in <modelinstance>.targetconv 
+    Number of targets should be equal to number of instruments 
+    
+    An instrument can comprice of severeral variables
+    
+    **Instruments** are inputtet as a list of instruments
+    
+    To calculate the jacobian each instrument variable has a impuls, 
+    which is used as delta when evaluating the jacobi matrix:: 
+        
+      [ 'QO_J','TG']   Simple list each variable are shocked by the default impulse 
+      [ ('QO_J',0.5), 'TG']  Here QO_J is getting its own impuls (0.5)
+      [ [('QO_J',0.5),('ORLOV',1.)] , ('TG',0.01)] here an impuls is given for each variable, and the first instrument consiste of two variables 
+    
+    **Targets** are list of variables
+    
+    Convergence is achieved when all targets are within convergens distance from the target value
+    
+    Convergencedistance can be set individual for a target variable by setting a value in <modelinstance>.targetconv 
     
     Targets and target values are provided by a dataframe. 
     
@@ -186,6 +197,7 @@ class targets_instruments():
             name = f'Instrument_{inumber}' if len(name)>500 else name 
             self.instruments[inumber] = {'name':name , 'vars': xx,  }
         self.DefaultImpuls = DefaultImpuls
+        # breakpoint()
 
         
     def jacobi(self,per,delay=None):
@@ -315,6 +327,7 @@ class targets_instruments():
     
    
     def __call__(self, *args, **kwargs ):
+        '''Uses :any:`targetseel`   '''
         return self.targetseek( *args, **kwargs)
         
             

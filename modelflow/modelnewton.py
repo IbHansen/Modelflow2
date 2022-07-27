@@ -394,7 +394,7 @@ class newton_diff():
         self.diff_model.current_per = _per     
         # breakpoint()
         with ttimer('calculate derivatives',self.timeit):
-            self.difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk).loc[_per,self.diff_model.endogene]
+            self.difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk).loc[_per,sorted(self.diff_model.endogene)]
         with ttimer('Prepare wide input to sparse matrix',self.timeit):
             # breakpoint()
             cname = namedtuple('cname','var,pvar,lag')
@@ -550,7 +550,7 @@ class newton_diff():
        
             self.diff_model.current_per = _per     
             # breakpoint()
-            difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk).loc[_per,self.diff_model.endogene].astype('float')
+            difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk).loc[_per,sorted(self.diff_model.endogene)].astype('float')
                   
             cname = namedtuple('cname','var,pvar,lag')
             col_vars = [cname(i.rsplit('__P__',1)[0], 
@@ -621,7 +621,7 @@ class newton_diff():
                 self.diffvalues[var][pvar_name]=res                         
         return self.diffvalues
 
-    def get_eigenvectors(self,periode=None,asdf=True):
+    def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False):
         
         first_element = lambda dic: dic[list(dic.keys())[0]]  # first element in a dict 
         if asdf:
@@ -639,7 +639,21 @@ class newton_diff():
             
         jacobiall = self.get_diff_mat_all_1per(periode,asdf=asdf)
         # breakpoint()
-        A_dic ={date : {lag : df for lag,df in content['endo'].items()} 
+        if not silent: 
+            for date,content in jacobiall.items():
+                for lag,df in content['endo'].items():
+                    if not (this := df.loc[df.isna().any(axis=1),df.isna().any(axis=0)]).empty:
+                        if filnan: 
+                            print(f'{date} {lag} These elements in the jacobi is set to zero',this,'\n')
+                        else:     
+                            print(f'{date} {lag} These elements in the jacobi contains NaN, You can use filnan = True to set values equal to 0',this,'\n')
+                        
+                        pat = ' '.join(this.index)
+                        self.show_diff_latex(pat)
+                            
+                        
+                    
+        self.A_dic = A_dic = {date : {lag : df.fillna(0) if filnan else df for lag,df in content['endo'].items()} 
                 for date,content in jacobiall.items()}
         
         xlags = sorted([lag for lag in first_element(A_dic).keys() if lag !='lag=0'],key=lambda lag:int(lag.split('=')[1]),reverse=True)

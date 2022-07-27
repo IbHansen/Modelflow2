@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modeldekom &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>modeldekom</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modeldekom</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for making attribution analysis of a model. </span>
+
+<span class="sd">The main function is attribution </span>
+
+<span class="sd">Created on Wed May 31 08:50:51 2017</span>
+
+<span class="sd">@author: hanseni</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">fnmatch</span> 
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span> 
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+<span class="kn">import</span> <span class="nn">matplotlib.dates</span> <span class="k">as</span> <span class="nn">mdates</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">ipywidgets</span> <span class="k">as</span> <span class="nn">ip</span>
+<span class="kn">import</span> <span class="nn">pdb</span>
+
+
+
+<span class="kn">from</span> <span class="nn">modelhelp</span> <span class="kn">import</span> <span class="n">cutout</span>
+<span class="kn">import</span> <span class="nn">modelclass</span> <span class="k">as</span> <span class="nn">mc</span> 
+<span class="kn">import</span> <span class="nn">modeldekom</span> <span class="k">as</span> <span class="nn">mk</span> 
+<span class="kn">import</span> <span class="nn">modelvis</span> <span class="k">as</span> <span class="nn">mv</span>
+
+
+<span class="n">idx</span><span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
+    
+<div class="viewcode-block" id="attribution"><a class="viewcode-back" href="../index.html#modeldekom.attribution">[docs]</a><span class="k">def</span> <span class="nf">attribution</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">experiments</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">save</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">maxexp</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span><span class="n">showtime</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">summaryvar</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;*&#39;</span><span class="p">]</span>
+                <span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">msilent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;level&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Calculates an attribution analysis on a model </span>
+<span class="sd">    accepts a dictionary with experiments. the key is experiment name, the value is a list </span>
+<span class="sd">    of variables which has to be reset to the values in the baseline dataframe. &quot;&quot;&quot;</span>  
+    <span class="n">summaryout</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">vlist</span><span class="p">(</span><span class="n">summaryvar</span><span class="p">)</span>
+    <span class="n">adverseny</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">lastdf</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">basedf</span>
+    <span class="k">if</span> <span class="nb">type</span> <span class="o">==</span> <span class="s1">&#39;level&#39;</span><span class="p">:</span>
+        <span class="n">adverse0</span><span class="o">=</span><span class="n">adverseny</span><span class="p">[</span><span class="n">summaryout</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
+    <span class="k">elif</span> <span class="nb">type</span> <span class="o">==</span>  <span class="s1">&#39;growth&#39;</span><span class="p">:</span>
+        <span class="n">adverse0</span><span class="o">=</span><span class="n">adverseny</span><span class="p">[</span><span class="n">summaryout</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="o">*</span> <span class="mf">100.</span>
+    <span class="n">ret</span><span class="o">=</span><span class="p">{}</span>
+    <span class="n">modelsave</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">save</span>  <span class="c1"># save the state of model.save </span>
+    <span class="n">model</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="kc">False</span>      <span class="c1"># no need to save the experiments in each run </span>
+    <span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="s1">&#39;Total dekomp&#39;</span><span class="p">,</span><span class="n">showtime</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">e</span><span class="p">,</span><span class="n">var</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">experiments</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">maxexp</span> <span class="p">:</span> <span class="k">break</span>     <span class="c1"># when we are testing </span>
+            <span class="n">oldvar</span><span class="o">=</span><span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s1">&#39;Experiment :&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;Touching: </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+            <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">base</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="n">tempdf</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">adverseny</span>   <span class="p">,</span><span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">silent</span><span class="o">=</span><span class="n">msilent</span><span class="p">)[</span><span class="n">summaryout</span><span class="p">]</span>
+            <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">oldvar</span>
+            
+            <span class="k">if</span> <span class="nb">type</span> <span class="o">==</span> <span class="s1">&#39;level&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">tempdf</span><span class="p">[</span><span class="n">summaryout</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,:]</span>
+            <span class="k">elif</span> <span class="nb">type</span> <span class="o">==</span>  <span class="s1">&#39;growth&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>  <span class="o">=</span> <span class="n">tempdf</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,:]</span> <span class="o">*</span> <span class="mf">100.</span>
+
+        <span class="n">difret</span> <span class="o">=</span> <span class="p">{</span><span class="n">e</span> <span class="p">:</span> <span class="n">adverse0</span><span class="o">-</span><span class="n">ret</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>           <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">}</span>
+    
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">difret</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">difret</span><span class="p">],</span><span class="n">keys</span><span class="o">=</span><span class="n">difret</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+         <span class="n">df</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="s1">&#39;data</span><span class="se">\\</span><span class="s1">&#39;</span> <span class="o">+</span><span class="n">save</span> <span class="o">+</span><span class="sa">r</span><span class="s1">&#39;.pc&#39;</span><span class="p">)</span>    
+         
+    <span class="n">model</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="n">modelsave</span> <span class="c1"># restore the state of model.save </span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="attribution_new"><a class="viewcode-back" href="../index.html#modeldekom.attribution_new">[docs]</a><span class="k">def</span> <span class="nf">attribution_new</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">experiments</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">save</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">maxexp</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span><span class="n">showtime</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">summaryvar</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;*&#39;</span><span class="p">]</span>
+                <span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">msilent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;level&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Calculates an attribution analysis on a model </span>
+<span class="sd">    accepts a dictionary with experiments. the key is experiment name, the value is a list </span>
+<span class="sd">    of variables which has to be reset to the values in the baseline dataframe. &quot;&quot;&quot;</span>  
+    <span class="n">summaryout</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">vlist</span><span class="p">(</span><span class="n">summaryvar</span><span class="p">)</span>
+    <span class="n">adverseny</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">lastdf</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">basedf</span>
+    <span class="n">adverse0_level</span>  <span class="o">=</span> <span class="n">adverseny</span><span class="p">[</span><span class="n">summaryout</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
+    <span class="n">adverse0_growth</span> <span class="o">=</span> <span class="n">adverseny</span><span class="p">[</span><span class="n">summaryout</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="o">*</span> <span class="mf">100.</span>
+    <span class="n">ret_level</span>  <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">ret_growth</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">modelsave</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">save</span>  <span class="c1"># save the state of model.save </span>
+    <span class="n">model</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="kc">False</span>      <span class="c1"># no need to save the experiments in each run </span>
+    <span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="s1">&#39;Total dekomp&#39;</span><span class="p">,</span><span class="n">showtime</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">e</span><span class="p">,</span><span class="n">var</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">experiments</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">maxexp</span> <span class="p">:</span> <span class="k">break</span>     <span class="c1"># when we are testing </span>
+            <span class="n">oldvar</span><span class="o">=</span><span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s1">&#39;Experiment :&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;Touching: </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+            <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">base</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="n">tempdf</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">adverseny</span>   <span class="p">,</span><span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">silent</span><span class="o">=</span><span class="n">msilent</span><span class="p">)[</span><span class="n">summaryout</span><span class="p">]</span>
+            <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">oldvar</span>
+            
+            <span class="n">ret_level</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>   <span class="o">=</span> <span class="n">tempdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,:]</span>
+            <span class="n">ret_growth</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>  <span class="o">=</span> <span class="n">tempdf</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,:]</span> <span class="o">*</span> <span class="mf">100.</span>
+
+        <span class="n">difret_level</span>  <span class="o">=</span> <span class="p">{</span><span class="n">e</span> <span class="p">:</span> <span class="n">adverse0_level</span>  <span class="o">-</span> <span class="n">ret_level</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>         <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ret_level</span><span class="p">}</span>
+        <span class="n">difret_growth</span> <span class="o">=</span> <span class="p">{</span><span class="n">e</span> <span class="p">:</span> <span class="n">adverse0_growth</span> <span class="o">-</span> <span class="n">ret_growth</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ret_growth</span><span class="p">}</span>
+    
+    <span class="n">df_level</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">difret_level</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">difret_level</span><span class="p">],</span><span class="n">keys</span><span class="o">=</span><span class="n">difret_level</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">df_growth</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">difret_growth</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">difret_growth</span><span class="p">],</span><span class="n">keys</span><span class="o">=</span><span class="n">difret_growth</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+         <span class="n">df_level</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="s1">&#39;data</span><span class="se">\\</span><span class="s1">&#39;</span> <span class="o">+</span><span class="n">save</span> <span class="o">+</span><span class="sa">r</span><span class="s1">&#39;_level.pc&#39;</span><span class="p">)</span>    
+         <span class="n">df_level</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="s1">&#39;data</span><span class="se">\\</span><span class="s1">&#39;</span> <span class="o">+</span><span class="n">save</span> <span class="o">+</span><span class="sa">r</span><span class="s1">&#39;_growth.pc&#39;</span><span class="p">)</span>    
+         
+    <span class="n">model</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="n">modelsave</span> <span class="c1"># restore the state of model.save </span>
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;level&#39;</span><span class="p">:</span><span class="n">df_level</span><span class="p">,</span> <span class="s1">&#39;growth&#39;</span><span class="p">:</span><span class="n">df_growth</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="ilist"><a class="viewcode-back" href="../index.html#modeldekom.ilist">[docs]</a><span class="k">def</span> <span class="nf">ilist</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">pat</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;returns a list of variable in the model matching the pattern, </span>
+<span class="sd">    the pattern can be a list of patterns of a sting with patterns seperated by </span>
+<span class="sd">    blanks</span>
+<span class="sd">    </span>
+<span class="sd">    This function operates on the index names of a dataframe. Relevant for attribution analysis</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pat</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+           <span class="n">upat</span><span class="o">=</span><span class="n">pat</span>
+    <span class="k">else</span><span class="p">:</span>
+           <span class="n">upat</span> <span class="o">=</span> <span class="p">[</span><span class="n">pat</span><span class="p">]</span>
+           
+    <span class="n">ipat</span> <span class="o">=</span> <span class="n">upat</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span>  <span class="n">p</span> <span class="ow">in</span> <span class="n">ipat</span> <span class="k">for</span> <span class="n">up</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">fnmatch</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="n">up</span><span class="o">.</span><span class="n">upper</span><span class="p">()))]</span>  
+    <span class="k">return</span> <span class="n">out</span></div>
+
+    
+<span class="k">def</span> <span class="nf">GetAllImpact</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">sumaryvar</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; get all the impact from at impact dataframe&#39;&#39;&#39;</span> 
+    <span class="n">exo</span> <span class="o">=</span> <span class="nb">list</span><span class="p">({</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="n">impact</span><span class="o">.</span><span class="n">columns</span><span class="p">})</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">impact</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">sumaryvar</span><span class="p">,</span><span class="n">c</span><span class="p">]</span>  <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">exo</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">exo</span>
+    <span class="k">return</span> <span class="n">df</span> 
+
+<div class="viewcode-block" id="GetSumImpact"><a class="viewcode-back" href="../index.html#modeldekom.GetSumImpact">[docs]</a><span class="k">def</span> <span class="nf">GetSumImpact</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;PD__*&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets the accumulated differences attributet to each impact group &quot;&quot;&quot;</span> 
+    <span class="n">a</span> <span class="o">=</span> <span class="n">impact</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ilist</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">pat</span><span class="p">),:]</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>   
+    <span class="k">return</span> <span class="n">a</span> </div>
+
+<div class="viewcode-block" id="GetLastImpact"><a class="viewcode-back" href="../index.html#modeldekom.GetLastImpact">[docs]</a><span class="k">def</span> <span class="nf">GetLastImpact</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;RCET1__*&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets the last differences attributet to each impact group &quot;&quot;&quot;</span> 
+    <span class="n">a</span> <span class="o">=</span> <span class="n">impact</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ilist</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">pat</span><span class="p">),:]</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>   
+    <span class="k">return</span> <span class="n">a</span></div>
+ 
+<div class="viewcode-block" id="GetAllImpact"><a class="viewcode-back" href="../index.html#modeldekom.GetAllImpact">[docs]</a><span class="k">def</span> <span class="nf">GetAllImpact</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;RCET1__*&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets the last differences attributet to each impact group &quot;&quot;&quot;</span> 
+    <span class="n">a</span> <span class="o">=</span> <span class="n">impact</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ilist</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">pat</span><span class="p">),:]</span> 
+    <span class="k">return</span> <span class="n">a</span> </div>
+
+<div class="viewcode-block" id="GetOneImpact"><a class="viewcode-back" href="../index.html#modeldekom.GetOneImpact">[docs]</a><span class="k">def</span> <span class="nf">GetOneImpact</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;RCET1__*&#39;</span><span class="p">,</span><span class="n">per</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets differences attributet to each impact group in period:per &quot;&quot;&quot;</span> 
+    <span class="n">a</span> <span class="o">=</span> <span class="n">impact</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ilist</span><span class="p">(</span><span class="n">impact</span><span class="p">,</span><span class="n">pat</span><span class="p">),</span><span class="n">idx</span><span class="p">[:,</span><span class="n">per</span><span class="p">]]</span> 
+    <span class="n">a</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">a</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">a</span> </div>
+
+<div class="viewcode-block" id="AggImpact"><a class="viewcode-back" href="../index.html#modeldekom.AggImpact">[docs]</a><span class="k">def</span> <span class="nf">AggImpact</span><span class="p">(</span><span class="n">impact</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Calculates the sum of impacts and place in the last column</span>
+<span class="sd">    </span>
+<span class="sd">    This function is applied to the result iof a Get* function&quot;&quot;&quot;</span> 
+    <span class="n">asum</span><span class="o">=</span> <span class="n">impact</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">asum</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;_Sum&#39;</span>
+    <span class="n">aout</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">impact</span><span class="p">,</span><span class="n">asum</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">aout</span> </div>
+
+
+<div class="viewcode-block" id="totdif"><a class="viewcode-back" href="../index.html#modeldekom.totdif">[docs]</a><span class="k">class</span> <span class="nc">totdif</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39; Class to make modelvide attribution analysis </span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span><span class="n">summaryvar</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="n">desdic</span><span class="o">=</span><span class="p">{},</span><span class="n">experiments</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+       
+       <span class="bp">self</span><span class="o">.</span><span class="n">diffdf</span>  <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">exodif</span><span class="p">()</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">diffvar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffdf</span><span class="o">.</span><span class="n">columns</span>
+       <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diffvar</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+           <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No variables to attribute to &#39;</span><span class="p">)</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">go</span> <span class="o">=</span> <span class="kc">False</span> 
+           <span class="bp">self</span><span class="o">.</span><span class="n">typetext</span> <span class="o">=</span> <span class="s1">&#39;Unknown&#39;</span>
+
+       <span class="k">else</span><span class="p">:</span> 
+           <span class="bp">self</span><span class="o">.</span><span class="n">go</span> <span class="o">=</span> <span class="kc">True</span> 
+           <span class="bp">self</span><span class="o">.</span><span class="n">experiments</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffvar</span><span class="p">}</span> <span class="k">if</span> <span class="n">experiments</span> <span class="o">==</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">experiments</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span> 
+           <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">current_per</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">current_per</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+           
+           <span class="bp">self</span><span class="o">.</span><span class="n">desdic</span> <span class="o">=</span> <span class="n">desdic</span> 
+           <span class="bp">self</span><span class="o">.</span><span class="n">summaryvar</span> <span class="o">=</span> <span class="n">summaryvar</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">summaryout</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">vlist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summaryvar</span><span class="p">)</span>
+           
+           <span class="bp">self</span><span class="o">.</span><span class="n">res</span> <span class="o">=</span> <span class="n">attribution_new</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">experiments</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">,</span>
+            <span class="n">summaryvar</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">summaryvar</span><span class="p">,</span><span class="n">showtime</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">)</span>
+       
+<div class="viewcode-block" id="totdif.explain_last"><a class="viewcode-back" href="../index.html#modeldekom.totdif.explain_last">[docs]</a>    <span class="k">def</span> <span class="nf">explain_last</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="s1">&#39;level&#39;</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>  
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Explains last period </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pat (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.</span>
+<span class="sd">            title (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            use (TYPE, optional): DESCRIPTION. Defaults to &#39;level&#39;.</span>
+<span class="sd">            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            fig (TYPE): DESCRIPTION.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">go</span><span class="p">:</span>         
+            <span class="bp">self</span><span class="o">.</span><span class="n">impact</span> <span class="o">=</span> <span class="n">mk</span><span class="o">.</span><span class="n">GetLastImpact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">[</span><span class="n">use</span><span class="p">],</span><span class="n">pat</span><span class="o">=</span><span class="n">pat</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">ntitle</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Attribution last period, </span><span class="si">{</span><span class="n">use</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">title</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="n">title</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">mv</span><span class="o">.</span><span class="n">waterplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">impact</span><span class="p">,</span><span class="n">autosum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">allsort</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">,</span><span class="n">title</span><span class="o">=</span> <span class="n">title</span><span class="p">,</span><span class="n">desdic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">fig</span></div>
+   
+<div class="viewcode-block" id="totdif.explain_sum"><a class="viewcode-back" href="../index.html#modeldekom.totdif.explain_sum">[docs]</a>    <span class="k">def</span> <span class="nf">explain_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="s1">&#39;level&#39;</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span> 
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Explains the sum</span>
+<span class="sd">        </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pat (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.</span>
+<span class="sd">            title (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            use (TYPE, optional): DESCRIPTION. Defaults to &#39;level&#39;.</span>
+<span class="sd">            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            fig (TYPE): DESCRIPTION.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">go</span><span class="p">:</span>          
+           <span class="bp">self</span><span class="o">.</span><span class="n">impact</span> <span class="o">=</span> <span class="n">mk</span><span class="o">.</span><span class="n">GetSumImpact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">[</span><span class="n">use</span><span class="p">],</span><span class="n">pat</span><span class="o">=</span><span class="n">pat</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+           <span class="n">ntitle</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Attribution, sum over all periods, </span><span class="si">{</span><span class="n">use</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">title</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="n">title</span>
+           <span class="n">fig</span> <span class="o">=</span> <span class="n">mv</span><span class="o">.</span><span class="n">waterplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">impact</span><span class="p">,</span><span class="n">autosum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">allsort</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="n">ntitle</span><span class="p">,</span><span class="n">desdic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span> <span class="p">)</span>
+           <span class="k">return</span> <span class="n">fig</span></div>
+   
+<div class="viewcode-block" id="totdif.explain_per"><a class="viewcode-back" href="../index.html#modeldekom.totdif.explain_per">[docs]</a>    <span class="k">def</span> <span class="nf">explain_per</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">per</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="s1">&#39;level&#39;</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">ysize</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>   
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Explains a periode</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pat (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            per (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.</span>
+<span class="sd">            title (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            use (TYPE, optional): DESCRIPTION. Defaults to &#39;level&#39;.</span>
+<span class="sd">            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.</span>
+<span class="sd">            ysize (TYPE, optional): DESCRIPTION. Defaults to 5.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            fig (TYPE): DESCRIPTION.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">go</span><span class="p">:</span>        
+           <span class="n">tper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">[</span><span class="n">use</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">per</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="n">per</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">impact</span> <span class="o">=</span> <span class="n">mk</span><span class="o">.</span><span class="n">GetOneImpact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">[</span><span class="n">use</span><span class="p">],</span><span class="n">pat</span><span class="o">=</span><span class="n">pat</span><span class="p">,</span><span class="n">per</span><span class="o">=</span><span class="n">tper</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span><span class="p">)</span> 
+           <span class="n">t2per</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">tper</span><span class="o">.</span><span class="n">date</span><span class="p">())</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">tper</span><span class="p">)</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">_libs</span><span class="o">.</span><span class="n">tslibs</span><span class="o">.</span><span class="n">timestamps</span><span class="o">.</span><span class="n">Timestamp</span> <span class="k">else</span> <span class="n">tper</span>
+           <span class="n">ntitle</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Attribution, </span><span class="si">{</span><span class="n">use</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">t2per</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">title</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="n">title</span>
+           <span class="n">fig</span> <span class="o">=</span> <span class="n">mv</span><span class="o">.</span><span class="n">waterplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">impact</span><span class="p">,</span><span class="n">autosum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">allsort</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="n">ntitle</span><span class="p">,</span><span class="n">desdic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span> <span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span><span class="n">ysize</span><span class="o">=</span><span class="n">ysize</span><span class="p">)</span>
+           <span class="k">return</span> <span class="n">fig</span></div>
+   
+            
+    <span class="k">def</span> <span class="nf">explain_allold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">stacked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="s1">&#39;level&#39;</span><span class="p">,</span>
+                    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">resample</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">axvline</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">go</span><span class="p">:</span>
+            <span class="n">years</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">YearLocator</span><span class="p">()</span>   <span class="c1"># every year</span>
+            <span class="n">months</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">MonthLocator</span><span class="p">()</span>  <span class="c1"># every month</span>
+            <span class="n">years_fmt</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">DateFormatter</span><span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">)</span>
+            
+            <span class="n">selected</span> <span class="o">=</span>   <span class="n">GetAllImpact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">[</span><span class="n">use</span><span class="p">],</span><span class="n">pat</span><span class="p">)</span> 
+            <span class="n">grouped</span> <span class="o">=</span> <span class="n">selected</span><span class="o">.</span><span class="n">stack</span><span class="p">()</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">grouped</span><span class="p">),</span><span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">grouped</span><span class="p">)),</span><span class="n">constrained_layout</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># the width of the barsser</span>
+            <span class="n">ntitle</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Attribution, </span><span class="si">{</span><span class="n">use</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">title</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="n">title</span>
+            <span class="n">laxis</span> <span class="o">=</span> <span class="n">axis</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,((</span><span class="n">name</span><span class="p">,</span><span class="n">dfatt</span><span class="p">),</span><span class="n">ax</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">grouped</span><span class="p">,</span><span class="n">laxis</span><span class="p">)):</span>
+                <span class="n">dfatt</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">dfatt</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">resample</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">tempdf</span><span class="o">=</span><span class="n">cutout</span><span class="p">(</span><span class="n">dfatt</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tempdf</span><span class="o">=</span><span class="n">cutout</span><span class="p">(</span><span class="n">dfatt</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">resample</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="c1">#                pdb.set_trace()</span>
+                <span class="n">tempdf</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span><span class="n">stacked</span><span class="o">=</span><span class="n">stacked</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">name</span><span class="p">))</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;x-large&#39;</span><span class="p">)</span>
+<span class="c1">#                ax.set_xticklabels(tempdf.index.tolist(), rotation = 45,fontsize=&#39;x-large&#39;)</span>
+<span class="c1">##                ax.xaxis.set_minor_locator(plt.NullLocator())</span>
+<span class="c1">##                ax.tick_params(axis=&#39;x&#39;, labelleft=True)</span>
+<span class="c1">#                ax.xaxis.set_major_locator(years)</span>
+<span class="c1">#                ax.xaxis_date()</span>
+<span class="c1">#                ax.xaxis.set_major_formatter(years_fmt)</span>
+<span class="c1">#                ax.xaxis.set_minor_locator(months)</span>
+<span class="c1">#                ax.tick_params(axis=&#39;x&#39;, labelrotation=45,right = True)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">axvline</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span> <span class="n">axis</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">axvline</span><span class="p">)</span>    
+            <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">ntitle</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="k">if</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">)</span>
+        
+            <span class="k">return</span> <span class="n">fig</span>
+
+<div class="viewcode-block" id="totdif.explain_all"><a class="viewcode-back" href="../index.html#modeldekom.totdif.explain_all">[docs]</a>    <span class="k">def</span> <span class="nf">explain_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">stacked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="s1">&#39;level&#39;</span><span class="p">,</span>
+                    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">resample</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">axvline</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> 
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Explains all</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pat (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            stacked (TYPE, optional): DESCRIPTION. Defaults to True.</span>
+<span class="sd">            kind (TYPE, optional): DESCRIPTION. Defaults to &#39;bar&#39;.</span>
+<span class="sd">            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.</span>
+<span class="sd">            title (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            use (TYPE, optional): DESCRIPTION. Defaults to &#39;level&#39;.</span>
+<span class="sd">            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.</span>
+<span class="sd">            resample (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            axvline (TYPE, optional): DESCRIPTION. Defaults to None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="kn">import</span> <span class="nn">warnings</span> 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">go</span><span class="p">:</span>
+            <span class="n">years</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">YearLocator</span><span class="p">()</span>   <span class="c1"># every year</span>
+            <span class="n">months</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">MonthLocator</span><span class="p">()</span>  <span class="c1"># every month</span>
+            <span class="n">years_fmt</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">DateFormatter</span><span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">)</span>
+            
+            <span class="n">selected</span> <span class="o">=</span>   <span class="n">GetAllImpact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">[</span><span class="n">use</span><span class="p">],</span><span class="n">pat</span><span class="p">)</span> 
+            <span class="n">grouped</span> <span class="o">=</span> <span class="n">selected</span><span class="o">.</span><span class="n">stack</span><span class="p">()</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">grouped</span><span class="p">),</span><span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">grouped</span><span class="p">)),</span><span class="n">constrained_layout</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># the width of the barsser</span>
+            <span class="n">ntitle</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Attribution, </span><span class="si">{</span><span class="n">use</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">title</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="n">title</span>
+            <span class="n">laxis</span> <span class="o">=</span> <span class="n">axis</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,((</span><span class="n">name</span><span class="p">,</span><span class="n">dfatt</span><span class="p">),</span><span class="n">ax</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">grouped</span><span class="p">,</span><span class="n">laxis</span><span class="p">)):</span>
+                <span class="n">dfatt</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">dfatt</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">resample</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">tempdf</span><span class="o">=</span><span class="n">cutout</span><span class="p">(</span><span class="n">dfatt</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tempdf</span><span class="o">=</span><span class="n">cutout</span><span class="p">(</span><span class="n">dfatt</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">resample</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="c1">#                pdb.set_trace()</span>
+                <span class="n">selfstack</span> <span class="o">=</span> <span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;line&#39;</span> <span class="ow">or</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;area&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">stacked</span> 
+                <span class="n">tempdf</span> <span class="o">=</span> <span class="n">tempdf</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">selfstack</span><span class="p">:</span>
+                        <span class="n">df_neg</span><span class="p">,</span> <span class="n">df_pos</span> <span class="o">=</span><span class="n">tempdf</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">upper</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">tempdf</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">lower</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>    
+                        <span class="n">df_pos</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span><span class="n">stacked</span><span class="o">=</span><span class="n">stacked</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">name</span><span class="p">))</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_prop_cycle</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                        <span class="n">df_neg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span><span class="n">stacked</span><span class="o">=</span><span class="n">stacked</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">name</span><span class="p">))</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="n">df_neg</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">df_pos</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">tempdf</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span><span class="n">stacked</span><span class="o">=</span><span class="n">stacked</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desdic</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">name</span><span class="p">))</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;x-large&#39;</span><span class="p">)</span>
+<span class="c1">#                ax.set_xticklabels(tempdf.index.tolist(), rotation = 45,fontsize=&#39;x-large&#39;)</span>
+<span class="c1">##                ax.xaxis.set_minor_locator(plt.NullLocator())</span>
+<span class="c1">##                ax.tick_params(axis=&#39;x&#39;, labelleft=True)</span>
+<span class="c1">#                ax.xaxis.set_major_locator(years)</span>
+<span class="c1">#                ax.xaxis_date()</span>
+<span class="c1">#                ax.xaxis.set_major_formatter(years_fmt)</span>
+<span class="c1">#                ax.xaxis.set_minor_locator(months)</span>
+<span class="c1">#                ax.tick_params(axis=&#39;x&#39;, labelrotation=45,right = True)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">axvline</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span> <span class="n">axis</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">axvline</span><span class="p">)</span>    
+            <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">ntitle</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="k">if</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">)</span>
+        
+            <span class="k">return</span> <span class="n">fig</span></div>
+        
+<span class="c1">#</span>
+<div class="viewcode-block" id="totdif.totexplain"><a class="viewcode-back" href="../index.html#modeldekom.totdif.totexplain">[docs]</a>    <span class="k">def</span> <span class="nf">totexplain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span><span class="n">stacked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span><span class="n">per</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+                   <span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="s1">&#39;level&#39;</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">ysize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Wrapper for different explanations</span>
+<span class="sd">         - :any:`explain_last` </span>
+<span class="sd">         - :any:`explain_per` </span>
+<span class="sd">         - :any:`explain_sum` </span>
+<span class="sd">         - :any:`explain_all` </span>
+<span class="sd">            </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pat (TYPE, optional): DESCRIPTION. Defaults to &#39;*&#39;.</span>
+<span class="sd">            vtype (per|all|last|sum, optional): what data to attribute. Defaults to &#39;all&#39;.</span>
+<span class="sd">            stacked (TYPE, optional): DESCRIPTION. Defaults to True.</span>
+<span class="sd">            kind (TYPE, optional): DESCRIPTION. Defaults to &#39;bar&#39;.</span>
+<span class="sd">            per (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.</span>
+<span class="sd">            title (TYPE, optional): DESCRIPTION. Defaults to &#39;&#39;.</span>
+<span class="sd">            use (TYPE, optional): DESCRIPTION. Defaults to &#39;level&#39;.</span>
+<span class="sd">            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.</span>
+<span class="sd">            ysize (TYPE, optional): DESCRIPTION. Defaults to 10.</span>
+<span class="sd">            **kwargs (TYPE): DESCRIPTION.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            fig (TYPE): DESCRIPTION.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>       
+        <span class="k">if</span> <span class="n">vtype</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;PER&#39;</span> <span class="p">:</span> 
+            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explain_per</span><span class="p">(</span><span class="n">pat</span><span class="o">=</span><span class="n">pat</span><span class="p">,</span><span class="n">per</span><span class="o">=</span><span class="n">per</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="n">use</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span><span class="n">ysize</span><span class="o">=</span><span class="n">ysize</span><span class="p">)</span>
+            
+        <span class="k">elif</span> <span class="n">vtype</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;LAST&#39;</span> <span class="p">:</span> 
+            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explain_last</span><span class="p">(</span><span class="n">pat</span><span class="o">=</span><span class="n">pat</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="n">use</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span>
+            
+        <span class="k">elif</span> <span class="n">vtype</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;SUM&#39;</span> <span class="p">:</span> 
+            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explain_sum</span><span class="p">(</span><span class="n">pat</span><span class="o">=</span><span class="n">pat</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="n">use</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span>
+            
+        <span class="k">else</span><span class="p">:</span>    
+            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explain_all</span><span class="p">(</span><span class="n">pat</span><span class="o">=</span><span class="n">pat</span><span class="p">,</span><span class="n">stacked</span><span class="o">=</span><span class="n">stacked</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="n">use</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fig</span> </div></div>
+
+<span class="c1">#    def get_att_gui(self,var=&#39;FY&#39;,spat = &#39;*&#39;,desdic={},use=&#39;level&#39;):</span>
+<span class="c1">#        &#39;&#39;&#39;Creates a jupyter ipywidget to display model level </span>
+<span class="c1">#        attributions &#39;&#39;&#39; </span>
+<span class="c1">#        def show_all2(Variable,Periode,Save,Use):</span>
+<span class="c1">#             global fig1,fig2</span>
+<span class="c1">#             fig1 = self.totexplain(pat=Variable,top=0.87,use=Use)</span>
+<span class="c1">#             fig2 = self.totexplain(pat=Variable,vtype=&#39;per&#39;,per = Periode,top=0.85,use=Use) </span>
+<span class="c1">#             if Save:</span>
+<span class="c1">#                fig1.savefig(f&#39;Attribution-{Variable}-{use}.pdf&#39;)</span>
+<span class="c1">#                fig2.savefig(f&#39;Attribution-{Variable}-{Periode}-{use}.pdf&#39;)</span>
+<span class="c1">#                print(f&#39;Attribution-{Variable}-{use}.pdf and Attribution-{Variable}-{Periode}-{use}.pdf aare saved&#39; )</span>
+<span class="c1">#    </span>
+<span class="c1">#        show = ip.interactive(show_all2,</span>
+<span class="c1">#                  Variable = ip.Dropdown(options = sorted(self.model.endogene),value=var),</span>
+<span class="c1">#                  Periode  = self.model.current_per,</span>
+<span class="c1">#                  Use = ip.RadioButtons(options= [&#39;level&#39;, &#39;growth&#39;],description=&#39;Use&#39;),</span>
+<span class="c1">#                  Save = False,</span>
+<span class="c1">#                  )</span>
+<span class="c1">#        return show </span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span> <span class="p">:</span>
+    <span class="c1">#%%</span>
+    <span class="c1"># running withe the mtotal model </span>
+    <span class="n">df2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Z&#39;</span><span class="p">:[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">22.</span><span class="p">,</span> <span class="mi">33</span><span class="p">,</span><span class="mi">43</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;TY&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]</span> <span class="p">,</span><span class="s1">&#39;YD&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]},</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">2017</span><span class="p">,</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2019</span><span class="p">,</span><span class="mi">2020</span><span class="p">])</span>
+    <span class="n">df3</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Z&#39;</span><span class="p">:[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">22.</span><span class="p">,</span> <span class="mi">33</span><span class="p">,</span><span class="mi">43</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;TY&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">40.</span><span class="p">,</span><span class="mf">60.</span><span class="p">,</span><span class="mf">10.</span><span class="p">]</span> <span class="p">,</span><span class="s1">&#39;YD&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">49.</span><span class="p">,</span><span class="mf">36.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]},</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">2017</span><span class="p">,</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2019</span><span class="p">,</span><span class="mi">2020</span><span class="p">])</span>
+    <span class="n">ftest</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39; </span>
+<span class="s1">    FRMl &lt;&gt;  ii = TY(-1)+c(-1)+Z*c(-1) $</span>
+<span class="s1">    frml &lt;&gt;  c=0.8*yd+log(1) $</span>
+<span class="s1">    frml &lt;&gt;  d = c +2*ii(-1) $</span>
+<span class="s1">   frml &lt;&gt;  c2=0.8*yd+log(1) $</span>
+<span class="s1">    frml &lt;&gt;  d2 = c + 42*ii $</span>
+<span class="s1">   frml &lt;&gt;  c3=0.8*yd+log(1) $</span>
+<span class="s1">    frml &lt;&gt;  d3 = c +ii $</span>
+<span class="s1"> &#39;&#39;&#39;</span>
+     
+    <span class="n">m2</span><span class="o">=</span><span class="n">mc</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">ftest</span><span class="p">,</span><span class="n">straight</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">modelname</span><span class="o">=</span><span class="s1">&#39;m2 testmodel&#39;</span><span class="p">)</span>
+    <span class="n">df2</span><span class="o">=</span><span class="n">mc</span><span class="o">.</span><span class="n">insertModelVar</span><span class="p">(</span><span class="n">df2</span><span class="p">,</span><span class="n">m2</span><span class="p">)</span>
+    <span class="n">df3</span><span class="o">=</span><span class="n">mc</span><span class="o">.</span><span class="n">insertModelVar</span><span class="p">(</span><span class="n">df3</span><span class="p">,</span><span class="n">m2</span><span class="p">)</span>
+    <span class="n">z1</span> <span class="o">=</span> <span class="n">m2</span><span class="p">(</span><span class="n">df2</span><span class="p">)</span>
+    <span class="n">z2</span> <span class="o">=</span> <span class="n">m2</span><span class="p">(</span><span class="n">df3</span><span class="p">)</span>
+    <span class="n">ccc</span> <span class="o">=</span> <span class="n">m2</span><span class="o">.</span><span class="n">totexplain</span><span class="p">(</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;D2&#39;</span><span class="p">,</span><span class="n">per</span><span class="o">=</span><span class="mi">2019</span><span class="p">,</span><span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">ccc</span> <span class="o">=</span> <span class="n">m2</span><span class="o">.</span><span class="n">totexplain</span><span class="p">(</span><span class="s1">&#39;D2&#39;</span><span class="p">,</span><span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;last&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">ccc</span> <span class="o">=</span> <span class="n">m2</span><span class="o">.</span><span class="n">totexplain</span><span class="p">(</span><span class="s1">&#39;D2&#39;</span><span class="p">,</span><span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;per&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="c1">#%%        </span>
+    <span class="n">ddd</span> <span class="o">=</span> <span class="n">totdif</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span>
+    <span class="n">eee</span> <span class="o">=</span> <span class="n">totdif</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span>
+    <span class="n">ddd</span><span class="o">.</span><span class="n">totexplain</span><span class="p">(</span><span class="s1">&#39;D2&#39;</span><span class="p">,</span><span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span><span class="n">use</span><span class="o">=</span><span class="s1">&#39;growth&#39;</span><span class="p">);</span>
+    <span class="n">eee</span><span class="o">.</span><span class="n">totexplain</span><span class="p">(</span><span class="s1">&#39;D2&#39;</span><span class="p">,</span><span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mf">0.8</span><span class="p">);</span>
+
+    <span class="k">if</span>  <span class="kc">False</span> <span class="ow">and</span> <span class="p">(</span> <span class="ow">not</span> <span class="s1">&#39;mtotal&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span> <span class="p">)</span> <span class="p">:</span>
+        <span class="c1"># get the model  </span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;models\mtotal.fru&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span>
+            <span class="n">ftotal</span> <span class="o">=</span> <span class="n">text_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+       
+        <span class="c1">#get the data </span>
+        <span class="n">base0</span>   <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;data\base0.pc&#39;</span><span class="p">)</span>    
+        <span class="n">base</span>    <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;data\base.pc&#39;</span><span class="p">)</span>    
+        <span class="n">adve0</span>   <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;data\adve0.pc&#39;</span><span class="p">)</span>      
+    <span class="c1">#%%    </span>
+        <span class="n">mtotal</span>  <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">ftotal</span><span class="p">)</span>
+        
+<span class="c1">#        prune(mtotal,base)</span>
+        <span class="c1">#%%    </span>
+        <span class="n">baseny</span>        <span class="o">=</span> <span class="n">mtotal</span><span class="p">(</span><span class="n">base0</span>   <span class="p">,</span><span class="s1">&#39;2016q1&#39;</span><span class="p">,</span><span class="s1">&#39;2018q4&#39;</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">adverseny</span>     <span class="o">=</span> <span class="n">mtotal</span><span class="p">(</span><span class="n">adve0</span>   <span class="p">,</span><span class="s1">&#39;2016q1&#39;</span><span class="p">,</span><span class="s1">&#39;2018q4&#39;</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1">#%%</span>
+        <span class="n">diff</span>  <span class="o">=</span> <span class="n">mtotal</span><span class="o">.</span><span class="n">exodif</span><span class="p">()</span>   <span class="c1"># exogeneous variables which are different between baseny and adverseny </span>
+    <span class="c1">#%%</span>
+        <span class="k">assert</span> <span class="mi">1</span><span class="o">==</span><span class="mi">2</span>  <span class="c1"># just for stopping in test situations </span>
+        <span class="c1">#%%  </span>
+        <span class="n">adverseny</span>            <span class="o">=</span> <span class="n">mtotal</span><span class="p">(</span><span class="n">adve0</span>   <span class="p">,</span><span class="s1">&#39;2016q1&#39;</span><span class="p">,</span><span class="s1">&#39;2018q4&#39;</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># to makew sure we have the right adverse.</span>
+        <span class="n">countries</span>            <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>  <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">diff</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>  <span class="c1"># list of countries </span>
+        <span class="n">countryexperiments</span>   <span class="o">=</span> <span class="p">{</span><span class="n">e</span><span class="p">:</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">diff</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="o">+</span><span class="n">e</span><span class="o">+</span><span class="s1">&#39;__&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">c</span><span class="p">]</span>   <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">countries</span> <span class="p">}</span> <span class="c1"># dic of experiments </span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">countryexperiments</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span> <span class="p">,</span> <span class="s1">&#39;Not all exogeneous chocks variables are accountet for&#39;</span>
+        <span class="n">countryimpact</span>        <span class="o">=</span> <span class="n">attribution</span><span class="p">(</span><span class="n">mtotal</span><span class="p">,</span><span class="n">countryexperiments</span><span class="p">,</span><span class="n">save</span><span class="o">=</span><span class="s1">&#39;countryimpactxx&#39;</span><span class="p">,</span><span class="n">maxexp</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span><span class="n">showtime</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>    
+        <span class="c1">#%% </span>
+        <span class="n">adverseny</span>     <span class="o">=</span> <span class="n">mtotal</span><span class="p">(</span><span class="n">adve0</span>   <span class="p">,</span><span class="s1">&#39;2016q1&#39;</span><span class="p">,</span><span class="s1">&#39;2018q4&#39;</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">vartypes</span>             <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="p">)</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">diff</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+        <span class="n">vartypeexperiments</span>   <span class="o">=</span> <span class="p">{</span><span class="n">e</span><span class="p">:</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">diff</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="o">+</span><span class="n">e</span><span class="o">+</span><span class="s1">&#39;__&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">c</span><span class="p">]</span>   <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">vartypes</span> <span class="p">}</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">vartypeexperiments</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span> <span class="p">,</span> <span class="s1">&#39;Not all exogeneous chocks variables are accountet for&#39;</span>
+        <span class="n">vartypeimpact</span>        <span class="o">=</span> <span class="n">attribution</span><span class="p">(</span><span class="n">mtotal</span><span class="p">,</span><span class="n">vartypeexperiments</span><span class="p">,</span><span class="n">save</span><span class="o">=</span><span class="s1">&#39;vartypeimpactxx&#39;</span><span class="p">,</span><span class="n">maxexp</span><span class="o">=</span><span class="mi">3000</span><span class="p">,</span><span class="n">showtime</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1">##%%</span>
+        <span class="c1">#adverseny     = mtotal(adve0   ,&#39;2016q1&#39;,&#39;2018q4&#39;,samedata=True)</span>
+        <span class="c1">#allexo                  = {c[7:14] for c in diff.columns} </span>
+        <span class="c1">#allexoexperiments       = {e: [c for c in diff.columns if (&#39;__&#39;+e+&#39;__&#39;) in c]   for e in allexo }</span>
+        <span class="c1">#allexoimpact            = attribution(mtotal,allexoexperiments,base,adverseny,save=&#39;allexoimpact&#39;,maxexp=2000)</span>
+    <span class="c1">#%% test of upddf    </span>
+        <span class="k">if</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">baseny</span>        <span class="o">=</span> <span class="n">mtotal</span><span class="p">(</span><span class="n">base0</span>   <span class="p">,</span><span class="s1">&#39;2016q1&#39;</span><span class="p">,</span><span class="s1">&#39;2018q4&#39;</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">adverseny</span>     <span class="o">=</span> <span class="n">mtotal</span><span class="p">(</span><span class="n">adve0</span>   <span class="p">,</span><span class="s1">&#39;2016q1&#39;</span><span class="p">,</span><span class="s1">&#39;2018q4&#39;</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1">#%%</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="s1">&#39;EE&#39;</span>     
+            <span class="n">var</span> <span class="o">=</span> <span class="n">countryexperiments</span><span class="p">[</span><span class="s1">&#39;EE&#39;</span><span class="p">]</span>
+            <span class="n">vardiff</span> <span class="o">=</span> <span class="n">diff</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">baseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="n">temp2</span> <span class="o">=</span> <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">upddf</span><span class="p">(</span><span class="n">adverseny</span><span class="p">,</span><span class="n">temp</span><span class="p">)</span> 
+            <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp</span>
+            <span class="n">temp3</span> <span class="o">=</span> <span class="n">adverseny</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

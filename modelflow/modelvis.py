@@ -187,6 +187,8 @@ class vis():
         
 
      def _repr_html_(self):
+         '''Displays a nice summary of the results when called in a Jupyter enviorement'''
+
          from modelwidget import visshow
          visshow(self.model,self.__pat__)
          return ''

@@ -198,6 +198,20 @@ class totdif():
             summaryvar=self.summaryvar,showtime=1,silent=1,type=type)
        
     def explain_last(self,pat='',top=0.9,title='',use='level',threshold=0.0):  
+        '''
+        Explains last period 
+
+        Args:
+            pat (TYPE, optional): DESCRIPTION. Defaults to ''.
+            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.
+            title (TYPE, optional): DESCRIPTION. Defaults to ''.
+            use (TYPE, optional): DESCRIPTION. Defaults to 'level'.
+            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.
+
+        Returns:
+            fig (TYPE): DESCRIPTION.
+
+        '''
         if self.go:         
             self.impact = mk.GetLastImpact(self.res[use],pat=pat).T
             ntitle = f'Attribution last period, {use}' if title == '' else title
@@ -205,6 +219,21 @@ class totdif():
             return fig
    
     def explain_sum(self,pat='',top=0.9,title='',use='level',threshold=0.0): 
+        '''
+        Explains the sum
+        
+
+        Args:
+            pat (TYPE, optional): DESCRIPTION. Defaults to ''.
+            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.
+            title (TYPE, optional): DESCRIPTION. Defaults to ''.
+            use (TYPE, optional): DESCRIPTION. Defaults to 'level'.
+            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.
+
+        Returns:
+            fig (TYPE): DESCRIPTION.
+
+        '''
         if self.go:          
            self.impact = mk.GetSumImpact(self.res[use],pat=pat).T
            ntitle = f'Attribution, sum over all periods, {use}' if title == '' else title
@@ -212,6 +241,22 @@ class totdif():
            return fig
    
     def explain_per(self,pat='',per='',top=0.9,title='',use='level',threshold=0.0,ysize=5):   
+        '''
+        Explains a periode
+
+        Args:
+            pat (TYPE, optional): DESCRIPTION. Defaults to ''.
+            per (TYPE, optional): DESCRIPTION. Defaults to ''.
+            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.
+            title (TYPE, optional): DESCRIPTION. Defaults to ''.
+            use (TYPE, optional): DESCRIPTION. Defaults to 'level'.
+            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.
+            ysize (TYPE, optional): DESCRIPTION. Defaults to 5.
+
+        Returns:
+            fig (TYPE): DESCRIPTION.
+
+        '''
         if self.go:        
            tper = self.res[use].columns.get_level_values(1)[0] if per == '' else per
            self.impact = mk.GetOneImpact(self.res[use],pat=pat,per=tper).T.rename(index=self.desdic) 
@@ -261,6 +306,24 @@ class totdif():
 
     def explain_all(self,pat='',stacked=True,kind='bar',top=0.9,title='',use='level',
                     threshold=0.0,resample='',axvline=None): 
+        '''
+        Explains all
+
+        Args:
+            pat (TYPE, optional): DESCRIPTION. Defaults to ''.
+            stacked (TYPE, optional): DESCRIPTION. Defaults to True.
+            kind (TYPE, optional): DESCRIPTION. Defaults to 'bar'.
+            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.
+            title (TYPE, optional): DESCRIPTION. Defaults to ''.
+            use (TYPE, optional): DESCRIPTION. Defaults to 'level'.
+            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.
+            resample (TYPE, optional): DESCRIPTION. Defaults to ''.
+            axvline (TYPE, optional): DESCRIPTION. Defaults to None.
+
+        Returns:
+            None.
+
+        '''
         import warnings 
         if self.go:
             years = mdates.YearLocator()   # every year
@@ -313,7 +376,31 @@ class totdif():
 #
     def totexplain(self,pat='*',vtype='all',stacked=True,kind='bar',per='',top=0.9,title=''
                    ,use='level',threshold=0.0,ysize=10,**kwargs):
-        
+        '''
+        Wrapper for different explanations
+         - :any:`explain_last` 
+         - :any:`explain_per` 
+         - :any:`explain_sum` 
+         - :any:`explain_all` 
+            
+
+        Args:
+            pat (TYPE, optional): DESCRIPTION. Defaults to '*'.
+            vtype (per|all|last|sum, optional): what data to attribute. Defaults to 'all'.
+            stacked (TYPE, optional): DESCRIPTION. Defaults to True.
+            kind (TYPE, optional): DESCRIPTION. Defaults to 'bar'.
+            per (TYPE, optional): DESCRIPTION. Defaults to ''.
+            top (TYPE, optional): DESCRIPTION. Defaults to 0.9.
+            title (TYPE, optional): DESCRIPTION. Defaults to ''.
+            use (TYPE, optional): DESCRIPTION. Defaults to 'level'.
+            threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.
+            ysize (TYPE, optional): DESCRIPTION. Defaults to 10.
+            **kwargs (TYPE): DESCRIPTION.
+
+        Returns:
+            fig (TYPE): DESCRIPTION.
+
+        '''       
         if vtype.upper() == 'PER' : 
             fig = self.explain_per(pat=pat,per=per,top=top,use=use,title=title,threshold=threshold,ysize=ysize)
             

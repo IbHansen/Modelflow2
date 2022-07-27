@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modeluserfunk &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>modeluserfunk</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modeluserfunk</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">To make userdefined function avaiable to Business logic define them here</span>
+<span class="sd">Function names have to be all lower case !!!</span>
+
+<span class="sd">Created on Fri Mar  2 14:50:18 2018</span>
+
+<span class="sd">@author: hanseni</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">jit</span>
+    
+    <span class="nd">@jit</span><span class="p">(</span><span class="s2">&quot;f8(b1,f8,f8)&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">recode</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span><span class="n">yes</span><span class="p">,</span><span class="n">no</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Function which recreates the functionality of @recode from eviews &#39;&#39;&#39;</span> 
+        <span class="k">return</span> <span class="n">yes</span> <span class="k">if</span> <span class="n">condition</span> <span class="k">else</span> <span class="n">no</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; Import of numba failed &#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="recode"><a class="viewcode-back" href="../modeluserfunk.html#modeluserfunk.recode">[docs]</a>    <span class="k">def</span> <span class="nf">recode</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span><span class="n">yes</span><span class="p">,</span><span class="n">no</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Function which recreates the functionality of @recode from eviews &#39;&#39;&#39;</span> 
+        <span class="k">return</span> <span class="n">yes</span> <span class="k">if</span> <span class="n">condition</span> <span class="k">else</span> <span class="n">no</span></div>
+    
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">stem</span> <span class="kn">import</span> <span class="n">ste</span> 
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span> 
+
+<span class="k">def</span> <span class="nf">__pd</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39; Returns functions translating pd to REA veights. </span>
+<span class="sd">    </span>
+<span class="sd">    The reason for making a closure is to avoid namespace clutter with the imported functions&#39;&#39;&#39;</span>
+    
+    
+    <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">isclose</span><span class="p">,</span><span class="n">sqrt</span><span class="p">,</span><span class="n">erf</span> 
+    <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">log</span>
+    <span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">erfinv</span> <span class="p">,</span> <span class="n">ndtri</span>
+
+    
+    <span class="k">def</span> <span class="nf">phi</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Cumulative normal distribution function &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">erf</span><span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)))</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+    <span class="k">def</span> <span class="nf">phiinv</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; inverse Cumulative normal distribution function &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">ndtri</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> 
+
+    
+    
+    <span class="k">def</span> <span class="nf">pd_to_w</span><span class="p">(</span><span class="n">PD</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span><span class="n">LGD</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">cat</span><span class="o">=</span><span class="s1">&#39;mrtg&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; based on pd,lgd and sector this function calculates the risk weigts based on Basel 3</span>
+<span class="sd">        this function is based on Marco Gross&#39;s matlab function and chekked against the results </span>
+<span class="sd">        the function is Risk_weights.m and a copy is located at &#39;Python poc&#39; directory </span>
+<span class="sd">        This function only distinguis betwen 3 types,</span>
+<span class="sd">        Alternative is to implement the parameters from BST.steet(CR_MAP) &#39;&#39;&#39;</span> 
+        <span class="n">NORM99</span> <span class="o">=</span> <span class="mf">3.0902323061678132</span>
+        <span class="c1"># from phiinv(0.999)</span>
+        
+        <span class="n">PD_</span> <span class="o">=</span> <span class="mf">1e-10</span> <span class="k">if</span> <span class="n">isclose</span><span class="p">(</span><span class="n">PD</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="n">abs_tol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">)</span>  <span class="k">else</span> <span class="n">PD</span>
+        <span class="k">if</span> <span class="n">PD</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">1e-9</span><span class="p">:</span>
+            <span class="n">PD_</span> <span class="o">=</span>  <span class="mf">1e-10</span>
+    
+        <span class="k">if</span> <span class="n">cat</span> <span class="o">==</span> <span class="s1">&#39;corp&#39;</span><span class="p">:</span>
+             <span class="n">R</span> <span class="o">=</span> <span class="mf">0.12</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="o">*</span><span class="n">PD_</span>   <span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="p">))</span> <span class="o">+</span> <span class="mf">0.24</span><span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="o">*</span><span class="n">PD_</span>   <span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="p">)))</span>
+             <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.11852</span> <span class="o">-</span> <span class="mf">0.05478</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">PD_</span><span class="p">))</span><span class="o">**</span><span class="mf">2.</span>
+             <span class="n">M</span> <span class="o">=</span> <span class="mf">2.5</span><span class="p">;</span>
+             <span class="n">normal_dist_comp</span> <span class="o">=</span> <span class="n">phi</span><span class="p">(((</span><span class="mi">1</span><span class="o">-</span><span class="n">R</span><span class="p">)</span><span class="o">**-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span><span class="n">phiinv</span><span class="p">(</span><span class="n">PD_</span><span class="p">)</span>   <span class="o">+</span> <span class="n">NORM99</span> <span class="o">*</span> <span class="p">((</span><span class="n">R</span> <span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">R</span><span class="p">))</span><span class="o">**</span><span class="mf">0.5</span><span class="p">))</span>
+             <span class="n">K</span> <span class="o">=</span> <span class="n">LGD</span>    <span class="o">*</span><span class="p">(</span><span class="n">normal_dist_comp</span><span class="o">-</span><span class="n">PD_</span>   <span class="p">)</span>  <span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="p">(</span><span class="n">b</span><span class="o">*</span><span class="p">(</span><span class="n">M</span><span class="o">-</span><span class="mf">2.5</span><span class="p">)))</span> <span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span> <span class="n">b</span><span class="o">*</span><span class="mf">1.5</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">cat</span> <span class="o">==</span> <span class="s1">&#39;mrtg&#39;</span><span class="p">:</span>
+            <span class="n">R</span> <span class="o">=</span> <span class="mf">0.15</span><span class="p">;</span>
+            <span class="n">normal_dist_comp</span> <span class="o">=</span> <span class="n">phi</span><span class="p">(((</span><span class="mi">1</span><span class="o">-</span><span class="n">R</span><span class="p">)</span><span class="o">**-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">*</span><span class="n">phiinv</span><span class="p">(</span><span class="n">PD_</span><span class="p">)</span> <span class="o">+</span> <span class="n">NORM99</span> <span class="o">*</span><span class="p">((</span><span class="n">R</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">R</span><span class="p">))</span><span class="o">**</span><span class="mf">0.5</span><span class="p">))</span>
+            <span class="n">K</span> <span class="o">=</span> <span class="n">LGD</span><span class="o">*</span><span class="p">(</span><span class="n">normal_dist_comp</span><span class="o">-</span><span class="n">PD</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">cat</span> <span class="o">==</span> <span class="s1">&#39;retail&#39;</span><span class="p">:</span>
+            <span class="n">R</span> <span class="o">=</span> <span class="mf">0.03</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">35</span><span class="o">*</span><span class="n">PD_</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">35</span><span class="p">))</span> <span class="o">+</span> <span class="mf">0.16</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">35</span><span class="o">*</span><span class="n">PD_</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">35</span><span class="p">)));</span>
+            <span class="n">normal_dist_comp</span> <span class="o">=</span> <span class="n">phi</span><span class="p">(((</span><span class="mi">1</span><span class="o">-</span><span class="n">R</span><span class="p">)</span><span class="o">**-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">*</span><span class="n">phiinv</span><span class="p">(</span><span class="n">PD_</span><span class="p">)</span> <span class="o">+</span> <span class="n">NORM99</span> <span class="o">*</span> <span class="p">((</span><span class="n">R</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">R</span><span class="p">))</span><span class="o">**</span><span class="mf">0.5</span><span class="p">))</span>
+            <span class="n">K</span> <span class="o">=</span> <span class="n">LGD</span><span class="o">*</span><span class="p">(</span><span class="n">normal_dist_comp</span><span class="o">-</span><span class="n">PD</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Major mistake. No Basel categori :&#39;</span><span class="p">,</span><span class="n">cat</span><span class="p">)</span>
+         
+        <span class="k">return</span> <span class="n">K</span> <span class="o">*</span> <span class="mf">12.5</span>
+    
+    
+    <span class="k">def</span> <span class="nf">pd_to_w_corp</span><span class="p">(</span><span class="n">PD</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span><span class="n">LGD</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd_to_w</span><span class="p">(</span><span class="n">PD</span><span class="p">,</span><span class="n">LGD</span><span class="p">,</span><span class="n">cat</span><span class="o">=</span><span class="s1">&#39;corp&#39;</span> <span class="p">)</span>
+    
+    
+    <span class="k">def</span> <span class="nf">pd_to_w_mrtg</span><span class="p">(</span><span class="n">PD</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span><span class="n">LGD</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd_to_w</span><span class="p">(</span><span class="n">PD</span><span class="p">,</span><span class="n">LGD</span><span class="p">,</span><span class="n">cat</span><span class="o">=</span><span class="s1">&#39;mrtg&#39;</span> <span class="p">)</span>
+    
+    
+    <span class="k">def</span> <span class="nf">pd_to_w_retail</span><span class="p">(</span><span class="n">PD</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span><span class="n">LGD</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd_to_w</span><span class="p">(</span><span class="n">PD</span><span class="p">,</span><span class="n">LGD</span><span class="p">,</span><span class="n">cat</span><span class="o">=</span><span class="s1">&#39;retail&#39;</span> <span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">pd_to_w</span><span class="p">,</span><span class="n">pd_to_w_corp</span><span class="p">,</span><span class="n">pd_to_w_mrtg</span><span class="p">,</span><span class="n">pd_to_w_retail</span><span class="p">,</span><span class="n">phi</span><span class="p">,</span><span class="n">phiinv</span>
+
+<span class="c1"># pd_to_w,pd_to_w_corp,pd_to_w_mrtg,pd_to_w_retail,phi,phiinv = __pd()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

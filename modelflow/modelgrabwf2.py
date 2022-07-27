@@ -6,6 +6,30 @@ Created on Wed Mar 30 10:06:26 2022
 
 Module to handle models in wf1 files
 
+ #. Eviews is started and the wf1 file is loaded.
+ 
+    #. Some transformations are performed on data.
+    #. The model is unlinked. 
+    #. The workspace is saved as a wf2 file. Same name with _modelflow appended.
+ #. Eviews is closed 
+ #. The wf2 file is read as a json file. 
+ #. Relevant objects are extracted. 
+ #. The MFMSA variable is  extracted, to be saved in the dumpfile. 
+ #. The equations are transformed and normalized to modelflow format and classified into identities and stochastic
+ #. Stochastic equations are enriched by add_factor and fixing terms (dummy + fixing value)  
+ #. For Stochastic equations new fitted variables are generated - without add add_factors and dummies.  
+ #. A model to generate fitted variables is created  
+ #. A model to generate add_factors is created. 
+ #. A model encompassing the original equations, the model for fitted variables and for add_factors is created. 
+ #. The data series and scalars are shoveled into a Pandas dataframe 
+ 
+    #. Some special series are generated as the expression can not be incorporated into modelflow model specifications
+    #. The model for fitted values is simulated in the specified timespan
+    #. The model for add_factors is simulated in the timespan set in MFMSA
+ #. The data descriptions are extracted into a dictionary. 
+ #. Data descriptions for dummies, fixed values, fitted values and add_factors are derived. 
+ #. Now we have a model and a dataframe with all variables which are needed.
+
 
 """
 
@@ -80,6 +104,19 @@ def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
     return wf2,modelname
 
 def wf2_to_clean(wf2name,modelname='',save_file = False):
+    '''
+    Takes a eviews .wf2 file - which is in JSON format - and place a
+    dictionary
+
+    Args:
+        wf2name (TYPE): name of wf2 file .
+        modelname (TYPE, optional): Name og model. Defaults to ''.
+        save_file (TYPE, optional): save the specification, data and description in a dictionary. Defaults to False.
+
+    Returns:
+        model_all_about (dict): the content of the wf2 file as a dict .
+
+    '''
     model_all_about = {} 
     
     if modelname == '':
@@ -156,7 +193,25 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
 @dataclass
 class GrabWfModel():
     '''This class takes a world bank model specification, variable data and variable description
-    and transform it to ModelFlow business language'''
+    and transform it to ModelFlow business language
+    
+    args:
+        filename           : any = ''  #wf1 name 
+        modelname          : any = ''
+        eviews_run_lines   : list =field(default_factory=list)
+        model_all_about    : dict = field(default_factory=dict)
+        start              : any = None    # start of testing if not overruled by mfmsa
+        end                : any = None    # end of testing if not overruled by mfmsa 
+        country_trans      : any = lambda x:x[:]    # function which transform model specification
+        country_df_trans   : any = lambda x:x     # function which transforms initial dataframe 
+        make_fitted        : bool = False # if True, a clean equation for fittet variables is created
+        fit_start          : any = 2000   # start of fittet model 
+        fit_end            : any = None  # end of fittet model unless overruled by mfmsa
+        do_add_factor_calc : bool = True  # calculate the add factors 
+        test_frml          : str =''    # a testmodel as string if used no wf processing 
+        disable_progress   : bool = False # Disable progress bar
+    
+    '''
     
     filename           : any = ''  #wf1 name 
     modelname          : any = ''
@@ -174,6 +229,8 @@ class GrabWfModel():
     disable_progress   : bool = False # Disable progress bar
     
     def __post_init__(self):
+        '''Process the model'''
+        
         if self.test_frml: 
             self.rawmodel_org =self.test_frml 
         else:     
@@ -251,6 +308,16 @@ class GrabWfModel():
         
     @staticmethod
     def trans_eviews(rawmodel):
+        '''
+        Takes Eviews specifications and wrangle them into modelflow specifications
+
+        Args:
+            rawmodel (TYPE): a raw model .
+
+        Returns:
+            rawmodel6 (TYPE): a model with the appropiate eviews transformations.
+
+        '''
         rawmodel0 = '\n'.join(l for l in rawmodel.upper().split('\n') if len(l.strip()) >=2)
         # trailing and leading "
         rawmodel1 = '\n'.join(l[1:-1] if l.startswith('"') else l for l in rawmodel0.split('\n'))
@@ -303,6 +370,7 @@ class GrabWfModel():
     
     @functools.cached_property
     def mfmsa_start_end(self):
+        '''Finds the start and end from the MFMSA entry'''
         import xml
         root = xml.etree.ElementTree.fromstring(self.mfmsa_options)
         start = (root.find('iFace').find('SolveStart').text)   
@@ -359,7 +427,7 @@ class GrabWfModel():
         return df_out
     
     def __call__(self):
-
+        '''returns the model and the base input''' 
         return self.mmodel,self.base_input
     
     def test_model(self,start=None,end=None,maxvar=1_000_000, maxerr=100,tol=0.0001,showall=False,showinput=False):

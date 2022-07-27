@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>model_dynare module &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">model_dynare module</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>model_dynare module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/model_dynare.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="module-model_dynare">
+<span id="model-dynare-module"></span><h1>model_dynare module<a class="headerlink" href="#module-model_dynare" title="Permalink to this headline"></a></h1>
+<p>Created on Wed Jan  9 16:05:56 2019
+Reads a list of expanded modfile (outputtet from dynare)</p>
+<p>&#64;author: hanseni</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="model_dynare.grap_modfile">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">model_dynare.</span></span><span class="sig-name descname"><span class="pre">grap_modfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/model_dynare.html#grap_modfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_dynare.grap_modfile" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Accept filenames as argument. The first file is asumed to be the main model
+and gives the model its name</p>
+<p>Instead of filenames a string with a .mod file can be accepted</p>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">savepath</dt>
+<dd class="field-odd"><p>(path of first file ) Where to save</p>
+</dd>
+<dt class="field-even">save</dt>
+<dd class="field-even"><p>(True) save the frm and mod files</p>
+</dd>
+<dt class="field-odd">modelname</dt>
+<dd class="field-odd"><p>(name from first model file else “testmodel” for strings), name of model</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>The class contains among other:</p>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">mthismodel</dt>
+<dd class="field-odd"><p>The actual model</p>
+</dd>
+<dt class="field-even">mresmodel</dt>
+<dd class="field-even"><p>A model to calculate the _res variables before the actual calculations</p>
+</dd>
+<dt class="field-odd">mparamodel</dt>
+<dd class="field-odd"><p>A model to inject parameter values into a dataframe before calculation</p>
+</dd>
+<dt class="field-even">fthismodel</dt>
+<dd class="field-even"><p>String with the model</p>
+</dd>
+<dt class="field-odd">fresmodel</dt>
+<dd class="field-odd"><p>String with the model for calculating residuals</p>
+</dd>
+<dt class="field-even">fparamodel</dt>
+<dd class="field-even"><p>String with the model for injecting parameters</p>
+</dd>
+<dt class="field-odd">modout</dt>
+<dd class="field-odd"><p>String with the consolidated .mod file</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>creates 5 files:</p>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">{modelname}.frm</dt>
+<dd class="field-odd"><p>Formulas in modelflow business language</p>
+</dd>
+<dt class="field-even">{modelname}_res.frm</dt>
+<dd class="field-even"><p>Formulas for mresmodel</p>
+</dd>
+<dt class="field-odd">{modelname}_para.frm</dt>
+<dd class="field-odd"><p>Formulas for mparamodel</p>
+</dd>
+<dt class="field-even">{modelname}_cons.mod</dt>
+<dd class="field-even"><p>A consolidated .mod file defining the model and parameters</p>
+</dd>
+<dt class="field-odd">{modelname}.inf</dt>
+<dd class="field-odd"><p>A with model information - also displayes after execution</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

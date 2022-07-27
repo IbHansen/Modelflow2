@@ -21,7 +21,11 @@ import modelvis as mv
 if not hasattr(pd.DataFrame,'mf') or 0:
     @pd.api.extensions.register_dataframe_accessor("mf")
     class mf():
-        '''A class to extend Pandas Dataframes with ModelFlow functionalities'''
+        '''A class to extend Pandas Dataframes with ModelFlow functionalities
+        
+        Not to be used on its own 
+        
+        '''
         
         def __init__(self, pandas_obj):
     #        self._validate(pandas_obj)
@@ -47,6 +51,7 @@ if not hasattr(pd.DataFrame,'mf') or 0:
             return res
         
         def solve(self,start='',slut='',**kwargs):
+            '''Solves a model'''
             this = self._obj
     #        print(kwargs)
             self.solveopt = {**self.solveopt,**kwargs,**{'start':start,'slut':slut}} 
@@ -59,12 +64,24 @@ if not hasattr(pd.DataFrame,'mf') or 0:
             return res 
                 
         def makemodel(self,eq,**kwargs):
+            '''Makes a model from equations'''
             self.modelopt = {**self.modelopt,**kwargs} 
             self.eq = eq
             self.model = model.from_eq(self.eq,**kwargs)
             return self.copy()
         
         def __call__(self,eq='',**kwargs):
+            '''
+            returns a model instace 
+
+            Args:
+                eq (TYPE, optional): DESCRIPTION. Defaults to ''.
+                **kwargs (TYPE): DESCRIPTION.
+
+            Returns:
+                model: a instance .
+
+            '''
             if self.eq is eq:
                 return self
             else:
@@ -93,7 +110,7 @@ if not hasattr(pd.DataFrame,'mf') or 0:
                 pass   
                  
         def __getitem__(self, name):
-            
+            '''Retrieves  __getitem__ from model instance'''
             a=self.model.__getitem__(name)
             return a
         
@@ -104,6 +121,20 @@ if not hasattr(pd.DataFrame,'mf') or 0:
     
     @pd.api.extensions.register_dataframe_accessor("mfcalc")
     class mfcalc():
+        '''
+        Used to carry out calculation specified as equations 
+        
+        Args:
+            eq (TYPE): Equations one on each line. can be started with <start end> to control calculation sample .
+            start (TYPE, optional): DESCRIPTION. Defaults to ''. 
+            slut (TYPE, optional): DESCRIPTION. Defaults to ''.
+            showeq (TYPE, optional): If True the equations will be printed. Defaults to False.
+            **kwargs (TYPE): Here all solve options can be provided.
+
+        Returns:
+            Dataframe.
+
+        ''' 
         def __init__(self, pandas_obj):
     #        self._validate(pandas_obj)
             self._obj = pandas_obj
@@ -111,7 +142,7 @@ if not hasattr(pd.DataFrame,'mf') or 0:
         
         def __call__(self,eq,start='',slut='',showeq=False, **kwargs):
             '''
-            
+            This call performs the calculation 
 
             Args:
                 eq (TYPE): Equations one on each line. can be started with <start end> to control calculation sample .
@@ -121,7 +152,7 @@ if not hasattr(pd.DataFrame,'mf') or 0:
                 **kwargs (TYPE): Here all solve options can be provided.
 
             Returns:
-                None.
+                Dataframe.
 
             '''
             
@@ -189,6 +220,7 @@ if not hasattr(pd.DataFrame,'mf') or 0:
             return self._obj.loc[:,vars]
             
         def __call__(self):
+            ''' Not in use'''
             print('hello from ibloc')
             return 
         

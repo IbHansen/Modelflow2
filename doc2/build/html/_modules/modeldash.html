@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modeldash &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>modeldash</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modeldash</h1><div class="highlight"><pre>
+<span></span><span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">dash_interactive_graphviz</span>
+    <span class="kn">from</span> <span class="nn">jupyter_dash</span> <span class="kn">import</span> <span class="n">JupyterDash</span>
+    <span class="kn">import</span> <span class="nn">dash</span>
+    <span class="kn">from</span> <span class="nn">dash.dependencies</span> <span class="kn">import</span> <span class="n">Input</span><span class="p">,</span> <span class="n">Output</span><span class="p">,</span> <span class="n">State</span>
+    <span class="kn">import</span> <span class="nn">dash_html_components</span> <span class="k">as</span> <span class="nn">html</span>
+    <span class="kn">import</span> <span class="nn">dash_core_components</span> <span class="k">as</span> <span class="nn">dcc</span>
+    <span class="kn">import</span> <span class="nn">dash_bootstrap_components</span> <span class="k">as</span> <span class="nn">dbc</span>
+    <span class="kn">import</span> <span class="nn">plotly.graph_objs</span> <span class="k">as</span> <span class="nn">go</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="o">...</span>
+
+<span class="kn">import</span> <span class="nn">webbrowser</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="kn">import</span> <span class="n">Timer</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+
+
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">modelclass</span> <span class="kn">import</span> <span class="n">model</span> 
+<span class="kn">from</span> <span class="nn">modelhelp</span> <span class="kn">import</span> <span class="n">cutout</span>
+
+
+<span class="c1">#%%</span>
+<span class="k">if</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">smallmodel</span>      <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">    frml &lt;&gt; a = c + b $ </span>
+<span class="s1">    frml &lt;&gt; d1 = x + 3 * a(-1)+ c **2 +a  $ </span>
+<span class="s1">    frml &lt;&gt; d3 = x + 3 * a(-1)+c **3 $  </span>
+<span class="s1">    Frml &lt;&gt; x = 0.5 * c +a$&#39;&#39;&#39;</span>
+    <span class="n">des</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A&#39;</span><span class="p">:</span><span class="s1">&#39;Bruttonationalprodukt i faste  priser&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;X&#39;</span><span class="p">:</span> <span class="s1">&#39;Eksport &lt;æøåÆØÅ&gt;;&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="s1">&#39;Forbrug&#39;</span><span class="p">}</span>
+    <span class="n">mmodel</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">smallmodel</span><span class="p">,</span><span class="n">var_description</span><span class="o">=</span><span class="n">des</span><span class="p">,</span><span class="n">svg</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">browser</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;X&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span><span class="mf">0.2</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;C&#39;</span> <span class="p">:[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">:[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.4</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">:[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.4</span><span class="p">]})</span>
+    <span class="n">df2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;X&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span><span class="mf">0.2</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;C&#39;</span> <span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">10.</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">:[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.4</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">:[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.4</span><span class="p">]})</span>
+    
+    <span class="n">xx</span> <span class="o">=</span> <span class="n">mmodel</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    <span class="n">yy</span> <span class="o">=</span> <span class="n">mmodel</span><span class="p">(</span><span class="n">df2</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Dash_Mixin"><a class="viewcode-back" href="../modeldash.html#modeldash.Dash_Mixin">[docs]</a><span class="k">class</span> <span class="nc">Dash_Mixin</span><span class="p">():</span>
+    
+          
+<div class="viewcode-block" id="Dash_Mixin.modeldashexplain"><a class="viewcode-back" href="../modeldash.html#modeldash.Dash_Mixin.modeldashexplain">[docs]</a>    <span class="k">def</span> <span class="nf">modeldashexplain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pre_var</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">selected_data_show</span> <span class="o">=</span><span class="s1">&#39;baseline+last run&#39;</span><span class="p">,</span>
+                         <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">jupyter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">show_trigger</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">port</span><span class="o">=</span><span class="mi">5001</span><span class="p">):</span> 
+        
+        <span class="k">def</span> <span class="nf">get_stack</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">v</span><span class="o">=</span><span class="s1">&#39;Guess it&#39;</span><span class="p">,</span><span class="n">heading</span><span class="o">=</span><span class="s1">&#39;Yes&#39;</span><span class="p">):</span>
+            <span class="n">pv</span> <span class="o">=</span> <span class="n">cutout</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="mf">5.</span> <span class="p">)</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="p">[</span><span class="n">go</span><span class="o">.</span><span class="n">Bar</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">pv</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">pv</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rowname</span><span class="p">,:],</span> <span class="n">name</span><span class="o">=</span><span class="n">rowname</span><span class="p">,</span><span class="n">hovertemplate</span> <span class="o">=</span> <span class="s1">&#39;%</span><span class="si">{y:10.0f}</span><span class="s1">%&#39;</span><span class="p">,)</span> <span class="k">for</span> <span class="n">rowname</span> <span class="ow">in</span> <span class="n">pv</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">trace</span><span class="p">,</span>
+            <span class="s1">&#39;layout&#39;</span><span class="p">:</span>
+            <span class="n">go</span><span class="o">.</span><span class="n">Layout</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">heading</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">barmode</span><span class="o">=</span><span class="s1">&#39;relative&#39;</span><span class="p">,</span><span class="n">legend_itemclick</span><span class="o">=</span><span class="s1">&#39;toggleothers&#39;</span><span class="p">,</span>
+                      <span class="n">yaxis</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;tickformat&#39;</span><span class="p">:</span> <span class="s1">&#39;,.0&#39;</span><span class="p">,</span><span class="s1">&#39;ticksuffix&#39;</span><span class="p">:</span><span class="s1">&#39;%&#39;</span><span class="p">})</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="n">out</span> 
+        
+        <span class="k">def</span> <span class="nf">get_line</span><span class="p">(</span><span class="n">pv</span><span class="p">,</span><span class="n">v</span><span class="o">=</span><span class="s1">&#39;Guess it&#39;</span><span class="p">,</span><span class="n">heading</span><span class="o">=</span><span class="s1">&#39;Yes&#39;</span><span class="p">):</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="p">[</span><span class="n">go</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">pv</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">pv</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rowname</span><span class="p">,:],</span> <span class="n">name</span><span class="o">=</span><span class="n">rowname</span><span class="p">)</span> <span class="k">for</span> <span class="n">rowname</span> <span class="ow">in</span> <span class="n">pv</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">trace</span><span class="p">,</span>
+            <span class="s1">&#39;layout&#39;</span><span class="p">:</span>
+            <span class="n">go</span><span class="o">.</span><span class="n">Layout</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">heading</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="n">out</span> 
+
+    
+        <span class="k">def</span> <span class="nf">generate_table</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">max_rows</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">html</span><span class="o">.</span><span class="n">Table</span><span class="p">([</span>
+                <span class="n">html</span><span class="o">.</span><span class="n">Thead</span><span class="p">(</span>
+                    <span class="n">html</span><span class="o">.</span><span class="n">Tr</span><span class="p">([</span><span class="n">html</span><span class="o">.</span><span class="n">Th</span><span class="p">(</span><span class="s1">&#39;var&#39;</span><span class="p">)]</span><span class="o">+</span><span class="p">[</span><span class="n">html</span><span class="o">.</span><span class="n">Th</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">columns</span><span class="p">])</span>
+                <span class="p">),</span>
+                <span class="n">html</span><span class="o">.</span><span class="n">Tbody</span><span class="p">([</span>
+                    <span class="n">html</span><span class="o">.</span><span class="n">Tr</span><span class="p">([</span><span class="n">html</span><span class="o">.</span><span class="n">Td</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">i</span><span class="p">])]</span><span class="o">+</span><span class="p">[</span><span class="n">html</span><span class="o">.</span><span class="n">Td</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">col</span><span class="p">]</span><span class="si">:</span><span class="s1">25.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">columns</span><span class="p">])</span> 
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataframe</span><span class="p">),</span> <span class="n">max_rows</span><span class="p">))</span>
+                <span class="p">])</span>
+            <span class="p">])</span>
+              
+          
+        <span class="k">if</span> <span class="n">jupyter</span><span class="p">:</span> 
+            <span class="n">app</span> <span class="o">=</span> <span class="n">JupyterDash</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">app</span> <span class="o">=</span> <span class="n">dash</span><span class="o">.</span><span class="n">Dash</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="n">selected_var</span> <span class="o">=</span> <span class="n">pre_var</span> <span class="k">if</span> <span class="n">pre_var</span> <span class="k">else</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span> 
+        
+        
+        <span class="n">app</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">html</span><span class="o">.</span><span class="n">Div</span><span class="p">(</span>
+              
+               <span class="p">[</span> 
+              <span class="n">html</span><span class="o">.</span><span class="n">Div</span><span class="p">([</span>
+                    
+                    <span class="n">html</span><span class="o">.</span><span class="n">Div</span><span class="p">(</span><span class="n">dash_interactive_graphviz</span><span class="o">.</span><span class="n">DashInteractiveGraphviz</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;gv&quot;</span><span class="p">,</span><span class="n">engine</span><span class="o">=</span><span class="s1">&#39;dot&#39;</span><span class="p">,</span>
+                          <span class="n">dot_source</span> <span class="o">=</span>   <span class="bp">self</span><span class="o">.</span><span class="n">explain</span><span class="p">(</span><span class="n">selected_var</span><span class="p">,</span><span class="n">up</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">select</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">showatt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">lag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">dot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">HR</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+                     <span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;display&#39;</span><span class="p">:</span> <span class="s1">&#39;inline-block&#39;</span><span class="p">,</span> <span class="s1">&#39;vertical-align&#39;</span><span class="p">:</span> <span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="s1">&#39;margin-left&#39;</span><span class="p">:</span> <span class="s1">&#39;3vw&#39;</span><span class="p">,</span> <span class="s1">&#39;margin-top&#39;</span><span class="p">:</span> <span class="s1">&#39;3vw&#39;</span><span class="p">}</span>  <span class="p">),</span>                
+                    <span class="n">html</span><span class="o">.</span><span class="n">Div</span><span class="p">(</span><span class="n">dcc</span><span class="o">.</span><span class="n">Graph</span><span class="p">(</span>
+                       <span class="nb">id</span><span class="o">=</span><span class="s1">&#39;graph&#39;</span><span class="p">,</span>
+                       <span class="n">figure</span><span class="o">=</span><span class="n">get_stack</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">newgraph</span><span class="p">,</span><span class="s1">&#39;att&#39;</span><span class="p">)[</span><span class="n">selected_var</span><span class="p">],</span><span class="n">selected_var</span><span class="p">,</span><span class="n">heading</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">selected_var</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
+                    <span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;display&#39;</span><span class="p">:</span> <span class="s1">&#39;inline-block&#39;</span><span class="p">,</span> <span class="s1">&#39;vertical-align&#39;</span><span class="p">:</span> <span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="s1">&#39;margin-left&#39;</span><span class="p">:</span> <span class="s1">&#39;3vw&#39;</span><span class="p">,</span><span class="s1">&#39;margin-right&#39;</span><span class="p">:</span> <span class="s1">&#39;3vw&#39;</span><span class="p">,</span> <span class="s1">&#39;margin-top&#39;</span><span class="p">:</span> <span class="s1">&#39;3vw&#39;</span><span class="p">}</span> <span class="p">)</span>    <span class="p">,</span>
+
+                    <span class="p">]</span>
+                 <span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="nb">dict</span><span class="p">()),</span>                
+                
+                
+                <span class="n">html</span><span class="o">.</span><span class="n">Div</span><span class="p">(</span>
+                    <span class="p">[</span>
+                       
+                        <span class="n">html</span><span class="o">.</span><span class="n">H3</span><span class="p">(</span><span class="s2">&quot;Variable&quot;</span><span class="p">),</span>
+                        <span class="n">dcc</span><span class="o">.</span><span class="n">Markdown</span><span class="p">(</span>
+                                <span class="nb">id</span><span class="o">=</span><span class="s1">&#39;outvar-state&#39;</span><span class="p">,</span>
+                                <span class="n">children</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">selected_var</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">),</span>
+                        
+                        <span class="n">dcc</span><span class="o">.</span><span class="n">Dropdown</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;var&#39;</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="n">selected_var</span><span class="p">,</span><span class="n">options</span><span class="o">=</span><span class="p">[</span>
+                                <span class="nb">dict</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">v</span><span class="p">)</span>
+                                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="o">.</span><span class="n">keys</span><span class="p">())],</span>
+                        <span class="p">)</span>
+                         <span class="p">,</span>
+                        <span class="n">html</span><span class="o">.</span><span class="n">H3</span><span class="p">(</span><span class="s2">&quot;Up, preceeding levels&quot;</span><span class="p">),</span>
+                        <span class="n">dcc</span><span class="o">.</span><span class="n">Dropdown</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;up&quot;</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">options</span><span class="o">=</span><span class="p">[</span>
+                                <span class="nb">dict</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">engine</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">engine</span><span class="p">)</span>
+                                <span class="k">for</span> <span class="n">engine</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))],</span>
+                        <span class="p">),</span>
+                        <span class="n">html</span><span class="o">.</span><span class="n">H3</span><span class="p">(</span><span class="s2">&quot;Show&quot;</span><span class="p">),</span>             
+                        <span class="n">dcc</span><span class="o">.</span><span class="n">RadioItems</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;data_show&#39;</span><span class="p">,</span>
+                            <span class="n">options</span><span class="o">=</span><span class="p">[</span>
+                                <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Variables&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+                                <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Attributions&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+                                 <span class="p">],</span>
+                             <span class="n">value</span><span class="o">=</span><span class="kc">False</span>
+                        <span class="p">),</span>  
+
+                        <span class="n">dcc</span><span class="o">.</span><span class="n">RadioItems</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;graph_show&#39;</span><span class="p">,</span>
+                            <span class="n">options</span><span class="o">=</span><span class="p">[</span>
+                                <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Values&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="s1">&#39;values&#39;</span><span class="p">},</span>
+                                <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Diff&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="s1">&#39;diff&#39;</span><span class="p">},</span>
+                                 <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Attributions&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="s1">&#39;att&#39;</span><span class="p">},</span>
+                                 <span class="p">],</span>
+                             <span class="n">value</span><span class="o">=</span><span class="s1">&#39;values&#39;</span><span class="p">,</span><span class="n">labelStyle</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;display&#39;</span><span class="p">:</span> <span class="s1">&#39;block&#39;</span><span class="p">}</span>
+                        <span class="p">),</span>  
+                        
+                        <span class="n">html</span><span class="o">.</span><span class="n">H3</span><span class="p">(</span><span class="s2">&quot;Graph orientation&quot;</span><span class="p">),</span>             
+                        <span class="n">dcc</span><span class="o">.</span><span class="n">RadioItems</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;orient&#39;</span><span class="p">,</span>
+                            <span class="n">options</span><span class="o">=</span><span class="p">[</span>
+                                <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Vertical&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+                                <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Horisontal&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+                                 <span class="p">],</span>
+                       <span class="n">value</span><span class="o">=</span><span class="kc">True</span>
+                       <span class="p">)</span>  
+        
+                    <span class="p">],</span>
+                    <span class="n">style</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">display</span><span class="o">=</span><span class="s2">&quot;flex&quot;</span><span class="p">,</span> <span class="n">flexDirection</span><span class="o">=</span><span class="s2">&quot;column&quot;</span><span class="p">),</span>
+                <span class="p">),</span>
+                
+                                 
+                
+            <span class="p">],</span>
+            <span class="n">style</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s2">&quot;100%&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s2">&quot;100%&quot;</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="s2">&quot;flex&quot;</span><span class="p">),</span>
+            
+            
+            
+        <span class="p">)</span>
+        
+        
+        <span class="nd">@app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">Output</span><span class="p">(</span><span class="s2">&quot;gv&quot;</span><span class="p">,</span> <span class="s2">&quot;dot_source&quot;</span><span class="p">),</span><span class="n">Output</span><span class="p">(</span><span class="s1">&#39;outvar-state&#39;</span><span class="p">,</span> <span class="s2">&quot;children&quot;</span><span class="p">),</span><span class="n">Output</span><span class="p">(</span><span class="s1">&#39;graph&#39;</span><span class="p">,</span> <span class="s2">&quot;figure&quot;</span><span class="p">)],</span>
+            <span class="p">[</span>
+             <span class="n">Input</span><span class="p">(</span><span class="s1">&#39;var&#39;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">),</span><span class="n">Input</span><span class="p">(</span><span class="s1">&#39;gv&#39;</span><span class="p">,</span> <span class="s2">&quot;selected_node&quot;</span><span class="p">),</span><span class="n">Input</span><span class="p">(</span><span class="s1">&#39;gv&#39;</span><span class="p">,</span> <span class="s2">&quot;selected_edge&quot;</span><span class="p">),</span><span class="n">Input</span><span class="p">(</span><span class="s1">&#39;up&#39;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">),</span>
+             <span class="n">Input</span><span class="p">(</span><span class="s1">&#39;data_show&#39;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">),</span><span class="n">Input</span><span class="p">(</span><span class="s1">&#39;graph_show&#39;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">),</span>
+             <span class="n">Input</span><span class="p">(</span><span class="s1">&#39;orient&#39;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">)],</span>
+             <span class="n">State</span><span class="p">(</span><span class="s1">&#39;outvar-state&#39;</span><span class="p">,</span><span class="s1">&#39;children&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">def</span> <span class="nf">display_output</span><span class="p">(</span> <span class="n">var</span><span class="p">,</span><span class="n">select_var</span><span class="p">,</span><span class="n">select_node</span><span class="p">,</span><span class="n">up</span><span class="p">,</span><span class="n">data_show</span><span class="p">,</span><span class="n">figtype</span><span class="p">,</span><span class="n">orient</span><span class="p">,</span><span class="n">outvar_state</span><span class="p">):</span>
+            <span class="c1"># value=self.drawmodel(svg=1,all=True,browser=0,pdf=0,des=True,dot=True)</span>
+            <span class="n">ctx</span> <span class="o">=</span> <span class="n">dash</span><span class="o">.</span><span class="n">callback_context</span>
+            <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">triggered</span><span class="p">:</span>
+                <span class="n">trigger</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">triggered</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;prop_id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                
+                <span class="k">if</span> <span class="n">trigger</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;var&#39;</span><span class="p">]:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">outvar</span><span class="o">=</span><span class="n">var</span><span class="p">[:]</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">no_update</span><span class="p">,</span><span class="n">dash</span><span class="o">.</span><span class="n">no_update</span><span class="p">,</span><span class="n">dash</span><span class="o">.</span><span class="n">no_update</span><span class="p">]</span>
+                    
+
+              
+                <span class="k">elif</span> <span class="n">trigger</span> <span class="o">==</span> <span class="s1">&#39;gv&#39;</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">xvar</span><span class="o">=</span> <span class="n">select_var</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;(&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">xvar</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endogene</span> <span class="ow">or</span> <span class="n">xvar</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">exogene</span><span class="p">:</span> 
+                            <span class="n">outvar</span> <span class="o">=</span> <span class="n">xvar</span><span class="p">[:]</span>
+                    <span class="k">except</span><span class="p">:</span>
+                       <span class="n">outvar</span><span class="o">=</span> <span class="n">select_node</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&gt;&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                     <span class="n">outvar</span><span class="o">=</span><span class="n">outvar_state</span>
+                     
+                <span class="n">value</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">explain</span><span class="p">(</span><span class="n">outvar</span><span class="p">,</span><span class="n">up</span><span class="o">=</span><span class="n">up</span><span class="p">,</span><span class="n">select</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">showatt</span><span class="o">=</span><span class="n">data_show</span><span class="p">,</span><span class="n">lag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">dot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">HR</span><span class="o">=</span><span class="n">orient</span><span class="p">)</span>
+            
+                
+                
+                <span class="c1"># else:     </span>
+                <span class="c1">#     value=self.draw(outvar,dot=True,up=int(up),down=int(down),all=False)</span>
+                <span class="k">if</span> <span class="n">show_trigger</span><span class="p">:</span>
+                    <span class="n">ctx_msg</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+                    <span class="s1">&#39;states&#39;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">states</span><span class="p">,</span>
+                    <span class="s1">&#39;triggered&#39;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">triggered</span><span class="p">,</span>
+                    <span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">inputs</span>
+                          <span class="p">},</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">ctx_msg</span><span class="p">)</span>
+                    <span class="c1"># print(f&#39;{outvar=},{data_show=}&#39;)</span>
+                    <span class="c1"># print(value)</span>
+                    
+            <span class="k">if</span> <span class="n">outvar</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endogene</span><span class="p">:</span>         
+                <span class="k">if</span> <span class="n">figtype</span> <span class="o">==</span> <span class="s1">&#39;values&#39;</span><span class="p">:</span>
+                    <span class="n">out_graph</span> <span class="o">=</span> <span class="n">get_line</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">newgraph</span><span class="p">,</span><span class="s1">&#39;values&#39;</span><span class="p">)[</span><span class="n">outvar</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">2</span><span class="p">,:],</span><span class="n">outvar</span><span class="p">,</span><span class="n">outvar</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">figtype</span> <span class="o">==</span> <span class="s1">&#39;diff&#39;</span><span class="p">:</span>
+                    <span class="n">out_graph</span> <span class="o">=</span> <span class="n">get_line</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">newgraph</span><span class="p">,</span><span class="s1">&#39;values&#39;</span><span class="p">)[</span><span class="n">outvar</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="mi">2</span><span class="p">],:],</span><span class="n">outvar</span><span class="p">,</span><span class="n">outvar</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">figtype</span> <span class="o">==</span> <span class="s1">&#39;att&#39;</span><span class="p">:</span>
+                    <span class="n">out_graph</span> <span class="o">=</span> <span class="n">get_stack</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">newgraph</span><span class="p">,</span><span class="s1">&#39;att&#39;</span><span class="p">)[</span><span class="n">outvar</span><span class="p">],</span><span class="n">outvar</span><span class="p">,</span><span class="n">outvar</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">out_graph</span> <span class="o">=</span> <span class="n">get_line</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">newgraph</span><span class="p">,</span><span class="s1">&#39;values&#39;</span><span class="p">)[</span><span class="n">outvar</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="mi">2</span><span class="p">],:],</span><span class="n">outvar</span><span class="p">,</span><span class="n">outvar</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out_graph</span><span class="o">=</span> <span class="n">dash</span><span class="o">.</span><span class="n">no_update</span>
+                    
+            
+                   
+                 
+            
+            <span class="k">return</span> <span class="p">[</span><span class="n">value</span><span class="p">,</span><span class="n">outvar</span><span class="p">,</span><span class="n">out_graph</span><span class="p">]</span>
+        
+        <span class="k">def</span> <span class="nf">open_browser</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">):</span>
+        	<span class="n">webbrowser</span><span class="o">.</span><span class="n">open_new</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;http://localhost:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        
+        <span class="k">if</span> <span class="n">jupyter</span><span class="p">:</span>
+            <span class="n">Timer</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">open_browser</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>            
+            <span class="n">app</span><span class="o">.</span><span class="n">run_server</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span><span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;external&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>     
+            <span class="n">Timer</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">open_browser</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="n">app</span><span class="o">.</span><span class="n">run_server</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span><span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span></div></div>
+    
+    
+    
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    
+    <span class="kn">from</span> <span class="nn">modelclass</span> <span class="kn">import</span> <span class="n">model</span> 
+
+    <span class="k">class</span> <span class="nc">xmodel</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">Dash_Mixin</span><span class="p">):</span>
+        
+        <span class="o">...</span> 
+        
+    <span class="k">if</span> <span class="ow">not</span>  <span class="s1">&#39;baseline&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>    
+        <span class="n">mmodel</span><span class="p">,</span><span class="n">baseline</span>  <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">modelload</span><span class="p">(</span><span class="s1">&#39;../Examples/ADAM/baseline.pcim&#39;</span><span class="p">,</span><span class="n">run</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="mi">0</span> <span class="p">)</span>
+        <span class="n">scenarie</span> <span class="o">=</span> <span class="n">baseline</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">scenarie</span><span class="o">.</span><span class="n">TG</span> <span class="o">=</span> <span class="n">scenarie</span><span class="o">.</span><span class="n">TG</span> <span class="o">+</span> <span class="mf">0.05</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">mmodel</span><span class="p">(</span><span class="n">scenarie</span><span class="p">)</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;modeldashexplain&quot;</span><span class="p">,</span> <span class="n">Dash_Mixin</span><span class="o">.</span><span class="n">modeldashexplain</span><span class="p">)</span>    
+    <span class="n">mmodel</span><span class="o">.</span><span class="n">modeldashexplain</span><span class="p">(</span><span class="s1">&#39;FY&#39;</span><span class="p">,</span><span class="n">jupyter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">show_trigger</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> 
+<span class="c1">#%%    </span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">backend</span> <span class="o">=</span> <span class="s2">&quot;plotly&quot;</span>
+    
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="n">b</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

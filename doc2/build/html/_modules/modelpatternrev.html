@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelpatternrev &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>modelpatternrev</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modelpatternrev</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon Sep 02 19:32:22 2013</span>
+
+<span class="sd">This module defines a number of pattern used in PYFS. </span>
+<span class="sd">If a new function is intruduced in the model definition language it should added to the </span>
+<span class="sd">function names in funkname </span>
+
+<span class="sd">All functions in the module modeluserfunk will be added to the language and incorporated in the Business </span>
+<span class="sd">Logic language </span>
+
+<span class="sd">@author: Ib</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">re</span> 
+<span class="kn">import</span> <span class="nn">inspect</span> 
+
+<span class="kn">import</span> <span class="nn">modelBLfunk</span>
+<div class="viewcode-block" id="pattern_cls"><a class="viewcode-back" href="../modelpatternrev.html#modelpatternrev.pattern_cls">[docs]</a><span class="k">class</span> <span class="nc">pattern_cls</span><span class="p">()</span> <span class="p">:</span> 
+    <span class="c1"># names and lags </span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">namepat_ng</span>  <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(?:[A-Za-z_{][A-Za-z_</span><span class="si">{}</span><span class="s1">0-9]*)&#39;</span>     <span class="c1"># a name non grouped</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">namepat</span>     <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">namepat_ng</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span> <span class="c1"># a name  grouped</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lagpat</span>      <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(?:\(([+-][0-9]+)\))?&#39;</span>
+        
+        <span class="c1"># comments </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">commentpat</span>  <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(!.*)&#39;</span>
+        
+        <span class="k">try</span><span class="p">:</span> <span class="c1"># import the names of functions defined in modeluserfunk </span>
+            <span class="kn">import</span> <span class="nn">modeluserfunk</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">userfunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">o</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="n">modeluserfunk</span><span class="p">)</span> 
+                                         <span class="k">if</span> <span class="ow">not</span> <span class="n">o</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="p">)]</span>
+        <span class="k">except</span><span class="p">:</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">userfunk</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">BLfunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">o</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="n">modelBLfunk</span><span class="p">)</span> 
+                                         <span class="k">if</span> <span class="ow">not</span> <span class="n">o</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="p">)</span> <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classfunk</span> <span class="o">=</span> <span class="n">modelBLfunk</span><span class="o">.</span><span class="n">classfunk</span>   
+        <span class="c1"># Operators </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">newfunks</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">funks</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funkname</span>    <span class="o">=</span> <span class="s1">&#39;DLOG SUM_EXCEL DIFF MIN MAX FLOAT NORM.CDF NORM.PPF&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">BLfunk</span><span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">userfunk</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">classfunk</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">newfunks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funkname2</span>   <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="sa">r</span><span class="s1">&#39;(?=\()&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">funkname</span><span class="p">]</span>               <span class="c1"># a function is followed by a (</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opname</span>      <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\*\*  &gt;=  &lt;=  ==  [=+-/*()$&gt;&lt;,.\]\[]&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="c1"># list of ordinary operators </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oppat</span>       <span class="o">=</span> <span class="s1">&#39;(&#39;</span><span class="o">+</span><span class="s1">&#39;|&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;(?:&#39;</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">funkname2</span><span class="o">+</span><span class="n">opname</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;)&#39;</span>
+        
+        <span class="c1"># Numbers </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">numpat</span>      <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;((?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]\d+)?)&#39;</span>
+        
+        <span class="c1"># Formulars </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dollarpat</span>   <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;([$]&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upat</span>        <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;([^$]*\$)&#39;</span>          <span class="c1"># resten frem til $</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frmlpat</span>     <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(FRML [^$]*\$)&#39;</span>     <span class="c1"># A FORMULAR for splitting a model in formulars</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optionpat</span>   <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(?:[&lt;][^&gt;]*[&gt;])?&#39;</span>   <span class="c1"># 0 eller en optioner omsluttet af &lt;&gt;</span>
+        
+        <span class="c1">#White space </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ws</span>          <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;[\s]+&#39;</span>              <span class="c1"># 0 or more white spaces </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ws2</span>         <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;[\s]*&#39;</span>              <span class="c1"># 1 or more white spaces </span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">splitpat</span>    <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">namepat</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ws</span> <span class="o">+</span> \
+            <span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">namepat_ng</span> <span class="o">+</span> <span class="s1">&#39;?&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ws2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">optionpat</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ws</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">upat</span>  <span class="c1"># Splits a formular</span>
+        <span class="c1"># for splitting a model in commands and values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">statementpat</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">commentpat</span> <span class="o">+</span> <span class="s1">&#39;|&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">namepat</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ws2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">upat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">udtrykpat</span>    <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">commentpat</span> <span class="o">+</span> <span class="s1">&#39;|&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">numpat</span> <span class="o">+</span> <span class="s1">&#39;|&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">oppat</span> <span class="o">+</span> <span class="s1">&#39;|&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">namepat</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lagpat</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">udtrykre</span>     <span class="o">=</span>  <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">udtrykpat</span><span class="p">)</span></div>
+<div class="viewcode-block" id="f1"><a class="viewcode-back" href="../modelpatternrev.html#modelpatternrev.f1">[docs]</a><span class="k">def</span> <span class="nf">f1</span><span class="p">():</span>
+    <span class="k">return</span> <span class="mi">42</span></div>
+
+<div class="viewcode-block" id="f2"><a class="viewcode-back" href="../modelpatternrev.html#modelpatternrev.f2">[docs]</a><span class="k">def</span> <span class="nf">f2</span><span class="p">():</span>
+    <span class="k">return</span> <span class="mi">103</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span> <span class="p">:</span>
+    <span class="n">tpat</span> <span class="o">=</span> <span class="n">pattern_cls</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

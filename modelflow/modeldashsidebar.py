@@ -9,20 +9,23 @@ import dash
 from jupyter_dash import JupyterDash
 from jupyter_dash.comms import _send_jupyter_config_comm_request
 try:
-    from dash import dcc 
-except:
-    import dash_core_components as dcc
-
-import dash_bootstrap_components as dbc
-try:
-    from dash import html
-except:     
-    import dash_html_components as html
+    try:
+        from dash import dcc 
+    except:
+        import dash_core_components as dcc
     
-from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
-
-from  dash_interactive_graphviz import DashInteractiveGraphviz
+    import dash_bootstrap_components as dbc
+    try:
+        from dash import html
+    except:     
+        import dash_html_components as html
+        
+    from dash.dependencies import Input, Output, State
+    from dash.exceptions import PreventUpdate
+    
+    from  dash_interactive_graphviz import DashInteractiveGraphviz
+except:
+    print('No Dash')    
 
 import plotly.graph_objs as go
 from plotly.graph_objs.scatter.marker import Line

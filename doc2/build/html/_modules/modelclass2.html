@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelclass2 &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>modelclass2</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modelclass2</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon Jul 24 13:59:09 2017</span>
+
+<span class="sd">@author: hanseni</span>
+<span class="sd">IMPORTANT for Cython</span>
+
+<span class="sd">Cython has to be compiled in a command window with access to microsoft C-compiler</span>
+
+<span class="sd">execute: </span>
+<span class="sd">Visual studio 2015&gt;visual studio tools&gt;Windows Desktop Command Prompts&gt; VS2015 x64 Native Tools Command Prompt</span>
+<span class="sd">to get a command windows with the right setup for the c oompilation and linking </span>
+
+<span class="sd">change the directory and path in the command window to the place where the Cython code is placed </span>
+<span class="sd">now you are in business and can call the cmodel.bat file </span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> 
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span><span class="n">zip_longest</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">jit</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+
+
+<span class="kn">from</span> <span class="nn">modelclass</span> <span class="kn">import</span> <span class="n">model</span> 
+<span class="kn">import</span> <span class="nn">modelclass</span> <span class="k">as</span> <span class="nn">mc</span>
+<span class="kn">import</span> <span class="nn">modelpattern</span> <span class="k">as</span> <span class="nn">pt</span>
+
+<span class="kn">import</span> <span class="nn">modelmf</span>
+
+<div class="viewcode-block" id="simmodel"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel">[docs]</a><span class="k">class</span> <span class="nc">simmodel</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; The model class, used to experiment </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+<div class="viewcode-block" id="simmodel.gouteval"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.gouteval">[docs]</a>    <span class="k">def</span> <span class="nf">gouteval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">databank</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; takes a list of terms and translates to a evaluater function called los</span>
+<span class="sd">        </span>
+<span class="sd">        The model axcess the data through:databank.Dataframe.value[rowindex+lag,coloumnindex] which is very efficient </span>
+<span class="sd">        </span>
+<span class="sd">        This function has superseeded xouteval (:func:`modelclass.model.xouteval` </span>
+<span class="sd">        </span>
+<span class="sd">        This function assumes that the numpy values have been made to a list of lists to increase speed. </span>
+<span class="sd">        &#39;&#39;&#39;</span>        
+        
+        <span class="n">columnsnr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_columnsnr</span><span class="p">(</span><span class="n">databank</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;def make_los():</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;  def los(values,row,solveorder, allvar):</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;from math import exp, log </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;import sys</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;from model_cvx import mv_opt, mv_opt_prop</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;from numpy import transpose</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;from stem import ste </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;from modelclass import sum_excel,logit </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;try: </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;from cvxopt import matrix </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;except:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;pass </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;try :</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveorder</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;dropfrml&#39;</span><span class="p">]:</span>
+                <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;   &#39;</span><span class="o">+</span><span class="s1">&#39;pass  # &#39;</span><span class="o">+</span><span class="n">v</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">continue</span> 
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;terms&#39;</span><span class="p">]):</span>  
+                <span class="k">if</span> <span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;=&#39;</span><span class="p">):</span>
+                    <span class="n">assignpos</span><span class="o">=</span><span class="n">i</span>
+                    <span class="k">break</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;terms&#39;</span><span class="p">]):</span> 
+                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;   &#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span><span class="p">:</span>
+                    <span class="n">ud</span><span class="o">=</span><span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="p">(</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;$&#39;</span> <span class="p">)</span> <span class="k">else</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">number</span><span class="p">:</span>
+                    <span class="n">ud</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">number</span>
+                <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">:</span>
+<span class="c1">#                    if self.allvar[t.var][&#39;matrix&#39;]:</span>
+<span class="c1">#                        ud=t.var</span>
+<span class="c1">#                    else:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">assignpos</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1">#  term is the left hand sided variable</span>
+                        <span class="n">ud</span><span class="o">=</span> <span class="s1">&#39;values[row][&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">columnsnr</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;]&#39;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">lag</span><span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                            <span class="n">ud</span><span class="o">=</span> <span class="s1">&#39;values[row]&#39;</span><span class="o">+</span><span class="s1">&#39;[&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">columnsnr</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;]&#39;</span>
+                        <span class="k">else</span> <span class="p">:</span>  
+                            <span class="n">ud</span><span class="o">=</span> <span class="s1">&#39;values[row&#39;</span><span class="o">+</span><span class="n">t</span><span class="o">.</span><span class="n">lag</span><span class="o">+</span><span class="s1">&#39;][&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">columnsnr</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;]&#39;</span> 
+                <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ud</span><span class="p">)</span>
+            <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;except :</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;   &#39;</span><span class="o">+</span><span class="s1">&#39;print(&quot;Error in&quot;,allvar[solveorder[sys.exc_info()[2].tb_lineno-14]][&quot;frml&quot;])</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;   &#39;</span><span class="o">+</span><span class="s1">&#39;raise</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;return </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;  return los</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="c1">#        print (fib)</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fib</span><span class="p">)</span>           </div>
+<div class="viewcode-block" id="simmodel.cytouteval"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.cytouteval">[docs]</a>    <span class="k">def</span> <span class="nf">cytouteval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">databank</span><span class="p">,</span><span class="n">nr</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; takes a list of terms and translates to a evaluater function called los</span>
+<span class="sd">        </span>
+<span class="sd">        The model axcess the data through:databank.Dataframe.value[rowindex+lag,coloumnindex] which is very efficient </span>
+<span class="sd">        </span>
+<span class="sd">        This function has superseeded xouteval (:func:`modelclass.model.xouteval` </span>
+<span class="sd">        </span>
+<span class="sd">        This function assumes creates a CYTHON function to realy increase speed. </span>
+<span class="sd">        &#39;&#39;&#39;</span>        
+        
+        <span class="n">columnsnr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_columnsnr</span><span class="p">(</span><span class="n">databank</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">=</span><span class="p">[]</span>
+        
+        <span class="c1">#cython: language_level=3, boundscheck=False ,nonecheck =False, initializedcheck =False </span>
+<span class="c1">#        fib.append(&#39;#!python\n&#39;)</span>
+<span class="c1">#        fib.append(&#39;#cython: language_level=3, boundscheck=False  ,nonecheck =False, initializedcheck =False  \n&#39;)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">from numpy cimport ndarray</span>
+<span class="s1">cimport numpy as np</span>
+<span class="s1">cimport cython</span>
+<span class="s1">ctypedef np.float64_t dtype_t</span>
+<span class="s1">from cython cimport floating</span>
+<span class="s1">from cython cimport double </span>
+
+<span class="s1">@cython.wraparound(False)</span>
+<span class="s1">@cython.boundscheck(False)  </span>
+<span class="s1">@cython.nonecheck(False)</span>
+<span class="s1">@cython.initializedcheck(False)</span>
+<span class="s1">@cython.optimize.unpack_method_calls(False) </span><span class="se">\n</span><span class="s1">&#39;&#39;&#39;</span><span class="p">)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;def los&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">nr</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;(np.ndarray[dtype_t, ndim=2] values,long row):</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveorder</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;dropfrml&#39;</span><span class="p">]:</span>
+                <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">+</span><span class="s1">&#39;   &#39;</span><span class="o">+</span><span class="s1">&#39;pass  # &#39;</span><span class="o">+</span><span class="n">v</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">continue</span> 
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;terms&#39;</span><span class="p">]):</span>  
+                <span class="k">if</span> <span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;=&#39;</span><span class="p">):</span>
+                    <span class="n">assignpos</span><span class="o">=</span><span class="n">i</span>
+                    <span class="k">break</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;terms&#39;</span><span class="p">]):</span> 
+                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">+</span><span class="s1">&#39;    &#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span><span class="p">:</span>
+                    <span class="n">ud</span><span class="o">=</span><span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="p">(</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;$&#39;</span> <span class="p">)</span> <span class="k">else</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">number</span><span class="p">:</span>
+                    <span class="n">ud</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">number</span>
+                <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">:</span>
+<span class="c1">#                    if self.allvar[t.var][&#39;matrix&#39;]:</span>
+<span class="c1">#                        ud=t.var</span>
+<span class="c1">#                    else:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">assignpos</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1">#  term is the left hand sided variable</span>
+                        <span class="n">ud</span><span class="o">=</span> <span class="s1">&#39;values[row,&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">columnsnr</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;]&#39;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">lag</span><span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                            <span class="n">ud</span><span class="o">=</span> <span class="s1">&#39;values[row,&#39;</span><span class="o">+</span><span class="s1">&#39;&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">columnsnr</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;]&#39;</span>
+                        <span class="k">else</span> <span class="p">:</span>  
+                            <span class="n">ud</span><span class="o">=</span> <span class="s1">&#39;values[row&#39;</span><span class="o">+</span><span class="n">t</span><span class="o">.</span><span class="n">lag</span><span class="o">+</span><span class="s1">&#39;,&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">columnsnr</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;]&#39;</span> 
+                <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ud</span><span class="p">)</span>
+            <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="c1">#        fib.append(&#39;    &#39;+&#39;except :\n&#39;)</span>
+<span class="c1">#        fib.append(&#39;&#39;+&#39;   &#39;+&#39;print(&quot;Error in&quot;,allvar[solveorder[sys.exc_info()[2].tb_lineno-14]][&quot;frml&quot;])\n&#39;)</span>
+<span class="c1">#        fib.append(&#39;&#39;+&#39;   &#39;+&#39;raise\n&#39;)</span>
+        <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;    &#39;</span><span class="o">+</span><span class="s1">&#39;return </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="c1">#        print (fib)</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fib</span><span class="p">)</span>     </div>
+
+
+
+ 
+    
+<div class="viewcode-block" id="simmodel.teststuff3"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.teststuff3">[docs]</a>    <span class="k">def</span> <span class="nf">teststuff3</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">columsnr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_columnsnr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stuff3</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedf</span><span class="o">.</span><span class="n">values</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">columsnr</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="simmodel.outsolve2"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.outsolve2">[docs]</a>    <span class="k">def</span> <span class="nf">outsolve2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; returns a string with a function which calculates a </span>
+<span class="sd">        Gauss-Seidle iteration of a model</span>
+<span class="sd">        exclude is list of endogeneous variables not to be solved </span>
+<span class="sd">        uses: </span>
+<span class="sd">        model.solveorder the order in which the variables is calculated</span>
+<span class="sd">        model.allvar[v][&quot;gauss&quot;] the ccalculation </span>
+<span class="sd">        This function should split the functions in many functions easing numba for large models</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">tjit</span> <span class="o">=</span> <span class="s1">&#39;@jit(&quot;f8[:](f8[:])&quot;) </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">ljit</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">def</span> <span class="nf">grouper</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">):</span>
+            <span class="s2">&quot;Collect data into fixed-length chunks or blocks&quot;</span>
+            <span class="c1"># grouper(&#39;ABCDEFG&#39;, 3, &#39;x&#39;) --&gt; ABC DEF Gxx&quot;</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="nb">iter</span><span class="p">(</span><span class="n">iterable</span><span class="p">)]</span> <span class="o">*</span> <span class="n">n</span>
+            <span class="k">return</span> <span class="n">zip_longest</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="n">fillvalue</span><span class="p">)</span>
+            
+        <span class="n">solveorder</span><span class="o">=</span><span class="n">order</span> <span class="k">if</span> <span class="n">order</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveorder</span>
+        <span class="n">gausslines</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">make_gaussline</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>  <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">solveorder</span> <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;dropfrml&#39;</span><span class="p">])]</span> 
+        <span class="n">chunked</span><span class="o">=</span> <span class="n">grouper</span><span class="p">(</span><span class="n">gausslines</span><span class="p">,</span><span class="n">chunk</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">chunked</span><span class="o">=</span> <span class="p">[</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">chunked</span><span class="p">][:]</span>
+        <span class="k">def</span> <span class="nf">chunksolve</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="n">lines</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">tjit</span><span class="o">+</span><span class="s1">&#39;def los&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;(a):</span><span class="se">\n</span><span class="s1">     &#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">     &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+            <span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">     return  #a &#39;</span><span class="p">)</span>
+<span class="c1">#            +&#39;\n     return a &#39;)</span>
+            <span class="k">return</span> <span class="n">out</span>  
+        <span class="n">chunkedout</span> <span class="o">=</span> <span class="s1">&#39;from numpy import exp, log </span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">chunksolve</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">ch</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunked</span><span class="p">)</span> <span class="p">])</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+<span class="c1">#        masterout  = tjit+&#39;def los(a):\n    &#39;+&#39;    &#39;.join([(&#39;a=los&#39;+str(i)+&#39;(a) \n&#39;)  for (i,ch) in enumerate(chunked)])+&#39;\n    return a&#39;</span>
+        <span class="n">masterout</span>  <span class="o">=</span> <span class="n">tjit</span><span class="o">+</span><span class="s1">&#39;def los(a):</span><span class="se">\n</span><span class="s1">    &#39;</span><span class="o">+</span><span class="s1">&#39;    &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([(</span><span class="s1">&#39;los&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;(a) </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">ch</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunked</span><span class="p">)])</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">    return a&#39;</span>
+        
+        <span class="c1">#    print(masterout)</span>
+        <span class="k">return</span> <span class="n">chunkedout</span><span class="o">+</span><span class="n">masterout</span></div>
+    
+<div class="viewcode-block" id="simmodel.outsolve3"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.outsolve3">[docs]</a>    <span class="k">def</span> <span class="nf">outsolve3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">3000000</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">maxchunks</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span><span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">chunkselect</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">maxlines</span><span class="o">=</span><span class="mi">1000000000000</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; returns a string with a function which calculates a </span>
+<span class="sd">        Gauss-Seidle iteration of a model</span>
+<span class="sd">        exclude is list of endogeneous variables not to be solved </span>
+<span class="sd">        uses: </span>
+<span class="sd">        model.solveorder the order in which the variables is calculated</span>
+<span class="sd">        model.allvar[v][&quot;gauss&quot;] the ccalculation </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">short</span><span class="p">,</span><span class="n">long</span><span class="p">,</span><span class="n">longer</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="mi">8</span><span class="o">*</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="mi">12</span> <span class="o">*</span><span class="s1">&#39; &#39;</span>
+        <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+            <span class="n">tjit</span> <span class="o">=</span> <span class="p">(</span><span class="n">short</span><span class="o">+</span><span class="s1">&#39;@jit(&quot;f8[:](f8[:],f8)&quot;,cache=1) </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">ljit</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tjit</span> <span class="o">=</span> <span class="p">(</span><span class="n">short</span><span class="o">+</span><span class="s1">&#39;@jit(&quot;f8[:](f8[:],f8)&quot; )</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">ljit</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+            <span class="n">tjit</span> <span class="o">=</span> <span class="p">(</span><span class="n">short</span><span class="o">+</span><span class="s1">&#39;@jit(&quot;f8[:](f8[:],f8)&quot;,fastmath=True)</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">ljit</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="k">def</span> <span class="nf">grouper</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+            <span class="s2">&quot;Collect data into fixed-length chunks or blocks&quot;</span>
+            <span class="c1"># grouper(&#39;ABCDEFG&#39;, 3, &#39;x&#39;) --&gt; ABC DEF Gxx&quot;</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="nb">iter</span><span class="p">(</span><span class="n">iterable</span><span class="p">)]</span> <span class="o">*</span> <span class="n">n</span>
+            <span class="k">return</span> <span class="n">zip_longest</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="n">fillvalue</span><span class="p">)</span>
+        
+        <span class="k">def</span> <span class="nf">chunksolve</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="n">lines</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">tjit</span><span class="o">+</span><span class="n">short</span><span class="o">+</span><span class="s1">&#39;def los&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;(a,alfa):</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+            <span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">        return a &#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">out</span>  
+        
+        <span class="n">solveorder</span><span class="o">=</span><span class="n">order</span> <span class="k">if</span> <span class="n">order</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveorder</span>
+        <span class="n">fib1</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;# -*- coding: utf-8 -*-&#39;</span><span class="p">]</span>
+        <span class="n">fib1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;def make(funks=[]):&#39;</span><span class="p">)</span>
+        <span class="n">fib1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">short</span> <span class="o">+</span> <span class="s1">&#39;import time&#39;</span><span class="p">)</span>
+        <span class="n">fib1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">short</span> <span class="o">+</span> <span class="s1">&#39;from numba import jit &#39;</span><span class="p">)</span>
+        <span class="n">fib1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">short</span> <span class="o">+</span> <span class="s1">&#39;from modeluserfunk import &#39;</span><span class="o">+</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">userfunk</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">fib1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">short</span> <span class="o">+</span> <span class="s1">&#39;from modelBLfunk import &#39;</span><span class="o">+</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">BLfunk</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">funktext</span> <span class="o">=</span>  <span class="p">[</span><span class="n">short</span><span class="o">+</span><span class="n">f</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39; = funks[&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;]&#39;</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">funks</span><span class="p">)]</span>      
+        <span class="n">fib1</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">funktext</span><span class="p">)</span>
+        <span class="n">f2</span><span class="o">=</span><span class="p">[</span><span class="n">long</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_gaussline</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solveorder</span><span class="p">)</span> 
+              <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;dropfrml&#39;</span><span class="p">])</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">maxlines</span><span class="p">]</span>
+        <span class="n">chunked</span><span class="o">=</span> <span class="n">grouper</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span><span class="n">chunk</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">chunkselect</span><span class="p">:</span>
+             <span class="n">chunkedlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">l</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunked</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">chunkselect</span> <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span> 
+             <span class="n">chunkedlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">l</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunked</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">maxchunks</span> <span class="p">]</span>
+        <span class="n">chunkedout</span> <span class="o">=</span> <span class="p">((</span><span class="n">short</span><span class="o">+</span><span class="sa">f</span><span class="s1">&#39;print(&quot;Compiling chunk </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">     &quot;+time.strftime(&quot;%H:%M:%S&quot;)) </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">ljit</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span><span class="n">chunksolve</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">ch</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunkedlist</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">masterout</span>  <span class="o">=</span>  <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">+</span><span class="n">short</span><span class="o">+</span><span class="s1">&#39;def los(a,alfa):</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">long</span><span class="o">+</span><span class="s1">&#39;a=los&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;(a,alfa)&#39;</span><span class="p">)</span>  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">ch</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunkedlist</span><span class="p">))</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">+</span><span class="n">long</span><span class="o">+</span><span class="s1">&#39;return a&#39;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="n">fib1</span><span class="p">,</span><span class="n">chunkedout</span><span class="p">))</span><span class="o">+</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">+</span><span class="n">short</span><span class="o">+</span>
+                    <span class="s1">&#39;print(&quot;Compiling master los: &quot;+time.strftime(&quot;%H:%M:%S&quot;))&#39;</span><span class="o">+</span> <span class="n">masterout</span>
+        <span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">+</span><span class="n">short</span><span class="o">+</span><span class="s1">&#39;print(&quot;Finished  master los: &quot;+time.strftime(&quot;%H:%M:%S&quot;))</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">+</span><span class="n">short</span><span class="o">+</span><span class="s1">&#39;return los&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+    
+    
+<div class="viewcode-block" id="simmodel.cytsolve"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.cytsolve">[docs]</a>    <span class="k">def</span> <span class="nf">cytsolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; returns a string with a Cython function which calculates a </span>
+<span class="sd">        Gauss-Seidle iteration of a model</span>
+<span class="sd">        exclude is list of endogeneous variables not to be solved </span>
+<span class="sd">        uses: </span>
+<span class="sd">        model.solveorder the order in which the variables is calculated</span>
+<span class="sd">        model.allvar[v][&quot;gauss&quot;] the ccalculation </span>
+<span class="sd">        This function should split the functions in many functions easing cython for large models</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">def</span> <span class="nf">grouper</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">):</span>
+            <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">zip_longest</span>
+            <span class="s2">&quot;Collect data into fixed-length chunks or blocks&quot;</span>
+            <span class="c1"># grouper(&#39;ABCDEFG&#39;, 3, &#39;x&#39;) --&gt; ABC DEF Gxx&quot;</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="nb">iter</span><span class="p">(</span><span class="n">iterable</span><span class="p">)]</span> <span class="o">*</span> <span class="n">n</span>
+            <span class="k">return</span> <span class="n">zip_longest</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="n">fillvalue</span><span class="p">)</span>
+            
+        <span class="n">solveorder</span><span class="o">=</span><span class="n">order</span> <span class="k">if</span> <span class="n">order</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveorder</span>
+        <span class="n">gausslines</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;gauss&#39;</span><span class="p">]</span>  <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">solveorder</span> <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;dropfrml&#39;</span><span class="p">])]</span> 
+        <span class="n">chunked</span><span class="o">=</span> <span class="n">grouper</span><span class="p">(</span><span class="n">gausslines</span><span class="p">,</span><span class="n">chunk</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">chunked</span><span class="o">=</span> <span class="p">[</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">chunked</span><span class="p">][:]</span>
+        <span class="k">def</span> <span class="nf">chunksolve</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="n">lines</span><span class="p">):</span>
+
+            <span class="n">out</span> <span class="o">=</span>  <span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">import sys</span>
+<span class="s1">from model_cvx import mv_opt, mv_opt_prop</span>
+<span class="s1">from numpy import transpose , array</span>
+<span class="s1">from stem import ste</span>
+<span class="s1">from modelclass import sum_excel</span>
+<span class="s1">from modelclass import     pd_to_w_corp, pd_to_w_mrtg, pd_to_w_retail</span>
+
+<span class="s1">try:</span>
+<span class="s1">    from cvxopt import matrix</span>
+<span class="s1">except:</span>
+<span class="s1">    pass </span>
+<span class="s1"># from numpy import exp, log  </span>
+<span class="s1">from libc.math cimport exp, log   # to gain speed                        </span>
+<span class="s1">from numpy cimport ndarray</span>
+<span class="s1">cimport numpy as np</span>
+<span class="s1"># cimport scipy.special.cython_special   </span>
+<span class="s1">cimport cython</span>
+<span class="s1">ctypedef np.float64_t dtype_t</span>
+<span class="s1">cdef inline dtype_t  logit(dtype_t number): return -log(1.0/number-1.0) </span>
+<span class="s1">cdef inline dtype_t  max(dtype_t a, dtype_t b): return a if a &gt;= b else b</span>
+<span class="s1">cdef inline dtype_t  min(dtype_t a, dtype_t b): return a if a &lt;= b else b</span>
+
+<span class="s1">from cython cimport floating</span>
+<span class="s1">from cython cimport double </span>
+
+<span class="s1">from numpy import  array </span>
+<span class="s1">@cython.cdivision(True)</span>
+<span class="s1">@cython.wraparound(False)</span>
+<span class="s1">@cython.boundscheck(False)  </span>
+<span class="s1">@cython.nonecheck(False)</span>
+<span class="s1">@cython.initializedcheck(False)</span>
+<span class="s1">@cython.optimize.unpack_method_calls(False) </span><span class="se">\n</span><span class="s1">&#39;&#39;&#39;</span><span class="o">+</span>
+                    <span class="s1">&#39;def los&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">number</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;(double[:] a):&#39;</span> <span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">     &#39;</span>
+            <span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">     cdef double alfa=0.2 &#39;</span> 
+            <span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">     &#39;</span> 
+            <span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">     &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">if</span> <span class="n">l</span> <span class="o">!=</span><span class="s1">&#39;&#39;</span> <span class="p">])</span>
+            <span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">     return &#39;</span> <span class="p">)</span>                           <span class="c1">#  &#39;a &#39;)</span>
+            <span class="k">return</span> <span class="n">out</span>  
+        <span class="n">chunkedout</span> <span class="o">=</span> <span class="p">[</span><span class="n">chunksolve</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">ch</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunked</span><span class="p">)</span> <span class="p">]</span>
+        <span class="n">chunklist</span><span class="o">=</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">ch</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunked</span><span class="p">)]</span>
+        <span class="n">chunkimp</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;from s&#39;</span><span class="o">+</span><span class="n">i</span><span class="o">+</span><span class="s1">&#39; import los&#39;</span><span class="o">+</span><span class="n">i</span>  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">chunklist</span><span class="p">]</span>
+        
+        <span class="n">masterout</span>  <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">from numpy cimport ndarray</span>
+<span class="s1">from numpy import asarray</span>
+<span class="s1">cimport numpy as np</span>
+<span class="s1">cimport cython</span>
+<span class="s1">ctypedef np.float64_t dtype_t</span>
+<span class="s1">from cython cimport floating</span>
+<span class="s1">from cython cimport double </span><span class="se">\n</span><span class="s1">&#39;&#39;&#39;</span>  <span class="o">+</span>
+           <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunkimp</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">    &#39;</span><span class="o">+</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">@cython.wraparound(False)</span>
+<span class="sd">@cython.boundscheck(False)  </span>
+<span class="sd">@cython.nonecheck(False)</span>
+<span class="sd">@cython.initializedcheck(False)</span>
+<span class="sd">@cython.optimize.unpack_method_calls(False) \n&#39;&#39;&#39;</span><span class="o">+</span>
+            <span class="s1">&#39;def los(double[:] a):</span><span class="se">\n</span><span class="s1">    &#39;</span><span class="o">+</span> 
+    <span class="s1">&#39;    &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([(</span><span class="s1">&#39;los&#39;</span><span class="o">+</span><span class="n">i</span><span class="o">+</span><span class="s1">&#39;(a) </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">chunklist</span> <span class="p">])</span><span class="o">+</span><span class="s1">&#39;    return asarray(a)&#39;</span><span class="p">)</span>
+        <span class="c1">#    print(masterout)</span>
+        <span class="k">return</span> <span class="n">chunkedout</span><span class="p">,</span><span class="n">masterout</span><span class="p">,</span><span class="n">chunklist</span></div></div>
+  
+    
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span> <span class="p">:</span>
+    <span class="c1">#%%</span>
+    <span class="n">numberlines</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">chunksize</span>   <span class="o">=</span>  <span class="mi">10</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;A0&#39;</span><span class="p">:[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span> <span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">:[</span><span class="mf">10.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]</span> <span class="p">})</span>
+    <span class="n">mtest</span><span class="o">=</span><span class="n">simmodel</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;FRMl &lt;&gt;  a&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;=b(-1) +&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;*2 +c $ &#39;</span> 
+                         
+                         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numberlines</span><span class="p">)]))</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">mc</span><span class="o">.</span><span class="n">insertModelVar</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">mtest</span><span class="p">)</span>
+    <span class="n">mtest</span><span class="o">.</span><span class="n">findpos</span><span class="p">()</span>
+    <span class="n">tt</span> <span class="o">=</span> <span class="n">mtest</span><span class="o">.</span><span class="n">outsolve3</span><span class="p">(</span><span class="n">chunk</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;solve.py&#39;</span><span class="p">,</span><span class="s1">&#39;wt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out</span><span class="p">:</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tt</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">tt</span><span class="p">)</span>
+    <span class="n">exec</span><span class="p">(</span><span class="n">tt</span><span class="p">,</span><span class="nb">globals</span><span class="p">())</span>
+    <span class="n">solvefunk</span><span class="o">=</span><span class="n">make</span><span class="p">()</span>
+    <span class="c1">#%%</span>
+<span class="c1">#    xx = mtest(df,&#39;1&#39;,&#39;2&#39;,setalt=True,setbase=True)</span>
+    <span class="k">if</span> <span class="mi">1</span><span class="p">:</span> 
+        <span class="n">testout</span><span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">from  slos import los  </span>
+<span class="s1">import pandas as pd </span>
+<span class="s1">#df = pd.DataFrame([[0.0,0.0,0.0,0.0,0.0,0.0,0.0] for i in range(&#39;&#39;&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">))</span><span class="o">+</span><span class="s1">&#39;&#39;&#39;)]).T</span>
+<span class="s1">assert 1==1</span>
+<span class="s1">#aa = los(df.values,1)  </span>
+<span class="s1">xx =  df.values.flatten() </span>
+<span class="s1">bb = los(xx)</span>
+<span class="s1">&#39;&#39;&#39;</span>  
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;test1.py&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">testout</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">text_file</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="mi">2</span><span class="o">==</span><span class="mi">1</span>
+    
+    <span class="k">if</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1">#%%</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;J:\Udvikling - feedback\Systemfiler\super.fru&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span>
+            <span class="n">fmonas</span> <span class="o">=</span> <span class="n">text_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">mmonas</span>  <span class="o">=</span> <span class="n">simmodel</span><span class="p">(</span><span class="n">fmonas</span><span class="p">)</span>   
+           
+        <span class="c1">#%% get the baseline  </span>
+        <span class="n">grund</span>   <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;J:\Udvikling - feedback\Systemfiler\supergrund.pc&#39;</span><span class="p">)</span>   
+        <span class="n">start</span><span class="o">=</span><span class="s1">&#39;2015q1&#39;</span>
+        <span class="n">slut</span><span class="o">=</span><span class="s1">&#39;2017q4&#39;</span> 
+        
+        <span class="c1">#%% Run the baseline </span>
+<span class="c1">#        xx=mmonas.sim2(grund,start=&#39;2015q1&#39;,slut=&#39;2017q4&#39;,antal=2000,first_test=500,conv=&#39;FY&#39;,silent=False,ljit=False,lcython=True)</span>
+
+    <span class="k">if</span> <span class="mi">1</span><span class="p">:</span> 
+        <span class="n">testmodel</span> <span class="o">=</span> <span class="n">mmonas</span> 
+        
+<span class="c1">#        testmodel = mtest </span>
+        <span class="n">testmodel</span> <span class="o">=</span> <span class="n">mtotal</span> 
+        <span class="n">chunksize</span>   <span class="o">=</span>  <span class="mi">5000</span>
+
+<span class="c1">#%%        </span>
+        <span class="n">testmodel</span><span class="o">.</span><span class="n">outgaussline2</span><span class="p">()</span>
+        <span class="n">sourcelist</span><span class="p">,</span><span class="n">master</span><span class="p">,</span><span class="n">liste</span><span class="o">=</span><span class="n">testmodel</span><span class="o">.</span><span class="n">cytsolve</span><span class="p">(</span><span class="n">chunk</span><span class="o">=</span><span class="n">chunksize</span><span class="p">)</span>
+        <span class="n">opt2</span><span class="o">=</span><span class="s1">&#39;,extra_compile_args=[&quot;/Od&quot;,&quot;/GL-&quot;]  , extra_link_args=[&quot;-LTCG:OFF&quot;]&#39;</span> <span class="c1"># faster compilation slower execution </span>
+        <span class="n">opt1</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+        <span class="n">opt3</span> <span class="o">=</span> <span class="s1">&#39;,extra_compile_args=[&quot;/fp:fast&quot;]  &#39;</span>
+        <span class="n">opt</span> <span class="o">=</span> <span class="n">opt3</span>
+        <span class="n">setupout</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;from distutils.core import setup</span>
+<span class="s1">from distutils.extension import Extension</span>
+<span class="s1">from Cython.Distutils import build_ext</span>
+<span class="s1">from Cython.Build import cythonize</span>
+<span class="s1">import numpy </span>
+<span class="s1">ext = [</span>
+<span class="s1">&#39;&#39;&#39;</span> <span class="o">+</span> \
+        <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Extension(&quot;s&#39;</span><span class="o">+</span><span class="n">l</span><span class="o">+</span><span class="s1">&#39;&quot;, sources=[&quot;src&#39;</span><span class="o">+</span><span class="n">l</span><span class="o">+</span><span class="s1">&#39;.pyx&quot;],include_dirs=[numpy.get_include()]&#39;</span><span class="o">+</span><span class="n">opt</span><span class="o">+</span><span class="s1">&#39;),&#39;</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">liste</span><span class="o">+</span><span class="p">[</span><span class="s1">&#39;los&#39;</span><span class="p">]]</span> <span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>\
+        <span class="o">+</span> <span class="s1">&#39;&#39;&#39; ]    </span>
+<span class="s1">setup(ext_modules=ext,</span>
+<span class="s1">cmdclass={&quot;build_ext&quot;: build_ext})    </span>
+<span class="s1">   &#39;&#39;&#39;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;cython2\setup_model.py&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">setupout</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">text_file</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">l</span><span class="p">,</span><span class="n">text</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">liste</span><span class="p">,</span><span class="n">sourcelist</span><span class="p">):</span>
+           <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;cython2\src&quot;</span><span class="o">+</span><span class="n">l</span><span class="o">+</span><span class="s2">&quot;.pyx&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">text_file</span><span class="p">)</span>
+                
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;cython2\srclos.pyx&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span>
+           <span class="nb">print</span><span class="p">(</span><span class="n">master</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">text_file</span><span class="p">)</span>
+           
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;cython2\cmodel2.bat&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span> <span class="c1"># to make a stand alone bat file</span>
+           <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;python setup_model.py build_ext --inplace &#39;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">text_file</span><span class="p">)</span>
+<span class="c1">#        with ttimer(&#39;Compile&#39;) as t : </span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span>  <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;python setup_model.py build_ext --inplace&#39;</span><span class="p">,</span><span class="n">shell</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span><span class="n">cwd</span><span class="o">=</span><span class="s1">&#39;cython2&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>   
+<span class="c1">#            subprocess.call(r&#39;python setup_model.py build_ext --inplace&#39;,shell = True,cwd=&#39;cython2&#39;)   </span>
+<span class="c1">#%%</span>
+    <span class="k">if</span> <span class="n">mmonas</span> <span class="ow">is</span> <span class="n">testmodel</span><span class="p">:</span>    
+        <span class="k">with</span> <span class="n">ttimer</span><span class="p">(</span><span class="s1">&#39;1 th Simulation&#39;</span><span class="p">):</span>
+            <span class="n">xx</span><span class="o">=</span><span class="n">mmonas</span><span class="o">.</span><span class="n">sim2</span><span class="p">(</span><span class="n">grund</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;2015q1&#39;</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;2017q4&#39;</span><span class="p">,</span><span class="n">antal</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span><span class="n">first_test</span><span class="o">=</span><span class="mi">6000</span><span class="p">,</span><span class="n">conv</span><span class="o">=</span><span class="s1">&#39;FY&#39;</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">lcython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">ttimer</span><span class="p">(</span><span class="s1">&#39;2 th Simulation&#39;</span><span class="p">):</span>
+            <span class="n">xx</span><span class="o">=</span><span class="n">mmonas</span><span class="o">.</span><span class="n">sim2</span><span class="p">(</span><span class="n">grund</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;2015q1&#39;</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;2017q4&#39;</span><span class="p">,</span><span class="n">antal</span><span class="o">=</span><span class="mi">3000</span><span class="p">,</span><span class="n">first_test</span><span class="o">=</span><span class="mi">6000</span><span class="p">,</span><span class="n">conv</span><span class="o">=</span><span class="s1">&#39;FY&#39;</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">lcython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1">#%%  </span>
+    <span class="k">if</span> <span class="n">mtest</span> <span class="ow">is</span> <span class="n">testmodel</span><span class="p">:</span>  
+<span class="c1">#%%  Try the model      </span>
+        <span class="k">with</span> <span class="n">ttimer</span><span class="p">(</span><span class="s1">&#39;first&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+            <span class="n">xx</span><span class="o">=</span><span class="n">mtest</span><span class="o">.</span><span class="n">sim2</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">antal</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span><span class="n">first_test</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span><span class="n">conv</span><span class="o">=</span><span class="s1">&#39;A0&#39;</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">samedata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">ldumpvar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">dumpvar</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A*&#39;</span><span class="p">,</span><span class="s1">&#39;B*&#39;</span><span class="p">],</span><span class="n">dumpwith</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">dumpdecimal</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">lcython</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="c1">#%%        </span>
+<span class="c1">#        with open(r&quot;test.pc&quot;, &quot;w&quot;) as pc:</span>
+<span class="c1">#            pickle.dump(mtest,pc,4)</span>
+<span class="c1">#%%</span>
+    <span class="k">if</span> <span class="mi">0</span><span class="p">:</span>
+<span class="c1">#%%         </span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;models\mtotal.fru&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">text_file</span><span class="p">:</span>
+            <span class="n">ftotal</span> <span class="o">=</span> <span class="n">text_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">base</span>    <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;data\base.pc&#39;</span><span class="p">)</span>    
+        <span class="n">adverse</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;data\adverse.pc&#39;</span><span class="p">)</span> 
+<span class="c1">#%%    </span>
+        <span class="n">mtotal</span> <span class="o">=</span>  <span class="n">simmodel</span><span class="p">(</span><span class="n">ftotal</span><span class="p">)</span>
+<span class="c1">#        adverse  = mtotal.xgenr(adverse   ,&#39;2016q1&#39;,&#39;2018Q4&#39;,samedata=True,silent=False)</span>
+        <span class="n">adversefb</span><span class="o">=</span><span class="n">adverse</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="c1">#%%</span>
+        <span class="n">adversefb</span><span class="o">.</span><span class="n">ITSIMPACT</span> <span class="o">=</span><span class="mf">100.0</span>
+        <span class="n">mtotal</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="c1">#%%</span>
+        <span class="k">with</span> <span class="n">ttimer</span><span class="p">():</span>
+            <span class="n">adversenew</span><span class="o">=</span><span class="n">mtotal</span><span class="o">.</span><span class="n">sim2</span><span class="p">(</span><span class="n">adversefb</span><span class="p">,</span><span class="n">antal</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">first_test</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;2018q4&#39;</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+             <span class="n">conv</span><span class="o">=</span><span class="s1">&#39;SHOCK__ITS__IT&#39;</span><span class="p">,</span><span class="n">ldumpvar</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">dumpvar</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;G4_YER*IT&#39;</span><span class="p">],</span>
+               <span class="n">dumpdecimal</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">dumpwith</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">lcython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+  
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
