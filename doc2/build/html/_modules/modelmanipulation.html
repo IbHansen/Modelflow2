@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -88,7 +116,7 @@
 <span class="kn">from</span> <span class="nn">modelpattern</span> <span class="kn">import</span> <span class="n">find_statements</span><span class="p">,</span><span class="n">split_frml</span><span class="p">,</span><span class="n">find_frml</span><span class="p">,</span><span class="n">list_extract</span><span class="p">,</span><span class="n">udtryk_parse</span><span class="p">,</span><span class="n">kw_frml_name</span><span class="p">,</span><span class="n">commentchar</span>
 
 
-<div class="viewcode-block" id="safesub"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.safesub">[docs]</a><span class="k">class</span> <span class="nc">safesub</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+<div class="viewcode-block" id="safesub"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.safesub">[docs]</a><span class="k">class</span> <span class="nc">safesub</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;A subclass of dict.</span>
 <span class="sd">    if a *safesub* is indexed by a nonexisting keyword it just return the keyword </span>
 <span class="sd">    this alows missing keywords when substitution text inspired by Python cookbook &#39;&#39;&#39;</span>
@@ -96,13 +124,13 @@
     <span class="k">def</span> <span class="fm">__missing__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="k">return</span> <span class="s1">&#39;{&#39;</span> <span class="o">+</span> <span class="n">key</span> <span class="o">+</span><span class="s1">&#39;}&#39;</span> </div>
     
-<div class="viewcode-block" id="sub"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.sub">[docs]</a><span class="k">def</span> <span class="nf">sub</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">katalog</span><span class="p">):</span>
+<div class="viewcode-block" id="sub"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.sub">[docs]</a><span class="k">def</span> <span class="nf">sub</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">katalog</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;Substitutes keywords from dictionary by returning </span>
 <span class="sd">    text.format_map(safesub(katalog))</span>
 <span class="sd">    Allows missing keywords by using safesub subclass&#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="n">safesub</span><span class="p">(</span><span class="n">katalog</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="oldsub_frml"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.oldsub_frml">[docs]</a><span class="k">def</span> <span class="nf">oldsub_frml</span><span class="p">(</span><span class="n">ibdic</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">plus</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">lig</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="oldsub_frml"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.oldsub_frml">[docs]</a><span class="k">def</span> <span class="nf">oldsub_frml</span><span class="p">(</span><span class="n">ibdic</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">plus</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">lig</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; to repeat substitution from list</span>
 <span class="sd">    </span>
 <span class="sd">        * *plus* is a seperator, used for creating sums \n</span>
@@ -135,7 +163,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span> 
     <span class="k">return</span> <span class="n">plus</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outlist</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="sub_frml"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.sub_frml">[docs]</a><span class="k">def</span> <span class="nf">sub_frml</span><span class="p">(</span><span class="n">ibdic</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">plus</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">xvar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">lig</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="sub_frml"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.sub_frml">[docs]</a><span class="k">def</span> <span class="nf">sub_frml</span><span class="p">(</span><span class="n">ibdic</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">plus</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">xvar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">lig</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; to repeat substitution from list</span>
 <span class="sd">        </span>
 <span class="sd">        * *plus* is a seperator, used for creating sums \n</span>
@@ -176,7 +204,7 @@
 <span class="n">a</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;bankdic&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;bank&#39;</span><span class="p">:[</span><span class="s1">&#39;Danske&#39;</span><span class="p">,</span><span class="s1">&#39;Nordea&#39;</span><span class="p">],</span><span class="s1">&#39;danske&#39;</span><span class="p">:[</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span><span class="s1">&#39;no&#39;</span><span class="p">],</span><span class="s1">&#39;nordisk&#39;</span><span class="p">:[</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span><span class="s1">&#39;no&#39;</span><span class="p">]}}</span>
 
 
-<div class="viewcode-block" id="find_res"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.find_res">[docs]</a><span class="k">def</span> <span class="nf">find_res</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+<div class="viewcode-block" id="find_res"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.find_res">[docs]</a><span class="k">def</span> <span class="nf">find_res</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; Finds the expression which calculates the residual in a formel. FRML &lt;res=a,endo=b&gt; x=a*b+c $ &#39;&#39;&#39;</span>
     <span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">solve</span><span class="p">,</span> <span class="n">sympify</span>
     <span class="n">a</span><span class="p">,</span> <span class="n">fr</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">udtryk</span> <span class="o">=</span> <span class="n">split_frml</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
@@ -194,7 +222,7 @@
             <span class="n">res</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; = &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">res_frml</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39; $&#39;</span>
     <span class="k">return</span> <span class="n">udres</span></div>
 
-<div class="viewcode-block" id="find_res_dynare"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.find_res_dynare">[docs]</a><span class="k">def</span> <span class="nf">find_res_dynare</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
+<div class="viewcode-block" id="find_res_dynare"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.find_res_dynare">[docs]</a><span class="k">def</span> <span class="nf">find_res_dynare</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; equations to calculat _res formulas</span>
 <span class="sd">    FRML &lt;&gt; x=a*b+c +x_RES  $ -&gt; FRML &lt;&gt; x_res =x-a*b+c  $&#39;&#39;&#39;</span>
     <span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">solve</span><span class="p">,</span> <span class="n">sympify</span>
@@ -212,7 +240,7 @@
             <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">udres</span><span class="p">)</span>
     <span class="k">return</span>   <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> </div>
 
-<div class="viewcode-block" id="find_res_dynare_new"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.find_res_dynare_new">[docs]</a><span class="k">def</span> <span class="nf">find_res_dynare_new</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
+<div class="viewcode-block" id="find_res_dynare_new"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.find_res_dynare_new">[docs]</a><span class="k">def</span> <span class="nf">find_res_dynare_new</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; equations to calculat _res formulas</span>
 <span class="sd">    FRML &lt;&gt; x=a*b+c +x_RES  $ -&gt; FRML &lt;&gt; x_res =x-a*b+c  $</span>
 <span class="sd">    not finished to speed time up &#39;&#39;&#39;</span>
@@ -230,7 +258,7 @@
             
     <span class="k">return</span>   <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> </div>
 
-<div class="viewcode-block" id="find_hist_model"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.find_hist_model">[docs]</a><span class="k">def</span> <span class="nf">find_hist_model</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
+<div class="viewcode-block" id="find_hist_model"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.find_hist_model">[docs]</a><span class="k">def</span> <span class="nf">find_hist_model</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; takes a unrolled model and create a model which can be run for historic periode \n</span>
 <span class="sd">        and the identities are also calculeted&#39;&#39;&#39;</span>
     <span class="n">hist</span> <span class="o">=</span> <span class="p">[]</span>
@@ -242,7 +270,7 @@
     <span class="k">return</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hist</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="exounroll"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.exounroll">[docs]</a><span class="k">def</span> <span class="nf">exounroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">):</span>
+<div class="viewcode-block" id="exounroll"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.exounroll">[docs]</a><span class="k">def</span> <span class="nf">exounroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; takes a model and makes a new model by enhancing frml&#39;s with &lt;exo=,j=,jr=&gt; </span>
 <span class="sd">    in their frml name. </span>
 <span class="sd">    </span>
@@ -288,7 +316,7 @@
 
 
 
-<div class="viewcode-block" id="tofrml"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.tofrml">[docs]</a><span class="k">def</span> <span class="nf">tofrml</span><span class="p">(</span><span class="n">expressions</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="tofrml"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.tofrml">[docs]</a><span class="k">def</span> <span class="nf">tofrml</span><span class="p">(</span><span class="n">expressions</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; a function, wich adds FRML to all expressions seperated by &lt;sep&gt;  </span>
 <span class="sd">    if no start is specified the max lag will be used &#39;&#39;&#39;</span> 
         
@@ -313,7 +341,7 @@
     <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">eqlist</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="dounloop"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.dounloop">[docs]</a><span class="k">def</span> <span class="nf">dounloop</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="dounloop"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.dounloop">[docs]</a><span class="k">def</span> <span class="nf">dounloop</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; Expands (unrolls  do loops in a model template </span>
 <span class="sd">    goes trough a model template until there is no more nested do loops &#39;&#39;&#39;</span>
     <span class="n">equations</span> <span class="o">=</span> <span class="n">in_equations</span><span class="p">[:]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>   <span class="c1"># we want do change the equations </span>
@@ -377,7 +405,7 @@
     <span class="k">return</span> <span class="n">equations</span></div>
 
 <span class="c1">#%</span>
-<div class="viewcode-block" id="find_arg"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.find_arg">[docs]</a><span class="k">def</span> <span class="nf">find_arg</span><span class="p">(</span><span class="n">funk</span><span class="p">,</span> <span class="n">streng</span><span class="p">):</span>
+<div class="viewcode-block" id="find_arg"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.find_arg">[docs]</a><span class="k">def</span> <span class="nf">find_arg</span><span class="p">(</span><span class="n">funk</span><span class="p">,</span> <span class="n">streng</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;  chops a string in 3 parts \n</span>
 <span class="sd">    1. before &#39;funk(&#39; </span>
 
@@ -397,7 +425,7 @@
                 <span class="k">return</span> <span class="n">tstreng</span><span class="p">[:</span><span class="n">start</span><span class="p">],</span> <span class="n">match</span><span class="p">[:</span><span class="n">index</span><span class="p">],</span> <span class="n">match</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span></div>
 
 
-<div class="viewcode-block" id="sumunroll_old"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.sumunroll_old">[docs]</a><span class="k">def</span> <span class="nf">sumunroll_old</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="sumunroll_old"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.sumunroll_old">[docs]</a><span class="k">def</span> <span class="nf">sumunroll_old</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; expands all sum(list,&#39;expression&#39;) in a model</span>
 <span class="sd">    returns a new model&#39;&#39;&#39;</span>
     <span class="n">nymodel</span> <span class="o">=</span> <span class="p">[]</span>
@@ -418,7 +446,7 @@
     <span class="n">equations</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nymodel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">equations</span></div>
 
-<div class="viewcode-block" id="lagarray_unroll"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.lagarray_unroll">[docs]</a><span class="k">def</span> <span class="nf">lagarray_unroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="lagarray_unroll"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.lagarray_unroll">[docs]</a><span class="k">def</span> <span class="nf">lagarray_unroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39; expands all sum(list,&#39;expression&#39;) in a model</span>
 <span class="sd">    returns a new model&#39;&#39;&#39;</span>
     <span class="n">nymodel</span> <span class="o">=</span> <span class="p">[]</span>
@@ -437,7 +465,7 @@
     <span class="n">equations</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nymodel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">equations</span></div>
 
-<div class="viewcode-block" id="sumunroll"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.sumunroll">[docs]</a><span class="k">def</span> <span class="nf">sumunroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="sumunroll"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.sumunroll">[docs]</a><span class="k">def</span> <span class="nf">sumunroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; expands all sum(list,&#39;expression&#39;) in a model</span>
 <span class="sd">    if sum(list xvar=lig,&#39;expression&#39;) only list elements where the condition is </span>
 <span class="sd">    satisfied wil be summed</span>
@@ -470,7 +498,7 @@
     <span class="n">equations</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nymodel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">equations</span></div>
 
-<div class="viewcode-block" id="argunroll"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.argunroll">[docs]</a><span class="k">def</span> <span class="nf">argunroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="argunroll"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.argunroll">[docs]</a><span class="k">def</span> <span class="nf">argunroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; expands all ARGEXPAND(list,&#39;expression&#39;) in a model</span>
 <span class="sd">    returns a new model&#39;&#39;&#39;</span>
     <span class="n">nymodel</span> <span class="o">=</span> <span class="p">[]</span>
@@ -491,7 +519,7 @@
     <span class="n">equations</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nymodel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">equations</span></div>
     
-<div class="viewcode-block" id="creatematrix"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.creatematrix">[docs]</a><span class="k">def</span> <span class="nf">creatematrix</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="creatematrix"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.creatematrix">[docs]</a><span class="k">def</span> <span class="nf">creatematrix</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; expands all ARGEXPAND(list,&#39;expression&#39;) in a model</span>
 <span class="sd">    returns a new model&#39;&#39;&#39;</span>
     <span class="n">nymodel</span> <span class="o">=</span> <span class="p">[]</span>
@@ -520,7 +548,7 @@
             <span class="n">nymodel</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">command</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="n">value</span><span class="p">)</span>
     <span class="n">equations</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nymodel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">equations</span></div>
-<div class="viewcode-block" id="createarray"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.createarray">[docs]</a><span class="k">def</span> <span class="nf">createarray</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="createarray"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.createarray">[docs]</a><span class="k">def</span> <span class="nf">createarray</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">listin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; expands all to_array(list) in a model</span>
 <span class="sd">    returns a new model&#39;&#39;&#39;</span>
     <span class="n">nymodel</span> <span class="o">=</span> <span class="p">[]</span>
@@ -550,7 +578,7 @@
     <span class="n">equations</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nymodel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">equations</span></div>
 
-<div class="viewcode-block" id="kaedeunroll"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.kaedeunroll">[docs]</a><span class="k">def</span> <span class="nf">kaedeunroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="kaedeunroll"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.kaedeunroll">[docs]</a><span class="k">def</span> <span class="nf">kaedeunroll</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39; unrolls a chain (kaede) expression - used in the SMEC moedel &#39;&#39;&#39;</span>
     <span class="n">nymodel</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">equations</span><span class="o">=</span><span class="n">in_equations</span><span class="p">[:]</span>  <span class="c1"># we want do change the e</span>
@@ -607,7 +635,7 @@
     <span class="n">equations</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nymodel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">equations</span>  </div>
 
-<div class="viewcode-block" id="check_syntax_frml"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.check_syntax_frml">[docs]</a><span class="k">def</span> <span class="nf">check_syntax_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">):</span>
+<div class="viewcode-block" id="check_syntax_frml"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.check_syntax_frml">[docs]</a><span class="k">def</span> <span class="nf">check_syntax_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; check syntax of frml &#39;&#39;&#39;</span> 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">a</span><span class="p">,</span> <span class="n">fr</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">udtryk</span> <span class="o">=</span> <span class="n">split_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">)</span>
@@ -616,7 +644,7 @@
     <span class="k">except</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="normalize_a_frml"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.normalize_a_frml">[docs]</a><span class="k">def</span> <span class="nf">normalize_a_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span> 
+<div class="viewcode-block" id="normalize_a_frml"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.normalize_a_frml">[docs]</a><span class="k">def</span> <span class="nf">normalize_a_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span> 
     <span class="sd">&#39;&#39;&#39; Normalize and show a frml&#39;&#39;&#39;</span>     
     <span class="n">new</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">frml</span><span class="p">,</span><span class="n">sym</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
@@ -628,14 +656,14 @@
             
     <span class="k">return</span> <span class="n">new</span></div>
 
-<div class="viewcode-block" id="nomalize_a_model"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.nomalize_a_model">[docs]</a><span class="k">def</span> <span class="nf">nomalize_a_model</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
+<div class="viewcode-block" id="nomalize_a_model"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.nomalize_a_model">[docs]</a><span class="k">def</span> <span class="nf">nomalize_a_model</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; a symbolic normalization is performed if there is a syntaxerror &#39;&#39;&#39;</span>
     
     <span class="n">out</span><span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">frml</span> <span class="k">if</span> <span class="n">check_syntax_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">)</span> <span class="k">else</span> <span class="n">normalize_a_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">frml</span> <span class="ow">in</span> <span class="n">find_frml</span><span class="p">(</span><span class="n">equations</span><span class="p">)])</span> 
     <span class="k">return</span> <span class="n">out</span> </div>
         
 
-<div class="viewcode-block" id="normalize"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.normalize">[docs]</a><span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">sym</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="normalize"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.normalize">[docs]</a><span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">sym</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39; Normalize an equation with log or several variables at the left hand side, the first variable is considerd the endogeneeus&#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="nf">findendo</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; finds the equation for the first variable of a string&#39;&#39;&#39;</span>
@@ -742,11 +770,11 @@
     <span class="k">return</span> <span class="n">equations1</span> </div>
 
     
-<div class="viewcode-block" id="udrul_model"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.udrul_model">[docs]</a><span class="k">def</span> <span class="nf">udrul_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">norm</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="udrul_model"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.udrul_model">[docs]</a><span class="k">def</span> <span class="nf">udrul_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">norm</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     
     <span class="k">return</span> <span class="n">explode</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">norm</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="explode"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.explode">[docs]</a><span class="k">def</span> <span class="nf">explode</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">norm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">sym</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[],</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="explode"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.explode">[docs]</a><span class="k">def</span> <span class="nf">explode</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">norm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">sym</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[],</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;prepares a model from a model template. </span>
 <span class="sd">    </span>
 <span class="sd">    Returns a expanded model which is ready to solve</span>
@@ -767,7 +795,7 @@
     <span class="k">return</span> <span class="n">udrullet</span></div>
 
 
-<div class="viewcode-block" id="modelprint"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.modelprint">[docs]</a><span class="k">def</span> <span class="nf">modelprint</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39; A model&#39;</span><span class="p">,</span> <span class="n">udfil</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">short</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="modelprint"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.modelprint">[docs]</a><span class="k">def</span> <span class="nf">modelprint</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39; A model&#39;</span><span class="p">,</span> <span class="n">udfil</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">short</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; prettyprinter for a a model. </span>
 <span class="sd">    :udfil: if present is output file</span>
 <span class="sd">    :short: if present condences the model</span>
@@ -817,7 +845,7 @@
                 
                 
      
-<div class="viewcode-block" id="lagone"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.lagone">[docs]</a><span class="k">def</span> <span class="nf">lagone</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[],</span><span class="n">laglead</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="lagone"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.lagone">[docs]</a><span class="k">def</span> <span class="nf">lagone</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[],</span><span class="n">laglead</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; All variables in a string i</span>
 <span class="sd">    s lagged one more time &#39;&#39;&#39;</span>
     <span class="n">nt</span><span class="o">=</span><span class="n">udtryk_parse</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="n">funks</span><span class="p">)</span>
@@ -838,14 +866,14 @@
         <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ud</span><span class="p">)</span>
     <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fib</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="lag_n"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.lag_n">[docs]</a><span class="k">def</span> <span class="nf">lag_n</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[],</span><span class="n">laglead</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="lag_n"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.lag_n">[docs]</a><span class="k">def</span> <span class="nf">lag_n</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[],</span><span class="n">laglead</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
     <span class="n">new</span><span class="o">=</span><span class="n">udtryk</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
         <span class="n">new</span><span class="o">=</span><span class="n">lagone</span><span class="p">(</span><span class="n">new</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="n">funks</span><span class="p">,</span><span class="n">laglead</span><span class="o">=</span><span class="n">laglead</span><span class="p">)</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;(</span><span class="si">{</span><span class="n">new</span><span class="si">}</span><span class="s1">)&#39;</span></div>
 <span class="n">lag_n</span><span class="p">(</span><span class="s1">&#39;a+b&#39;</span><span class="p">,</span><span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">laglead</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<div class="viewcode-block" id="lag_n_tup"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.lag_n_tup">[docs]</a><span class="k">def</span> <span class="nf">lag_n_tup</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span><span class="n">n</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="lag_n_tup"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.lag_n_tup">[docs]</a><span class="k">def</span> <span class="nf">lag_n_tup</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span><span class="n">n</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39; return a tuppel og lagged expressions from lag = 0 to lag = n)&#39;&#39;&#39;</span>
     <span class="n">new</span><span class="o">=</span><span class="n">udtryk</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
     <span class="n">res</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
@@ -857,7 +885,7 @@
 
 
  
-<div class="viewcode-block" id="pastestring"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.pastestring">[docs]</a><span class="k">def</span> <span class="nf">pastestring</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="n">post</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[],</span><span class="n">onlylags</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="pastestring"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.pastestring">[docs]</a><span class="k">def</span> <span class="nf">pastestring</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="n">post</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[],</span><span class="n">onlylags</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; All variable names in a  in a string **ind** is pasted with the string **post** </span>
 <span class="sd">    </span>
 <span class="sd">    This function can be used to awoid variable name conflict with the internal variable names in sympy. </span>
@@ -883,7 +911,7 @@
         <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ud</span><span class="p">)</span>
     <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fib</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="stripstring"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.stripstring">[docs]</a><span class="k">def</span> <span class="nf">stripstring</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="n">post</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="stripstring"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.stripstring">[docs]</a><span class="k">def</span> <span class="nf">stripstring</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="n">post</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39; All variable names in a  in a string is **ind** is stripped of the string **post**.</span>
 <span class="sd">    </span>
 <span class="sd">    This function reverses the pastestring process </span>
@@ -907,7 +935,7 @@
     <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fib</span><span class="p">)</span></div>
    
   
-<div class="viewcode-block" id="findindex"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.findindex">[docs]</a><span class="k">def</span> <span class="nf">findindex</span><span class="p">(</span><span class="n">ind00</span><span class="p">):</span>
+<div class="viewcode-block" id="findindex"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.findindex">[docs]</a><span class="k">def</span> <span class="nf">findindex</span><span class="p">(</span><span class="n">ind00</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; find the index variables meaning variables on the left hand side of = braced by {} &#39;&#39;&#39;</span>
     <span class="n">ind0</span> <span class="o">=</span> <span class="n">ind00</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">ind0</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&lt;&#39;</span><span class="p">):</span>
@@ -917,7 +945,7 @@
     <span class="n">lhs</span><span class="o">=</span><span class="n">ind</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span>  <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s1">&#39;\{([A-Za-z][\w]*)\}&#39;</span><span class="p">,</span><span class="n">lhs</span> <span class="p">))</span> <span class="c1"># all the index variables </span></div>
 
-<div class="viewcode-block" id="doablelist"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.doablelist">[docs]</a><span class="k">def</span> <span class="nf">doablelist</span><span class="p">(</span><span class="n">expressions</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="doablelist"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.doablelist">[docs]</a><span class="k">def</span> <span class="nf">doablelist</span><span class="p">(</span><span class="n">expressions</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; create a list of tupels from expressions seperated by sep, </span>
 <span class="sd">    each element in the list is a tupel (index, number og expression, the expression)</span>
 <span class="sd">    </span>
@@ -929,7 +957,7 @@
     <span class="n">out</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lt</span><span class="p">,</span><span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mf">1.</span><span class="p">)),</span><span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span> </div>
 
-<div class="viewcode-block" id="dosubst"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.dosubst">[docs]</a><span class="k">def</span> <span class="nf">dosubst</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="n">formular</span><span class="p">):</span>
+<div class="viewcode-block" id="dosubst"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.dosubst">[docs]</a><span class="k">def</span> <span class="nf">dosubst</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="n">formular</span><span class="p">):</span>
     <span class="n">out</span><span class="o">=</span><span class="n">formular</span><span class="p">[:]</span>
     <span class="k">for</span> <span class="n">nr</span><span class="p">,</span><span class="n">i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
         <span class="k">assert</span> <span class="n">nr</span> <span class="o">&lt;=</span> <span class="mi">9</span> <span class="p">,</span> <span class="s1">&#39;To many indeces in&#39;</span><span class="o">+</span><span class="n">formular</span>
@@ -938,7 +966,7 @@
     <span class="k">return</span> <span class="n">out</span></div>
 
 
-<div class="viewcode-block" id="doablekeep"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.doablekeep">[docs]</a><span class="k">def</span> <span class="nf">doablekeep</span><span class="p">(</span><span class="n">formulars</span><span class="p">):</span>
+<div class="viewcode-block" id="doablekeep"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.doablekeep">[docs]</a><span class="k">def</span> <span class="nf">doablekeep</span><span class="p">(</span><span class="n">formulars</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; takes index in the lhs and creates a do loop around the lines with same indexes</span>
 <span class="sd">    on the right side you can use %0_, %1_ an so on to indicate the index, just to awoid typing to much</span>
 <span class="sd">    </span>
@@ -964,7 +992,7 @@
                    <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">exp</span><span class="o">+</span> <span class="s1">&#39; $ </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">])</span>
     <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">listout</span><span class="p">,</span><span class="o">*</span><span class="n">out</span><span class="p">))</span></div>
 <span class="c1">##%%</span>
-<div class="viewcode-block" id="doable"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.doable">[docs]</a><span class="k">def</span> <span class="nf">doable</span><span class="p">(</span><span class="n">formulars</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="doable"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.doable">[docs]</a><span class="k">def</span> <span class="nf">doable</span><span class="p">(</span><span class="n">formulars</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39; takes index in the lhs and creates a do loop around the line</span>
 <span class="sd">    on the right side you can use %0_, %1_ an so on to indicate the index, just to awoid typing to much</span>
 <span class="sd">    </span>
@@ -1016,7 +1044,7 @@
 <span class="c1"># print(explode(testfrml))</span>
 
 <span class="c1">##%%</span>
-<div class="viewcode-block" id="findindex_gams"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.findindex_gams">[docs]</a><span class="k">def</span> <span class="nf">findindex_gams</span><span class="p">(</span><span class="n">ind00</span><span class="p">):</span>
+<div class="viewcode-block" id="findindex_gams"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.findindex_gams">[docs]</a><span class="k">def</span> <span class="nf">findindex_gams</span><span class="p">(</span><span class="n">ind00</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; </span>
 <span class="sd">     - an equation looks like this</span>
 <span class="sd">     - &lt;frmlname&gt; [index] lhs = rhs </span>
@@ -1039,7 +1067,7 @@
         <span class="n">rest</span> <span class="o">=</span> <span class="n">ind</span>
     <span class="k">return</span> <span class="n">frmlname</span><span class="p">,</span><span class="n">index</span><span class="p">,</span><span class="n">rest</span></div>
 
-<div class="viewcode-block" id="un_normalize_expression"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.un_normalize_expression">[docs]</a><span class="k">def</span> <span class="nf">un_normalize_expression</span><span class="p">(</span><span class="n">frml</span><span class="p">)</span> <span class="p">:</span>
+<div class="viewcode-block" id="un_normalize_expression"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.un_normalize_expression">[docs]</a><span class="k">def</span> <span class="nf">un_normalize_expression</span><span class="p">(</span><span class="n">frml</span><span class="p">)</span> <span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;This function makes sure that all formulas are unnormalized.</span>
 <span class="sd">    if the formula is already decorated with &lt;endo=name&gt; this is kept </span>
 <span class="sd">    else the lhs_varriable is used in &lt;endo=&gt; </span>
@@ -1060,7 +1088,7 @@
     <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">frml_name_out</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">frml_index</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">frml_index</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">new_rest</span><span class="si">}</span><span class="s1">&#39;</span></div>
  
 
-<div class="viewcode-block" id="un_normalize_model"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.un_normalize_model">[docs]</a><span class="k">def</span> <span class="nf">un_normalize_model</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="un_normalize_model"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.un_normalize_model">[docs]</a><span class="k">def</span> <span class="nf">un_normalize_model</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39; un normalize a model &#39;&#39;&#39;</span>
     <span class="n">nymodel</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">equations</span><span class="o">=</span><span class="n">in_equations</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>  <span class="c1"># we want do change the e</span>
@@ -1078,14 +1106,14 @@
     <span class="n">equations</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nymodel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">equations</span>  </div>
 
-<div class="viewcode-block" id="un_normalize_simpel"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.un_normalize_simpel">[docs]</a><span class="k">def</span> <span class="nf">un_normalize_simpel</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="un_normalize_simpel"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.un_normalize_simpel">[docs]</a><span class="k">def</span> <span class="nf">un_normalize_simpel</span><span class="p">(</span><span class="n">in_equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
    <span class="sd">&#39;&#39;&#39; un-normalize expressions delimeted by linebreaks&#39;&#39;&#39;</span>
    <span class="n">edm</span>  <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">un_normalize_expression</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">in_equations</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
    <span class="n">fdm</span>  <span class="o">=</span> <span class="n">explode</span><span class="p">(</span><span class="n">edm</span><span class="p">)</span>
    <span class="k">return</span> <span class="n">fdm</span></div>
 
 
-<div class="viewcode-block" id="eksempel"><a class="viewcode-back" href="../modelmanipulation.html#modelmanipulation.eksempel">[docs]</a><span class="k">def</span> <span class="nf">eksempel</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
+<div class="viewcode-block" id="eksempel"><a class="viewcode-back" href="../onboard/modelmanipulation.html#modelmanipulation.eksempel">[docs]</a><span class="k">def</span> <span class="nf">eksempel</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; takes a template model as input, creates a model and a histmodel and prints the models&#39;&#39;&#39;</span>
     <span class="n">abe</span> <span class="o">=</span> <span class="n">udrul_model</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
     <span class="n">ko</span> <span class="o">=</span> <span class="n">find_hist_model</span><span class="p">(</span><span class="n">abe</span><span class="p">)</span>

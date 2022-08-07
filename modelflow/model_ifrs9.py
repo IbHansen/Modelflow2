@@ -2,7 +2,10 @@
 """
 Created on Sun Feb 21 16:59:39 2021
 
-@author: bruger
+@author: Ib 
+
+Function to calculate expected credit loss using ifrs9 rules, experimental 
+
 """
 
 import pandas as pd

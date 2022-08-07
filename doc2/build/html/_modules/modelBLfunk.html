@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -89,17 +117,17 @@
 
 <span class="kn">from</span> <span class="nn">model_financial_stability</span> <span class="kn">import</span> <span class="n">lifetime_credit_loss</span>
 
-<div class="viewcode-block" id="sum_excel"><a class="viewcode-back" href="../modelBLfunk.html#modelBLfunk.sum_excel">[docs]</a><span class="k">def</span> <span class="nf">sum_excel</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">):</span>
+<div class="viewcode-block" id="sum_excel"><a class="viewcode-back" href="../core/modelBLfunk.html#modelBLfunk.sum_excel">[docs]</a><span class="k">def</span> <span class="nf">sum_excel</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; a functions which sums the arguments used in models franslated from excel </span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="logit"><a class="viewcode-back" href="../modelBLfunk.html#modelBLfunk.logit">[docs]</a><span class="k">def</span> <span class="nf">logit</span><span class="p">(</span><span class="n">number</span><span class="p">):</span>
+<div class="viewcode-block" id="logit"><a class="viewcode-back" href="../core/modelBLfunk.html#modelBLfunk.logit">[docs]</a><span class="k">def</span> <span class="nf">logit</span><span class="p">(</span><span class="n">number</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; A function which returns the logit of a number </span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">return</span><span class="p">(</span><span class="o">-</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">number</span><span class="o">-</span><span class="mf">1.0</span><span class="p">))</span> </div>
 
-<div class="viewcode-block" id="logit_inverse"><a class="viewcode-back" href="../modelBLfunk.html#modelBLfunk.logit_inverse">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="s2">&quot;f8(f8)&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="logit_inverse"><a class="viewcode-back" href="../core/modelBLfunk.html#modelBLfunk.logit_inverse">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="s2">&quot;f8(f8)&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">logit_inverse</span><span class="p">(</span><span class="n">number</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; A function which returns the logit of a number </span>
 <span class="sd">    </span>
@@ -112,17 +140,17 @@
     <span class="k">else</span><span class="p">:</span> 
         <span class="k">return</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">number</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="normcdf"><a class="viewcode-back" href="../modelBLfunk.html#modelBLfunk.normcdf">[docs]</a><span class="k">def</span> <span class="nf">normcdf</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">mu</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<div class="viewcode-block" id="normcdf"><a class="viewcode-back" href="../core/modelBLfunk.html#modelBLfunk.normcdf">[docs]</a><span class="k">def</span> <span class="nf">normcdf</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">mu</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">mu</span><span class="p">,</span><span class="n">sigma</span><span class="p">)</span>    </div>
 
 
-<div class="viewcode-block" id="qgamma"><a class="viewcode-back" href="../modelBLfunk.html#modelBLfunk.qgamma">[docs]</a><span class="k">def</span> <span class="nf">qgamma</span><span class="p">(</span><span class="n">q</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">loc</span><span class="p">):</span>
+<div class="viewcode-block" id="qgamma"><a class="viewcode-back" href="../core/modelBLfunk.html#modelBLfunk.qgamma">[docs]</a><span class="k">def</span> <span class="nf">qgamma</span><span class="p">(</span><span class="n">q</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">loc</span><span class="p">):</span>
     <span class="n">res</span> <span class="o">=</span> <span class="n">gamma</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="n">q</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">loc</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">res</span></div>
 
 
 
-<div class="viewcode-block" id="clognorm"><a class="viewcode-back" href="../modelBLfunk.html#modelBLfunk.clognorm">[docs]</a><span class="k">def</span> <span class="nf">clognorm</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">mu</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<div class="viewcode-block" id="clognorm"><a class="viewcode-back" href="../core/modelBLfunk.html#modelBLfunk.clognorm">[docs]</a><span class="k">def</span> <span class="nf">clognorm</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">mu</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
     <span class="n">res</span> <span class="o">=</span> <span class="n">lognorm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">mu</span><span class="p">,</span><span class="n">sigma</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">res</span>    </div>
 

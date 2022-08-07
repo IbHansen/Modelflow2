@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -130,7 +158,7 @@
 <span class="n">nterm</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;nterm&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;number&#39;</span><span class="p">,</span> <span class="s1">&#39;op&#39;</span><span class="p">,</span> <span class="s1">&#39;var&#39;</span><span class="p">,</span> <span class="s1">&#39;lag&#39;</span><span class="p">])</span>
 
 
-<div class="viewcode-block" id="udtrykre"><a class="viewcode-back" href="../modelpattern.html#modelpattern.udtrykre">[docs]</a><span class="k">def</span> <span class="nf">udtrykre</span><span class="p">(</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="udtrykre"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.udtrykre">[docs]</a><span class="k">def</span> <span class="nf">udtrykre</span><span class="p">(</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="k">global</span> <span class="n">funkname</span>
     <span class="n">newfunks</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">funks</span><span class="p">]</span>
     <span class="n">funkname</span>    <span class="o">=</span> <span class="s1">&#39;DLOG SUM_EXCEL DIFF MIN MAX FLOAT NORM.CDF NORM.PPF ABS MOVAVG PCT_GROWTH&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">+</span> <span class="n">BLfunk</span><span class="o">+</span> <span class="n">userfunk</span> <span class="o">+</span> <span class="n">classfunk</span> <span class="o">+</span> <span class="n">newfunks</span>
@@ -145,14 +173,14 @@
 <span class="c1">#udtrykpatnew([f1,f2])</span>
 
 
-<div class="viewcode-block" id="find_frml"><a class="viewcode-back" href="../modelpattern.html#modelpattern.find_frml">[docs]</a><span class="k">def</span> <span class="nf">find_frml</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
+<div class="viewcode-block" id="find_frml"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.find_frml">[docs]</a><span class="k">def</span> <span class="nf">find_frml</span><span class="p">(</span><span class="n">equations</span><span class="p">):</span>
    <span class="sd">&#39;&#39;&#39; Takes at modeltext and returns a list with where each element is </span>
 <span class="sd">   a string starting  with FRML and ending with $ </span>
 <span class="sd">   It do not check if it is a valid FRML statement &#39;&#39;&#39;</span>
    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">frmlpat</span><span class="p">,</span> <span class="n">equations</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="split_frml"><a class="viewcode-back" href="../modelpattern.html#modelpattern.split_frml">[docs]</a><span class="k">def</span> <span class="nf">split_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">):</span>
+<div class="viewcode-block" id="split_frml"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.split_frml">[docs]</a><span class="k">def</span> <span class="nf">split_frml</span><span class="p">(</span><span class="n">frml</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; Splits a string with a frml into a tuple with 4 parts:</span>
 <span class="sd">    </span>
 <span class="sd">    0. The unsplit frml statement    </span>
@@ -168,7 +196,7 @@
         <span class="k">return</span> <span class="n">frml</span></div>
 
 
-<div class="viewcode-block" id="find_statements"><a class="viewcode-back" href="../modelpattern.html#modelpattern.find_statements">[docs]</a><span class="k">def</span> <span class="nf">find_statements</span><span class="p">(</span><span class="n">a_model</span><span class="p">):</span>
+<div class="viewcode-block" id="find_statements"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.find_statements">[docs]</a><span class="k">def</span> <span class="nf">find_statements</span><span class="p">(</span><span class="n">a_model</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; splits a modeltest into comments and statements   </span>
 <span class="sd">    </span>
 <span class="sd">    * a *comment* starts with ! and ends at lineend     </span>
@@ -179,7 +207,7 @@
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">return</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">statementpat</span><span class="p">,</span> <span class="n">a_model</span><span class="p">))</span></div>
     
-<div class="viewcode-block" id="model_parse_old"><a class="viewcode-back" href="../modelpattern.html#modelpattern.model_parse_old">[docs]</a><span class="k">def</span> <span class="nf">model_parse_old</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="model_parse_old"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.model_parse_old">[docs]</a><span class="k">def</span> <span class="nf">model_parse_old</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39;Takes a model returns a list of tupels. Each tupel contains:</span>
 <span class="sd">        :the compleete formular: </span>
 <span class="sd">        :FRML:</span>
@@ -195,7 +223,7 @@
     <span class="n">ibh</span> <span class="o">=</span> <span class="p">[(</span><span class="n">fatoms</span><span class="p">(</span><span class="o">*</span><span class="n">c</span><span class="p">),[</span><span class="n">nterm</span><span class="p">(</span><span class="o">*</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">expressionre</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">3</span><span class="p">])])</span>  <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="n">split_frml</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>  <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">find_frml</span><span class="p">(</span><span class="n">equations</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span> <span class="p">)]</span>
     <span class="k">return</span> <span class="n">ibh</span></div>
 
-<div class="viewcode-block" id="model_parse"><a class="viewcode-back" href="../modelpattern.html#modelpattern.model_parse">[docs]</a><span class="k">def</span> <span class="nf">model_parse</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="model_parse"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.model_parse">[docs]</a><span class="k">def</span> <span class="nf">model_parse</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39;Takes a model returns a list of tupels. Each tupel contains:</span>
 <span class="sd">        :the compleete formular: </span>
 <span class="sd">        :FRML:</span>
@@ -216,7 +244,7 @@
     <span class="k">return</span> <span class="n">ibh</span></div>
 
 
-<div class="viewcode-block" id="list_extract"><a class="viewcode-back" href="../modelpattern.html#modelpattern.list_extract">[docs]</a><span class="k">def</span> <span class="nf">list_extract</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="list_extract"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.list_extract">[docs]</a><span class="k">def</span> <span class="nf">list_extract</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; creates lists used in a model </span>
 <span class="sd">    </span>
 <span class="sd">        returns a dictonary with the lists</span>
@@ -240,7 +268,7 @@
                 <span class="n">liste_dict</span><span class="p">[</span><span class="n">list_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span> <span class="o">=</span> <span class="n">this_dict</span>
     <span class="k">return</span> <span class="n">liste_dict</span></div>
 
-<div class="viewcode-block" id="check_syntax_model"><a class="viewcode-back" href="../modelpattern.html#modelpattern.check_syntax_model">[docs]</a><span class="k">def</span> <span class="nf">check_syntax_model</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span><span class="n">test</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="check_syntax_model"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.check_syntax_model">[docs]</a><span class="k">def</span> <span class="nf">check_syntax_model</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span><span class="n">test</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; cheks if equations have syntax errors by calling the python compile.parse &#39;&#39;&#39;</span>
     <span class="kn">import</span> <span class="nn">ast</span>
     <span class="n">error</span><span class="o">=</span><span class="kc">True</span>
@@ -255,7 +283,7 @@
     <span class="k">return</span> <span class="n">error</span></div>
     
 
-<div class="viewcode-block" id="udtryk_parse"><a class="viewcode-back" href="../modelpattern.html#modelpattern.udtryk_parse">[docs]</a><span class="k">def</span> <span class="nf">udtryk_parse</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="udtryk_parse"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.udtryk_parse">[docs]</a><span class="k">def</span> <span class="nf">udtryk_parse</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39;returns a list of terms from an expression ie: lhs=rhs $ </span>
 <span class="sd">    or just an expression like x+b &#39;&#39;&#39;</span>
     <span class="c1">#nterm = namedtuple(&#39;nterm&#39;, [&#39;comment&#39;, &#39;number&#39;, &#39;op&#39;, &#39;var&#39;, &#39;lag&#39;])</span>
@@ -266,7 +294,7 @@
     <span class="c1"># ibh = [nterm._make(t) for t in xxx]   # Easier to remember by using named tupels . </span>
     <span class="k">return</span> <span class="n">ibh</span></div>
 
-<div class="viewcode-block" id="kw_frml_name"><a class="viewcode-back" href="../modelpattern.html#modelpattern.kw_frml_name">[docs]</a><span class="k">def</span> <span class="nf">kw_frml_name</span><span class="p">(</span><span class="n">frml_name0</span><span class="p">,</span> <span class="n">kw</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="kw_frml_name"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.kw_frml_name">[docs]</a><span class="k">def</span> <span class="nf">kw_frml_name</span><span class="p">(</span><span class="n">frml_name0</span><span class="p">,</span> <span class="n">kw</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; find keywords and associated value from string &#39;&lt;kw=xxx,res=kdkdk&gt;&#39; &#39;&#39;&#39;</span>
     <span class="n">out</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">frml_name</span><span class="o">=</span><span class="n">frml_name0</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
@@ -283,10 +311,10 @@
         <span class="n">out</span><span class="o">=</span><span class="n">default</span> 
     <span class="k">return</span> <span class="n">out</span></div>
 
-<div class="viewcode-block" id="f1"><a class="viewcode-back" href="../modelpattern.html#modelpattern.f1">[docs]</a><span class="k">def</span> <span class="nf">f1</span><span class="p">():</span>
+<div class="viewcode-block" id="f1"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.f1">[docs]</a><span class="k">def</span> <span class="nf">f1</span><span class="p">():</span>
     <span class="k">return</span> <span class="mi">42</span></div>
 
-<div class="viewcode-block" id="f2"><a class="viewcode-back" href="../modelpattern.html#modelpattern.f2">[docs]</a><span class="k">def</span> <span class="nf">f2</span><span class="p">():</span>
+<div class="viewcode-block" id="f2"><a class="viewcode-back" href="../core/modelpattern.html#modelpattern.f2">[docs]</a><span class="k">def</span> <span class="nf">f2</span><span class="p">():</span>
     <span class="k">return</span> <span class="mi">103</span></div>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span> <span class="ow">and</span> <span class="mi">1</span> <span class="p">:</span>

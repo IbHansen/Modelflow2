@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -80,10 +108,10 @@
 <span class="kn">from</span> <span class="nn">cvxopt</span>         <span class="kn">import</span> <span class="n">matrix</span><span class="p">,</span>  <span class="n">spdiag</span>
 <span class="kn">from</span> <span class="nn">cvxopt.solvers</span> <span class="kn">import</span> <span class="n">qp</span>    <span class="p">,</span>  <span class="n">options</span> 
 
-<span class="sd">&quot;&quot;&quot;</span>
 
-<span class="sd">&quot;&quot;&quot;</span>
-<div class="viewcode-block" id="MV_test"><a class="viewcode-back" href="../model_cvx.html#model_cvx.MV_test">[docs]</a><span class="k">def</span> <span class="nf">MV_test</span><span class="p">(</span><span class="n">lprint</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="MV_test"><a class="viewcode-back" href="../used/model_cvx.html#model_cvx.MV_test">[docs]</a><span class="k">def</span> <span class="nf">MV_test</span><span class="p">(</span><span class="n">lprint</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;  Test a mean variance model for Indonesian Rupia</span>
+<span class="sd">    &#39;&#39;&#39;</span> 
     <span class="n">P</span><span class="o">=</span> <span class="n">matrix</span><span class="p">([</span>
     <span class="p">[</span><span class="mf">0.01573635</span><span class="p">,</span>	<span class="mf">0.01436816</span><span class="p">,</span>	<span class="mf">0.01045556</span><span class="p">],</span>
     <span class="p">[</span><span class="mf">0.01436816</span><span class="p">,</span>	<span class="mf">0.02289016</span><span class="p">,</span>	<span class="mf">0.01172995</span><span class="p">],</span>
@@ -116,8 +144,9 @@
     <span class="n">results</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">res</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>                 <span class="c1"># create an empty pandas.Dataframe </span>
     <span class="k">return</span> <span class="n">results</span>     </div>
     
-<div class="viewcode-block" id="mv_opt"><a class="viewcode-back" href="../model_cvx.html#model_cvx.mv_opt">[docs]</a><span class="k">def</span> <span class="nf">mv_opt</span><span class="p">(</span><span class="n">PP</span><span class="p">,</span><span class="n">qq</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">bsum</span><span class="p">,</span><span class="n">weights</span><span class="p">,</span><span class="n">weigthtedsum</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39; Performs mean variance optimization by calling a quadratic optimization function from the cvxopt \n</span>
+<div class="viewcode-block" id="mv_opt"><a class="viewcode-back" href="../used/model_cvx.html#model_cvx.mv_opt">[docs]</a><span class="k">def</span> <span class="nf">mv_opt</span><span class="p">(</span><span class="n">PP</span><span class="p">,</span><span class="n">qq</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">bsum</span><span class="p">,</span><span class="n">weights</span><span class="p">,</span><span class="n">weigthtedsum</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Performs mean variance optimization by calling a </span>
+<span class="sd">    quadratic optimization function from the cvxopt </span>
 <span class="sd">    library </span>
 <span class="sd">    </span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -144,14 +173,15 @@
         <span class="n">res</span>      <span class="o">=</span> <span class="n">x</span>
         <span class="k">return</span> <span class="n">res</span>                                                       <span class="c1"># get the solution </span></div>
 
-<div class="viewcode-block" id="mv_opt_bs"><a class="viewcode-back" href="../model_cvx.html#model_cvx.mv_opt_bs">[docs]</a><span class="k">def</span> <span class="nf">mv_opt_bs</span><span class="p">(</span><span class="n">msigma</span><span class="p">,</span><span class="n">vreturn</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">budget</span><span class="p">,</span><span class="n">risk_weights</span><span class="p">,</span><span class="n">capital</span><span class="p">,</span><span class="n">lcr_weights</span><span class="p">,</span><span class="n">lcr</span><span class="p">,</span><span class="n">leverage_weights</span><span class="p">,</span><span class="n">equity</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;performs balance sheet optimization</span>
+<div class="viewcode-block" id="mv_opt_bs"><a class="viewcode-back" href="../used/model_cvx.html#model_cvx.mv_opt_bs">[docs]</a><span class="k">def</span> <span class="nf">mv_opt_bs</span><span class="p">(</span><span class="n">msigma</span><span class="p">,</span><span class="n">vreturn</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">budget</span><span class="p">,</span><span class="n">risk_weights</span><span class="p">,</span><span class="n">capital</span><span class="p">,</span><span class="n">lcr_weights</span><span class="p">,</span><span class="n">lcr</span><span class="p">,</span><span class="n">leverage_weights</span><span class="p">,</span><span class="n">equity</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Performs balance sheet optimization using mean variance optimization </span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="n">res</span> <span class="o">=</span> <span class="n">mv_opt</span><span class="p">(</span><span class="n">msigma</span><span class="p">,</span><span class="n">vreturn</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">budget</span><span class="p">,[</span><span class="n">risk_weights</span><span class="p">,</span><span class="o">-</span><span class="n">lcr_weights</span><span class="p">,</span><span class="n">leverage_weights</span><span class="p">],[</span><span class="n">capital</span><span class="p">,</span><span class="o">-</span><span class="n">lcr</span><span class="p">,</span><span class="n">equity</span><span class="p">],</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">solget</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">res</span></div>
     
 
-<div class="viewcode-block" id="mv_opt_prop"><a class="viewcode-back" href="../model_cvx.html#model_cvx.mv_opt_prop">[docs]</a><span class="k">def</span> <span class="nf">mv_opt_prop</span><span class="p">(</span><span class="n">PP</span><span class="p">,</span><span class="n">qq</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">bsum</span><span class="p">,</span><span class="n">weights</span><span class="p">,</span><span class="n">weigthtedsum</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">probability</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="mv_opt_prop"><a class="viewcode-back" href="../used/model_cvx.html#model_cvx.mv_opt_prop">[docs]</a><span class="k">def</span> <span class="nf">mv_opt_prop</span><span class="p">(</span><span class="n">PP</span><span class="p">,</span><span class="n">qq</span><span class="p">,</span><span class="n">riskaversion</span><span class="p">,</span><span class="n">bsum</span><span class="p">,</span><span class="n">weights</span><span class="p">,</span><span class="n">weigthtedsum</span><span class="p">,</span><span class="n">boundsmin</span><span class="p">,</span><span class="n">boundsmax</span><span class="p">,</span><span class="n">probability</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; select a numner of assets/liabilities which. when the selection is feasible an Mean variance optimazation is performed\n</span>
 <span class="sd">    the selection is based on probabilities &#39;&#39;&#39;</span>
     <span class="n">q_size</span>           <span class="o">=</span>  <span class="nb">len</span><span class="p">(</span><span class="n">qq</span><span class="p">)</span>

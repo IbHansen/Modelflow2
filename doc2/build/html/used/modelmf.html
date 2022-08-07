@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelmf module &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="model_cvx module" href="model_cvx.html" />
+    <link rel="prev" title="modelinvert module" href="modelinvert.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>modelmf module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/used/modelmf.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul><div class="rst-breadcrumbs-buttons" role="navigation" aria-label="Sequential page navigation">
+        <a href="modelinvert.html" class="btn btn-neutral float-left" title="modelinvert module" accesskey="p"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="model_cvx.html" class="btn btn-neutral float-right" title="model_cvx module" accesskey="n">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+  </div>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-modelmf">
+<span id="modelmf-module"></span><h1>modelmf module<a class="headerlink" href="#module-modelmf" title="Permalink to this headline"></a></h1>
+<p>This is a module for extending pandas dataframes with the modelflow toolbox</p>
+<p>Created on Sat March 2019</p>
+<p>&#64;author: hanseni</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmf.mf">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelmf.</span></span><span class="sig-name descname"><span class="pre">mf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#mf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mf" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class to extend Pandas Dataframes with ModelFlow functionalities</p>
+<p>Not to be used on its own</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modelmf.mf.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#mf.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mf.copy" title="Permalink to this definition"></a></dt>
+<dd><p>copy a modelflow extended dataframe, so it remember its model and options</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelmf.mf.solve">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slut</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#mf.solve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mf.solve" title="Permalink to this definition"></a></dt>
+<dd><p>Solves a model</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelmf.mf.makemodel">
+<span class="sig-name descname"><span class="pre">makemodel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eq</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#mf.makemodel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mf.makemodel" title="Permalink to this definition"></a></dt>
+<dd><p>Makes a model from equations</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmf.mfcalc">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelmf.</span></span><span class="sig-name descname"><span class="pre">mfcalc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#mfcalc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mfcalc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Used to carry out calculation specified as equations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eq</strong> (<em>TYPE</em>) – Equations one on each line. can be started with &lt;start end&gt; to control calculation sample .</p></li>
+<li><p><strong>start</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – DESCRIPTION. Defaults to ‘’.</p></li>
+<li><p><strong>slut</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – DESCRIPTION. Defaults to ‘’.</p></li>
+<li><p><strong>showeq</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – If True the equations will be printed. Defaults to False.</p></li>
+<li><p><strong>**kwargs</strong> (<em>TYPE</em>) – Here all solve options can be provided.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dataframe.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmf.mfupdate">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelmf.</span></span><span class="sig-name descname"><span class="pre">mfupdate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#mfupdate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mfupdate" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Extend a dataframe to update with values from another dataframe</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="modelmf.mfupdate.second">
+<span class="sig-name descname"><span class="pre">second</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#mfupdate.second"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.mfupdate.second" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmf.ibloc">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelmf.</span></span><span class="sig-name descname"><span class="pre">ibloc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#ibloc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.ibloc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Extend a dataframe with a slice method which accepot wildcards in column selection.</p>
+<p>The method just juse the method vlist from modelclass.model class</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelmf.f">
+<span class="sig-prename descclassname"><span class="pre">modelmf.</span></span><span class="sig-name descname"><span class="pre">f</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmf.html#f"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmf.f" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modelinvert.html" class="btn btn-neutral float-left" title="modelinvert module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="model_cvx.html" class="btn btn-neutral float-right" title="model_cvx module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

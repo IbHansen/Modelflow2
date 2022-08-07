@@ -60,14 +60,14 @@ html_static_path = ['_static']
 autodoc_default_options = {
     'member-order': 'bysource',
     }
-exclude_patterns = ['modelsource/']
+exclude_patterns = ['modelsource/','setup.rst','modules.rst','index old.rst','solve.rst']
 sys.path.insert(0, os.path.abspath('../'))  
 html_theme_options = {
     #'analytics_id': 'G-XXXXXXXXXX',  #  Provided by Google in your dashboard
     #'analytics_anonymize_ip': False,
-    'logo_only': False,
+    'logo_only': True,
     'display_version': True,
-    'prev_next_buttons_location': 'bottom',
+    'prev_next_buttons_location': 'both',
     'style_external_links': False,
     'vcs_pageview_mode': '',
     'style_nav_header_background': 'white',

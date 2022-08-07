@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelnormalize module &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="model_doable module" href="model_doable.html" />
+    <link rel="prev" title="modelmanipulation module" href="modelmanipulation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="onboard.html">Processing model specification</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="onboard.html#text-processing-and-normalization-of-model-specification">Text processing and normalization of model specification</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="modelmanipulation.html">modelmanipulation module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">modelnormalize module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_doable.html">model_doable module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="onboard.html#onboarding-models">Onboarding models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="onboard.html">Processing model specification</a> &raquo;</li>
+      <li>modelnormalize module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/onboard/modelnormalize.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul><div class="rst-breadcrumbs-buttons" role="navigation" aria-label="Sequential page navigation">
+        <a href="modelmanipulation.html" class="btn btn-neutral float-left" title="modelmanipulation module" accesskey="p"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="model_doable.html" class="btn btn-neutral float-right" title="model_doable module" accesskey="n">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+  </div>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-modelnormalize">
+<span id="modelnormalize-module"></span><h1>modelnormalize module<a class="headerlink" href="#module-modelnormalize" title="Permalink to this headline"></a></h1>
+<p>Created on Sat Nov 28 13:32:47 2020</p>
+<p>This Module is used transforming model specifications to modelflow business language.</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>preprocessing expressions to resolve functions like</dt><dd><p>dlog, log, pct, movavg</p>
+</dd>
+</dl>
+</li>
+<li><p>replace function names</p></li>
+<li><p>normalize formulas</p></li>
+</ul>
+</div></blockquote>
+<p>&#64;author: bruger</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">Normalized_frml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">endo_var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessed</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_add_factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">un_normalized</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eviews</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#Normalized_frml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.Normalized_frml" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class defining result from normalization of expression</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.endo_var">
+<span class="sig-name descname"><span class="pre">endo_var</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelnormalize.Normalized_frml.endo_var" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.original">
+<span class="sig-name descname"><span class="pre">original</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelnormalize.Normalized_frml.original" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.preprocessed">
+<span class="sig-name descname"><span class="pre">preprocessed</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelnormalize.Normalized_frml.preprocessed" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.normalized">
+<span class="sig-name descname"><span class="pre">normalized</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelnormalize.Normalized_frml.normalized" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.calc_add_factor">
+<span class="sig-name descname"><span class="pre">calc_add_factor</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelnormalize.Normalized_frml.calc_add_factor" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.un_normalized">
+<span class="sig-name descname"><span class="pre">un_normalized</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelnormalize.Normalized_frml.un_normalized" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.fitted">
+<span class="sig-name descname"><span class="pre">fitted</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelnormalize.Normalized_frml.fitted" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.eviews">
+<span class="sig-name descname"><span class="pre">eviews</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelnormalize.Normalized_frml.eviews" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.fprint">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">fprint</span></span><a class="headerlink" href="#modelnormalize.Normalized_frml.fprint" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="modelnormalize.Normalized_frml.fdict">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">fdict</span></span><a class="headerlink" href="#modelnormalize.Normalized_frml.fdict" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.endovar">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">endovar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#endovar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.endovar" title="Permalink to this definition"></a></dt>
+<dd><p>Finds the first variable in a expression</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.funk_in">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">funk_in</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">funk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_string</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#funk_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.funk_in" title="Permalink to this definition"></a></dt>
+<dd><p>Find the first location of a function in a string</p>
+<p>if found returns a match object where the group 2 is the interesting stuff used in funk_find_arg</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.funk_replace">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">funk_replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">funk1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funk2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_string</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#funk_replace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.funk_replace" title="Permalink to this definition"></a></dt>
+<dd><p>replace funk1( with funk2(</p>
+<p>takes care that funk1 embedded in variable name is not replaced</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.funk_replace_list">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">funk_replace_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replacelist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_string</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#funk_replace_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.funk_replace_list" title="Permalink to this definition"></a></dt>
+<dd><p>Replaces a list of funk1( , funk2(</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.funk_find_arg">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">funk_find_arg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">funk_match</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">streng</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#funk_find_arg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.funk_find_arg" title="Permalink to this definition"></a></dt>
+<dd><p>chops a string in 3 parts</p>
+<ol class="arabic simple">
+<li><p>before ‘funk(’</p></li>
+<li><p>in the matching parantesis</p></li>
+<li><p>after the last matching parenthesis</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.preprocess">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">udtryk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#preprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>test processing expanding dlog,diff,movavg,pct,logit functions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>udtryk</strong> (<em>str</em>) – model we want to do template expansion on</p></li>
+<li><p><strong>funks</strong> (<em>list</em><em>, </em><em>optional</em>) – list of user defined functions . Defaults to [].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+<p>has to be changed to (= for when the transition to 3.8 is finished.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.fixleads">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">fixleads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#fixleads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.fixleads" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.normal">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">normal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">the_endo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_add_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_preprocess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_A'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endo_lhs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_fixable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_fitted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eviews</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#normal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.normal" title="Permalink to this definition"></a></dt>
+<dd><p>normalize an expression g(y,x) = f(y,x) ==&gt; y = F(x,z)</p>
+<p>Default find the expression for the first variable on the left hand side (lhs)</p>
+<p>The variable - without lags-  should not be on rhs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ind_o</strong> (<em>str</em>) – input expression, no $ and no frml name just lhs=rhs</p></li>
+<li><p><strong>the_endo</strong> (<em>str</em><em>, </em><em>optional</em>) – the endogeneous to isolate on the left hans side. if the first variable in the lhs.
+It shoud be on the left hand side.</p></li>
+<li><p><strong>add_add_factor</strong> (<em>bool</em><em>, </em><em>optional</em>) – force introduction aof adjustment term, and an expression to calculate it</p></li>
+<li><p><strong>do_preprocess</strong> (<em>bool</em><em>, </em><em>optional</em>) – DESCRIPTION. preprocess the expression</p></li>
+<li><p><strong>endo_lhs</strong> (<em>bool</em><em>, </em><em>optional</em>) – If false, accept to normalize for a rhs endogeneous variable</p></li>
+<li><p><strong>make_fixable</strong> (<em>bool</em><em>, </em><em>optional</em>) – also make this equation exogenizable</p></li>
+<li><p><strong>fitted</strong> (<em>bool</em><em>,</em><em>optional</em>) – create a fitted equations, without exo and adjustment</p></li>
+</ul>
+</dd>
+</dl>
+<p>preprocessing handels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Normalized_frml which will contain the different relevant expressions</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>An instance of the class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelnormalize.elem_trans">
+<span class="sig-prename descclassname"><span class="pre">modelnormalize.</span></span><span class="sig-name descname"><span class="pre">elem_trans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">udtryk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnormalize.html#elem_trans"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnormalize.elem_trans" title="Permalink to this definition"></a></dt>
+<dd><p>Handeles expression with &#64;elem</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modelmanipulation.html" class="btn btn-neutral float-left" title="modelmanipulation module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="model_doable.html" class="btn btn-neutral float-right" title="model_doable module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

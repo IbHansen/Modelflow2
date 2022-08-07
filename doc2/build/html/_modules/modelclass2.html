@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -94,10 +122,10 @@
 
 <span class="kn">import</span> <span class="nn">modelmf</span>
 
-<div class="viewcode-block" id="simmodel"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel">[docs]</a><span class="k">class</span> <span class="nc">simmodel</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+<div class="viewcode-block" id="simmodel"><a class="viewcode-back" href="../unsorted/modelclass2.html#modelclass2.simmodel">[docs]</a><span class="k">class</span> <span class="nc">simmodel</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; The model class, used to experiment </span>
 <span class="sd">    &#39;&#39;&#39;</span>
-<div class="viewcode-block" id="simmodel.gouteval"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.gouteval">[docs]</a>    <span class="k">def</span> <span class="nf">gouteval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">databank</span><span class="p">):</span>
+<div class="viewcode-block" id="simmodel.gouteval"><a class="viewcode-back" href="../unsorted/modelclass2.html#modelclass2.simmodel.gouteval">[docs]</a>    <span class="k">def</span> <span class="nf">gouteval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">databank</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; takes a list of terms and translates to a evaluater function called los</span>
 <span class="sd">        </span>
 <span class="sd">        The model axcess the data through:databank.Dataframe.value[rowindex+lag,coloumnindex] which is very efficient </span>
@@ -157,7 +185,7 @@
         <span class="n">fib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;  return los</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
 <span class="c1">#        print (fib)</span>
         <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fib</span><span class="p">)</span>           </div>
-<div class="viewcode-block" id="simmodel.cytouteval"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.cytouteval">[docs]</a>    <span class="k">def</span> <span class="nf">cytouteval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">databank</span><span class="p">,</span><span class="n">nr</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="simmodel.cytouteval"><a class="viewcode-back" href="../unsorted/modelclass2.html#modelclass2.simmodel.cytouteval">[docs]</a>    <span class="k">def</span> <span class="nf">cytouteval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">databank</span><span class="p">,</span><span class="n">nr</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; takes a list of terms and translates to a evaluater function called los</span>
 <span class="sd">        </span>
 <span class="sd">        The model axcess the data through:databank.Dataframe.value[rowindex+lag,coloumnindex] which is very efficient </span>
@@ -226,12 +254,12 @@
 
  
     
-<div class="viewcode-block" id="simmodel.teststuff3"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.teststuff3">[docs]</a>    <span class="k">def</span> <span class="nf">teststuff3</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="simmodel.teststuff3"><a class="viewcode-back" href="../unsorted/modelclass2.html#modelclass2.simmodel.teststuff3">[docs]</a>    <span class="k">def</span> <span class="nf">teststuff3</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">columsnr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_columnsnr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedf</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stuff3</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedf</span><span class="o">.</span><span class="n">values</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">columsnr</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="simmodel.outsolve2"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.outsolve2">[docs]</a>    <span class="k">def</span> <span class="nf">outsolve2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="simmodel.outsolve2"><a class="viewcode-back" href="../unsorted/modelclass2.html#modelclass2.simmodel.outsolve2">[docs]</a>    <span class="k">def</span> <span class="nf">outsolve2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; returns a string with a function which calculates a </span>
 <span class="sd">        Gauss-Seidle iteration of a model</span>
 <span class="sd">        exclude is list of endogeneous variables not to be solved </span>
@@ -263,7 +291,7 @@
         <span class="c1">#    print(masterout)</span>
         <span class="k">return</span> <span class="n">chunkedout</span><span class="o">+</span><span class="n">masterout</span></div>
     
-<div class="viewcode-block" id="simmodel.outsolve3"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.outsolve3">[docs]</a>    <span class="k">def</span> <span class="nf">outsolve3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">3000000</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">maxchunks</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span><span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">chunkselect</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">maxlines</span><span class="o">=</span><span class="mi">1000000000000</span><span class="p">):</span>
+<div class="viewcode-block" id="simmodel.outsolve3"><a class="viewcode-back" href="../unsorted/modelclass2.html#modelclass2.simmodel.outsolve3">[docs]</a>    <span class="k">def</span> <span class="nf">outsolve3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">3000000</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">maxchunks</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span><span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">chunkselect</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">maxlines</span><span class="o">=</span><span class="mi">1000000000000</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; returns a string with a function which calculates a </span>
 <span class="sd">        Gauss-Seidle iteration of a model</span>
 <span class="sd">        exclude is list of endogeneous variables not to be solved </span>
@@ -313,7 +341,7 @@
         <span class="k">return</span> <span class="n">out</span></div>
     
     
-<div class="viewcode-block" id="simmodel.cytsolve"><a class="viewcode-back" href="../modelclass2.html#modelclass2.simmodel.cytsolve">[docs]</a>    <span class="k">def</span> <span class="nf">cytsolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="simmodel.cytsolve"><a class="viewcode-back" href="../unsorted/modelclass2.html#modelclass2.simmodel.cytsolve">[docs]</a>    <span class="k">def</span> <span class="nf">cytsolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">exclude</span><span class="o">=</span><span class="p">[],</span><span class="n">chunk</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">ljit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; returns a string with a Cython function which calculates a </span>
 <span class="sd">        Gauss-Seidle iteration of a model</span>
 <span class="sd">        exclude is list of endogeneous variables not to be solved </span>

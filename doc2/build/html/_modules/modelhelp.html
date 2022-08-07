@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -83,7 +111,7 @@
 
 
 
-<div class="viewcode-block" id="update_var"><a class="viewcode-back" href="../modelhelp.html#modelhelp.update_var">[docs]</a><span class="k">def</span> <span class="nf">update_var</span><span class="p">(</span><span class="n">databank</span><span class="p">,</span><span class="n">xvar</span><span class="p">,</span><span class="n">operator</span><span class="o">=</span><span class="s1">&#39;=&#39;</span><span class="p">,</span><span class="n">inputval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">create</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<div class="viewcode-block" id="update_var"><a class="viewcode-back" href="../unsorted/modelhelp.html#modelhelp.update_var">[docs]</a><span class="k">def</span> <span class="nf">update_var</span><span class="p">(</span><span class="n">databank</span><span class="p">,</span><span class="n">xvar</span><span class="p">,</span><span class="n">operator</span><span class="o">=</span><span class="s1">&#39;=&#39;</span><span class="p">,</span><span class="n">inputval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">create</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
     
         <span class="sd">&quot;&quot;&quot;Updates a variable in the databank. Possible update choices are: </span>
 <span class="sd">        \n \= : val = inputval </span>
@@ -192,14 +220,14 @@
                     <span class="nb">print</span><span class="p">((</span><span class="s1">&#39;{:&lt;&#39;</span><span class="o">+</span><span class="n">forspalte</span><span class="o">+</span><span class="s1">&#39;} </span><span class="si">{:&gt;20.4f}</span><span class="s1"> </span><span class="si">{:&gt;20.4f}</span><span class="s1"> </span><span class="si">{:&gt;20.4f}</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="n">orgdata</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">newdata</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">diff</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>                </div>
 
 
-<div class="viewcode-block" id="tovarlag"><a class="viewcode-back" href="../modelhelp.html#modelhelp.tovarlag">[docs]</a><span class="k">def</span> <span class="nf">tovarlag</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="n">lag</span><span class="p">):</span>
+<div class="viewcode-block" id="tovarlag"><a class="viewcode-back" href="../unsorted/modelhelp.html#modelhelp.tovarlag">[docs]</a><span class="k">def</span> <span class="nf">tovarlag</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="n">lag</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; creates a stringof var(lag) if lag else just lag &#39;&#39;&#39;</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">lag</span><span class="p">)</span><span class="o">==</span><span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s1">(</span><span class="si">{</span><span class="n">lag</span><span class="si">:</span><span class="s1">+</span><span class="si">}</span><span class="s1">)&#39;</span> <span class="k">if</span> <span class="n">lag</span> <span class="k">else</span> <span class="n">var</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s1">(</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s1">)&#39;</span> <span class="k">if</span> <span class="n">lag</span> <span class="k">else</span> <span class="n">var</span></div>
 
-<div class="viewcode-block" id="cutout"><a class="viewcode-back" href="../modelhelp.html#modelhelp.cutout">[docs]</a><span class="k">def</span> <span class="nf">cutout</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+<div class="viewcode-block" id="cutout"><a class="viewcode-back" href="../unsorted/modelhelp.html#modelhelp.cutout">[docs]</a><span class="k">def</span> <span class="nf">cutout</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;get rid of rows below treshold and returns the dataframe or serie &#39;&#39;&#39;</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span><span class="o">==</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="n">org_sum</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>   
@@ -225,7 +253,7 @@
             <span class="n">output</span><span class="o">=</span><span class="nb">input</span>
         <span class="k">return</span> <span class="n">output</span></div>
  
-<div class="viewcode-block" id="ttimer"><a class="viewcode-back" href="../modelhelp.html#modelhelp.ttimer">[docs]</a><span class="nd">@contextmanager</span>
+<div class="viewcode-block" id="ttimer"><a class="viewcode-back" href="../unsorted/modelhelp.html#modelhelp.ttimer">[docs]</a><span class="nd">@contextmanager</span>
 <span class="k">def</span> <span class="nf">ttimer</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">short</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    A timer context manager, implemented using a</span>
@@ -262,7 +290,7 @@
                 <span class="n">afterdec</span><span class="o">=</span><span class="s1">&#39;1&#39;</span> <span class="k">if</span> <span class="n">minutes</span> <span class="o">&gt;=</span> <span class="mi">10</span> <span class="k">else</span> <span class="s1">&#39;4&#39;</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">input</span><span class="si">}</span><span class="s1"> took       : </span><span class="si">{</span><span class="n">minutes</span><span class="si">:</span><span class="s1">&gt;</span><span class="si">{</span><span class="mi">15</span><span class="si">}</span><span class="s1">,.</span><span class="si">{</span><span class="n">afterdec</span><span class="si">}</span><span class="s1">f</span><span class="si">}</span><span class="s1"> Minutes&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="finddec"><a class="viewcode-back" href="../modelhelp.html#modelhelp.finddec">[docs]</a><span class="k">def</span> <span class="nf">finddec</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<div class="viewcode-block" id="finddec"><a class="viewcode-back" href="../unsorted/modelhelp.html#modelhelp.finddec">[docs]</a><span class="k">def</span> <span class="nf">finddec</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39; find a suitable number of decimal places from the magnitudes of a dataframe &#39;&#39;&#39;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">thismax</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
@@ -279,7 +307,7 @@
     <span class="k">return</span> <span class="n">outdec</span></div>
 
 
-<div class="viewcode-block" id="insertModelVar"><a class="viewcode-back" href="../modelhelp.html#modelhelp.insertModelVar">[docs]</a><span class="k">def</span> <span class="nf">insertModelVar</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="insertModelVar"><a class="viewcode-back" href="../unsorted/modelhelp.html#modelhelp.insertModelVar">[docs]</a><span class="k">def</span> <span class="nf">insertModelVar</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Inserts all variables from model, not already in the dataframe.</span>
 <span class="sd">    Model can be a list of models &quot;&quot;&quot;</span> 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
@@ -298,7 +326,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">dataframe</span></div>
   
-<div class="viewcode-block" id="df_extend"><a class="viewcode-back" href="../modelhelp.html#modelhelp.df_extend">[docs]</a><span class="k">def</span> <span class="nf">df_extend</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">add</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<div class="viewcode-block" id="df_extend"><a class="viewcode-back" href="../unsorted/modelhelp.html#modelhelp.df_extend">[docs]</a><span class="k">def</span> <span class="nf">df_extend</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">add</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;Extends a Dataframe, assumes that the indes is of period_range type&#39;&#39;&#39;</span>
     <span class="n">newindex</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">period_range</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">periods</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">+</span><span class="n">add</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">newindex</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;ffill&#39;</span><span class="p">)</span>    </div>

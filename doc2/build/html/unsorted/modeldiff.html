@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modeldiff module &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="modelhelp module" href="modelhelp.html" />
+    <link rel="prev" title="modeldashboot module" href="modeldashboot.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeltodo.html">modeltodo module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>modeldiff module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/unsorted/modeldiff.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul><div class="rst-breadcrumbs-buttons" role="navigation" aria-label="Sequential page navigation">
+        <a href="modeldashboot.html" class="btn btn-neutral float-left" title="modeldashboot module" accesskey="p"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modelhelp.html" class="btn btn-neutral float-right" title="modelhelp module" accesskey="n">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+  </div>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-modeldiff">
+<span id="modeldiff-module"></span><h1>modeldiff module<a class="headerlink" href="#module-modeldiff" title="Permalink to this headline"></a></h1>
+<p>Created on Tue Oct 22 22:47:37 2013</p>
+<p>Developement Module - only for the adventeous</p>
+<p>This module handels symbolic differentiation of models</p>
+<p>calculates the values of all the partial differentialkoifficients
+and creates matrices for each lag</p>
+<p>&#64;author: Ib Hansen</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.findallvar">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">findallvar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#findallvar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.findallvar" title="Permalink to this definition"></a></dt>
+<dd><p>Finds all endogenous variables which is on the right side of = in the expresion for variable v
+lagged variables are included</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.findendocur">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">findendocur</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#findendocur"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.findendocur" title="Permalink to this definition"></a></dt>
+<dd><p>Finds all endegenoujs variables which is on the right side of = in the expresion for variable v
+lagged variables are <strong>not</strong> included</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.modeldiff">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">modeldiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onlyendocur</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endovar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdif</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9999999999999999</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcenum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#modeldiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.modeldiff" title="Permalink to this definition"></a></dt>
+<dd><p>Differentiate all relations with respect to all variable
+The result is placed in a dictory in the model instanse: model.diffendocur</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.diffout">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">diffout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#diffout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.diffout" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.diffprint">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">diffprint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">udfil</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#diffprint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.diffprint" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.vardiff">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">vardiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#vardiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.vardiff" title="Permalink to this definition"></a></dt>
+<dd><p>Displays espressions for differential koifficients for a variable
+if var ends with * all matchning variables are displayes</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.invdiff">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">invdiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#invdiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.invdiff" title="Permalink to this definition"></a></dt>
+<dd><p>Displays espressions for differential koifficients for a variable
+if var ends with * all matchning variables are displayes</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.rettet">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">rettet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#rettet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.rettet" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.fouteval">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">fouteval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">databank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#fouteval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.fouteval" title="Permalink to this definition"></a></dt>
+<dd><p>takes a dict of derivatives for a model and makes a function which returns a function which evaluates the
+derivatives in a period.
+The derivatives is both returned from the function and places in</p>
+<p>:model.difvalue</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.calculate_diffvalue">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">calculate_diffvalue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#calculate_diffvalue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.calculate_diffvalue" title="Permalink to this definition"></a></dt>
+<dd><p>calculates the numeric value of derivatives.
+the values are returnes and also places in model.diffvalue</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.calculate_delta">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">calculate_delta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">databank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#calculate_delta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.calculate_delta" title="Permalink to this definition"></a></dt>
+<dd><p>calculates the standard deviation of the change in all variable in a databank
+returns a panda series</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.calculate_impact">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">calculate_impact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#calculate_impact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.calculate_impact" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate the impact of every variable in equation on the result based on
+the standard deviation and differential coefficient</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.calculate_diffvalue_d3d">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">calculate_diffvalue_d3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#calculate_diffvalue_d3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.calculate_diffvalue_d3d" title="Permalink to this definition"></a></dt>
+<dd><p>creates a 3D dictonary derivatives for each lag</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.calculate_mat">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">calculate_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#calculate_mat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.calculate_mat" title="Permalink to this definition"></a></dt>
+<dd><p>calcultae matrix of derivative values.
+very slow should be reworked</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.calculate_endocurmat">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">calculate_endocurmat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#calculate_endocurmat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.calculate_endocurmat" title="Permalink to this definition"></a></dt>
+<dd><p>for Newton solution find jacobi</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.calculate_allmat">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">calculate_allmat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#calculate_allmat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.calculate_allmat" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate and return a dictionary with a matrix of derivative values for each lag</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.calculate_matold">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">calculate_matold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#calculate_matold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.calculate_matold" title="Permalink to this definition"></a></dt>
+<dd><p>calcultae matrix of derivative values.
+endo deteriins if it is with respect to endogeneous og exogeneous variables</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.modelnet_dict">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">modelnet_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#modelnet_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.modelnet_dict" title="Permalink to this definition"></a></dt>
+<dd><p>creates a network where weight is determined by a 3d dict of impacts
+d: 3 d dictinorary</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.pagerank">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">pagerank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#pagerank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.pagerank" title="Permalink to this definition"></a></dt>
+<dd><p>ranks the equations in a model according to the pagerank algoritme
+returns order in pagerank</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.display_diff">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">display_diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#display_diff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.display_diff" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.display_ip_old">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">display_ip_old</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ivar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#display_ip_old"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.display_ip_old" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.display_all">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">display_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#display_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.display_all" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.display_ip">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">display_ip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ivar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#display_ip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.display_ip" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.settozero">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">settozero</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instring</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#settozero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.settozero" title="Permalink to this definition"></a></dt>
+<dd><p>sets subst() or Derivative() to zero in string
+the purpose is to get rid of derivatives of logical espressions</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.get_A">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">get_A</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#get_A"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.get_A" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.get_AINV">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">get_AINV</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#get_AINV"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.get_AINV" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.get_compagnion">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">get_compagnion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#get_compagnion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.get_compagnion" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.get_eigen">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">get_eigen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#get_eigen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.get_eigen" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.eigplot0">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">eigplot0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">w</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#eigplot0"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.eigplot0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.eigplot">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">eigplot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(3,</span> <span class="pre">3)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#eigplot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.eigplot" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.stabilitet">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">stabilitet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minnumber</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxnumber</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#stabilitet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.stabilitet" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.tout">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">tout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#tout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.tout" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modeldiff.numdif">
+<span class="sig-prename descclassname"><span class="pre">modeldiff.</span></span><span class="sig-name descname"><span class="pre">numdif</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeldiff.html#numdif"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeldiff.numdif" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modeldashboot.html" class="btn btn-neutral float-left" title="modeldashboot module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modelhelp.html" class="btn btn-neutral float-right" title="modelhelp module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

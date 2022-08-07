@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -82,7 +110,7 @@
 
 
 <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="s1">&#39;mf&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">:</span>
-<div class="viewcode-block" id="mf"><a class="viewcode-back" href="../modelmf.html#modelmf.mf">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mf&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="mf"><a class="viewcode-back" href="../used/modelmf.html#modelmf.mf">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mf&quot;</span><span class="p">)</span>
     <span class="k">class</span> <span class="nc">mf</span><span class="p">():</span>
         <span class="sd">&#39;&#39;&#39;A class to extend Pandas Dataframes with ModelFlow functionalities</span>
 <span class="sd">        </span>
@@ -102,7 +130,7 @@
             <span class="sd">&#39;&#39;&#39; a function to be prepared&#39;&#39;&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">m</span>
       
-<div class="viewcode-block" id="mf.copy"><a class="viewcode-back" href="../modelmf.html#modelmf.mf.copy">[docs]</a>        <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="mf.copy"><a class="viewcode-back" href="../used/modelmf.html#modelmf.mf.copy">[docs]</a>        <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
             <span class="sd">&#39;&#39;&#39; copy a modelflow extended dataframe, so it remember its model and options&#39;&#39;&#39;</span>
             
             <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -113,7 +141,7 @@
             <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">eq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eq</span> 
             <span class="k">return</span> <span class="n">res</span></div>
         
-<div class="viewcode-block" id="mf.solve"><a class="viewcode-back" href="../modelmf.html#modelmf.mf.solve">[docs]</a>        <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="mf.solve"><a class="viewcode-back" href="../used/modelmf.html#modelmf.mf.solve">[docs]</a>        <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">slut</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="sd">&#39;&#39;&#39;Solves a model&#39;&#39;&#39;</span>
             <span class="n">this</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span>
     <span class="c1">#        print(kwargs)</span>
@@ -126,7 +154,7 @@
             <span class="n">res</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">solveopt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveopt</span> 
             <span class="k">return</span> <span class="n">res</span> </div>
                 
-<div class="viewcode-block" id="mf.makemodel"><a class="viewcode-back" href="../modelmf.html#modelmf.mf.makemodel">[docs]</a>        <span class="k">def</span> <span class="nf">makemodel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eq</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="mf.makemodel"><a class="viewcode-back" href="../used/modelmf.html#modelmf.mf.makemodel">[docs]</a>        <span class="k">def</span> <span class="nf">makemodel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eq</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="sd">&#39;&#39;&#39;Makes a model from equations&#39;&#39;&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">modelopt</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">modelopt</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">}</span> 
             <span class="bp">self</span><span class="o">.</span><span class="n">eq</span> <span class="o">=</span> <span class="n">eq</span>
@@ -182,7 +210,7 @@
             <span class="n">res</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="k">return</span> <span class="n">res</span></div>
     
-<div class="viewcode-block" id="mfcalc"><a class="viewcode-back" href="../modelmf.html#modelmf.mfcalc">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mfcalc&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="mfcalc"><a class="viewcode-back" href="../used/modelmf.html#modelmf.mfcalc">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mfcalc&quot;</span><span class="p">)</span>
     <span class="k">class</span> <span class="nc">mfcalc</span><span class="p">():</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Used to carry out calculation specified as equations </span>
@@ -241,7 +269,7 @@
                 <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_obj</span><span class="o">.</span><span class="n">mf</span><span class="o">.</span><span class="n">equations</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">res</span></div>
         
-<div class="viewcode-block" id="mfupdate"><a class="viewcode-back" href="../modelmf.html#modelmf.mfupdate">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mfupdate&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="mfupdate"><a class="viewcode-back" href="../used/modelmf.html#modelmf.mfupdate">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;mfupdate&quot;</span><span class="p">)</span>
     <span class="k">class</span> <span class="nc">mfupdate</span><span class="p">():</span>
         <span class="sd">&#39;&#39;&#39;Extend a dataframe to update with values from another dataframe&#39;&#39;&#39;</span>
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pandas_obj</span><span class="p">):</span>
@@ -249,7 +277,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span> <span class="o">=</span> <span class="n">pandas_obj</span>
     <span class="c1">#        print(self._obj)</span>
        
-<div class="viewcode-block" id="mfupdate.second"><a class="viewcode-back" href="../modelmf.html#modelmf.mfupdate.second">[docs]</a>        <span class="k">def</span> <span class="nf">second</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">safe</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="mfupdate.second"><a class="viewcode-back" href="../used/modelmf.html#modelmf.mfupdate.second">[docs]</a>        <span class="k">def</span> <span class="nf">second</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">safe</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
             <span class="n">this</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">col</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span>
             <span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
@@ -263,7 +291,7 @@
         <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">(</span><span class="n">df</span><span class="p">)</span></div>
         
-<div class="viewcode-block" id="ibloc"><a class="viewcode-back" href="../modelmf.html#modelmf.ibloc">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;ibloc&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="ibloc"><a class="viewcode-back" href="../used/modelmf.html#modelmf.ibloc">[docs]</a>    <span class="nd">@pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">register_dataframe_accessor</span><span class="p">(</span><span class="s2">&quot;ibloc&quot;</span><span class="p">)</span>
     <span class="k">class</span> <span class="nc">ibloc</span><span class="p">():</span>
         <span class="sd">&#39;&#39;&#39;Extend a dataframe with a slice method which accepot wildcards in column selection.</span>
 <span class="sd">        </span>
@@ -288,7 +316,7 @@
             <span class="k">return</span> </div>
         
 
-<div class="viewcode-block" id="f"><a class="viewcode-back" href="../modelmf.html#modelmf.f">[docs]</a><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+<div class="viewcode-block" id="f"><a class="viewcode-back" href="../used/modelmf.html#modelmf.f">[docs]</a><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
     <span class="k">return</span> <span class="mi">42</span></div>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>

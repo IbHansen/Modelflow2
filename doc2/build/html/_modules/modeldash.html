@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -104,10 +132,10 @@
     <span class="n">xx</span> <span class="o">=</span> <span class="n">mmodel</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
     <span class="n">yy</span> <span class="o">=</span> <span class="n">mmodel</span><span class="p">(</span><span class="n">df2</span><span class="p">)</span>
     
-<div class="viewcode-block" id="Dash_Mixin"><a class="viewcode-back" href="../modeldash.html#modeldash.Dash_Mixin">[docs]</a><span class="k">class</span> <span class="nc">Dash_Mixin</span><span class="p">():</span>
+<div class="viewcode-block" id="Dash_Mixin"><a class="viewcode-back" href="../unsorted/modeldash.html#modeldash.Dash_Mixin">[docs]</a><span class="k">class</span> <span class="nc">Dash_Mixin</span><span class="p">():</span>
     
           
-<div class="viewcode-block" id="Dash_Mixin.modeldashexplain"><a class="viewcode-back" href="../modeldash.html#modeldash.Dash_Mixin.modeldashexplain">[docs]</a>    <span class="k">def</span> <span class="nf">modeldashexplain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pre_var</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">selected_data_show</span> <span class="o">=</span><span class="s1">&#39;baseline+last run&#39;</span><span class="p">,</span>
+<div class="viewcode-block" id="Dash_Mixin.modeldashexplain"><a class="viewcode-back" href="../unsorted/modeldash.html#modeldash.Dash_Mixin.modeldashexplain">[docs]</a>    <span class="k">def</span> <span class="nf">modeldashexplain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pre_var</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">selected_data_show</span> <span class="o">=</span><span class="s1">&#39;baseline+last run&#39;</span><span class="p">,</span>
                          <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">jupyter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">show_trigger</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">port</span><span class="o">=</span><span class="mi">5001</span><span class="p">):</span> 
         
         <span class="k">def</span> <span class="nf">get_stack</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">v</span><span class="o">=</span><span class="s1">&#39;Guess it&#39;</span><span class="p">,</span><span class="n">heading</span><span class="o">=</span><span class="s1">&#39;Yes&#39;</span><span class="p">):</span>

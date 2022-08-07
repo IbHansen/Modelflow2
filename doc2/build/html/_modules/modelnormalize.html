@@ -34,8 +34,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -85,7 +113,7 @@
 <span class="kn">from</span> <span class="nn">modelmanipulation</span> <span class="kn">import</span> <span class="n">lagone</span><span class="p">,</span> <span class="n">find_arg</span><span class="p">,</span><span class="n">pastestring</span><span class="p">,</span><span class="n">stripstring</span>
 <span class="kn">from</span> <span class="nn">modelpattern</span> <span class="kn">import</span> <span class="n">udtryk_parse</span><span class="p">,</span> <span class="n">namepat</span>
 
-<div class="viewcode-block" id="Normalized_frml"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.Normalized_frml">[docs]</a><span class="nd">@dataclass</span>
+<div class="viewcode-block" id="Normalized_frml"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.Normalized_frml">[docs]</a><span class="nd">@dataclass</span>
 <span class="k">class</span> <span class="nc">Normalized_frml</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39; class defining result from normalization of expression&#39;&#39;&#39;</span>
     <span class="n">endo_var</span>         <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>   
@@ -118,7 +146,7 @@
         
         
     
-<div class="viewcode-block" id="endovar"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.endovar">[docs]</a><span class="k">def</span> <span class="nf">endovar</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+<div class="viewcode-block" id="endovar"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.endovar">[docs]</a><span class="k">def</span> <span class="nf">endovar</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;Finds the first variable in a expression&#39;&#39;&#39;</span>
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">udtryk_parse</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">var</span><span class="p">:</span>
@@ -129,14 +157,14 @@
 
 
 
-<div class="viewcode-block" id="funk_in"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.funk_in">[docs]</a><span class="k">def</span> <span class="nf">funk_in</span><span class="p">(</span><span class="n">funk</span><span class="p">,</span><span class="n">a_string</span><span class="p">):</span>
+<div class="viewcode-block" id="funk_in"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.funk_in">[docs]</a><span class="k">def</span> <span class="nf">funk_in</span><span class="p">(</span><span class="n">funk</span><span class="p">,</span><span class="n">a_string</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;Find the first location of a function in a string</span>
 <span class="sd">    </span>
 <span class="sd">    if found returns a match object where the group 2 is the interesting stuff used in funk_find_arg</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">fr</span><span class="s1">&#39;([^A-Z0-9_</span><span class="se">{{}}</span><span class="s1">]|^)(</span><span class="si">{</span><span class="n">funk</span><span class="si">}</span><span class="s1">)\(&#39;</span><span class="p">,</span><span class="n">a_string</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span><span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span> </div>
 
-<div class="viewcode-block" id="funk_replace"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.funk_replace">[docs]</a><span class="k">def</span> <span class="nf">funk_replace</span><span class="p">(</span><span class="n">funk1</span><span class="p">,</span><span class="n">funk2</span><span class="p">,</span><span class="n">a_string</span><span class="p">):</span>
+<div class="viewcode-block" id="funk_replace"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.funk_replace">[docs]</a><span class="k">def</span> <span class="nf">funk_replace</span><span class="p">(</span><span class="n">funk1</span><span class="p">,</span><span class="n">funk2</span><span class="p">,</span><span class="n">a_string</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    replace funk1( with funk2(</span>
 <span class="sd">        </span>
@@ -146,7 +174,7 @@
                   <span class="sa">fr</span><span class="s1">&#39;\1</span><span class="si">{</span><span class="n">funk2</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s1">(&#39;</span><span class="p">,</span><span class="n">a_string</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span>
                   <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span> </div>
 
-<div class="viewcode-block" id="funk_replace_list"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.funk_replace_list">[docs]</a><span class="k">def</span> <span class="nf">funk_replace_list</span><span class="p">(</span><span class="n">replacelist</span><span class="p">,</span><span class="n">a_string</span><span class="p">):</span>
+<div class="viewcode-block" id="funk_replace_list"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.funk_replace_list">[docs]</a><span class="k">def</span> <span class="nf">funk_replace_list</span><span class="p">(</span><span class="n">replacelist</span><span class="p">,</span><span class="n">a_string</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;Replaces a list of funk1( , funk2(</span>
 <span class="sd">    &#39;&#39;&#39;</span> 
     
@@ -160,7 +188,7 @@
 <span class="n">funk_replace_list</span><span class="p">([(</span><span class="s1">&#39;@D&#39;</span><span class="p">,</span><span class="s1">&#39;DIFF&#39;</span><span class="p">),(</span><span class="s1">&#39;D&#39;</span><span class="p">,</span><span class="s1">&#39;DIFF&#39;</span><span class="p">),(</span><span class="s1">&#39;DLOG&#39;</span><span class="p">,</span><span class="s1">&#39;DXLOG&#39;</span><span class="p">)],</span><span class="s1">&#39;d(a) = @d(v) x = dlog(y)&#39;</span><span class="p">)</span>
 <span class="n">funk_in</span><span class="p">(</span><span class="s1">&#39;D&#39;</span><span class="p">,</span><span class="s1">&#39;+d(b)&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
 
-<div class="viewcode-block" id="funk_find_arg"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.funk_find_arg">[docs]</a><span class="k">def</span> <span class="nf">funk_find_arg</span><span class="p">(</span><span class="n">funk_match</span><span class="p">,</span> <span class="n">streng</span><span class="p">):</span>
+<div class="viewcode-block" id="funk_find_arg"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.funk_find_arg">[docs]</a><span class="k">def</span> <span class="nf">funk_find_arg</span><span class="p">(</span><span class="n">funk_match</span><span class="p">,</span> <span class="n">streng</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;  chops a string in 3 parts \n</span>
 <span class="sd">    1. before &#39;funk(&#39; </span>
 
@@ -180,7 +208,7 @@
 
 
  
-<div class="viewcode-block" id="preprocess"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.preprocess">[docs]</a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="preprocess"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.preprocess">[docs]</a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span><span class="n">funks</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    test processing expanding dlog,diff,movavg,pct,logit functions </span>
 
@@ -230,7 +258,7 @@
          
     <span class="k">return</span> <span class="n">udtryk_up</span>         </div>
  
-<div class="viewcode-block" id="fixleads"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.fixleads">[docs]</a><span class="k">def</span> <span class="nf">fixleads</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span><span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="fixleads"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.fixleads">[docs]</a><span class="k">def</span> <span class="nf">fixleads</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span><span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
    <span class="n">leadpat</span>      <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(?:\(([0-9]+)\))&#39;</span>
    <span class="n">this</span> <span class="o">=</span> <span class="n">eq</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
    <span class="n">res</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">namepat</span><span class="o">+</span><span class="n">leadpat</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;\g&lt;1&gt;(+\g&lt;2&gt;)&#39;</span><span class="p">,</span><span class="n">this</span><span class="p">)</span>
@@ -239,7 +267,7 @@
        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After  </span><span class="si">{</span><span class="n">res</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
    <span class="k">return</span> <span class="n">res</span></div>
 
-<div class="viewcode-block" id="normal"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.normal">[docs]</a><span class="k">def</span> <span class="nf">normal</span><span class="p">(</span><span class="n">ind_o</span><span class="p">,</span><span class="n">the_endo</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">add_add_factor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">do_preprocess</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span><span class="n">add_suffix</span> <span class="o">=</span> <span class="s1">&#39;_A&#39;</span><span class="p">,</span><span class="n">endo_lhs</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span><span class="n">make_fixable</span> <span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">make_fitted</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">eviews</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="normal"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.normal">[docs]</a><span class="k">def</span> <span class="nf">normal</span><span class="p">(</span><span class="n">ind_o</span><span class="p">,</span><span class="n">the_endo</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">add_add_factor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">do_preprocess</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span><span class="n">add_suffix</span> <span class="o">=</span> <span class="s1">&#39;_A&#39;</span><span class="p">,</span><span class="n">endo_lhs</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span><span class="n">make_fixable</span> <span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">make_fitted</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">eviews</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    normalize an expression g(y,x) = f(y,x) ==&gt; y = F(x,z)</span>
 <span class="sd">    </span>
@@ -348,7 +376,7 @@
         <span class="n">result</span><span class="o">.</span><span class="n">eviews</span><span class="o">=</span><span class="n">eviews</span>
         <span class="k">return</span> <span class="n">result</span></div>
         
-<div class="viewcode-block" id="elem_trans"><a class="viewcode-back" href="../modelnormalize.html#modelnormalize.elem_trans">[docs]</a><span class="k">def</span> <span class="nf">elem_trans</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="elem_trans"><a class="viewcode-back" href="../onboard/modelnormalize.html#modelnormalize.elem_trans">[docs]</a><span class="k">def</span> <span class="nf">elem_trans</span><span class="p">(</span><span class="n">udtryk</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;Handeles expression with @elem &#39;&#39;&#39;</span> 
     <span class="kn">from</span> <span class="nn">modelpattern</span> <span class="kn">import</span> <span class="n">namepat</span>
 

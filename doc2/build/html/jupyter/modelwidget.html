@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelwidget module &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="modelinvert module" href="../used/modelinvert.html" />
+    <link rel="prev" title="modeljupytermagic module" href="modeljupytermagic.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onboard/onboard.html">Processing model specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="jupyter.html">Jupyter Stuff</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="modeljupyter.html">modeljupyter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeljupytermagic.html">modeljupytermagic module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">modelwidget module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="jupyter.html">Jupyter Stuff</a> &raquo;</li>
+      <li>modelwidget module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/jupyter/modelwidget.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul><div class="rst-breadcrumbs-buttons" role="navigation" aria-label="Sequential page navigation">
+        <a href="modeljupytermagic.html" class="btn btn-neutral float-left" title="modeljupytermagic module" accesskey="p"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../used/modelinvert.html" class="btn btn-neutral float-right" title="modelinvert module" accesskey="n">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+  </div>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-modelwidget">
+<span id="modelwidget-module"></span><h1>modelwidget module<a class="headerlink" href="#module-modelwidget" title="Permalink to this headline"></a></h1>
+<p>Created on Mon Aug  9 14:46:11 2021</p>
+<p>To define Jupyter widgets to update and show variables.
+&#64;author: Ib</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.basewidget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">basewidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">datachildren:</span> <span class="pre">list</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#basewidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.basewidget" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>basis for widget updating in jupyter</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.basewidget.datachildren">
+<span class="sig-name descname"><span class="pre">datachildren</span></span><em class="property"><span class="pre">:</span> <span class="pre">list</span></em><a class="headerlink" href="#modelwidget.basewidget.datachildren" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.basewidget.update_df">
+<span class="sig-name descname"><span class="pre">update_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#basewidget.update_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.basewidget.update_df" title="Permalink to this definition"></a></dt>
+<dd><p>will update container widgets</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.tabwidget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">tabwidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tabdefdict</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tab</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_index</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">any</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#tabwidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.tabwidget" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A widget to create tab or acordium contaners</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.tabwidget.tabdefdict">
+<span class="sig-name descname"><span class="pre">tabdefdict</span></span><em class="property"><span class="pre">:</span> <span class="pre">dict</span></em><a class="headerlink" href="#modelwidget.tabwidget.tabdefdict" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.tabwidget.tab">
+<span class="sig-name descname"><span class="pre">tab</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelwidget.tabwidget.tab" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.tabwidget.selected_index">
+<span class="sig-name descname"><span class="pre">selected_index</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#modelwidget.tabwidget.selected_index" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.tabwidget.update_df">
+<span class="sig-name descname"><span class="pre">update_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#tabwidget.update_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.tabwidget.update_df" title="Permalink to this definition"></a></dt>
+<dd><p>will update container widgets</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.tabwidget.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#tabwidget.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.tabwidget.reset" title="Permalink to this definition"></a></dt>
+<dd><p>will reset  container widgets</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.sheetwidget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">sheetwidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">df_var:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></em>, <em class="sig-param"><span class="pre">trans:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">sheetwidget.&lt;lambda&gt;&gt;</span></em>, <em class="sig-param"><span class="pre">transpose:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em>, <em class="sig-param"><span class="pre">expname:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'Carbon</span> <span class="pre">tax</span> <span class="pre">rate</span></em>, <em class="sig-param"><span class="pre">US$</span> <span class="pre">per</span> <span class="pre">tonn</span> <span class="pre">'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#sheetwidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.sheetwidget" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class defining a widget which updates from a sheet</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.sheetwidget.df_var">
+<span class="sig-name descname"><span class="pre">df_var</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><em class="property"> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></em><a class="headerlink" href="#modelwidget.sheetwidget.df_var" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.sheetwidget.trans">
+<span class="sig-name descname"><span class="pre">trans</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#modelwidget.sheetwidget.trans" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.sheetwidget.transpose">
+<span class="sig-name descname"><span class="pre">transpose</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#modelwidget.sheetwidget.transpose" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.sheetwidget.expname">
+<span class="sig-name descname"><span class="pre">expname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'Carbon</span> <span class="pre">tax</span> <span class="pre">rate,</span> <span class="pre">US$</span> <span class="pre">per</span> <span class="pre">tonn</span> <span class="pre">'</span></em><a class="headerlink" href="#modelwidget.sheetwidget.expname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.sheetwidget.update_df">
+<span class="sig-name descname"><span class="pre">update_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_per</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#sheetwidget.update_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.sheetwidget.update_df" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.sheetwidget.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#sheetwidget.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.sheetwidget.reset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.slidewidget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">slidewidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slidedef</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Alternative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basename</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Baseline'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Carbon</span> <span class="pre">tax</span> <span class="pre">rate,</span> <span class="pre">US$</span> <span class="pre">per</span> <span class="pre">tonn</span> <span class="pre">'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#slidewidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.slidewidget" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class defefining a widget with lines of slides</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.slidewidget.slidedef">
+<span class="sig-name descname"><span class="pre">slidedef</span></span><em class="property"><span class="pre">:</span> <span class="pre">dict</span></em><a class="headerlink" href="#modelwidget.slidewidget.slidedef" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.slidewidget.altname">
+<span class="sig-name descname"><span class="pre">altname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'Alternative'</span></em><a class="headerlink" href="#modelwidget.slidewidget.altname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.slidewidget.basename">
+<span class="sig-name descname"><span class="pre">basename</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'Baseline'</span></em><a class="headerlink" href="#modelwidget.slidewidget.basename" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.slidewidget.expname">
+<span class="sig-name descname"><span class="pre">expname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'Carbon</span> <span class="pre">tax</span> <span class="pre">rate,</span> <span class="pre">US$</span> <span class="pre">per</span> <span class="pre">tonn</span> <span class="pre">'</span></em><a class="headerlink" href="#modelwidget.slidewidget.expname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.slidewidget.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#slidewidget.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.slidewidget.reset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.slidewidget.update_df">
+<span class="sig-name descname"><span class="pre">update_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#slidewidget.update_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.slidewidget.update_df" title="Permalink to this definition"></a></dt>
+<dd><p>updates a dataframe with the values from the widget</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.slidewidget.set_slide_value">
+<span class="sig-name descname"><span class="pre">set_slide_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#slidewidget.set_slide_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.slidewidget.set_slide_value" title="Permalink to this definition"></a></dt>
+<dd><p>updates the new values to the self.current_vlues
+will be used in update_df</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">sumslidewidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slidedef</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxsum</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">any</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Alternative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basename</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Baseline'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Carbon</span> <span class="pre">tax</span> <span class="pre">rate,</span> <span class="pre">US$</span> <span class="pre">per</span> <span class="pre">tonn</span> <span class="pre">'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#sumslidewidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.sumslidewidget" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class defefining a widget with lines of slides</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget.slidedef">
+<span class="sig-name descname"><span class="pre">slidedef</span></span><em class="property"><span class="pre">:</span> <span class="pre">dict</span></em><a class="headerlink" href="#modelwidget.sumslidewidget.slidedef" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget.maxsum">
+<span class="sig-name descname"><span class="pre">maxsum</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#modelwidget.sumslidewidget.maxsum" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget.altname">
+<span class="sig-name descname"><span class="pre">altname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'Alternative'</span></em><a class="headerlink" href="#modelwidget.sumslidewidget.altname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget.basename">
+<span class="sig-name descname"><span class="pre">basename</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'Baseline'</span></em><a class="headerlink" href="#modelwidget.sumslidewidget.basename" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget.expname">
+<span class="sig-name descname"><span class="pre">expname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'Carbon</span> <span class="pre">tax</span> <span class="pre">rate,</span> <span class="pre">US$</span> <span class="pre">per</span> <span class="pre">tonn</span> <span class="pre">'</span></em><a class="headerlink" href="#modelwidget.sumslidewidget.expname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#sumslidewidget.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.sumslidewidget.reset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget.update_df">
+<span class="sig-name descname"><span class="pre">update_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_per</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#sumslidewidget.update_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.sumslidewidget.update_df" title="Permalink to this definition"></a></dt>
+<dd><p>updates a dataframe with the values from the widget</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.sumslidewidget.set_slide_value">
+<span class="sig-name descname"><span class="pre">set_slide_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#sumslidewidget.set_slide_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.sumslidewidget.set_slide_value" title="Permalink to this definition"></a></dt>
+<dd><p>updates the new values to the self.current_vlues
+will be used in update_df</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.updatewidget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">updatewidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mmodel:</span> <span class="pre">any</span></em>, <em class="sig-param"><span class="pre">a_datawidget:</span> <span class="pre">any</span></em>, <em class="sig-param"><span class="pre">basename:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'Business</span> <span class="pre">as</span> <span class="pre">usual'</span></em>, <em class="sig-param"><span class="pre">keeppat:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'*'</span></em>, <em class="sig-param"><span class="pre">varpat:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'*'</span></em>, <em class="sig-param"><span class="pre">showvarpat:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em>, <em class="sig-param"><span class="pre">exodif:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></em>, <em class="sig-param"><span class="pre">lwrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em>, <em class="sig-param"><span class="pre">lwupdate:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em>, <em class="sig-param"><span class="pre">lwreset:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em>, <em class="sig-param"><span class="pre">lwsetbas:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em>, <em class="sig-param"><span class="pre">lwshow:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em>, <em class="sig-param"><span class="pre">outputwidget:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'jupviz'</span></em>, <em class="sig-param"><span class="pre">prefix_dict:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em>, <em class="sig-param"><span class="pre">display_first:</span> <span class="pre">Optional[any]</span> <span class="pre">=</span> <span class="pre">None</span></em>, <em class="sig-param"><span class="pre">vline:</span> <span class="pre">list</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em>, <em class="sig-param"><span class="pre">relativ_start:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></em>, <em class="sig-param"><span class="pre">short:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em>, <em class="sig-param"><span class="pre">legend:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#updatewidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.updatewidget" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class to input and run a model</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.mmodel">
+<span class="sig-name descname"><span class="pre">mmodel</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><a class="headerlink" href="#modelwidget.updatewidget.mmodel" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.a_datawidget">
+<span class="sig-name descname"><span class="pre">a_datawidget</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><a class="headerlink" href="#modelwidget.updatewidget.a_datawidget" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.basename">
+<span class="sig-name descname"><span class="pre">basename</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'Business</span> <span class="pre">as</span> <span class="pre">usual'</span></em><a class="headerlink" href="#modelwidget.updatewidget.basename" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.keeppat">
+<span class="sig-name descname"><span class="pre">keeppat</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'*'</span></em><a class="headerlink" href="#modelwidget.updatewidget.keeppat" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.varpat">
+<span class="sig-name descname"><span class="pre">varpat</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'*'</span></em><a class="headerlink" href="#modelwidget.updatewidget.varpat" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.showvarpat">
+<span class="sig-name descname"><span class="pre">showvarpat</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelwidget.updatewidget.showvarpat" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.exodif">
+<span class="sig-name descname"><span class="pre">exodif</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><em class="property"> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></em><a class="headerlink" href="#modelwidget.updatewidget.exodif" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.lwrun">
+<span class="sig-name descname"><span class="pre">lwrun</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelwidget.updatewidget.lwrun" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.lwupdate">
+<span class="sig-name descname"><span class="pre">lwupdate</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#modelwidget.updatewidget.lwupdate" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.lwreset">
+<span class="sig-name descname"><span class="pre">lwreset</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelwidget.updatewidget.lwreset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.lwsetbas">
+<span class="sig-name descname"><span class="pre">lwsetbas</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelwidget.updatewidget.lwsetbas" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.lwshow">
+<span class="sig-name descname"><span class="pre">lwshow</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelwidget.updatewidget.lwshow" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.outputwidget">
+<span class="sig-name descname"><span class="pre">outputwidget</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'jupviz'</span></em><a class="headerlink" href="#modelwidget.updatewidget.outputwidget" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.prefix_dict">
+<span class="sig-name descname"><span class="pre">prefix_dict</span></span><em class="property"><span class="pre">:</span> <span class="pre">dict</span></em><a class="headerlink" href="#modelwidget.updatewidget.prefix_dict" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.display_first">
+<span class="sig-name descname"><span class="pre">display_first</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#modelwidget.updatewidget.display_first" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.vline">
+<span class="sig-name descname"><span class="pre">vline</span></span><em class="property"><span class="pre">:</span> <span class="pre">list</span></em><a class="headerlink" href="#modelwidget.updatewidget.vline" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.relativ_start">
+<span class="sig-name descname"><span class="pre">relativ_start</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><em class="property"> <span class="pre">=</span> <span class="pre">0</span></em><a class="headerlink" href="#modelwidget.updatewidget.relativ_start" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.short">
+<span class="sig-name descname"><span class="pre">short</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#modelwidget.updatewidget.short" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.legend">
+<span class="sig-name descname"><span class="pre">legend</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#modelwidget.updatewidget.legend" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#updatewidget.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.updatewidget.update" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.show">
+<span class="sig-name descname"><span class="pre">show</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#updatewidget.show"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.updatewidget.show" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#updatewidget.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.updatewidget.run" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.setbasis">
+<span class="sig-name descname"><span class="pre">setbasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#updatewidget.setbasis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.updatewidget.setbasis" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.updatewidget.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#updatewidget.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.updatewidget.reset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="modelwidget.fig_to_image">
+<span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">fig_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'svg'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#fig_to_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.fig_to_image" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_df">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">htmlwidget_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mmodel:</span> <span class="pre">any</span></em>, <em class="sig-param"><span class="pre">df_var:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></em>, <em class="sig-param"><span class="pre">trans:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">htmlwidget_df.&lt;lambda&gt;&gt;</span></em>, <em class="sig-param"><span class="pre">transpose:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em>, <em class="sig-param"><span class="pre">expname:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></em>, <em class="sig-param"><span class="pre">percent:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#htmlwidget_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.htmlwidget_df" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class displays a dataframe in a html widget</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_df.mmodel">
+<span class="sig-name descname"><span class="pre">mmodel</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><a class="headerlink" href="#modelwidget.htmlwidget_df.mmodel" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_df.df_var">
+<span class="sig-name descname"><span class="pre">df_var</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><em class="property"> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></em><a class="headerlink" href="#modelwidget.htmlwidget_df.df_var" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_df.trans">
+<span class="sig-name descname"><span class="pre">trans</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#modelwidget.htmlwidget_df.trans" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_df.transpose">
+<span class="sig-name descname"><span class="pre">transpose</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#modelwidget.htmlwidget_df.transpose" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_df.expname">
+<span class="sig-name descname"><span class="pre">expname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelwidget.htmlwidget_df.expname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_df.percent">
+<span class="sig-name descname"><span class="pre">percent</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#modelwidget.htmlwidget_df.percent" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_df.show">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">show</span></span><a class="headerlink" href="#modelwidget.htmlwidget_df.show" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_fig">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">htmlwidget_fig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'svg'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#htmlwidget_fig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.htmlwidget_fig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class displays a dataframe in a html widget</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_fig.figs">
+<span class="sig-name descname"><span class="pre">figs</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><a class="headerlink" href="#modelwidget.htmlwidget_fig.figs" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_fig.expname">
+<span class="sig-name descname"><span class="pre">expname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelwidget.htmlwidget_fig.expname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_fig.format">
+<span class="sig-name descname"><span class="pre">format</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'svg'</span></em><a class="headerlink" href="#modelwidget.htmlwidget_fig.format" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_label">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">htmlwidget_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'svg'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#htmlwidget_label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.htmlwidget_label" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class displays a dataframe in a html widget</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_label.expname">
+<span class="sig-name descname"><span class="pre">expname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelwidget.htmlwidget_label.expname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.htmlwidget_label.format">
+<span class="sig-name descname"><span class="pre">format</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'svg'</span></em><a class="headerlink" href="#modelwidget.htmlwidget_label.format" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelwidget.visshow">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelwidget.</span></span><span class="sig-name descname"><span class="pre">visshow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mmodel:</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">any&gt;</span></em>, <em class="sig-param"><span class="pre">varpat:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'*'</span></em>, <em class="sig-param"><span class="pre">showvarpat:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em>, <em class="sig-param"><span class="pre">show_on:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelwidget.html#visshow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelwidget.visshow" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.visshow.mmodel">
+<span class="sig-name descname"><span class="pre">mmodel</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><a class="headerlink" href="#modelwidget.visshow.mmodel" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.visshow.varpat">
+<span class="sig-name descname"><span class="pre">varpat</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'*'</span></em><a class="headerlink" href="#modelwidget.visshow.varpat" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.visshow.showvarpat">
+<span class="sig-name descname"><span class="pre">showvarpat</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelwidget.visshow.showvarpat" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelwidget.visshow.show_on">
+<span class="sig-name descname"><span class="pre">show_on</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelwidget.visshow.show_on" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="modelwidget.visshow.show">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">show</span></span><a class="headerlink" href="#modelwidget.visshow.show" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modeljupytermagic.html" class="btn btn-neutral float-left" title="modeljupytermagic module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../used/modelinvert.html" class="btn btn-neutral float-right" title="modelinvert module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

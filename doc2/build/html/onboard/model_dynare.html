@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>model_dynare module &mdash; ModelFlow  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="model_latex module" href="model_latex.html" />
+    <link rel="prev" title="model_Excel module" href="model_Excel.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+            <a href="../index.html" class="icon icon-home"> ModelFlow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">content:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/Core.html">Core Modules, creates and solves model instances</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="onboard.html">Processing model specification</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="onboard.html#text-processing-and-normalization-of-model-specification">Text processing and normalization of model specification</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="onboard.html#onboarding-models">Onboarding models</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="modelgrabwf2.html">modelgrabwf2 module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_Excel.html">model_Excel module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">model_dynare module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_latex.html">model_latex module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onboard.html#old-stuff">Old Stuff</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../attribution/Attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vis/modelvis.html">Quick result visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/jupyter.html">Jupyter Stuff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelmf.html">Enrich dataframes with modelflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/model_cvx.html">Convex optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../used/modelsandbox.html">Template for a user defined  model class based on the model class</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Unsorted:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_financial_stability.html">model_financial_stability module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_ifrs9.html">model_ifrs9 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/model_run_numba.html">model_run_numba module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelclass2.html">modelclass2 module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldash.html">modeldash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldashboot.html">modeldashboot module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeldiff.html">modeldiff module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelhelp.html">modelhelp module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelnet.html">modelnet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modelsandbox_Mixin.html">modelsandbox_Mixin module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../unsorted/modeltodo.html">modeltodo module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: white" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ModelFlow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="onboard.html">Processing model specification</a> &raquo;</li>
+      <li>model_dynare module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/onboard/model_dynare.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul><div class="rst-breadcrumbs-buttons" role="navigation" aria-label="Sequential page navigation">
+        <a href="model_Excel.html" class="btn btn-neutral float-left" title="model_Excel module" accesskey="p"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="model_latex.html" class="btn btn-neutral float-right" title="model_latex module" accesskey="n">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+  </div>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-model_dynare">
+<span id="model-dynare-module"></span><h1>model_dynare module<a class="headerlink" href="#module-model_dynare" title="Permalink to this headline"></a></h1>
+<p>Created on Wed Jan  9 16:05:56 2019
+Reads a list of expanded modfile (outputtet from dynare)</p>
+<p>&#64;author: hanseni</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="model_dynare.grap_modfile">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">model_dynare.</span></span><span class="sig-name descname"><span class="pre">grap_modfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/model_dynare.html#grap_modfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_dynare.grap_modfile" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Accept filenames as argument. The first file is asumed to be the main model
+and gives the model its name</p>
+<p>Instead of filenames a string with a .mod file can be accepted</p>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">savepath</dt>
+<dd class="field-odd"><p>(path of first file ) Where to save</p>
+</dd>
+<dt class="field-even">save</dt>
+<dd class="field-even"><p>(True) save the frm and mod files</p>
+</dd>
+<dt class="field-odd">modelname</dt>
+<dd class="field-odd"><p>(name from first model file else “testmodel” for strings), name of model</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>The class contains among other:</p>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">mthismodel</dt>
+<dd class="field-odd"><p>The actual model</p>
+</dd>
+<dt class="field-even">mresmodel</dt>
+<dd class="field-even"><p>A model to calculate the _res variables before the actual calculations</p>
+</dd>
+<dt class="field-odd">mparamodel</dt>
+<dd class="field-odd"><p>A model to inject parameter values into a dataframe before calculation</p>
+</dd>
+<dt class="field-even">fthismodel</dt>
+<dd class="field-even"><p>String with the model</p>
+</dd>
+<dt class="field-odd">fresmodel</dt>
+<dd class="field-odd"><p>String with the model for calculating residuals</p>
+</dd>
+<dt class="field-even">fparamodel</dt>
+<dd class="field-even"><p>String with the model for injecting parameters</p>
+</dd>
+<dt class="field-odd">modout</dt>
+<dd class="field-odd"><p>String with the consolidated .mod file</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>creates 5 files:</p>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">{modelname}.frm</dt>
+<dd class="field-odd"><p>Formulas in modelflow business language</p>
+</dd>
+<dt class="field-even">{modelname}_res.frm</dt>
+<dd class="field-even"><p>Formulas for mresmodel</p>
+</dd>
+<dt class="field-odd">{modelname}_para.frm</dt>
+<dd class="field-odd"><p>Formulas for mparamodel</p>
+</dd>
+<dt class="field-even">{modelname}_cons.mod</dt>
+<dd class="field-even"><p>A consolidated .mod file defining the model and parameters</p>
+</dd>
+<dt class="field-odd">{modelname}.inf</dt>
+<dd class="field-odd"><p>A with model information - also displayes after execution</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="model_Excel.html" class="btn btn-neutral float-left" title="model_Excel module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="model_latex.html" class="btn btn-neutral float-right" title="model_latex module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ib Hansen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

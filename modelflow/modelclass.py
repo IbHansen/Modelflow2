@@ -1195,13 +1195,18 @@ class Org_model_Mixin():
         '''
         To execute the index operator []
         
-        Uses the :any:`vis` operator        
+        Uses the :any:`modelvis.vis` operator        
 
         '''
         a = self.vis(name)
         return a
 
     def __getattr__(self, name):
+        '''To execute the . operator
+        
+        uses :any:`modelvis.varvis`
+        
+        '''
         try:
             return mv.varvis(model=self, var=name.upper())
         except:

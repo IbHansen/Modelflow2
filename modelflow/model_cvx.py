@@ -17,10 +17,10 @@ import pandas as pd
 from cvxopt         import matrix,  spdiag
 from cvxopt.solvers import qp    ,  options 
 
-"""
 
-"""
 def MV_test(lprint=True):
+    '''  Test a mean variance model for Indonesian Rupia
+    ''' 
     P= matrix([
     [0.01573635,	0.01436816,	0.01045556],
     [0.01436816,	0.02289016,	0.01172995],
@@ -54,7 +54,8 @@ def MV_test(lprint=True):
     return results     
     
 def mv_opt(PP,qq,riskaversion,bsum,weights,weigthtedsum,boundsmin,boundsmax,lprint=False,solget=None):
-    ''' Performs mean variance optimization by calling a quadratic optimization function from the cvxopt \n
+    ''' Performs mean variance optimization by calling a 
+    quadratic optimization function from the cvxopt 
     library 
     
     '''
@@ -82,7 +83,8 @@ def mv_opt(PP,qq,riskaversion,bsum,weights,weigthtedsum,boundsmin,boundsmax,lpri
         return res                                                       # get the solution 
 
 def mv_opt_bs(msigma,vreturn,riskaversion,budget,risk_weights,capital,lcr_weights,lcr,leverage_weights,equity,boundsmin,boundsmax,lprint=False,solget=None):
-    '''performs balance sheet optimization
+    '''
+    Performs balance sheet optimization using mean variance optimization 
     '''
     res = mv_opt(msigma,vreturn,riskaversion,budget,[risk_weights,-lcr_weights,leverage_weights],[capital,-lcr,equity],boundsmin,boundsmax,lprint=False,solget=None)
     return res
