@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>modelgrab module &mdash; ModelFlow  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -111,7 +110,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-modelgrab">
+  <div class="section" id="module-modelgrab">
 <span id="modelgrab-module"></span><h1>modelgrab module<a class="headerlink" href="#module-modelgrab" title="Permalink to this headline"></a></h1>
 <p>Created on Mon Jun 10 21:11:08 2019</p>
 <p>&#64;author: hanseni</p>
@@ -138,43 +137,43 @@
 and then displays the input to off mark equations</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelgrab.</span></span><span class="sig-name descname"><span class="pre">GrapWbModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">frml:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></em>, <em class="sig-param"><span class="pre">data:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></em>, <em class="sig-param"><span class="pre">des:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">''</span></em>, <em class="sig-param"><span class="pre">scalars:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></em>, <em class="sig-param"><span class="pre">modelname:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'No</span> <span class="pre">Name'</span></em>, <em class="sig-param"><span class="pre">start:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2017</span></em>, <em class="sig-param"><span class="pre">end:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2040</span></em>, <em class="sig-param"><span class="pre">country_trans:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">GrapWbModel.&lt;lambda&gt;&gt;</span></em>, <em class="sig-param"><span class="pre">country_df_trans:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">GrapWbModel.&lt;lambda&gt;&gt;</span></em>, <em class="sig-param"><span class="pre">from_wf2:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em>, <em class="sig-param"><span class="pre">make_fitted:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em>, <em class="sig-param"><span class="pre">fit_start:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2000</span></em>, <em class="sig-param"><span class="pre">fit_end:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2100</span></em>, <em class="sig-param"><span class="pre">do_add_factor_calc:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em>, <em class="sig-param"><span class="pre">mfmsa:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelgrab.html#GrapWbModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelgrab.GrapWbModel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelgrab.</span></span><span class="sig-name descname"><span class="pre">GrapWbModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frml:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">des:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalars:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'No</span> <span class="pre">Name'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2017</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2040</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_trans:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">GrapWbModel.&lt;lambda&gt;&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_df_trans:</span> <span class="pre">any</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">GrapWbModel.&lt;lambda&gt;&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_wf2:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_fitted:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_start:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_end:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_add_factor_calc:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mfmsa:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelgrab.html#GrapWbModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelgrab.GrapWbModel" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class takes a world bank model specification, variable data and variable description
 and transform it to ModelFlow business language</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.frml">
-<span class="sig-name descname"><span class="pre">frml</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.frml" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">frml</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.frml" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.data">
-<span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.data" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.data" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.des">
-<span class="sig-name descname"><span class="pre">des</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.des" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">des</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">any</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.des" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.scalars">
-<span class="sig-name descname"><span class="pre">scalars</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.scalars" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">scalars</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.scalars" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.modelname">
-<span class="sig-name descname"><span class="pre">modelname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'No</span> <span class="pre">Name'</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.modelname" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">modelname</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'No</span> <span class="pre">Name'</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.modelname" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.start">
-<span class="sig-name descname"><span class="pre">start</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><em class="property"> <span class="pre">=</span> <span class="pre">2017</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.start" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2017</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.start" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.end">
-<span class="sig-name descname"><span class="pre">end</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><em class="property"> <span class="pre">=</span> <span class="pre">2040</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.end" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">end</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2040</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.end" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -189,59 +188,59 @@ and transform it to ModelFlow business language</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.from_wf2">
-<span class="sig-name descname"><span class="pre">from_wf2</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.from_wf2" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">from_wf2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.from_wf2" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.make_fitted">
-<span class="sig-name descname"><span class="pre">make_fitted</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.make_fitted" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">make_fitted</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.make_fitted" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.fit_start">
-<span class="sig-name descname"><span class="pre">fit_start</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><em class="property"> <span class="pre">=</span> <span class="pre">2000</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.fit_start" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit_start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2000</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.fit_start" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.fit_end">
-<span class="sig-name descname"><span class="pre">fit_end</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><em class="property"> <span class="pre">=</span> <span class="pre">2100</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.fit_end" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit_end</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2100</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.fit_end" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.do_add_factor_calc">
-<span class="sig-name descname"><span class="pre">do_add_factor_calc</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.do_add_factor_calc" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">do_add_factor_calc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.do_add_factor_calc" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.mfmsa">
-<span class="sig-name descname"><span class="pre">mfmsa</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.mfmsa" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">mfmsa</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#modelgrab.GrapWbModel.mfmsa" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.trans_eviews">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">trans_eviews</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rawmodel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelgrab.html#GrapWbModel.trans_eviews"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelgrab.GrapWbModel.trans_eviews" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trans_eviews</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rawmodel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelgrab.html#GrapWbModel.trans_eviews"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelgrab.GrapWbModel.trans_eviews" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.var_description">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">var_description</span></span><a class="headerlink" href="#modelgrab.GrapWbModel.var_description" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">var_description</span></span><a class="headerlink" href="#modelgrab.GrapWbModel.var_description" title="Permalink to this definition"></a></dt>
 <dd><p>Adds var descriptions for add factors, exogenizing dummies and exoggenizing values</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.mfmsa_options">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">mfmsa_options</span></span><a class="headerlink" href="#modelgrab.GrapWbModel.mfmsa_options" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mfmsa_options</span></span><a class="headerlink" href="#modelgrab.GrapWbModel.mfmsa_options" title="Permalink to this definition"></a></dt>
 <dd><p>Grab the mfmsa options, a world bank speciality</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.mfmsa_start_end">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">mfmsa_start_end</span></span><a class="headerlink" href="#modelgrab.GrapWbModel.mfmsa_start_end" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mfmsa_start_end</span></span><a class="headerlink" href="#modelgrab.GrapWbModel.mfmsa_start_end" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelgrab.GrapWbModel.dfmodel">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">dfmodel</span></span><a class="headerlink" href="#modelgrab.GrapWbModel.dfmodel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dfmodel</span></span><a class="headerlink" href="#modelgrab.GrapWbModel.dfmodel" title="Permalink to this definition"></a></dt>
 <dd><p>The original input data enriched with during variablees, variables containing
 values for specific historic years and model specific transformation</p>
 </dd></dl>
@@ -271,7 +270,7 @@ values for specific historic years and model specific transformation</p>
 
 </dd></dl>
 
-</section>
+</div>
 
 
            </div>

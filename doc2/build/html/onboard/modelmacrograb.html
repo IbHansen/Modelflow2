@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>modelmacrograb module &mdash; ModelFlow  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -111,45 +110,45 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-modelmacrograb">
+  <div class="section" id="module-modelmacrograb">
 <span id="modelmacrograb-module"></span><h1>modelmacrograb module<a class="headerlink" href="#module-modelmacrograb" title="Permalink to this headline"></a></h1>
 <p>Created on Sun Jun 19 14:43:37 2022</p>
 <p>grab a world bank macromodel using modelnormalize and not modelmanipulation</p>
 <p>&#64;author: ibhan</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="modelmacrograb.GrabMacroModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelmacrograb.</span></span><span class="sig-name descname"><span class="pre">GrabMacroModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputfrml</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">any</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'macromodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_fitted</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_add_factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmacrograb.html#GrabMacroModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmacrograb.GrabMacroModel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelmacrograb.</span></span><span class="sig-name descname"><span class="pre">GrabMacroModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputfrml</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'macromodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_fitted</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_add_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelmacrograb.html#GrabMacroModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmacrograb.GrabMacroModel" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class takes a world bank model specification, variable data and variable description
 and transform it to ModelFlow business language</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelmacrograb.GrabMacroModel.inputfrml">
-<span class="sig-name descname"><span class="pre">inputfrml</span></span><em class="property"><span class="pre">:</span> <span class="pre">any</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.inputfrml" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">inputfrml</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">any</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.inputfrml" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelmacrograb.GrabMacroModel.modelname">
-<span class="sig-name descname"><span class="pre">modelname</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'macromodel'</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.modelname" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">modelname</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'macromodel'</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.modelname" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelmacrograb.GrabMacroModel.make_fitted">
-<span class="sig-name descname"><span class="pre">make_fitted</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.make_fitted" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">make_fitted</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.make_fitted" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelmacrograb.GrabMacroModel.add_add_factor">
-<span class="sig-name descname"><span class="pre">add_add_factor</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.add_add_factor" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">add_add_factor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.add_add_factor" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelmacrograb.GrabMacroModel.debug">
-<span class="sig-name descname"><span class="pre">debug</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.debug" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">debug</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#modelmacrograb.GrabMacroModel.debug" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-</section>
+</div>
 
 
            </div>

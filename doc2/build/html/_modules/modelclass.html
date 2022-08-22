@@ -93,7 +93,34 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Created on Mon Sep 02 19:41:11 2013</span>
 
-<span class="sd">This module creates model class instances. </span>
+<span class="sd">This module creates the **model** class (:class:`model`), which is the main class for </span>
+<span class="sd">managing models.  </span>
+
+<span class="sd">To make life easy the model class is constructed through a numner of mixin classes. </span>
+<span class="sd">Each of these handles more or less common tasks. </span>
+
+<span class="sd">- :class:`BaseModel`</span>
+<span class="sd">- :class:`Solver_Mixin`</span>
+<span class="sd">- :class:`Zip_Mixin`</span>
+<span class="sd">- :class:`Json_Mixin`</span>
+<span class="sd">- :class:`Model_help_Mixin`</span>
+<span class="sd">- :class:`Display_Mixin`</span>
+<span class="sd">- :class:`Graph_Draw_Mixin`</span>
+<span class="sd">- :class:`Graph_Mixin`</span>
+<span class="sd">- :class:`Dekomp_Mixin`</span>
+<span class="sd">- :class:`Org_model_Mixin`</span>
+<span class="sd">- :class:`Description_Mixin`</span>
+<span class="sd">- :class:`Excel_Mixin`</span>
+<span class="sd">- :class:`Dash_Mixin`</span>
+<span class="sd">- :class:`Modify_Mixin`</span>
+<span class="sd">- :class:`Fix_Mixin`</span>
+
+<span class="sd">In addition the :class:`upd` class is defines, It defines a pandas dataframe extension </span>
+<span class="sd">which allows the user to use the upd methods on dataframes. </span>
+
+<span class="sd">The core function of **model** is :func:`BaseModel.analyzemodelnew` which first </span>
+<span class="sd">tokenizes a model specification then anlyzes the model. Then the model can be solved </span>
+<span class="sd">by one of the methods in the :class:`Solver_Mixin` class. </span>
 
 
 
@@ -166,14 +193,6 @@
 <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">isclose</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">erf</span>
 <span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">erfinv</span><span class="p">,</span> <span class="n">ndtri</span>
 
-<span class="n">node</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;node&#39;</span><span class="p">,</span> <span class="s1">&#39;lev,parent,child&#39;</span><span class="p">)</span>
-<span class="sd">&#39;&#39;&#39;A named tuple used when to drawing the logical structure. Describes an edge of the dependency graph </span>
-
-<span class="sd">:lev: Level from start</span>
-<span class="sd">:parent: The parent</span>
-<span class="sd">:child: The child  </span>
-
-<span class="sd">&#39;&#39;&#39;</span>
 
 <span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
 
@@ -589,12 +608,22 @@
         <span class="k">return</span> <span class="n">res</span>
     
 <div class="viewcode-block" id="BaseModel.calculate_freq_list"><a class="viewcode-back" href="../core/modelclass.html#modelclass.BaseModel.calculate_freq_list">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_freq_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">varlist</span><span class="p">):</span>
-            <span class="n">operators</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">varlist</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;terms&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span>
-                <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;dropfrml&#39;</span><span class="p">])</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="ow">not</span> <span class="ow">in</span> <span class="s1">&#39;$,()=[]&#39;</span><span class="p">)</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">operators</span><span class="p">)</span><span class="o">.</span><span class="n">most_common</span><span class="p">()</span>
-            <span class="nb">all</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">((</span><span class="n">n</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">res</span><span class="p">))</span>
-            <span class="n">calculate_freq</span> <span class="o">=</span> <span class="n">res</span><span class="o">+</span><span class="p">[(</span><span class="s1">&#39;Total&#39;</span><span class="p">,</span> <span class="nb">all</span><span class="p">)]</span>
-            <span class="k">return</span> <span class="n">calculate_freq</span></div>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            varlist (TYPE): calculates number of operations in list of variables.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            calculate_freq (TYPE): DESCRIPTION.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">operators</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">varlist</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;terms&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="s1">&#39;dropfrml&#39;</span><span class="p">])</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">op</span> <span class="ow">not</span> <span class="ow">in</span> <span class="s1">&#39;$,()=[]&#39;</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">operators</span><span class="p">)</span><span class="o">.</span><span class="n">most_common</span><span class="p">()</span>
+        <span class="nb">all</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">((</span><span class="n">n</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">res</span><span class="p">))</span>
+        <span class="n">calculate_freq</span> <span class="o">=</span> <span class="n">res</span><span class="o">+</span><span class="p">[(</span><span class="s1">&#39;Total&#39;</span><span class="p">,</span> <span class="nb">all</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">calculate_freq</span></div>
 
         
     
@@ -1092,10 +1121,7 @@
 
 
 <div class="viewcode-block" id="Org_model_Mixin"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Org_model_Mixin">[docs]</a><span class="k">class</span> <span class="nc">Org_model_Mixin</span><span class="p">():</span>
-    <span class="sd">&#39;&#39;&#39; The model class, used for calculating models</span>
-
-<span class="sd">    Compared to BaseModel it allows for simultaneous model and contains a number of properties </span>
-<span class="sd">    and functions to analyze and manipulate models and visualize results.  </span>
+    <span class="sd">&#39;&#39;&#39; This mixin enrich the Basemodel class with different utility methods. </span>
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
@@ -6636,8 +6662,8 @@
         <span class="n">out</span> <span class="o">=</span> <span class="n">Dash_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">arg</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">out</span> </div></div>
 
-<div class="viewcode-block" id="WB_Mixin"><a class="viewcode-back" href="../core/modelclass.html#modelclass.WB_Mixin">[docs]</a><span class="k">class</span> <span class="nc">WB_Mixin</span><span class="p">():</span>
-    <span class="sd">&#39;&#39;&#39;This mixin handles a number of enhancements &#39;&#39;&#39;</span>
+<div class="viewcode-block" id="Fix_Mixin"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Fix_Mixin">[docs]</a><span class="k">class</span> <span class="nc">Fix_Mixin</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39;This mixin handles a number of world bank enhancements &#39;&#39;&#39;</span>
     
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">wb_behavioral</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -6655,7 +6681,7 @@
         <span class="sd">&#39;&#39;&#39;returns endogeneous variables not in wb_behavioral &#39;&#39;&#39;</span>
         <span class="k">return</span>  <span class="bp">self</span><span class="o">.</span><span class="n">endogene</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">wb_behavioral</span>
     
-<div class="viewcode-block" id="WB_Mixin.fix"><a class="viewcode-back" href="../core/modelclass.html#modelclass.WB_Mixin.fix">[docs]</a>    <span class="k">def</span> <span class="nf">fix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Fix_Mixin.fix"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Fix_Mixin.fix">[docs]</a>    <span class="k">def</span> <span class="nf">fix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Fixes variables to the current values. </span>
 <span class="sd">        </span>
@@ -6698,7 +6724,7 @@
     
         <span class="k">return</span> <span class="n">dataframe</span></div>
     
-<div class="viewcode-block" id="WB_Mixin.unfix"><a class="viewcode-back" href="../core/modelclass.html#modelclass.WB_Mixin.unfix">[docs]</a>    <span class="k">def</span> <span class="nf">unfix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Fix_Mixin.unfix"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Fix_Mixin.unfix">[docs]</a>    <span class="k">def</span> <span class="nf">unfix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">pat</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Unfix (endogenize) variables </span>
 
@@ -6725,7 +6751,7 @@
             <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_per</span><span class="p">,</span><span class="n">dummy</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>      
         <span class="k">return</span> <span class="n">dataframe</span></div>
 
-<div class="viewcode-block" id="WB_Mixin.find_fix_dummy_fixed"><a class="viewcode-back" href="../core/modelclass.html#modelclass.WB_Mixin.find_fix_dummy_fixed">[docs]</a>    <span class="k">def</span> <span class="nf">find_fix_dummy_fixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Fix_Mixin.find_fix_dummy_fixed"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Fix_Mixin.find_fix_dummy_fixed">[docs]</a>    <span class="k">def</span> <span class="nf">find_fix_dummy_fixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; returns names of actiove exogenizing dummies </span>
 <span class="sd">        </span>
 <span class="sd">        sets the property self. exodummy_per which defines the time over which the dummies are defined&#39;&#39;&#39;</span>
@@ -6794,7 +6820,7 @@
 
         <span class="k">return</span> <span class="p">[</span><span class="n">v</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fix_dummy_fixed</span><span class="p">]</span>
     
-<div class="viewcode-block" id="WB_Mixin.fix_inf"><a class="viewcode-back" href="../core/modelclass.html#modelclass.WB_Mixin.fix_inf">[docs]</a>    <span class="k">def</span> <span class="nf">fix_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Fix_Mixin.fix_inf"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Fix_Mixin.fix_inf">[docs]</a>    <span class="k">def</span> <span class="nf">fix_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; Display information regarding exogenizing </span>
 <span class="sd">         &#39;&#39;&#39;</span>
         <span class="n">thisdf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastdf</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="n">df</span>  
@@ -6822,7 +6848,7 @@
         
         
 <div class="viewcode-block" id="model"><a class="viewcode-back" href="../core/modelclass.html#modelclass.model">[docs]</a><span class="k">class</span> <span class="nc">model</span><span class="p">(</span><span class="n">Zip_Mixin</span><span class="p">,</span> <span class="n">Json_Mixin</span><span class="p">,</span> <span class="n">Model_help_Mixin</span><span class="p">,</span> <span class="n">Solver_Mixin</span><span class="p">,</span> <span class="n">Display_Mixin</span><span class="p">,</span> <span class="n">Graph_Draw_Mixin</span><span class="p">,</span> <span class="n">Graph_Mixin</span><span class="p">,</span>
-            <span class="n">Dekomp_Mixin</span><span class="p">,</span> <span class="n">Org_model_Mixin</span><span class="p">,</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Description_Mixin</span><span class="p">,</span> <span class="n">Excel_Mixin</span><span class="p">,</span> <span class="n">Dash_Mixin</span><span class="p">,</span> <span class="n">Modify_Mixin</span><span class="p">,</span><span class="n">WB_Mixin</span><span class="p">):</span>
+            <span class="n">Dekomp_Mixin</span><span class="p">,</span> <span class="n">Org_model_Mixin</span><span class="p">,</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Description_Mixin</span><span class="p">,</span> <span class="n">Excel_Mixin</span><span class="p">,</span> <span class="n">Dash_Mixin</span><span class="p">,</span> <span class="n">Modify_Mixin</span><span class="p">,</span><span class="n">Fix_Mixin</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;This is the main model definition&#39;&#39;&#39;</span>
 
     <span class="k">pass</span></div>
@@ -6855,6 +6881,14 @@
             <span class="n">result</span> <span class="o">=</span>   <span class="n">model</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">indf</span><span class="p">,</span> <span class="n">updates</span><span class="o">=</span><span class="n">updates</span><span class="p">,</span> <span class="n">lprint</span><span class="o">=</span><span class="n">lprint</span><span class="p">,</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="p">,</span><span class="n">create</span><span class="o">=</span><span class="n">create</span><span class="p">,</span><span class="n">keep_growth</span><span class="o">=</span><span class="n">keep_growth</span><span class="p">,)</span>   
             <span class="k">return</span> <span class="n">result</span> </div></div>
 
+<span class="n">node</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;node&#39;</span><span class="p">,</span> <span class="s1">&#39;lev,parent,child&#39;</span><span class="p">)</span>
+<span class="sd">&#39;&#39;&#39;A named tuple used when to drawing the logical structure. Describes an edge of the dependency graph </span>
+
+<span class="sd">:lev: Level from start</span>
+<span class="sd">:parent: The parent</span>
+<span class="sd">:child: The child  </span>
+
+<span class="sd">&#39;&#39;&#39;</span>
 
 <div class="viewcode-block" id="ttimer"><a class="viewcode-back" href="../core/modelclass.html#modelclass.ttimer">[docs]</a><span class="k">def</span> <span class="nf">ttimer</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>

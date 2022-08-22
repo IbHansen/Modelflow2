@@ -2,7 +2,34 @@
 """
 Created on Mon Sep 02 19:41:11 2013
 
-This module creates model class instances. 
+This module creates the **model** class (:class:`model`), which is the main class for 
+managing models.  
+
+To make life easy the model class is constructed through a numner of mixin classes. 
+Each of these handles more or less common tasks. 
+
+- :class:`BaseModel`
+- :class:`Solver_Mixin`
+- :class:`Zip_Mixin`
+- :class:`Json_Mixin`
+- :class:`Model_help_Mixin`
+- :class:`Display_Mixin`
+- :class:`Graph_Draw_Mixin`
+- :class:`Graph_Mixin`
+- :class:`Dekomp_Mixin`
+- :class:`Org_model_Mixin`
+- :class:`Description_Mixin`
+- :class:`Excel_Mixin`
+- :class:`Dash_Mixin`
+- :class:`Modify_Mixin`
+- :class:`Fix_Mixin`
+
+In addition the :class:`upd` class is defines, It defines a pandas dataframe extension 
+which allows the user to use the upd methods on dataframes. 
+
+The core function of **model** is :func:`BaseModel.analyzemodelnew` which first 
+tokenizes a model specification then anlyzes the model. Then the model can be solved 
+by one of the methods in the :class:`Solver_Mixin` class. 
 
 
 
@@ -75,14 +102,6 @@ from scipy.stats import norm
 from math import isclose, sqrt, erf
 from scipy.special import erfinv, ndtri
 
-node = namedtuple('node', 'lev,parent,child')
-'''A named tuple used when to drawing the logical structure. Describes an edge of the dependency graph 
-
-:lev: Level from start
-:parent: The parent
-:child: The child  
-
-'''
 
 np.seterr(all='ignore')
 
@@ -498,12 +517,22 @@ class BaseModel():
         return res
     
     def calculate_freq_list(self,varlist):
-            operators = (t.op for v in varlist for t in self.allvar[v]['terms'] if (
-                not self.allvar[v]['dropfrml']) and t.op and t.op not in '$,()=[]')
-            res = Counter(operators).most_common()
-            all = sum((n[1] for n in res))
-            calculate_freq = res+[('Total', all)]
-            return calculate_freq
+        '''
+        
+
+        Args:
+            varlist (TYPE): calculates number of operations in list of variables.
+
+        Returns:
+            calculate_freq (TYPE): DESCRIPTION.
+
+        '''
+        operators = (t.op for v in varlist for t in self.allvar[v]['terms'] if (
+            not self.allvar[v]['dropfrml']) and t.op and t.op not in '$,()=[]')
+        res = Counter(operators).most_common()
+        all = sum((n[1] for n in res))
+        calculate_freq = res+[('Total', all)]
+        return calculate_freq
 
         
     
@@ -1001,10 +1030,7 @@ class BaseModel():
 
 
 class Org_model_Mixin():
-    ''' The model class, used for calculating models
-
-    Compared to BaseModel it allows for simultaneous model and contains a number of properties 
-    and functions to analyze and manipulate models and visualize results.  
+    ''' This mixin enrich the Basemodel class with different utility methods. 
 
     '''
 
@@ -6545,8 +6571,8 @@ class Dash_Mixin():
         out = Dash_graph(self,*arg,**kwargs)
         return out 
 
-class WB_Mixin():
-    '''This mixin handles a number of enhancements '''
+class Fix_Mixin():
+    '''This mixin handles a number of world bank enhancements '''
     
     @cached_property
     def wb_behavioral(self):
@@ -6731,7 +6757,7 @@ class WB_Mixin():
         
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
-            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,WB_Mixin):
+            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,Fix_Mixin):
     '''This is the main model definition'''
 
     pass
@@ -6764,6 +6790,14 @@ if not hasattr(pd.DataFrame,'upd'):
             result =   model.update(indf, updates=updates, lprint=lprint,scale = scale,create=create,keep_growth=keep_growth,)   
             return result 
 
+node = namedtuple('node', 'lev,parent,child')
+'''A named tuple used when to drawing the logical structure. Describes an edge of the dependency graph 
+
+:lev: Level from start
+:parent: The parent
+:child: The child  
+
+'''
 
 def ttimer(*args, **kwargs):
     return model.timer(*args, **kwargs)

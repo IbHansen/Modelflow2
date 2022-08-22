@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>modelclass module &mdash; ModelFlow  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -102,50 +101,39 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-modelclass">
+  <div class="section" id="module-modelclass">
 <span id="modelclass-module"></span><h1>modelclass module<a class="headerlink" href="#module-modelclass" title="Permalink to this headline"></a></h1>
 <p>Created on Mon Sep 02 19:41:11 2013</p>
-<p>This module creates model class instances.</p>
+<p>This module creates the <strong>model</strong> class (<a class="reference internal" href="#modelclass.model" title="modelclass.model"><code class="xref py py-class docutils literal notranslate"><span class="pre">model</span></code></a>), which is the main class for
+managing models.</p>
+<p>To make life easy the model class is constructed through a numner of mixin classes.
+Each of these handles more or less common tasks.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#modelclass.BaseModel" title="modelclass.BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Solver_Mixin" title="modelclass.Solver_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Solver_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Zip_Mixin" title="modelclass.Zip_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Zip_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Json_Mixin" title="modelclass.Json_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Json_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Model_help_Mixin" title="modelclass.Model_help_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model_help_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Display_Mixin" title="modelclass.Display_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Display_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Graph_Draw_Mixin" title="modelclass.Graph_Draw_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Graph_Draw_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Graph_Mixin" title="modelclass.Graph_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Graph_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Dekomp_Mixin" title="modelclass.Dekomp_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dekomp_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Org_model_Mixin" title="modelclass.Org_model_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Org_model_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Description_Mixin" title="modelclass.Description_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Description_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Excel_Mixin" title="modelclass.Excel_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Excel_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Dash_Mixin" title="modelclass.Dash_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dash_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Modify_Mixin" title="modelclass.Modify_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Modify_Mixin</span></code></a></p></li>
+<li><p><a class="reference internal" href="#modelclass.Fix_Mixin" title="modelclass.Fix_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fix_Mixin</span></code></a></p></li>
+</ul>
+<p>In addition the <a class="reference internal" href="#modelclass.upd" title="modelclass.upd"><code class="xref py py-class docutils literal notranslate"><span class="pre">upd</span></code></a> class is defines, It defines a pandas dataframe extension
+which allows the user to use the upd methods on dataframes.</p>
+<p>The core function of <strong>model</strong> is <a class="reference internal" href="#modelclass.BaseModel.analyzemodelnew" title="modelclass.BaseModel.analyzemodelnew"><code class="xref py py-func docutils literal notranslate"><span class="pre">BaseModel.analyzemodelnew()</span></code></a> which first
+tokenizes a model specification then anlyzes the model. Then the model can be solved
+by one of the methods in the <a class="reference internal" href="#modelclass.Solver_Mixin" title="modelclass.Solver_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Solver_Mixin</span></code></a> class.</p>
 <p>&#64;author: Ib</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="modelclass.node">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lev</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#modelclass.node" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
-<p>A named tuple used when to drawing the logical structure. Describes an edge of the dependency graph</p>
-<dl class="field-list simple">
-<dt class="field-odd">Lev</dt>
-<dd class="field-odd"><p>Level from start</p>
-</dd>
-<dt class="field-even">Parent</dt>
-<dd class="field-even"><p>The parent</p>
-</dd>
-<dt class="field-odd">Child</dt>
-<dd class="field-odd"><p>The child</p>
-</dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="modelclass.node.child">
-<span class="sig-name descname"><span class="pre">child</span></span><a class="headerlink" href="#modelclass.node.child" title="Permalink to this definition"></a></dt>
-<dd><p>Alias for field number 2</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="modelclass.node.lev">
-<span class="sig-name descname"><span class="pre">lev</span></span><a class="headerlink" href="#modelclass.node.lev" title="Permalink to this definition"></a></dt>
-<dd><p>Alias for field number 0</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="modelclass.node.parent">
-<span class="sig-name descname"><span class="pre">parent</span></span><a class="headerlink" href="#modelclass.node.parent" title="Permalink to this definition"></a></dt>
-<dd><p>Alias for field number 1</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="modelclass.BaseModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">BaseModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safeorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#BaseModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.BaseModel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">BaseModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safeorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#BaseModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.BaseModel" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class which defines a model from equations</p>
 <p>In itself the BaseModel is of no use.</p>
@@ -168,7 +156,7 @@ Mixin classes which has additional methods and properties.</p>
 <p>The two result dataframes are used for comparision and visualisation. The user can set both basedf and altdf.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.BaseModel.from_eq">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_eq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#BaseModel.from_eq"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.BaseModel.from_eq" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_eq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#BaseModel.from_eq"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.BaseModel.from_eq" title="Permalink to this definition"></a></dt>
 <dd><p>Creates a model from macro Business logic language.</p>
 <p>That is the model specification is first exploded.</p>
 <dl class="field-list simple">
@@ -313,7 +301,7 @@ if scenarios contains * or ? they are separated by | else space</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.BaseModel.endograph">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">endograph</span></span><a class="headerlink" href="#modelclass.BaseModel.endograph" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">endograph</span></span><a class="headerlink" href="#modelclass.BaseModel.endograph" title="Permalink to this definition"></a></dt>
 <dd><p>Dependencygraph for currrent periode endogeneous variable, used for reorder the equations
 if self.safeorder is true feedback for all lags are included</p>
 <p>safeorder was a fix to handle lags = -0 which unexpected was used in WB models. Now it is handeled in modelpattern</p>
@@ -321,20 +309,31 @@ if self.safeorder is true feedback for all lags are included</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.BaseModel.calculate_freq">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">calculate_freq</span></span><a class="headerlink" href="#modelclass.BaseModel.calculate_freq" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calculate_freq</span></span><a class="headerlink" href="#modelclass.BaseModel.calculate_freq" title="Permalink to this definition"></a></dt>
 <dd><p>The number of operators in the model</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.BaseModel.flop_get">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">flop_get</span></span><a class="headerlink" href="#modelclass.BaseModel.flop_get" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">flop_get</span></span><a class="headerlink" href="#modelclass.BaseModel.flop_get" title="Permalink to this definition"></a></dt>
 <dd><p>The number of operators in the model prolog,core and epilog</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.BaseModel.calculate_freq_list">
 <span class="sig-name descname"><span class="pre">calculate_freq_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">varlist</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#BaseModel.calculate_freq_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.BaseModel.calculate_freq_list" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>varlist</strong> (<em>TYPE</em>) – calculates number of operations in list of variables.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>DESCRIPTION.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>calculate_freq (TYPE)</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.BaseModel.get_columnsnr">
@@ -490,14 +489,12 @@ Used for check wether each equation gives the same result as in the original dat
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Org_model_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Org_model_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Org_model_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Org_model_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Org_model_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Org_model_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Org_model_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>The model class, used for calculating models</p>
-<p>Compared to BaseModel it allows for simultaneous model and contains a number of properties
-and functions to analyze and manipulate models and visualize results.</p>
+<p>This mixin enrich the Basemodel class with different utility methods.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Org_model_Mixin.lister">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lister</span></span><a class="headerlink" href="#modelclass.Org_model_Mixin.lister" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">lister</span></span><a class="headerlink" href="#modelclass.Org_model_Mixin.lister" title="Permalink to this definition"></a></dt>
 <dd><p>lists used in the equations</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -511,7 +508,7 @@ and functions to analyze and manipulate models and visualize results.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Org_model_Mixin.listud">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">listud</span></span><a class="headerlink" href="#modelclass.Org_model_Mixin.listud" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">listud</span></span><a class="headerlink" href="#modelclass.Org_model_Mixin.listud" title="Permalink to this definition"></a></dt>
 <dd><p>returns a string of the models listdefinitions</p>
 <p>used when ceating (small) models based on this model</p>
 </dd></dl>
@@ -535,7 +532,7 @@ and functions to analyze and manipulate models and visualize results.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Org_model_Mixin.list_names">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">list_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Org_model_Mixin.list_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Org_model_Mixin.list_names" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Org_model_Mixin.list_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Org_model_Mixin.list_names" title="Permalink to this definition"></a></dt>
 <dd><p>returns a list of variable in input  matching the pattern, the pattern can be a list of patterns</p>
 </dd></dl>
 
@@ -626,12 +623,12 @@ Defaults to getting the two dataframes (basedf and lastdf) internal to the model
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Model_help_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Model_help_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Helpers to model</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.timer">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">short</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.timer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.timer" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">short</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.timer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.timer" title="Permalink to this definition"></a></dt>
 <dd><p>A timer context manager, implemented using a
 generator function. This one will report time even if an exception occurs
 the time in seconds can be retrieved by &lt;retunr value&gt;.seconds “””</p>
@@ -643,28 +640,25 @@ the time in seconds can be retrieved by &lt;retunr value&gt;.seconds “””</
 <li><p><strong>short</strong> (<em>bool</em><em>, </em><em>optional</em>) – . The default is False.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None.</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.update_from_list">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">update_from_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.update_from_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.update_from_list" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_from_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.update_from_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.update_from_list" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.update_from_list_new">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">update_from_list_new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.update_from_list_new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.update_from_list_new" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_from_list_new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.update_from_list_new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.update_from_list_new" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.update_old">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">update_old</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_growth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.update_old"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.update_old" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_old</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_growth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.update_old"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.update_old" title="Permalink to this definition"></a></dt>
 <dd><blockquote>
 <div><p>Updates a dataframe and returns a dataframe</p>
 </div></blockquote>
@@ -686,7 +680,7 @@ the time in seconds can be retrieved by &lt;retunr value&gt;.seconds “””</
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.update">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_growth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.update" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_growth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.update" title="Permalink to this definition"></a></dt>
 <dd><blockquote>
 <div><p>Updates a dataframe and returns a dataframe</p>
 </div></blockquote>
@@ -724,12 +718,12 @@ If model is specified, the dataframw will contain all variables from this and mo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.in_notebook">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">in_notebook</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.in_notebook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.in_notebook" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">in_notebook</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.in_notebook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.in_notebook" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.defsub">
-<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">defsub</span></span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.defsub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.defsub" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">defsub</span></span><a class="reference internal" href="../_modules/modelclass.html#Model_help_Mixin.defsub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Model_help_Mixin.defsub" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
 <p>A subclass of dict.
 if a <em>defsub</em> is indexed by a nonexisting keyword it just return the keyword</p>
@@ -762,19 +756,19 @@ if a <em>defsub</em> is indexed by a nonexisting keyword it just return the keyw
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.print_model">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">print_model</span></span><a class="headerlink" href="#modelclass.Model_help_Mixin.print_model" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">print_model</span></span><a class="headerlink" href="#modelclass.Model_help_Mixin.print_model" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Model_help_Mixin.print_model_latex">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">print_model_latex</span></span><a class="headerlink" href="#modelclass.Model_help_Mixin.print_model_latex" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">print_model_latex</span></span><a class="headerlink" href="#modelclass.Model_help_Mixin.print_model_latex" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Dekomp_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Dekomp_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Dekomp_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Dekomp_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Dekomp_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Dekomp_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Dekomp_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class defines methods and properties related to equation attribution analyses (dekomp)</p>
 <dl class="py method">
@@ -805,11 +799,8 @@ optional – enter period and databank to get var values for chosen period</p>
 <li><p><strong>time_att</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Do time attribution . The default is False.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>a matplotlib figure instance .</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>a matplotlib figure instance .</p>
 </dd>
 </dl>
 </dd></dl>
@@ -852,11 +843,8 @@ I little effort to change from multiindex to single node name</p>
 <li><p><strong>top</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – where to place the title</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>a matplotlib figure instance .</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>a matplotlib figure instance .</p>
 </dd>
 </dl>
 </dd></dl>
@@ -921,7 +909,7 @@ attributions</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Description_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Description_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Description_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Description_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Description_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Description_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Description_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This Class defines description related methods and properties</p>
 <dl class="py method">
@@ -931,7 +919,7 @@ attributions</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Description_Mixin.html_replace">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">html_replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Description_Mixin.html_replace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Description_Mixin.html_replace" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">html_replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ind</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Description_Mixin.html_replace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Description_Mixin.html_replace" title="Permalink to this definition"></a></dt>
 <dd><p>Replace special characters in html</p>
 </dd></dl>
 
@@ -954,13 +942,13 @@ attributions</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Description_Mixin.read_wb_xml_var_des">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">read_wb_xml_var_des</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Description_Mixin.read_wb_xml_var_des"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Description_Mixin.read_wb_xml_var_des" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_wb_xml_var_des</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Description_Mixin.read_wb_xml_var_des"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Description_Mixin.read_wb_xml_var_des" title="Permalink to this definition"></a></dt>
 <dd><p>Read a xml file with variable description world bank style</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Description_Mixin.languages_wb_xml_var_des">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">languages_wb_xml_var_des</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Description_Mixin.languages_wb_xml_var_des"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Description_Mixin.languages_wb_xml_var_des" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">languages_wb_xml_var_des</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Description_Mixin.languages_wb_xml_var_des"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Description_Mixin.languages_wb_xml_var_des" title="Permalink to this definition"></a></dt>
 <dd><p>Find languages in a xml file with variable description world bank style</p>
 </dd></dl>
 
@@ -980,7 +968,7 @@ attributions</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Modify_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Modify_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Modify_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Modify_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Modify_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Modify_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Modify_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class to modify a model with new equations, (later alse delete, and new normalization)</p>
 <dl class="py method">
@@ -1067,34 +1055,34 @@ attributions</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Graph_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Graph_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Graph_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Graph_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Graph_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Graph_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class defines graph related methods and properties</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.create_strong_network">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">create_strong_network</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Network'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">typeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Graph_Mixin.create_strong_network"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Graph_Mixin.create_strong_network" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_strong_network</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Network'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">typeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Graph_Mixin.create_strong_network"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Graph_Mixin.create_strong_network" title="Permalink to this definition"></a></dt>
 <dd><p>create a solveorder and   blockordering of af graph
 uses networkx to find the core of the model</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.strongorder">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">strongorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.strongorder" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strongorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.strongorder" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.strongblock">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">strongblock</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.strongblock" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strongblock</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.strongblock" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.strongtype">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">strongtype</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.strongtype" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strongtype</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.strongtype" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.strongfrml">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">strongfrml</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.strongfrml" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strongfrml</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.strongfrml" title="Permalink to this definition"></a></dt>
 <dd><p>To search simultaneity (circularity) in a model
 this function returns the equations in each strong block</p>
 </dd></dl>
@@ -1107,78 +1095,78 @@ this function returns the equations in each strong block</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.prevar">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">prevar</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.prevar" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prevar</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.prevar" title="Permalink to this definition"></a></dt>
 <dd><p>returns a set with names of endogenopus variables which do not depend
 on current endogenous variables</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.epivar">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">epivar</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.epivar" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">epivar</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.epivar" title="Permalink to this definition"></a></dt>
 <dd><p>returns a set with names of endogenopus variables which do not influence
 current endogenous variables</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.preorder">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">preorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.preorder" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">preorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.preorder" title="Permalink to this definition"></a></dt>
 <dd><p>the endogenous variables which can be calculated in advance</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.epiorder">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">epiorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.epiorder" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">epiorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.epiorder" title="Permalink to this definition"></a></dt>
 <dd><p>the endogenous variables which can be calculated in advance</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.coreorder">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">coreorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.coreorder" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coreorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.coreorder" title="Permalink to this definition"></a></dt>
 <dd><p>the solution order of the endogenous variables in the simultaneous core of the model</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.coreset">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">coreset</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.coreset" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coreset</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.coreset" title="Permalink to this definition"></a></dt>
 <dd><p>The set of variables of the endogenous variables in the simultaneous core of the model</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.precoreepiorder">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">precoreepiorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.precoreepiorder" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">precoreepiorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.precoreepiorder" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.prune_endograph">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">prune_endograph</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.prune_endograph" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prune_endograph</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.prune_endograph" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.use_preorder">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">use_preorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.use_preorder" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">use_preorder</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.use_preorder" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.totgraph_nolag">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">totgraph_nolag</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.totgraph_nolag" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">totgraph_nolag</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.totgraph_nolag" title="Permalink to this definition"></a></dt>
 <dd><p>The graph of all variables, lagged variables condensed</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.totgraph">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">totgraph</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.totgraph" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">totgraph</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.totgraph" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the total graph of the model, including leads and lags</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.endograph_nolag">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">endograph_nolag</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.endograph_nolag" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">endograph_nolag</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.endograph_nolag" title="Permalink to this definition"></a></dt>
 <dd><p>Dependencygraph for all periode endogeneous variable, shows total dependencies</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Graph_Mixin.endograph_lag_lead">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">endograph_lag_lead</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.endograph_lag_lead" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">endograph_lag_lead</span></span><a class="headerlink" href="#modelclass.Graph_Mixin.endograph_lag_lead" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the graph of all endogeneous variables including lags and leads</p>
 </dd></dl>
 
@@ -1206,7 +1194,7 @@ mostly used to remove parmeters from the graph, makes it less crowded</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Graph_Draw_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Graph_Draw_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Graph_Draw_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Graph_Draw_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Graph_Draw_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Graph_Draw_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Graph_Draw_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class defines methods and properties which draws and vizualize using different
 graphs of the model</p>
@@ -1497,7 +1485,7 @@ all is the edges</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Graph_Draw_Mixin.display_graph">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">display_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Graph_Draw_Mixin.display_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Graph_Draw_Mixin.display_graph" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">display_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Graph_Draw_Mixin.display_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Graph_Draw_Mixin.display_graph" title="Permalink to this definition"></a></dt>
 <dd><p>Generates a graphviz file from the commands in out.</p>
 <p>The file is placed in cwd/graph</p>
 <p>A png and a svg file is generated, and the svg file is displayed if possible.</p>
@@ -1510,7 +1498,7 @@ all is the edges</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Display_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Display_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.vis">
@@ -1745,7 +1733,7 @@ first experiment or the first scenario. Defaults to False.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.plot_basis_ax">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">plot_basis_ax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suptitle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yunit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'line'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.plot_basis_ax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.plot_basis_ax" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">plot_basis_ax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suptitle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yunit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'line'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.plot_basis_ax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.plot_basis_ax" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1788,7 +1776,7 @@ first experiment or the first scenario. Defaults to False.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.keep_add_vline">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">keep_add_vline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span>&#160; <span class="pre">Calibration</span> <span class="pre">time'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.keep_add_vline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.keep_add_vline" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">keep_add_vline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span>&#160; <span class="pre">Calibration</span> <span class="pre">time'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.keep_add_vline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.keep_add_vline" title="Permalink to this definition"></a></dt>
 <dd><p>adds a vertical line with text to figs a dict with matplotlib figures) from keep_plot</p>
 </dd></dl>
 
@@ -1840,36 +1828,36 @@ quality files.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.display_toc">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">display_toc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'**Jupyter</span> <span class="pre">notebooks</span> <span class="pre">in</span> <span class="pre">this</span> <span class="pre">and</span> <span class="pre">all</span> <span class="pre">subfolders**'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.display_toc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.display_toc" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">display_toc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'**Jupyter</span> <span class="pre">notebooks</span> <span class="pre">in</span> <span class="pre">this</span> <span class="pre">and</span> <span class="pre">all</span> <span class="pre">subfolders**'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.display_toc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.display_toc" title="Permalink to this definition"></a></dt>
 <dd><p>In a jupyter notebook this function displays a clickable table of content of all
 jupyter notebooks in this and sub folders</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.display_toc_this">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">display_toc_this</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'**Jupyter</span> <span class="pre">notebooks**'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ipynb'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.display_toc_this"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.display_toc_this" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">display_toc_this</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'**Jupyter</span> <span class="pre">notebooks**'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ipynb'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.display_toc_this"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.display_toc_this" title="Permalink to this definition"></a></dt>
 <dd><p>In a jupyter notebook this function displays a clickable table of content in the folder pat with name in path</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.widescreen">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">widescreen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.widescreen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.widescreen" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">widescreen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.widescreen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.widescreen" title="Permalink to this definition"></a></dt>
 <dd><p>Makes a jupyter notebook use all the avaiable real estate</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.scroll_off">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">scroll_off</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.scroll_off"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.scroll_off" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scroll_off</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.scroll_off"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.scroll_off" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.scroll_on">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">scroll_on</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.scroll_on"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.scroll_on" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scroll_on</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.scroll_on"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.scroll_on" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Display_Mixin.modelflow_auto">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">modelflow_auto</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.modelflow_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.modelflow_auto" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">modelflow_auto</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Display_Mixin.modelflow_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Display_Mixin.modelflow_auto" title="Permalink to this definition"></a></dt>
 <dd><p>In a jupyter notebook this function activate autorun of the notebook.</p>
 <p>Also it makes Jupyter use a larger portion of the browser width</p>
 <p>The function should be run before the notebook is saved, and the output should not be cleared</p>
@@ -1879,7 +1867,7 @@ jupyter notebooks in this and sub folders</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Json_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Json_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Json_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Json_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Json_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Json_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Json_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This mixin class can dump a model and solution
 as json serialiation to a file.</p>
@@ -1895,7 +1883,7 @@ a session.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Json_Mixin.modelload">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">modelload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">infile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Json_Mixin.modelload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Json_Mixin.modelload" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">modelload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">infile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Json_Mixin.modelload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Json_Mixin.modelload" title="Permalink to this definition"></a></dt>
 <dd><p>Loads a model and an solution</p>
 </dd></dl>
 
@@ -1903,7 +1891,7 @@ a session.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Excel_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Excel_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Excel_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Excel_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Excel_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Excel_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Excel_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This Mixin handels dumps and loads models into excel</p>
 <dl class="py method">
@@ -1928,7 +1916,7 @@ a session.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Excel_Mixin.modelload_excel">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">modelload_excel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">infile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pak'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_open</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Excel_Mixin.modelload_excel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Excel_Mixin.modelload_excel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">modelload_excel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">infile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pak'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_open</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Excel_Mixin.modelload_excel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Excel_Mixin.modelload_excel" title="Permalink to this definition"></a></dt>
 <dd><p>Loads a model from a excel workbook dumped by <a class="reference internal" href="#modelclass.Excel_Mixin.modeldump_excel" title="modelclass.Excel_Mixin.modeldump_excel"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">modeldump_excel</span></code></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1956,7 +1944,7 @@ TYPE: DESCRIPTION.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Zip_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Zip_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Zip_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Zip_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Zip_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Zip_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Zip_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This experimental class zips a dumped file</p>
 <dl class="py method">
@@ -1966,19 +1954,19 @@ TYPE: DESCRIPTION.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Zip_Mixin.modelload2">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">modelload2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Zip_Mixin.modelload2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Zip_Mixin.modelload2" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">modelload2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Zip_Mixin.modelload2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Zip_Mixin.modelload2" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Solver_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Solver_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Solver_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Solver_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Solver_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Solver_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Solver_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This Mixin handels the solving of models.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelclass.Solver_Mixin.DEFAULT_relconv">
-<span class="sig-name descname"><span class="pre">DEFAULT_relconv</span></span><em class="property"> <span class="pre">=</span> <span class="pre">1e-07</span></em><a class="headerlink" href="#modelclass.Solver_Mixin.DEFAULT_relconv" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_relconv</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1e-07</span></em><a class="headerlink" href="#modelclass.Solver_Mixin.DEFAULT_relconv" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -2007,7 +1995,7 @@ TYPE: DESCRIPTION.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="modelclass.Solver_Mixin.showstartnr">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">showstartnr</span></span><a class="headerlink" href="#modelclass.Solver_Mixin.showstartnr" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">showstartnr</span></span><a class="headerlink" href="#modelclass.Solver_Mixin.showstartnr" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -2068,7 +2056,7 @@ in case of problems.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="modelclass.Solver_Mixin.grouper">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">grouper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillvalue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Solver_Mixin.grouper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Solver_Mixin.grouper" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">grouper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillvalue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Solver_Mixin.grouper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Solver_Mixin.grouper" title="Permalink to this definition"></a></dt>
 <dd><p>Collect data into fixed-length chunks or blocks</p>
 </dd></dl>
 
@@ -2203,7 +2191,7 @@ variables can be selceted by: dumpvar = ‘&lt;pattern&gt;’</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.Dash_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Dash_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Dash_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Dash_Mixin" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Dash_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Dash_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Dash_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This mixin wraps call the Dash dashboard</p>
 <dl class="py method">
@@ -2214,25 +2202,25 @@ variables can be selceted by: dumpvar = ‘&lt;pattern&gt;’</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">WB_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#WB_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.WB_Mixin" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">Fix_Mixin</span></span><a class="reference internal" href="../_modules/modelclass.html#Fix_Mixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Fix_Mixin" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>This mixin handles a number of enhancements</p>
+<p>This mixin handles a number of world bank enhancements</p>
 <dl class="py property">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.wb_behavioral">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">wb_behavioral</span></span><a class="headerlink" href="#modelclass.WB_Mixin.wb_behavioral" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.wb_behavioral">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wb_behavioral</span></span><a class="headerlink" href="#modelclass.Fix_Mixin.wb_behavioral" title="Permalink to this definition"></a></dt>
 <dd><p>returns endogeneous where the frml name contains a Z which signals a stocastic equation</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.wb_ident">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">wb_ident</span></span><a class="headerlink" href="#modelclass.WB_Mixin.wb_ident" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.wb_ident">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wb_ident</span></span><a class="headerlink" href="#modelclass.Fix_Mixin.wb_ident" title="Permalink to this definition"></a></dt>
 <dd><p>returns endogeneous variables not in wb_behavioral</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.fix">
-<span class="sig-name descname"><span class="pre">fix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#WB_Mixin.fix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.WB_Mixin.fix" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.fix">
+<span class="sig-name descname"><span class="pre">fix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Fix_Mixin.fix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Fix_Mixin.fix" title="Permalink to this definition"></a></dt>
 <dd><p>Fixes variables to the current values.</p>
 <p>for variables where the equation looks like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">var</span> <span class="o">=</span> <span class="p">(</span><span class="n">rhs</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">var_d</span><span class="p">)</span><span class="o">+</span><span class="n">var_x</span><span class="o">*</span><span class="n">var_d</span>
@@ -2263,8 +2251,8 @@ variables can be selceted by: dumpvar = ‘&lt;pattern&gt;’</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.unfix">
-<span class="sig-name descname"><span class="pre">unfix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#WB_Mixin.unfix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.WB_Mixin.unfix" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.unfix">
+<span class="sig-name descname"><span class="pre">unfix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Fix_Mixin.unfix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Fix_Mixin.unfix" title="Permalink to this definition"></a></dt>
 <dd><p>Unfix (endogenize) variables</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2285,47 +2273,47 @@ variables can be selceted by: dumpvar = ‘&lt;pattern&gt;’</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.find_fix_dummy_fixed">
-<span class="sig-name descname"><span class="pre">find_fix_dummy_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#WB_Mixin.find_fix_dummy_fixed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.WB_Mixin.find_fix_dummy_fixed" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.find_fix_dummy_fixed">
+<span class="sig-name descname"><span class="pre">find_fix_dummy_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Fix_Mixin.find_fix_dummy_fixed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Fix_Mixin.find_fix_dummy_fixed" title="Permalink to this definition"></a></dt>
 <dd><p>returns names of actiove exogenizing dummies</p>
 <p>sets the property self. exodummy_per which defines the time over which the dummies are defined</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.fix_dummy_fixed">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">fix_dummy_fixed</span></span><a class="headerlink" href="#modelclass.WB_Mixin.fix_dummy_fixed" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.fix_dummy_fixed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fix_dummy_fixed</span></span><a class="headerlink" href="#modelclass.Fix_Mixin.fix_dummy_fixed" title="Permalink to this definition"></a></dt>
 <dd><p>returns names of actiove exogenizing dummies</p>
 <p>sets the property self. exodummy_per which defines the time over which the dummies are defined</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.fix_dummy_fixed_old">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">fix_dummy_fixed_old</span></span><a class="headerlink" href="#modelclass.WB_Mixin.fix_dummy_fixed_old" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.fix_dummy_fixed_old">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fix_dummy_fixed_old</span></span><a class="headerlink" href="#modelclass.Fix_Mixin.fix_dummy_fixed_old" title="Permalink to this definition"></a></dt>
 <dd><p>returns names of actiove exogenizing dummies</p>
 <p>sets the property self. exodummy_per which defines the time over which the dummies are defined</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.fix_add_factor_fixed">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">fix_add_factor_fixed</span></span><a class="headerlink" href="#modelclass.WB_Mixin.fix_add_factor_fixed" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.fix_add_factor_fixed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fix_add_factor_fixed</span></span><a class="headerlink" href="#modelclass.Fix_Mixin.fix_add_factor_fixed" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the add factors corrosponding to the active exogenizing dummies</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.fix_value_fixed">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">fix_value_fixed</span></span><a class="headerlink" href="#modelclass.WB_Mixin.fix_value_fixed" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.fix_value_fixed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fix_value_fixed</span></span><a class="headerlink" href="#modelclass.Fix_Mixin.fix_value_fixed" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the exogenizing values corrosponding to the active exogenizing dummies</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.fix_endo_fixed">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">fix_endo_fixed</span></span><a class="headerlink" href="#modelclass.WB_Mixin.fix_endo_fixed" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.fix_endo_fixed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fix_endo_fixed</span></span><a class="headerlink" href="#modelclass.Fix_Mixin.fix_endo_fixed" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the endogeneous variables corrosponding to the active exogenizing dummies</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="modelclass.WB_Mixin.fix_inf">
-<span class="sig-name descname"><span class="pre">fix_inf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#WB_Mixin.fix_inf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.WB_Mixin.fix_inf" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelclass.Fix_Mixin.fix_inf">
+<span class="sig-name descname"><span class="pre">fix_inf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#Fix_Mixin.fix_inf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.Fix_Mixin.fix_inf" title="Permalink to this definition"></a></dt>
 <dd><p>Display information regarding exogenizing</p>
 </dd></dl>
 
@@ -2333,14 +2321,14 @@ variables can be selceted by: dumpvar = ‘&lt;pattern&gt;’</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.model">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safeorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.model" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#modelclass.Zip_Mixin" title="modelclass.Zip_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Zip_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Json_Mixin" title="modelclass.Json_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Json_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Model_help_Mixin" title="modelclass.Model_help_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Model_help_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Solver_Mixin" title="modelclass.Solver_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Solver_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Display_Mixin" title="modelclass.Display_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Display_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Graph_Draw_Mixin" title="modelclass.Graph_Draw_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Graph_Draw_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Graph_Mixin" title="modelclass.Graph_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Graph_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Dekomp_Mixin" title="modelclass.Dekomp_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Dekomp_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Org_model_Mixin" title="modelclass.Org_model_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Org_model_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.BaseModel" title="modelclass.BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.BaseModel</span></code></a>, <a class="reference internal" href="#modelclass.Description_Mixin" title="modelclass.Description_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Description_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Excel_Mixin" title="modelclass.Excel_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Excel_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Dash_Mixin" title="modelclass.Dash_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Dash_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Modify_Mixin" title="modelclass.Modify_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Modify_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.WB_Mixin" title="modelclass.WB_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.WB_Mixin</span></code></a></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safeorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.model" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#modelclass.Zip_Mixin" title="modelclass.Zip_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Zip_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Json_Mixin" title="modelclass.Json_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Json_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Model_help_Mixin" title="modelclass.Model_help_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Model_help_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Solver_Mixin" title="modelclass.Solver_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Solver_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Display_Mixin" title="modelclass.Display_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Display_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Graph_Draw_Mixin" title="modelclass.Graph_Draw_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Graph_Draw_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Graph_Mixin" title="modelclass.Graph_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Graph_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Dekomp_Mixin" title="modelclass.Dekomp_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Dekomp_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Org_model_Mixin" title="modelclass.Org_model_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Org_model_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.BaseModel" title="modelclass.BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.BaseModel</span></code></a>, <a class="reference internal" href="#modelclass.Description_Mixin" title="modelclass.Description_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Description_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Excel_Mixin" title="modelclass.Excel_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Excel_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Dash_Mixin" title="modelclass.Dash_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Dash_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Modify_Mixin" title="modelclass.Modify_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Modify_Mixin</span></code></a>, <a class="reference internal" href="#modelclass.Fix_Mixin" title="modelclass.Fix_Mixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.Fix_Mixin</span></code></a></p>
 <p>This is the main model definition</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelclass.upd">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">upd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#upd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.upd" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">upd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pandas_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#upd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.upd" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Extend a dataframe to update variables from string</p>
 <p>look at <a class="reference internal" href="#modelclass.Model_help_Mixin.update" title="modelclass.Model_help_Mixin.update"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Model_help_Mixin.update</span></code></a>  for syntax</p>
@@ -2352,6 +2340,42 @@ variables can be selceted by: dumpvar = ‘&lt;pattern&gt;’</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="modelclass.node">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lev</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#modelclass.node" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<p>A named tuple used when to drawing the logical structure. Describes an edge of the dependency graph</p>
+<dl class="field-list simple">
+<dt class="field-odd">Lev</dt>
+<dd class="field-odd"><p>Level from start</p>
+</dd>
+<dt class="field-even">Parent</dt>
+<dd class="field-even"><p>The parent</p>
+</dd>
+<dt class="field-odd">Child</dt>
+<dd class="field-odd"><p>The child</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelclass.node.child">
+<span class="sig-name descname"><span class="pre">child</span></span><a class="headerlink" href="#modelclass.node.child" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelclass.node.lev">
+<span class="sig-name descname"><span class="pre">lev</span></span><a class="headerlink" href="#modelclass.node.lev" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="modelclass.node.parent">
+<span class="sig-name descname"><span class="pre">parent</span></span><a class="headerlink" href="#modelclass.node.parent" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="modelclass.ttimer">
 <span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">ttimer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#ttimer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.ttimer" title="Permalink to this definition"></a></dt>
@@ -2359,7 +2383,7 @@ variables can be selceted by: dumpvar = ‘&lt;pattern&gt;’</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="modelclass.create_model">
-<span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">create_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">navn</span></em>, <em class="sig-param"><span class="pre">hist=0</span></em>, <em class="sig-param"><span class="pre">name=''</span></em>, <em class="sig-param"><span class="pre">new=True</span></em>, <em class="sig-param"><span class="pre">finished=False</span></em>, <em class="sig-param"><span class="pre">xmodel=&lt;class</span> <span class="pre">'modelclass.model'&gt;</span></em>, <em class="sig-param"><span class="pre">straight=False</span></em>, <em class="sig-param"><span class="pre">funks=[]</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#create_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.create_model" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">modelclass.</span></span><span class="sig-name descname"><span class="pre">create_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">navn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hist=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name=''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">finished=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xmodel=&lt;class</span> <span class="pre">'modelclass.model'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks=[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelclass.html#create_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelclass.create_model" title="Permalink to this definition"></a></dt>
 <dd><p>Creates either a model instance or a model and a historic model from formulars.</p>
 <p>The formulars can be in a string or in af file withe the extension .txt</p>
 <p>if:</p>
@@ -2482,16 +2506,13 @@ generator function. This one will report time even if an exception occurs””�
 <li><p><strong>short</strong> (<em>bool</em><em>, </em><em>optional</em>) – . The default is False.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None.</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None.</p>
 </dd>
 </dl>
 </dd></dl>
 
-</section>
+</div>
 
 
            </div>
