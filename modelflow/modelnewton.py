@@ -178,8 +178,8 @@ class newton_diff():
             return var2
 
         with ttimer('Find espressions for partial derivatives',self.timeit):
-            # clash = {var : Symbol(var) for var in self.mmodel.allvar.keys()}
-            clash = {var :None for var in self.mmodel.allvar.keys()}
+            clash = {var : Symbol(var) for var in self.mmodel.allvar.keys()}
+            # clash = {var :None for var in self.mmodel.allvar.keys()}
             diffendocur={} #defaultdict(defaultdict) #here we wanmt to store the derivativs
             i=0
             for nvar,v in enumerate(self.endovar):
@@ -203,12 +203,14 @@ class newton_diff():
                         # kat=sympify(rhs[0:-1], md._clash) # we take the the $ out _clash1 makes I is not taken as imiganary 
                         lookat = pastestring(rhs[0:-1], post,onlylags=True,funks= self.mmodel.funks)
                         kat=sympify(lookat,clash) # we take the the $ out _clash1 makes I is not taken as imiganary 
-                except :
+                except Exception as inst:
+                    # breakpoint()
+                    print(inst)
                     e = sys.exc_info()[0]
                     print(e)
-                    # print(lookat)
+                    print(lookat)
                     # print({c:type(s) for c,s in clash.items()})
-                    print('* Problem sympify ',lhs,'=',rhs[0:-1])
+                    print('* Problem sympify ',lhs,'=',rhs[0:-1],'\n')
                 for rhv in endocur:
                     try:
                         # breakpoint()

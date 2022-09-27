@@ -172,6 +172,7 @@ try:
         try: 
             import pyeviews as evp
         except: 
+            print('no pyeviews')
             raise Exception('No pyeviews ')
         from  pathlib import Path, PureWindowsPath
      
@@ -181,11 +182,19 @@ try:
         display(Markdown(f'# Now creating the model **{name}**'))
         
         commands = cell.split('\n')
+        print(commands)
         if options.get('debug',False):
             display(Markdown('# executing these eviews commands'))
             print(cell)
      
-      
+        eviewsapp = evp.GetEViewsApp(instance='new',showwindow=True)
+        for c in commands: 
+              print(c)
+              evp.Run(c,eviewsapp)
+    
+    
+        evp.Cleanup()
+
     
         return
     

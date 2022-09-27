@@ -606,5 +606,5 @@ if __name__ == '__main__':
     if 'masia' not in locals(): 
         print('loading model')
         masia,baseline = model.modelload('C:/wb Dawn/UNESCAP-/Asia/Asia.pcim',run=0,silent=1)    
-    # test = slidewidget(masia,{})
+    test = slidewidget(masia,{})
      

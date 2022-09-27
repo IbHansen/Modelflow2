@@ -2,9 +2,10 @@ try:
     import dash_interactive_graphviz
     from jupyter_dash import JupyterDash
     import dash
-    from dash.dependencies import Input, Output, State
-    import dash_html_components as html
-    import dash_core_components as dcc
+   #from dash.dependencies import Input, Output, State
+    #import dash_html_components as html
+   # import dash_core_components as dcc
+    from dash import Dash, callback, html, dcc, dash_table, Input, Output, State, MATCH, ALL
     import dash_bootstrap_components as dbc
     import plotly.graph_objs as go
 except:

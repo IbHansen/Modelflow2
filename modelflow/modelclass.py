@@ -3614,7 +3614,7 @@ class Display_Mixin():
         '''
         # breakpoint()
         # breakpoint()    
-        if self.in_notebook():
+        if True: # self.in_notebook():
             des = self.var_description if type(description_dict)==type(None) else description_dict
             keys= set(des.keys())
             if type(transpose) == type(None):
@@ -6566,12 +6566,21 @@ class Solver_Mixin():
 class Dash_Mixin():
     '''This mixin wraps call the Dash dashboard '''
     def modeldash(self,*arg,**kwargs):
-        from modeldashsidebar import Dash_graph
-        ...
-        out = Dash_graph(self,*arg,**kwargs)
-        return out 
+        try:
+            from modeldashsidebar import Dash_graph
+            ...
+            out = Dash_graph(self,*arg,**kwargs)
+            return out 
+        except Exception as e:
+            print(f'No Dash, str(e)')
+            return None
+            
 
 class Fix_Mixin():
+    
+    
+    
+    
     '''This mixin handles a number of world bank enhancements '''
     
     @cached_property
