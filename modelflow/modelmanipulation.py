@@ -25,14 +25,48 @@ import ast
 from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar
 
 
-class safesub(dict):
+class oldsafesub(dict):
     '''A subclass of dict.
     if a *safesub* is indexed by a nonexisting keyword it just return the keyword 
     this alows missing keywords when substitution text inspired by Python cookbook '''
     
     def __missing__(self, key):
         return '{' + key +'}' 
+
+class safesub(dict):
+    '''A subclass of dict.
+    if a *safesub* is indexed by a nonexisting keyword it just return the keyword 
     
+    - key-<number> where key is in integer returns the numeric value of key-number
+    - key+<number> where key is in integer returns the numeric value of key+number
+    - 
+    
+    this alows missing keywords when substitution text inspired by Python cookbook '''
+    
+    def __missing__(self, key):
+        # breakpoint()
+        if '-' in key: 
+            try:
+                testkey,ofset = key.split('-')
+                res = f'{str(int(self.get(testkey.strip()))-int(ofset))}'
+                return res 
+    
+            except:
+                print(f'Wrong key or value in list ofset:<{key}>') 
+                raise
+                
+        if '+' in key: 
+            try:
+                testkey,ofset = key.split('+')
+                res = f'{str(int(self.get(testkey.strip()))+int(ofset))}'
+                return res 
+    
+            except:
+                print(f'Wrong key or value in list ofset:<{key}>') 
+                raise
+        return '{' + key +'}' 
+
+
 def sub(text, katalog):
     '''Substitutes keywords from dictionary by returning 
     text.format_map(safesub(katalog))

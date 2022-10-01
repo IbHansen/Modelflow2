@@ -812,7 +812,7 @@ if __name__ == '__main__':
     cc = newton_all.get_eigenvectors(asdf=True)
     fig= newton_all.eigplot_all(cc,maxfig=3)
     #%% more testing 
-    if 0:
+    if 1:
         newton    = newton_diff(msolow)
         pdic = newton.get_diff_df_1per()
         longdf = newton.get_diff_melted()
