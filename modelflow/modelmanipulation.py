@@ -120,28 +120,33 @@ def sub_frml(ibdic, text, plus='', xvar='', lig='', sep='\n'):
         
         
           '''
-        
+    # print(f'{text=}')    
+    # print(f'{ibdic=}')    
     katalog = dict()
     outlist = []
     try:
         keys = [k for k in ibdic.keys()]  # find keywords
-    #    print('var, lig',xvar,lig)'
+        # print('var, lig',xvar,lig)
         if xvar == '':
             values = select = ibdic[keys[0]]   # no selection criteri
         else: 
+            if xvar not in list(ibdic.keys()):
+                raise Exception(f'**** Trying to condition on a sublist which is not there\nCondition:{xvar}\nAllowed sublists:{list(ibdic.keys())}')
             values = ibdic[xvar]    
         if lig != '':
             # We have a selecton criteria and select the situations where it apply
             select = [t for t in values if t == lig]
+            # print('values:',[t for t in values])
         for taller, k in enumerate(values):   # loop over number of values in the list 
             katalog={}
             if k in select:
                 katalog = {j: ibdic.get(j)[taller] for j in ibdic.keys()}
                 outlist.append(sub(text, katalog) + sep)
                # print('>',katalog)
+        # print(err1)    
     except:
-        print('***** problem\n>',ibdic,'\n>',xvar,'\n>',lig,'\n> <',text,'> \n>',katalog)
-        print(' ') 
+        err1 = f'**** when substitution in formulas:\nDictionary from which values are taken:\n{ibdic}\n{text=} \nSelection:{xvar} == {lig}\n{katalog=}'
+        raise Exception(err1) 
     return plus.join(outlist)
 
 a={'bankdic': {'bank':['Danske','Nordea'],'danske':['yes','no'],'nordisk':['yes','no']}}
@@ -288,6 +293,7 @@ def dounloop(in_equations,listin=False):
     ''' Expands (unrolls  do loops in a model template 
     goes trough a model template until there is no more nested do loops '''
     equations = in_equations[:].upper()   # we want do change the equations 
+    # print(f'equations \n{equations} \n ')
     liste_dict = listin if listin else list_extract(equations)   # Search the whold model for lists
     rest = 1
     while rest:  # We want to eat all doo loops
@@ -297,7 +303,7 @@ def dounloop(in_equations,listin=False):
         rest = 0
         liste_name, liste_key, liste_select = '', '', ''
         for comment, command, value in find_statements(equations):
-           # print('>>',comment,'<',command,'>',value)
+            # print('>>',comment,'<',command,'>',value)
             if command.upper() == 'DO':
                 dolevel = dolevel + 1
                 if dolevel >= 2:
@@ -312,7 +318,7 @@ def dounloop(in_equations,listin=False):
                             r'[\s,]\s*',
                             value[:-1]) if t != '']
                     current_dict = liste_dict[liste_name[0]]
-                    #print('listenavn ',liste_name, current_dict)
+                    # print('listenavn ',liste_name, current_dict)
                     #ibdic, text, plus='', xvar='', lig='', sep='\n',selectlist=None,match=''
                     if len(liste_name) == 1:
                         liste_key, liste_select = '', ''
@@ -320,7 +326,7 @@ def dounloop(in_equations,listin=False):
                         liste_key, liste_select = liste_name[1], liste_name[3]
                     # current_dict=liste_dict[value[0:-2].strip()] # find the name of the list
                     else:
-                        assert 1==2 , print(' *** error in DO statement either 1 or 4 arguments:',comment, command, value)
+                        raise Exception(f' *** error in DO statement either 1 or 4 arguments:\n{comment=}\n{command=}\nArguments= {value}')
                     domodel = []
             elif(command.upper() == 'ENDDO'):
                 dolevel = dolevel - 1
@@ -730,6 +736,7 @@ def explode(model,norm=True,sym=False,funks=[],sep='\n'):
     udrullet = lagarray_unroll(udrullet,funks=funks )
     udrullet = exounroll(udrullet)    # finaly the exogeneous and adjustment terms - if present -  are handled 
     udrullet = dounloop(udrullet,listin=modellist)        #  we unroll the do loops 
+    # breakpoint() 
     udrullet = sumunroll(udrullet,listin=modellist)    # then we unroll the sum 
     udrullet = creatematrix(udrullet,listin=modellist)
     udrullet = createarray(udrullet,listin=modellist)
@@ -1079,7 +1086,7 @@ if __name__ == '__main__' and 1 :
     list countryDIC = country : Uk , DK, SE , NO , IR, GE US AS AT CA$                                 
     list countrydanske = country : uk , DK, IR $
     list countrynordea = country: SE , DK, AT $
-    do bankdic $ 
+    do bankdic$ 
         frml x {bank}_income = {bank}_a +{bank}_b $
         do country{bank} $
             frml x {bank}_{country} = 4242 $

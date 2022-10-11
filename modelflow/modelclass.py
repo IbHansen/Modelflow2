@@ -1816,8 +1816,8 @@ class Dekomp_Mixin():
             print_per[-1], ascending=False)       # each contrinution in pct of total change
         # breakpoint()
         residual = pctendo.sum() - 100
-        pctendo.at[('Total', 0), print_per] = pctendo.sum()
-        pctendo.at[('Residual', 0), print_per] = residual
+        pctendo.loc[('Total', 0), print_per] = pctendo.sum()
+        pctendo.loc[('Residual', 0), print_per] = residual
         if lprint:
             print('\nFormula        :', mfrml.allvar[varnavn]['frml'], '\n')
             print(res2df.to_string(

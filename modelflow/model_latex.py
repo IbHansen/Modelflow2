@@ -172,7 +172,7 @@ def doable(ind,show=False):
         out=ind
     return out
 
-def findlists(input):
+def findlistsold(input):
     '''extracte liste from latex'''
     relevant = re.findall(r'LIST \s*\$[^$]*\$',input.upper())  
     temp1 = [l.replace('$','').replace('\\','').replace(',',' ') 
@@ -193,7 +193,29 @@ if 0:
     
     List $stage\_to2=\{stage1, stage2,stage3\}$
     '''
+    print(findlistsold(listtest))
+    
+def findlists(input):
+    '''extracte list with sublist from latex'''
+    relevant = re.findall(r'LIST \s*\$[^$]*\$',input.upper())  
+    # print(f'{relevant=}')
+    temp1 = [l.replace('$','').replace('\\','').replace(',',' ') 
+         .replace('{','').replace('}','').replace('\n','/ \n')                                 
+         for l in relevant]
+    # print(f'{temp1=}')
+    temp2 = [l.split('=')[0]+' = '
+           + l.split('=')[0][4:]
+           +' : '+ l.split('=')[1]+'$' for l in temp1]
+    return temp2
+
+if 0:
+    listtest='''      
+   List $ stage=\{s1, s2,s3\} \\
+      stagened:\{  0,    0,  1,\} $
+    '''
     print(findlists(listtest))
+
+
 
 def latextotxt(input,dynare=False,bankadd=False):
     '''
@@ -274,6 +296,87 @@ def latextotxt(input,dynare=False,bankadd=False):
     
     out = '\n'.join(ltemp+findlists(input))
     return out
+
+def latextotxtnew(input):
+    '''
+    Translates a latex input to a BL output 
+    
+    '''
+    # breakpoint()
+    ex12 = re.findall(r'\\label\{eq:(.*?)\}\n(.*?)\\end\{',input,re.DOTALL) # select the relevant equations 
+    org  = [(name,eq.replace('\n','')) for name,ex in ex12 for eq in ex.split('\\\\')
+            if 2 == len(eq.split('='))]
+#    ex15 = [('frml '+name+'  '+eq) for (name,ex) in ex12 for eq in ex.splitlines()]
+    ex15 = [eq.strip() for (name,eq) in org]
+    temp = '\n'.join(ex15)
+    trans={r'\left':'',
+           r'\right':'',
+           r'\min':'min',
+           r'\max':'max',   
+           r'\rho':'rho',   
+           r'&':'',
+           r'\\':'',
+           r'[':'(',
+           r']':')',
+           r'&':'',
+           r'\nonumber'  : '',
+           r'\_'      : '_',
+           r'{n}'      : '__{n}',
+           r'_{t}'      : '',
+           r'{n,s}'      : '__{n}__{s}',
+           r'{n,s,t}'    : '__{n}__{s}__{t}',
+           'logit^{-1}' : 'logit_inverse',
+           r'\{'      : '{',
+           r'\}'      : '}',
+
+          
+           }
+    ftrans = {       
+           r'\sqrt':'sqrt',
+           r'\Delta':'diff',
+           r'\sum_':'sum',
+           r'\Phi':'NORM.CDF',
+           r'\Phi^{-1}':'NORM.PDF'
+           }
+    regtrans = {
+           r'\\Delta ([A-Za-z_][\w{},\^]*)':r'diff(\1)', # \Delta xy => diff(xy)
+           r'_{t-([1-9])}'                   : r'(-\1)',      # _{t-x}        => (-x)
+
+           # r'\^([\w])'                   : r'_\1',      # ^x        => _x
+           # r'\^\{([\w]+)\}(\w)'          : r'_\1_\2',   # ^{xx}y    => _xx_y
+           r'\^\{([\w]+)\}'              : r'_{\1}',      # ^{xx}     => _xx
+           r'\^\{([\w]+),([\w]+)\}'      : r'_{\1}_{\2}',    # ^{xx,yy}     => _xx_yy
+           r'\s*\\times\s*':'*' ,
+            }
+   # breakpoint()
+    for before,to in ftrans.items():
+         temp = defunk(before,to,temp)
+    for before,to in trans.items():
+        temp = temp.replace(before,to)        
+    for before,to in regtrans.items():
+        temp = re.sub(before,to,temp)
+    temp = debrace(temp)
+    temp = defrack(temp)
+    if bankadd:
+        temp = rebank(temp)
+    
+    # breakpoint()
+    temp = re.sub(r'sum\(n,s,t\)'+(pt.namepat),r'sum(n_{bank},sum(s,sum(t,\1)))',temp)
+    temp = re.sub(r'sum\(n\)sum\(s\)sum\(t\)'+(pt.namepat),r'sum(n_{bank},sum(s,sum(t,\1)))',temp)
+    temp = re.sub(r'sum\(n\)'+(pt.namepat),r'sum(n_{bank},\1)',temp)
+    temp = re.sub(fr'sum\({pt.namepat}\)\(',r'sum(\1,',temp)
+    
+    ltemp  = [b.strip().split('=') for b in temp.splitlines()] # remove blanks in the ends and split each line at =   
+    # breakpoint()
+    ltemp  = [lhs + ' = '+  rhs.replace(' ','') for lhs,rhs in ltemp]      # change ' ' to * on the rhs. 
+    ltemp  = ['Frml '+fname + ' ' + eq + ' $ 'for eq,(fname,__) in zip(ltemp,org)]
+    
+    ltemp  = [doable(l) for l in ltemp]
+    
+    
+    out = '\n'.join(ltemp+findlists(input))
+    return out
+
 def dynlatextotxt(input,show=False):
     '''
     Translates a latex input to a BL output 
@@ -358,25 +461,45 @@ def dynlatextotxt(input,show=False):
 
 
 if __name__ == '__main__'  :
-     test = r'''\
-Loans can be in 3 stages, 1,2 3. 
-New loans will be generated and loans will mature. 
+    if 0:
+         test = r'''\
+    Loans can be in 3 stages, 1,2 3. 
+    New loans will be generated and loans will mature. 
+    
+    
+    \begin{equation}
+    \label{eq:Norm}
+    TR^{stage\_from,stage} =  \frac{TR\_U^{stage\_from,stage}}{1+0*\sum_{stage\_from2}(TR\_U^{stage\_from2,stage})}
+    \times(1-M^{stage}-WRO^{stage})
+    \end{equation}
+    
+    List $stage=\{s1, s2,s3\}$
+    
+    List $stage\_from=\{s1, s2,s3\}$
+    
+    List $stage\_from2=\{s1, s2,s3\}$
+    
+    List $stage\_to=\{s1, s2,s3\}$
+    
+    '''
+         res = latextotxt(test)    
+         
+    test1 ='''
+    list $agegroup=\{16,  17,  18,  19,  20,  99, 100 \} \\
+          end     : \{0 ,     0  ,  0   , 0 ,   0 ,   0  , 1\}$
+    
+    
+    \begin{equation}
+    \label{eq:mod_another}
+    \begin{split}
+    \text{[NONEND]}\; & \left(QC^{agegroup}_t\right)^{-ECX_t} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
+    \\
+    \text{}\;& & &= 
+    \dfrac{VB^{agegroup-1}_{t-1} *  \dfrac{NPOP^{agegroup-1}_{t-1}}{NPOP^{agegroup}_t} 
+    * (1+R) + VY^{agegroup}_t - VB^{agegroup}_{t+1} )}{ PCTOT_{t}}   
+    \end{split}
+    \end{equation}
+        '''        
+    print(findlists(test1))    
 
-
-\begin{equation}
-\label{eq:Norm}
-TR^{stage\_from,stage} =  \frac{TR\_U^{stage\_from,stage}}{1+0*\sum_{stage\_from2}(TR\_U^{stage\_from2,stage})}
-\times(1-M^{stage}-WRO^{stage})
-\end{equation}
-
-List $stage=\{s1, s2,s3\}$
-
-List $stage\_from=\{s1, s2,s3\}$
-
-List $stage\_from2=\{s1, s2,s3\}$
-
-List $stage\_to=\{s1, s2,s3\}$
-
-'''
-     res = latextotxt(test)    
      

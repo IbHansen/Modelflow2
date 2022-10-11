@@ -164,17 +164,30 @@ def list_extract(equations,silent=True):
         if command.upper() == 'LIST':
             stripvalue = value.replace('\n', '').upper()
             list_name, list_value = stripvalue[0:-1].split('=')
-            if list_name.strip() in liste_dict:
+            list_name = list_name.strip() 
+            if list_name in liste_dict:
                 if not silent: 
-                    print('Warning ', list_name.strip(), 'Defined 2 times')
-                    print('Use     ', list_name.strip(), liste_dict[list_name.strip()])
+                    print('Warning ', list_name, 'Defined 2 times')
+                    print('Use     ', list_name, liste_dict[list_name])
             else:
                 this_dict = defaultdict(list)
                 for i in list_value.split('/'):
                     name, items = i.split(':')
                     itemlist = [t.strip() for t in re.split(r'[\s,]\s*',items) if t != '']
                     this_dict[name.strip()] = itemlist
-                liste_dict[list_name.strip()] = this_dict
+                    
+                
+                first_sublist_name = list(this_dict.keys())[0]  
+                first_sublist = this_dict[first_sublist_name]
+                
+                this_dict[first_sublist_name+'_END'] =(['0']*  (len(first_sublist)-1))+['1']    
+                this_dict[first_sublist_name+'_NOEND'] =(['1']*(len(first_sublist)-1))+['0']    
+                this_dict[first_sublist_name+'_START'] =['1'] +(['0']*(len(first_sublist)-1))   
+                this_dict[first_sublist_name+'_NOSTART'] =['0'] +(['1']*(len(first_sublist)-1))   
+                this_dict[first_sublist_name+'_MIDDLE'] =['0'] + (['1']*(len(first_sublist)-2))+['0']    
+                liste_dict[list_name] = this_dict
+    #             print(f'\n{first_sublist_name=}\n{first_sublist=} ')            
+    # print(f'\n{liste_dict=}')            
     return liste_dict
 
 def check_syntax_model(equations,test=True):

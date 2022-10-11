@@ -41,3 +41,6 @@ Fix udtryk_parse  in modelpattern to take care of lags of -0 or +0
 modelnewton made error when a variable was called P, fixed 
 modelnewton warning when using set (model.endogene) in dataframe.loc fixed by using sorted(model.endogene)
 modelnewton get_eigen_vectors can not handle NaN in Jacobi it can be set to 0 
+do loops allow opset to lists with integer values 
+fix a problem with  dataframe.at[ ] which now only allows single arguments 
+
