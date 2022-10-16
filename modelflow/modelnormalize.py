@@ -337,7 +337,7 @@ if __name__ == '__main__':
     normal('a = D( LOG(QLHP(+1)))').fprint
     normal('a = gamma+ f+O',the_endo='f',endo_lhs=False,make_fixable =True).fprint
     # breakpoint()
-    normal('zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_add_factor=1).fprint
+    normal('zlhp-zlhp(-1)  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_add_factor=1,make_fitted=1,make_fixable=1).fprint
     fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')
 #%%
 

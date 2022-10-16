@@ -1,0 +1,744 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Aug  9 14:46:11 2021
+
+To define Jupyter widgets to update and show variables. 
+@author: Ib 
+"""
+from shiny import App, event, html_dependencies, http_staticfiles, input_handler, module, reactive, render, render_image, render_plot, render_text, render_ui, req, run_app, session, types, ui
+from shinywidgets import output_widget, reactive_read, register_widget, render_widget
+import ipywidgets as ipy
+
+import pandas as pd
+
+
+import pandas as pd
+import  ipywidgets as widgets  
+
+from  ipysheet import sheet, cell, current 
+from ipysheet.pandas_loader import from_dataframe, to_dataframe
+
+from IPython.display import display, clear_output,Latex, Markdown
+from dataclasses import dataclass,field
+import matplotlib.pylab  as plt 
+
+
+
+from modelclass import insertModelVar
+from modelclass import model 
+from modeljupyter import jupviz
+
+
+@dataclass
+class basewidget:
+    ''' basis for widget updating in jupyter'''
+    
+    
+    datachildren : list = field(default_factory=list) # list of children widgets 
+    
+    def update_df(self,df,current_per):
+        ''' will update container widgets'''
+        for w in self.datachildren:
+            w.update_df(df,current_per)
+    
+    
+@dataclass
+class tabwidget:
+    '''A widget to create tab or acordium contaners'''
+    
+    tabdefdict : dict # =  field(default_factory = lambda: ({}))
+    tab : bool = True 
+    selected_index :any = None
+    
+    def __post_init__(self):
+        
+        thiswidget = widgets.Tab if self.tab else widgets.Accordion
+        self.datachildren = [tabcontent 
+                             for tabcontent  in self.tabdefdict.values()]
+        self.datawidget = thiswidget([child.datawidget for child in self.datachildren], 
+                                     selected_index = self.selected_index,                               
+                                     layout={'height': 'max-content'})  
+         
+        for i,key in enumerate(self.tabdefdict.keys()):
+           self.datawidget.set_title(i,key)
+           
+           
+    def update_df(self,df,current_per):
+        ''' will update container widgets'''
+        for w in self.datachildren:
+            w.update_df(df,current_per)
+            
+            
+    def reset(self,g):
+        ''' will reset  container widgets'''
+        for w in self.datachildren:
+            w.reset(g)
+
+
+@dataclass
+class sheetwidget:
+    ''' class defining a widget which updates from a sheet '''
+    df_var         : any = pd.DataFrame()         # definition 
+    trans          : any = lambda x : x      # renaming of variables 
+    transpose      : bool = False            # orientation of dataframe 
+    expname      : str =  "Carbon tax rate, US$ per tonn "
+   
+    
+    def __post_init__(self):
+        ...
+        
+        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+
+    
+        newnamedf = self.df_var.copy().rename(columns=self.trans)
+        self.org_df_var = self.newnamedf.T if self.transpose else newnamedf
+        
+        self.wsheet = sheet(from_dataframe(self.org_df_var),column_resizing=True)
+        self.org_values = [c.value for c in self.wsheet.cells]
+        self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.expname) else self.wsheet
+
+    def update_df(self,df,current_per=None):
+        # breakpoint()
+        self.df_new_var = to_dataframe(self.wsheet).T if self.transpose else to_dataframe(self.wsheet) 
+        self.df_new_var.columns = self.df_var.columns
+        self.df_new_var.index = self.df_var.index
+        
+        df.loc[self.df_new_var.index,self.df_new_var.columns] =  df.loc[ self.df_new_var.index,self.df_new_var.columns] + self.df_new_var 
+        pass
+        return df
+    
+    
+    def reset(self,g):
+        for c,v in zip(self.wsheet.cells,self.org_values):
+            c.value = v
+        
+
+
+@dataclass
+class slidewidget:
+    ''' class defefining a widget with lines of slides '''
+    slidedef     : dict         # definition 
+    altname      : str = 'Alternative'
+    basename     : str =  'Baseline'
+    expname      : str =  "Carbon tax rate, US$ per tonn "
+    widget_id    :str = 'slide1'
+    def __post_init__(self):
+        ...
+        
+        wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+        walt  = widgets.Label(value = self.altname,layout={'width':'8%', 'border':"hide"})
+        wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})
+        whead = widgets.HBox([wexp,walt,wbas])
+        #
+        self.wset  = [widgets.FloatSlider(description=des,
+                min=cont['min'],
+                max=cont['max'],
+                value=cont['value'],
+                step=cont.get('step',0.01),
+                layout={'width':'60%'},style={'description_width':'40%'},
+                readout_format = f":>,.{cont.get('dec',2)}f",
+                continuous_update=False
+                )
+             for des,cont in self.slidedef.items()]
+        
+            
+        for w in self.wset: 
+            w.observe(self.set_slide_value,names='value',type='change')
+        
+        waltval= [widgets.Label(
+                value=f"{cont['value']:>,.{cont.get('dec',2)}f}",
+                layout=widgets.Layout(display="flex", justify_content="center", width="10%", border="hide"))
+            for des,cont  in self.slidedef.items()
+            
+            ]
+        self.wslide = [widgets.HBox([s,v]) for s,v in zip(self.wset,waltval)]
+        self.slidewidget =  widgets.VBox([whead] + self.wslide)
+        self.datawidget =  widgets.VBox([whead] + self.wslide)
+      
+        # define the result object 
+        self.current_values = {des:
+             {key : v.split() if key=='var' else v for key,v in cont.items() if key in {'value','var','op'}} 
+             for des,cont in self.slidedef.items()} 
+            
+        # register_widget(self.widget_id, self.datawidget)
+    
+            
+    def reset(self,g): 
+        for i,(des,cont) in enumerate(self.slidedef.items()):
+            self.wset[i].value = cont['value']
+            
+        
+            
+    def update_df(self,df,current_per):
+        ''' updates a dataframe with the values from the widget'''
+        for i,(des,cont) in enumerate(self.current_values.items()):
+            op = cont.get('op','=')
+            value = cont['value']
+            for var in cont['var']:
+                if  op == '+':
+                    df.loc[current_per,var]    =  df.loc[current_per,var] + value
+                elif op == '+impulse':    
+                    df.loc[current_per[0],var] =  df.loc[current_per[0],var] + value
+                elif op == '=start-':   
+                    startindex = df.index.get_loc(current_per[0])
+                    varloc = df.columns.get_loc(var)
+                    df.iloc[:startindex,varloc] =  value
+                elif op == '=':    
+                    df.loc[current_per,var]    =   value
+                elif op == '=impulse':    
+                    df.loc[current_per[0],var] =   value
+                elif op == '%':    
+                    df.loc[current_per,var] =   df.loc[current_per,var] * (1-value/100)
+                else:
+                    print(f'Wrong operator in {cont}.\nNot updated')
+                    assert 1==3,'wRONG OPERATOR'
+        
+  
+    def set_slide_value(self,g):
+        ''' updates the new values to the self.current_vlues
+        will be used in update_df
+        '''
+        line_des = g['owner'].description
+        if 0: 
+          print()
+          for k,v in g.items():
+             print(f'{k}:{v}')
+         
+        self.current_values[line_des]['value'] = g['new']
+
+@dataclass
+class sumslidewidget:
+    ''' class defefining a widget with lines of slides '''
+    slidedef     : dict         # definition
+    maxsum          : any  = None 
+    altname      : str = 'Alternative'
+    basename     : str =  'Baseline'
+    expname      : str =  "Carbon tax rate, US$ per tonn "
+    def __post_init__(self):
+        ...
+        
+        self.first = list(self.slidedef.keys())[:-1]     
+        self.lastdes = list(self.slidedef.keys())[-1]     
+
+        wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+        walt  = widgets.Label(value = self.altname,layout={'width':'8%', 'border':"hide"})
+        wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})
+        whead = widgets.HBox([wexp,walt,wbas])
+        #
+        self.wset  = [widgets.FloatSlider(description=des,
+                min=cont['min'],
+                max=cont['max'],
+                value=cont['value'],
+                step=cont.get('step',0.01),
+                layout={'width':'60%'},style={'description_width':'40%'},
+                readout_format = f":>,.{cont.get('dec',2)}f",
+                continuous_update=False,
+                disabled= False
+                )
+             for des,cont in self.slidedef.items()]
+        
+             
+            
+        for w in self.wset: 
+            w.observe(self.set_slide_value,names='value',type='change')
+        
+        waltval= [widgets.Label(
+                value=f"{cont['value']:>,.{cont.get('dec',2)}f}",
+                layout=widgets.Layout(display="flex", justify_content="center", width="10%", border="hide"))
+            for des,cont  in self.slidedef.items()
+            
+            ]
+        self.wslide = [widgets.HBox([s,v]) for s,v in zip(self.wset,waltval)]
+        self.slidewidget =  widgets.VBox([whead] + self.wslide)
+        self.datawidget =  widgets.VBox([whead] + self.wslide)
+      
+        # define the result object 
+        self.current_values = {des:
+             {key : v.split() if key=='var' else v for key,v in cont.items() if key in {'value','var','op','min','max'}} 
+             for des,cont in self.slidedef.items()} 
+            
+    def reset(self,g): 
+        for i,(des,cont) in enumerate(self.slidedef.items()):
+            self.wset[i].value = cont['value']
+            
+        
+            
+    def update_df(self,df,current_per):
+        ''' updates a dataframe with the values from the widget'''
+        for i,(des,cont) in enumerate(self.current_values.items()):
+            op = cont.get('op','=')
+            value = cont['value']
+            for var in cont['var']:
+                if  op == '+':
+                    df.loc[current_per,var]    =  df.loc[current_per,var] + value
+                elif op == '+impulse':    
+                    df.loc[current_per[0],var] =  df.loc[current_per[0],var] + value
+                elif op == '=start-':   
+                    startindex = df.index.get_loc(current_per[0])
+                    varloc = df.columns.get_loc(var)
+                    df.iloc[:startindex,varloc] =  value
+                elif op == '=':    
+                    df.loc[current_per,var]    =   value
+                elif op == '=impulse':    
+                    df.loc[current_per[0],var] =   value
+                else:
+                    print(f'Wrong operator in {cont}.\nNot updated')
+                    assert 1==3,'wRONG OPERATOR'
+        
+  
+    def set_slide_value(self,g):
+        ''' updates the new values to the self.current_vlues
+        will be used in update_df
+        '''
+        line_des = g['owner'].description
+        line_index = list(self.current_values.keys()).index(line_des)
+        if 0: 
+          print()
+          for k,v in g.items():
+             print(f'{k}:{v}')
+         
+        self.current_values[line_des]['value'] = g['new']
+        # print(self.current_values)
+        if type(self.maxsum) == float:
+            allvalues = [v['value'] for v  in self.current_values.values()]
+            thissum = sum(allvalues)
+            if thissum > self.maxsum:
+                # print(f'{allvalues=}')
+                # print(f"{self.current_values[self.lastdes]['min']=}")
+                newlast = self.maxsum-sum(allvalues[:-1])
+                newlast = max(newlast,self.current_values[self.lastdes]['min'])
+                # print(f'{newlast=}')
+                self.current_values[self.lastdes]['value']= newlast
+    
+                newsum= sum([v['value'] for v  in self.current_values.values()]) 
+                # print(f'{newsum=}')
+                # print(f'{line_index=}')
+                if newsum > self.maxsum:
+                    self.current_values[line_des]['value']=self.wset[line_index].value-newsum +self.maxsum
+                    self.wset[line_index].value = self.current_values[line_des]['value'] 
+                    
+                self.wset[-1].value = newlast
+                
+
+                      
+@dataclass
+class updatewidget:   
+    ''' class to input and run a model'''
+    
+    mmodel : any     # a model 
+    datawidget : any # a tab to update from  
+    basename : str ='Business as usual'
+    keeppat   : str = '*'
+    varpat    : str ='*'
+    showvarpat  : bool = True 
+    exodif   : any = pd.DataFrame()         # definition 
+    lwrun    : bool = True
+    lwupdate : bool = False
+    lwreset  :  bool = True
+    lwsetbas  :  bool = True
+    lwshow    :bool = True 
+    outputwidget : str  = 'jupviz'
+    prefix_dict : dict = field(default_factory=dict)
+    display_first :any = None 
+    vline  : list = field(default_factory=list)
+    relativ_start : int = 0 
+    short :bool = False 
+    legend :bool = False
+    
+    def __post_init__(self):
+        self.baseline = self.mmodel.basedf.copy()
+        wrun   = widgets.Button(description="Run scenario")
+        wrun.on_click(self.run)
+        
+        wupdate   = widgets.Button(description="Update the dataset ")
+        wupdate.on_click(self.update)
+        
+        wreset   = widgets.Button(description="Reset to start")
+        wreset.on_click(self.reset)
+
+        wshow   = widgets.Button(description="Show results")
+        wshow.on_click(self.show)
+        
+        wsetbas   = widgets.Button(description="Use as baseline")
+        wsetbas.on_click(self.setbasis)
+        self.experiment = 0 
+        
+        lbut = []
+        
+        if self.lwrun: lbut.append(wrun)
+        if self.lwshow:  lbut.append(wshow)
+        if self.lwupdate: lbut.append(wupdate)
+        if self.lwreset: lbut.append(wreset)
+        if self.lwsetbas : lbut.append(wsetbas)
+        
+        wbut  = widgets.HBox(lbut)
+        
+        
+        self.wname = widgets.Text(value=self.basename,placeholder='Type something',description='Scenario name:',
+                        layout={'width':'30%'},style={'description_width':'50%'})
+        self.wpat = widgets.Text(value= self.varpat,placeholder='Type something',description='Display variables:',
+                        layout={'width':'65%'},style={'description_width':'30%'})
+        
+        self.wpat.layout.visibility = 'visible' if self.showvarpat else 'hidden'
+        
+
+        winputstring = widgets.HBox([self.wname,self.wpat])
+       
+        self.wtotal = widgets.VBox([self.datawidget.datawidget,winputstring,wbut])
+    
+        self.mmodel.keep_solutions = {}
+        self.mmodel.keep_solutions = {self.wname.value : self.baseline}
+        self.mmodel.keep_exodif = {}
+        
+        self.experiment +=  1 
+        self.wname.value = f'Experiment {self.experiment}'
+
+    
+    def update(self,g):
+        self.thisexperiment = self.baseline.copy()
+        self.datawidget.update_df(self.thisexperiment,self.mmodel.current_per)
+        self.exodif = self.mmodel.exodif(self.baseline,self.thisexperiment)
+
+
+    def show(self,g=None):
+
+            selectfrom = [v for v in self.mmodel.vlist(self.wpat.value) if v in 
+                          set(list(self.mmodel.keep_solutions.values())[0].columns)]
+            # clear_output()
+            if self.display_first:
+                display(self.display_first)
+            # display(self.wtotal)
+            plt.close('all')
+            with self.mmodel.set_smpl_relative(self.relativ_start,0):
+                _ = self.mmodel.keep_viz_prefix(pat=selectfrom[0],
+                        selectfrom=selectfrom,prefix_dict=self.prefix_dict,vline=self.vline,short=self.short,legend=self.legend)
+            
+        
+    def run(self,g):
+        self.update(g)
+        self.mmodel(self.thisexperiment,progressbar=1,keep = self.wname.value,                    
+                keep_variables = self.keeppat)
+        self.mmodel.keep_exodif[self.wname.value] = self.exodif 
+        self.mmodel.inputwidget_alternativerun = True
+        self.current_experiment = self.wname.value
+        self.experiment +=  1 
+        self.wname.value = f'Experiment {self.experiment}'
+        self.show(g)
+        
+    def setbasis(self,g):
+        self.mmodel.keep_solutions={self.current_experiment:self.mmodel.keep_solutions[self.current_experiment]}
+        
+        self.mmodel.keep_exodif[self.current_experiment] = self.exodif 
+        self.mmodel.inputwidget_alternativerun = True
+
+        
+        
+         
+    def reset(self,g):
+        self.datawidget.reset(g) 
+
+def fig_to_image(figs,format='svg'):
+    from io import StringIO
+    f = StringIO()
+    figs.savefig(f,format=format)
+    f.seek(0)
+    image= f.read()
+    return image
+  
+@dataclass
+class htmlwidget_df:
+    ''' class displays a dataframe in a html widget '''
+    
+    mmodel : any     # a model   
+    df_var         : any = pd.DataFrame()         # definition 
+    trans          : any = lambda x : x      # renaming of variables 
+    transpose      : bool = False            # orientation of dataframe 
+    expname      : str =  "Test"
+    percent      : bool = False 
+   
+    
+    def __post_init__(self):
+        ...
+        
+   
+    
+        newnamedf = self.df_var.copy().rename(columns=self.trans)
+        self.org_df_var = newnamedf.T if self.transpose else newnamedf
+        self.wexp  = widgets.Label(value = f'{self.expname} {self.org_df_var.shape}',layout={'width':'54%'})
+        self.datawidget=self.wexp
+        # return
+        image = self.mmodel.ibsstyle(self.org_df_var,percent = self.percent).to_html()
+        # image = self.org_df_var.to_html()
+        self.whtml = widgets.HTML(image)
+        # self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+        
+    @property
+    def show(self):
+        display(self.datawidget)
+        
+
+@dataclass
+class htmlwidget_fig:
+    ''' class displays a dataframe in a html widget '''
+    
+    figs : any     # a model   
+    expname      : str =  ""
+    format       : str =  "svg"
+  
+    
+    def __post_init__(self):
+        ...
+        
+        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+   
+    
+        image = fig_to_image(self.figs,format=self.format)
+        self.whtml = widgets.HTML(image)
+        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+        
+@dataclass
+class htmlwidget_label:
+    ''' class displays a dataframe in a html widget '''
+    
+    expname      : str =  ""
+    format       : str =  "svg"
+  
+    
+    def __post_init__(self):
+        ...
+        
+        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+ 
+    
+        self.datawidget=self.wexp
+
+@dataclass
+class visshow:
+    mmodel : any     # a model 
+    varpat    : str ='*' 
+    showvarpat  : bool = True 
+    show_on   : bool = True  # Display when called 
+        
+    def __post_init__(self):
+        ...
+        from IPython import get_ipython
+        try:
+            get_ipython().magic('matplotlib notebook')
+        except: 
+            ...
+        # print(plt.get_backend())
+        this_vis = self.mmodel[self.varpat]
+        self.out_dict = {}
+        self.out_dict['Baseline'] ={'df':this_vis.base}        
+        self.out_dict['Alternative'] ={'df':this_vis} 
+        self.out_dict['Difference'] ={'df':this_vis.dif} 
+        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpctlevel.mul100,'percent':True} 
+        self.out_dict['Base growth'] ={'df':this_vis.base.pct.mul100,'percent':True} 
+        self.out_dict['Alt. growth'] ={'df':this_vis.pct.mul100,'percent':True} 
+        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
+        
+        out = widgets.Output() 
+        self.out_to_data = {key:
+            htmlwidget_df(self.mmodel,value['df'].df.T,expname=key,
+
+                          percent=value.get('percent',False))                           
+                           for key,value in self.out_dict.items()}
+            
+        with out: # to suppress the display of matplotlib creation 
+            self.out_to_figs ={key:
+                 htmlwidget_fig(value['df'].rename().plot(top=0.9,title=''),expname='')               
+                              for key,value in self.out_dict.items() }
+                
+       
+        tabnew =  {key: tabwidget({'Charts':self.out_to_figs[key],'Data':self.out_to_data[key]},selected_index=0) for key in self.out_to_figs.keys()}
+       
+        exodif = self.mmodel.exodif()
+        exonames = exodif.columns        
+        exoindex = exodif.index
+        if len(exonames):
+            exobase = self.mmodel.basedf.loc[exoindex,exonames]
+            exolast = self.mmodel.lastdf.loc[exoindex,exonames]
+            
+            out_exodif = htmlwidget_df(self.mmodel,exodif.T)
+            out_exobase = htmlwidget_df(self.mmodel,exobase.T)
+            out_exolast = htmlwidget_df(self.mmodel,exolast.T)
+        else: 
+            out_exodif = htmlwidget_label(expname = 'No difference in exogenous')
+            out_exobase =  htmlwidget_label(expname = 'No difference in exogenous')
+            out_exolast =  htmlwidget_label(expname = 'No difference in exogenous')
+            
+        
+        out_tab_info = tabwidget({'Delta exogenous':out_exodif,
+                                  'Baseline exogenous':out_exobase,
+                                  'Alt. exogenous':out_exolast},selected_index=0)
+        
+        tabnew['Exo info'] = out_tab_info
+        
+        this =   tabwidget(tabnew,selected_index=0)
+            
+            
+        
+        self.datawidget = this.datawidget  
+        if self.show_on:
+            ...
+            display(self.datawidget)
+        try:    
+            get_ipython().magic('matplotlib inline') 
+        except:
+            ...
+
+    def __repr__(self):
+        return ''
+
+    def _html_repr_(self):  
+        return self.datawidget 
+         
+    @property
+    def show(self):
+        display(self.datawidget)
+    
+
+@dataclass
+class shinywidget:
+    '''A to translate a widget to shiny widget '''
+    
+    a_widget : any # The datawidget to wrap 
+    widget_id  : str 
+    
+    def __post_init__(self):
+        ...        
+        register_widget(self.widget_id, self.a_widget.datawidget)
+       
+           
+    def update_df(self,df,current_per):
+        ''' will update container widgets'''
+        self.a_widget.update_df(df,current_per)
+            
+            
+    def reset(self,g):
+        ''' will reset  container widgets'''
+        self.a_widget.reset(g) 
+
+def keep_plot_shiny(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True,
+             select_width='', select_height='200px', vline=[],prefix_dict={},add_var_name=False,short=False):
+    """
+     Plots the keept dataframes
+
+     Args:
+         pat (str, optional): a string of variables to select pr default. Defaults to '*'.
+         smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
+         selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
+         legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
+         dec (string, optional): decimals on the y-axis. Defaults to '0'.
+         use_descriptions : Use the variable descriptions from the model 
+
+     Returns:
+         None.
+
+     self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
+     quality files. 
+
+    """
+
+    from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider, SelectMultiple, Layout
+    from ipywidgets import Select
+    from ipywidgets import interactive, ToggleButtons, SelectionRangeSlider, RadioButtons
+    from ipywidgets import interactive_output, HBox, VBox, link, Dropdown,Output
+    
+    
+    minper = self.lastdf.index[0]
+    maxper = self.lastdf.index[-1]
+    options = [(ind, nr) for nr, ind in enumerate(self.lastdf.index)]
+    with self.set_smpl(*smpl):
+        show_per = self.current_per[:]
+    init_start = self.lastdf.index.get_loc(show_per[0])
+    init_end = self.lastdf.index.get_loc(show_per[-1])
+    keepvar = sorted (list(self.keep_solutions.values())[0].columns)
+    defaultvar = [v for v in self.vlist(pat) if v in keepvar] 
+    _selectfrom = [s.upper() for s in selectfrom] if selectfrom else keepvar
+    
+    gross_selectfrom =  [(f'{(v+" ") if add_var_name else ""}{self.var_description[v] if use_descriptions else v}',v) for v in _selectfrom] 
+    width = select_width if select_width else '50%' if use_descriptions else '50%'
+
+    def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
+        vars = ' '.join(v for v in selected_vars)
+        smpl = (self.lastdf.index[i_smpl[0]], self.lastdf.index[i_smpl[1]])
+        if type(diff) == str:
+            diffpct = True
+            ldiff = False
+        else: 
+            ldiff = diff
+            diffpct = False
+        with self.set_smpl(*smpl):
+            self.keep_wiz_figs = self.keep_plot(vars, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
+                                                legend=legend, dec=dec, vline=vline)
+        plt.show()    
+    description_width = 'initial'
+    description_width_long = 'initial'
+    keep_keys = list(self.keep_solutions.keys())
+    keep_first = keep_keys[0]
+    select_prefix = [(c,iso) for iso,c in prefix_dict.items()]
+    # breakpoint()
+    i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
+                                  max=maxper, layout=Layout(width='75%'), description='Show interval')
+    selected_vars = SelectMultiple(value=defaultvar, options=gross_selectfrom, layout=Layout(width=width, height=select_height, font="monospace"),
+                                   description='Select one or more', style={'description_width': description_width})
+    diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
+                        value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
+    showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
+                            description='Data type', value='level', style={'description_width': description_width})
+    scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',
+                         value='linear', style={'description_width': description_width})
+    legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=legend, style={
+                          'description_width': description_width})
+    # breakpoint()
+    
+    
+    def get_prefix(g):
+        try:
+            current_suffix = {v[len(g['old'][0]):] for v in selected_vars.value}
+        except:
+            current_suffix = ''
+            
+        new_prefix = g['new']
+        selected_prefix_var =  [(des,variable) for des,variable in gross_selectfrom  
+                                if any([variable.startswith(n)  for n in new_prefix])]
+                                
+        selected_vars.options = selected_prefix_var
+        
+        if current_suffix:
+            new_selection   = [f'{n}{c}' for c in current_suffix for n in new_prefix
+                                    if f'{n}{c}' in {s  for p,s in selected_prefix_var}]
+            selected_vars.value  = new_selection 
+            # print(f"{new_selection=}{current_suffix=}{g['old']=}")
+        else:    
+            selected_vars.value  = [selected_prefix_var[0][1]]
+            
+               
+    if len(prefix_dict): 
+        selected_prefix = SelectMultiple(value=[select_prefix[0][1]], options=select_prefix, 
+                                         layout=Layout(width='25%', height=select_height, font="monospace"),
+                                   description='')
+           
+        selected_prefix.observe(get_prefix,names='value',type='change')
+        select = HBox([selected_vars,selected_prefix])
+        get_prefix({'new':select_prefix[0]})
+    else: 
+        select = VBox([selected_vars])
+        
+    options1 = HBox([diff]) if short >=2 else HBox([diff,legend])
+    options2 = HBox([scale, showtype])
+    if short:
+        vui = [select, options1, i_smpl]
+    else:
+        vui = [select, options1, options2, i_smpl]
+    vui =  vui[:-1] if short >= 2 else vui  
+    ui = VBox(vui)
+    
+    show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
+                                        'scale': scale, 'legend': legend})
+    # display(ui, show)
+    display(ui)
+    display(show)
+    return
