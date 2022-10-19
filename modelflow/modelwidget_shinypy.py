@@ -11,6 +11,11 @@ import ipywidgets as ipy
 
 import pandas as pd
 
+from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider, SelectMultiple, Layout
+from ipywidgets import Select
+from ipywidgets import interactive, ToggleButtons, SelectionRangeSlider, RadioButtons
+from ipywidgets import interactive_output, HBox, VBox, link, Dropdown,Output
+
 
 import pandas as pd
 import  ipywidgets as widgets  
@@ -336,7 +341,7 @@ class updatewidget:
     lwupdate : bool = False
     lwreset  :  bool = True
     lwsetbas  :  bool = True
-    lwshow    :bool = True 
+    lwshow    :bool = False 
     outputwidget : str  = 'jupviz'
     prefix_dict : dict = field(default_factory=dict)
     display_first :any = None 
@@ -405,8 +410,8 @@ class updatewidget:
             selectfrom = [v for v in self.mmodel.vlist(self.wpat.value) if v in 
                           set(list(self.mmodel.keep_solutions.values())[0].columns)]
             # clear_output()
-            if self.display_first:
-                display(self.display_first)
+            # if self.display_first:
+            #     display(self.display_first)
             # display(self.wtotal)
             plt.close('all')
             with self.mmodel.set_smpl_relative(self.relativ_start,0):
@@ -423,7 +428,7 @@ class updatewidget:
         self.current_experiment = self.wname.value
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
-        self.show(g)
+        # self.show(g)
         
     def setbasis(self,g):
         self.mmodel.keep_solutions={self.current_experiment:self.mmodel.keep_solutions[self.current_experiment]}
@@ -620,8 +625,24 @@ class shinywidget:
         ''' will reset  container widgets'''
         self.a_widget.reset(g) 
 
-def keep_plot_shiny(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True,
-             select_width='', select_height='200px', vline=[],prefix_dict={},add_var_name=False,short=False):
+@dataclass
+class keep_plot_shiny:
+    mmodel : any     # a model 
+    pat : str ='*'
+    smpl=('', '')
+    relativ_start : int = 0 
+    selectfrom={} 
+    legend=0
+    dec=''
+    use_descriptions=True
+    select_width=''
+    select_height='200px'
+    vline : list = field(default_factory=list)
+    prefix_dict : dict = field(default_factory=dict)
+    add_var_name=False
+    short :any  = 0 
+    multi :any = False 
+    
     """
      Plots the keept dataframes
 
@@ -641,104 +662,146 @@ def keep_plot_shiny(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='
 
     """
 
-    from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider, SelectMultiple, Layout
-    from ipywidgets import Select
-    from ipywidgets import interactive, ToggleButtons, SelectionRangeSlider, RadioButtons
-    from ipywidgets import interactive_output, HBox, VBox, link, Dropdown,Output
     
+    def __post_init__(self):
+        # print(f'{self.multi=}')
+        minper = self.mmodel.lastdf.index[0]
+        maxper = self.mmodel.lastdf.index[-1]
+        options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
+        with self.mmodel.set_smpl(*self.smpl):
+            # with self.mmodel.set_smpl_relative(self.relativ_start,0):
+                show_per = self.mmodel.current_per[:]
+        init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
+        init_end = self.mmodel.lastdf.index.get_loc(show_per[-1])
+        keepvar = sorted (list(self.mmodel.keep_solutions.values())[0].columns)
+        defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],)
+        # print('******* selectfrom')
+        # _selectfrom = [s.upper() for s in self.selectfrom] if self.selectfrom else keepvar
+        _selectfrom = keepvar
+        gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v) for v in _selectfrom] 
+        width = self.select_width if self.select_width else '50%' if self.use_descriptions else '50%'
     
-    minper = self.lastdf.index[0]
-    maxper = self.lastdf.index[-1]
-    options = [(ind, nr) for nr, ind in enumerate(self.lastdf.index)]
-    with self.set_smpl(*smpl):
-        show_per = self.current_per[:]
-    init_start = self.lastdf.index.get_loc(show_per[0])
-    init_end = self.lastdf.index.get_loc(show_per[-1])
-    keepvar = sorted (list(self.keep_solutions.values())[0].columns)
-    defaultvar = [v for v in self.vlist(pat) if v in keepvar] 
-    _selectfrom = [s.upper() for s in selectfrom] if selectfrom else keepvar
-    
-    gross_selectfrom =  [(f'{(v+" ") if add_var_name else ""}{self.var_description[v] if use_descriptions else v}',v) for v in _selectfrom] 
-    width = select_width if select_width else '50%' if use_descriptions else '50%'
 
-    def explain(i_smpl, selected_vars, diff, showtype, scale, legend):
-        vars = ' '.join(v for v in selected_vars)
-        smpl = (self.lastdf.index[i_smpl[0]], self.lastdf.index[i_smpl[1]])
-        if type(diff) == str:
-            diffpct = True
-            ldiff = False
-        else: 
-            ldiff = diff
-            diffpct = False
-        with self.set_smpl(*smpl):
-            self.keep_wiz_figs = self.keep_plot(vars, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
-                                                legend=legend, dec=dec, vline=vline)
-        plt.show()    
-    description_width = 'initial'
-    description_width_long = 'initial'
-    keep_keys = list(self.keep_solutions.keys())
-    keep_first = keep_keys[0]
-    select_prefix = [(c,iso) for iso,c in prefix_dict.items()]
-    # breakpoint()
-    i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
-                                  max=maxper, layout=Layout(width='75%'), description='Show interval')
-    selected_vars = SelectMultiple(value=defaultvar, options=gross_selectfrom, layout=Layout(width=width, height=select_height, font="monospace"),
-                                   description='Select one or more', style={'description_width': description_width})
-    diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
-                        value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
-    showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
-                            description='Data type', value='level', style={'description_width': description_width})
-    scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',
-                         value='linear', style={'description_width': description_width})
-    legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=legend, style={
-                          'description_width': description_width})
-    # breakpoint()
-    
-    
-    def get_prefix(g):
-        try:
-            current_suffix = {v[len(g['old'][0]):] for v in selected_vars.value}
-        except:
-            current_suffix = ''
+        description_width = 'initial'
+        description_width_long = 'initial'
+        keep_keys = list(self.mmodel.keep_solutions.keys())
+        keep_first = keep_keys[0]
+        select_prefix = [(c,iso) for iso,c in self.prefix_dict.items()]
+        i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
+                                      max=maxper, layout=Layout(width='75%'), description='Show interval')
+        selected_vars = SelectMultiple(value=defaultvar, options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),
+                                       description='Select one or more', style={'description_width': description_width})
+        diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
+                            value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
+        showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
+                                description='Data type', value='level', style={'description_width': description_width})
+        scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',
+                             value='linear', style={'description_width': description_width})
+        # 
+        legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=self.legend, style={
+                              'description_width': description_width})
+        # breakpoint()
+        self.out_widget = widgets.HTML(value="Hello <b>World</b>",
+                                  placeholder='Some HTML',
+                                  description='Some HTML',)
+        widget_dict = {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
+                                            'scale': scale, 'legend': legend}
+
+        def explain(i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend= None):
+            variabler = ' '.join(v for v in selected_vars)
+            smpl = (self.mmodel.lastdf.index[i_smpl[0]], self.mmodel.lastdf.index[i_smpl[1]])
+            if type(diff) == str:
+                diffpct = True
+                ldiff = False
+            else: 
+                ldiff = diff
+                diffpct = False
+            with self.mmodel.set_smpl(*smpl):
+
+                if self.multi: 
+                    self.keep_wiz_fig = self.mmodel.keep_plot_multi(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
+                                                        legend=legend, dec=self.dec, vline=self.vline)
+                else: 
+                    self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
+                                                        legend=legend, dec=self.dec, vline=self.vline)
+                    self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
+
+
+        def trigger(g):
+            values = {widname : wid.value for widname,wid in widget_dict.items() }
+            explain(**values)
+            xxx = fig_to_image(self.keep_wiz_fig,format='svg')
+            self.out_widget.value = xxx
             
-        new_prefix = g['new']
-        selected_prefix_var =  [(des,variable) for des,variable in gross_selectfrom  
-                                if any([variable.startswith(n)  for n in new_prefix])]
-                                
-        selected_vars.options = selected_prefix_var
         
-        if current_suffix:
-            new_selection   = [f'{n}{c}' for c in current_suffix for n in new_prefix
-                                    if f'{n}{c}' in {s  for p,s in selected_prefix_var}]
-            selected_vars.value  = new_selection 
-            # print(f"{new_selection=}{current_suffix=}{g['old']=}")
-        else:    
-            selected_vars.value  = [selected_prefix_var[0][1]]
+        # trigger = change_trigger_multi if self.multi else change_trigger    
+        
+        for wid in widget_dict.values():
+            wid.observe(trigger,names='value',type='change')
             
+        
+        def get_value_selected_vars(g,hest='ddd'):
+            line_des = g['owner'].description
+            if 1: 
+              print()
+              print(line_des)
+              for k,v in g.items():
+                 print(f'{k}:{v}')
+             
+            # self.mmodel.current_values[line_des]['value'] = g['new']
+    
+        # selected_vars.observe(get_value_selected_vars,names='value',type='change')    
+            
+        
+        def get_prefix(g):
+            
+            try:
+                current_suffix = {v[len(g['old'][0]):] for v in selected_vars.value}
+            except:
+                current_suffix = ''
+            new_prefix = g['new']
+            selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
+                                    if any([variable.startswith(n)  for n in new_prefix]))
+            # An exception is trigered but has no consequences     
+            try:                      
+                selected_vars.options = selected_prefix_var
+            except: 
+                ...
+                
+                
+            # print('here')
+
+            if current_suffix:
+                new_selection   = [f'{n}{c}' for c in current_suffix for n in new_prefix
+                                        if f'{n}{c}' in {s  for p,s in selected_prefix_var}]
+                selected_vars.value  = new_selection 
+                # print(f"{new_selection=}{current_suffix=}{g['old']=}")
+            else:    
+                selected_vars.value  = [selected_prefix_var[0][1]]
+                
+                   
+        if len(self.prefix_dict): 
+            selected_prefix = SelectMultiple(value=[select_prefix[0][1]], options=select_prefix, 
+                                             layout=Layout(width='25%', height=self.select_height, font="monospace"),
+                                       description='')
                
-    if len(prefix_dict): 
-        selected_prefix = SelectMultiple(value=[select_prefix[0][1]], options=select_prefix, 
-                                         layout=Layout(width='25%', height=select_height, font="monospace"),
-                                   description='')
-           
-        selected_prefix.observe(get_prefix,names='value',type='change')
-        select = HBox([selected_vars,selected_prefix])
-        get_prefix({'new':select_prefix[0]})
-    else: 
-        select = VBox([selected_vars])
+            selected_prefix.observe(get_prefix,names='value',type='change')
+            select = HBox([selected_vars,selected_prefix])
+            # print(f'{select_prefix=}')
+            get_prefix({'new':select_prefix[0]})
+        else: 
+            select = VBox([selected_vars])
+   
+        options1 = HBox([diff]) if self.short >=2 else HBox([diff,legend])
+        options2 = HBox([scale, showtype])
+        if self.short:
+            vui = [select, options1, i_smpl]
+        else:
+            vui = [select, options1, options2, i_smpl]
+        vui =  vui[:-1] if self.short >= 2 else vui  
         
-    options1 = HBox([diff]) if short >=2 else HBox([diff,legend])
-    options2 = HBox([scale, showtype])
-    if short:
-        vui = [select, options1, i_smpl]
-    else:
-        vui = [select, options1, options2, i_smpl]
-    vui =  vui[:-1] if short >= 2 else vui  
-    ui = VBox(vui)
-    
-    show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
-                                        'scale': scale, 'legend': legend})
-    # display(ui, show)
-    display(ui)
-    display(show)
-    return
+        self.datawidget= VBox(vui+[self.out_widget])
+        # show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
+        #                                     'scale': scale, 'legend': legend})
+        # print('klar til register')
+
