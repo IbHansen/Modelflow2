@@ -341,14 +341,15 @@ class updatewidget:
     lwupdate : bool = False
     lwreset  :  bool = True
     lwsetbas  :  bool = True
-    lwshow    :bool = False 
     outputwidget : str  = 'jupviz'
-    prefix_dict : dict = field(default_factory=dict)
     display_first :any = None 
+  # to the plot widget   
+    prefix_dict : dict = field(default_factory=dict)
     vline  : list = field(default_factory=list)
     relativ_start : int = 0 
     short :bool = False 
-    legend :bool = False
+    
+    
     
     def __post_init__(self):
         self.baseline = self.mmodel.basedf.copy()
@@ -361,8 +362,6 @@ class updatewidget:
         wreset   = widgets.Button(description="Reset to start")
         wreset.on_click(self.reset)
 
-        wshow   = widgets.Button(description="Show results")
-        wshow.on_click(self.show)
         
         wsetbas   = widgets.Button(description="Use as baseline")
         wsetbas.on_click(self.setbasis)
@@ -371,7 +370,6 @@ class updatewidget:
         lbut = []
         
         if self.lwrun: lbut.append(wrun)
-        if self.lwshow:  lbut.append(wshow)
         if self.lwupdate: lbut.append(wupdate)
         if self.lwreset: lbut.append(wreset)
         if self.lwsetbas : lbut.append(wsetbas)
@@ -389,7 +387,6 @@ class updatewidget:
 
         winputstring = widgets.HBox([self.wname,self.wpat])
        
-        self.wtotal = widgets.VBox([self.datawidget.datawidget,winputstring,wbut])
     
         self.mmodel.keep_solutions = {}
         self.mmodel.keep_solutions = {self.wname.value : self.baseline}
@@ -397,38 +394,42 @@ class updatewidget:
         
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
+        
+        self.keep_ui = keep_plot_shiny(mmodel = self.mmodel, 
+                                  pat = self.varpat, prefix_dict=self.prefix_dict,
+                                  vline=self.vline,relativ_start=self.relativ_start,
+                                  short = self.short) 
+        
+        self.wtotal = widgets.VBox([self.datawidget.datawidget,winputstring,wbut,
+                                    self.keep_ui.datawidget])
 
     
     def update(self,g):
         self.thisexperiment = self.baseline.copy()
+        # print(f'update smpl  {self.mmodel.current_per=}')
+        
         self.datawidget.update_df(self.thisexperiment,self.mmodel.current_per)
         self.exodif = self.mmodel.exodif(self.baseline,self.thisexperiment)
+        print(f'update 2 smpl  {self.mmodel.current_per[0]=}')
 
 
-    def show(self,g=None):
-
-            selectfrom = [v for v in self.mmodel.vlist(self.wpat.value) if v in 
-                          set(list(self.mmodel.keep_solutions.values())[0].columns)]
-            # clear_output()
-            # if self.display_first:
-            #     display(self.display_first)
-            # display(self.wtotal)
-            plt.close('all')
-            with self.mmodel.set_smpl_relative(self.relativ_start,0):
-                _ = self.mmodel.keep_viz_prefix(pat=selectfrom[0],
-                        selectfrom=selectfrom,prefix_dict=self.prefix_dict,vline=self.vline,short=self.short,legend=self.legend)
-            
+              
         
     def run(self,g):
         self.update(g)
-        self.mmodel(self.thisexperiment,progressbar=1,keep = self.wname.value,                    
+        # print(f'run  smpl  {self.mmodel.current_per[0]=}')
+        start = self.mmodel.current_per[0]
+        slut = self.mmodel.current_per[-1]
+        print(f'{start=}  {slut=}')
+        self.mmodel(self.thisexperiment,start=start,slut=slut,progressbar=1,keep = self.wname.value,                    
                 keep_variables = self.keeppat)
+        # print(f'run  efter smpl  {self.mmodel.current_per[0]=}')
         self.mmodel.keep_exodif[self.wname.value] = self.exodif 
         self.mmodel.inputwidget_alternativerun = True
         self.current_experiment = self.wname.value
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
-        # self.show(g)
+        self.keep_ui.trigger(None) 
         
     def setbasis(self,g):
         self.mmodel.keep_solutions={self.current_experiment:self.mmodel.keep_solutions[self.current_experiment]}
@@ -664,13 +665,17 @@ class keep_plot_shiny:
 
     
     def __post_init__(self):
-        # print(f'{self.multi=}')
         minper = self.mmodel.lastdf.index[0]
         maxper = self.mmodel.lastdf.index[-1]
         options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
+        # print(f'Før {self.mmodel.current_per=}')
         with self.mmodel.set_smpl(*self.smpl):
-            # with self.mmodel.set_smpl_relative(self.relativ_start,0):
-                show_per = self.mmodel.current_per[:]
+            # print(f'efter set smpl  {self.mmodel.current_per=}')
+            with self.mmodel.set_smpl_relative(self.relativ_start,0):
+               # print(f'efter set smpl relativ  {self.mmodel.current_per=}')
+               show_per = list(self.mmodel.current_per)[:]
+        # print(f'efter context  set smpl  {self.mmodel.current_per=}')
+        # breakpoint() 
         init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
         init_end = self.mmodel.lastdf.index.get_loc(show_per[-1])
         keepvar = sorted (list(self.mmodel.keep_solutions.values())[0].columns)
@@ -700,56 +705,21 @@ class keep_plot_shiny:
         # 
         legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=self.legend, style={
                               'description_width': description_width})
+        
+        self.widget_dict = {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
+                                            'scale': scale, 'legend': legend}
+        for wid in self.widget_dict.values():
+            wid.observe(self.trigger,names='value',type='change')
+            
         # breakpoint()
         self.out_widget = widgets.HTML(value="Hello <b>World</b>",
                                   placeholder='Some HTML',
                                   description='Some HTML',)
-        widget_dict = {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
-                                            'scale': scale, 'legend': legend}
 
-        def explain(i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend= None):
-            variabler = ' '.join(v for v in selected_vars)
-            smpl = (self.mmodel.lastdf.index[i_smpl[0]], self.mmodel.lastdf.index[i_smpl[1]])
-            if type(diff) == str:
-                diffpct = True
-                ldiff = False
-            else: 
-                ldiff = diff
-                diffpct = False
-            with self.mmodel.set_smpl(*smpl):
-
-                if self.multi: 
-                    self.keep_wiz_fig = self.mmodel.keep_plot_multi(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
-                                                        legend=legend, dec=self.dec, vline=self.vline)
-                else: 
-                    self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
-                                                        legend=legend, dec=self.dec, vline=self.vline)
-                    self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
-
-
-        def trigger(g):
-            values = {widname : wid.value for widname,wid in widget_dict.items() }
-            explain(**values)
-            xxx = fig_to_image(self.keep_wiz_fig,format='svg')
-            self.out_widget.value = xxx
-            
         
-        # trigger = change_trigger_multi if self.multi else change_trigger    
         
-        for wid in widget_dict.values():
-            wid.observe(trigger,names='value',type='change')
-            
         
-        def get_value_selected_vars(g,hest='ddd'):
-            line_des = g['owner'].description
-            if 1: 
-              print()
-              print(line_des)
-              for k,v in g.items():
-                 print(f'{k}:{v}')
-             
-            # self.mmodel.current_values[line_des]['value'] = g['new']
-    
+       
         # selected_vars.observe(get_value_selected_vars,names='value',type='change')    
             
         
@@ -804,4 +774,36 @@ class keep_plot_shiny:
         # show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
         #                                     'scale': scale, 'legend': legend})
         # print('klar til register')
+    def explain(self, i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend= None):
+        variabler = ' '.join(v for v in selected_vars)
+        smpl = (self.mmodel.lastdf.index[i_smpl[0]], self.mmodel.lastdf.index[i_smpl[1]])
+        if type(diff) == str:
+            diffpct = True
+            ldiff = False
+        else: 
+            ldiff = diff
+            diffpct = False
+            
+        # print(f'Før plot {self.mmodel.current_per=}')
+
+        # with self.mmodel.set_smpl(*smpl):
+
+        if self.multi: 
+            self.keep_wiz_fig = self.mmodel.keep_plot_multi(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
+                                                legend=legend, dec=self.dec,start_ofset=self.relativ_start, vline=self.vline)
+        else: 
+            self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
+                                                scale=scale, showtype=showtype,start_ofset=self.relativ_start,
+                                                legend=legend, dec=self.dec, vline=self.vline)
+            self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
+        # print(f'Efter plot {self.mmodel.current_per=}')
+
+
+    def  trigger(self,g):
+        values = {widname : wid.value for widname,wid in self.widget_dict.items() }
+        print(f'Triggerd:\n{values}')
+        self.explain(**values)
+        xxx = fig_to_image(self.keep_wiz_fig,format='svg')
+        self.out_widget.value = xxx
+            
 
