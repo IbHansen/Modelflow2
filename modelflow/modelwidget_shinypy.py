@@ -786,17 +786,17 @@ class keep_plot_shiny:
             
         # print(f'Før plot {self.mmodel.current_per=}')
 
-        # with self.mmodel.set_smpl(*smpl):
+        with self.mmodel.set_smpl(*smpl):
 
-        if self.multi: 
-            self.keep_wiz_fig = self.mmodel.keep_plot_multi(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
-                                                legend=legend, dec=self.dec,start_ofset=self.relativ_start, vline=self.vline)
-        else: 
-            self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
-                                                scale=scale, showtype=showtype,start_ofset=self.relativ_start,
-                                                legend=legend, dec=self.dec, vline=self.vline)
-            self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
-        # print(f'Efter plot {self.mmodel.current_per=}')
+            if self.multi: 
+                self.keep_wiz_fig = self.mmodel.keep_plot_multi(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
+                                                    legend=legend, dec=self.dec, vline=self.vline)
+            else: 
+                self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
+                                                    scale=scale, showtype=showtype,
+                                                    legend=legend, dec=self.dec, vline=self.vline)
+                self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
+            # print(f'Efter plot {self.mmodel.current_per=}')
 
 
     def  trigger(self,g):
