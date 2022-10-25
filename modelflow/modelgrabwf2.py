@@ -75,9 +75,10 @@ def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
                         '!conda install pyeviews -c conda-forge -y')
     from pathlib import Path
     wfpath = Path(filename)
-    if wfpath.suffix != '.wf1':
+    if wfpath.suffix not in {'.wf1','.wf2'} :
         raise Exception(f'wf1_to_wf2 expects a .wf1 file as input\nOffending:{wfpath} {wfpath.suffix} ')
-    wf1= wfpath.absolute()
+    else:
+        wf1= wfpath.absolute()
     # wf2 = wf1.with_suffix('.wf2')
     wf2 = (wf1.resolve().parent / (wf1.stem + '_modelflow')).with_suffix('.wf2')
     # breakpoint()

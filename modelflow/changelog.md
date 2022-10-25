@@ -43,4 +43,6 @@ modelnewton warning when using set (model.endogene) in dataframe.loc fixed by us
 modelnewton get_eigen_vectors can not handle NaN in Jacobi it can be set to 0 
 do loops allow opset to lists with integer values 
 fix a problem with  dataframe.at[ ] which now only allows single arguments 
+create modelwidgets_shiny to make dashboards
+modelgrabwf2 can now also import wf2 files 
 
