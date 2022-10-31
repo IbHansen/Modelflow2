@@ -1850,6 +1850,7 @@ class Dekomp_Mixin():
 
     def dekomp_plot_per(self, varnavn, sort=False, pct=True, per='', threshold=0.0
                          ,rename=True
+                         ,nametrans = lambda varnames,thismodel : varnames
                          ,time_att=False,ysize=7):
         '''
         Returns  a waterfall diagram with attribution for a variable in one time frame 
@@ -1880,7 +1881,10 @@ class Dekomp_Mixin():
         thisper = self.current_per[-1] if per == '' else per
         xx = self.dekomp(varnavn.upper(), lprint=False,time_att=time_att)
         ddf = join_name_lag(xx[2] if pct else xx[1])
-        ddf = ddf.rename(index= self.var_description) if rename else ddf
+        if rename:
+            ddf = ddf.rename(index= self.var_description)
+        else:
+            ddf.index = nametrans(ddf.index,self)
 
 #        tempdf = pd.DataFrame(0,columns=ddf.columns,index=['Start']).append(ddf)
         tempdf = ddf
@@ -1938,6 +1942,7 @@ class Dekomp_Mixin():
 
     def dekomp_plot(self, varnavn, sort=True, pct=True, per='', top=0.9, threshold=0.0,lag=True
                     ,rename=True 
+                    ,nametrans = lambda varnames,thismodel : varnames
                     ,time_att=False):
 
         '''
@@ -1976,7 +1981,10 @@ class Dekomp_Mixin():
         # ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
         #     lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
         ddf0 = self.get_att_pct(varnavn,lag=lag,time_att=time_att) if pct else  self.get_att_level(varnavn,lag=lag)
-        ddf0 = ddf0.rename(index= self.var_description) if rename else ddf0
+        if rename:
+            ddf0 = ddf0.rename(index= self.var_description)
+        else:
+            ddf0.index = nametrans(ddf0.index,self)
         ddf = cutout(ddf0, threshold)
         fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(
             10, 5), constrained_layout=False)
@@ -1990,7 +1998,7 @@ class Dekomp_Mixin():
 
         ntitle = f'Attribution{nthreshold}' 
         fig.suptitle(ntitle, fontsize=20)
-        fig.subplots_adjust(top=top)
+        # fig.subplots_adjust(top=top)
 
         return fig
 

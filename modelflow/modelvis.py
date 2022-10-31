@@ -662,8 +662,9 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
 #                   fontweight='light', fontsize='x-large'  )
     fig.suptitle(title,fontsize=20)
     if 1:
-        plt.tight_layout()
-        fig.subplots_adjust(top=top)
+        ...
+        # plt.tight_layout()
+        # fig.subplots_adjust(top=top)
 
 #    plt.show()
     return fig

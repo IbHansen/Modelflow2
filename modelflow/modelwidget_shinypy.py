@@ -15,7 +15,7 @@ from ipywidgets import interact, Dropdown, Checkbox, IntRangeSlider, SelectMulti
 from ipywidgets import Select
 from ipywidgets import interactive, ToggleButtons, SelectionRangeSlider, RadioButtons
 from ipywidgets import interactive_output, HBox, VBox, link, Dropdown,Output
-
+from copy import copy 
 
 import pandas as pd
 import  ipywidgets as widgets  
@@ -396,12 +396,16 @@ class updatewidget:
         self.wname.value = f'Experiment {self.experiment}'
         
         self.keep_ui = keep_plot_shiny(mmodel = self.mmodel, 
-                                  pat = self.varpat, prefix_dict=self.prefix_dict,
+                                  selectfrom = self.varpat, prefix_dict=self.prefix_dict,
                                   vline=self.vline,relativ_start=self.relativ_start,
                                   short = self.short) 
         
         self.wtotal = widgets.VBox([self.datawidget.datawidget,winputstring,wbut,
                                     self.keep_ui.datawidget])
+        
+        self.start = copy(self.mmodel.current_per[0])
+        self.slut = copy(self.mmodel.current_per[-1])
+
 
     
     def update(self,g):
@@ -418,10 +422,10 @@ class updatewidget:
     def run(self,g):
         self.update(g)
         # print(f'run  smpl  {self.mmodel.current_per[0]=}')
-        start = self.mmodel.current_per[0]
-        slut = self.mmodel.current_per[-1]
-        print(f'{start=}  {slut=}')
-        self.mmodel(self.thisexperiment,start=start,slut=slut,progressbar=1,keep = self.wname.value,                    
+        # self.start = self.mmodel.current_per[0]
+        # self.slut = self.mmodel.current_per[-1]
+        print(f'{self.start=}  {self.slut=}')
+        self.mmodel(self.thisexperiment,start=self.start,slut=self.slut,progressbar=1,keep = self.wname.value,                    
                 keep_variables = self.keeppat)
         # print(f'run  efter smpl  {self.mmodel.current_per[0]=}')
         self.mmodel.keep_exodif[self.wname.value] = self.exodif 
@@ -632,7 +636,7 @@ class keep_plot_shiny:
     pat : str ='*'
     smpl=('', '')
     relativ_start : int = 0 
-    selectfrom={} 
+    selectfrom  : str ='*'
     legend=0
     dec=''
     use_descriptions=True
@@ -665,15 +669,19 @@ class keep_plot_shiny:
 
     
     def __post_init__(self):
+        from copy import copy 
         minper = self.mmodel.lastdf.index[0]
         maxper = self.mmodel.lastdf.index[-1]
         options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
+        self.old_current_per = copy(self.mmodel.current_per) 
         # print(f'Før {self.mmodel.current_per=}')
         with self.mmodel.set_smpl(*self.smpl):
             # print(f'efter set smpl  {self.mmodel.current_per=}')
             with self.mmodel.set_smpl_relative(self.relativ_start,0):
                # print(f'efter set smpl relativ  {self.mmodel.current_per=}')
-               show_per = list(self.mmodel.current_per)[:]
+               ...
+               show_per = copy(list(self.mmodel.current_per)[:])
+        self.mmodel.current_per = copy(self.old_current_per)        
         # print(f'efter context  set smpl  {self.mmodel.current_per=}')
         # breakpoint() 
         init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
@@ -681,9 +689,11 @@ class keep_plot_shiny:
         keepvar = sorted (list(self.mmodel.keep_solutions.values())[0].columns)
         defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],)
         # print('******* selectfrom')
-        # _selectfrom = [s.upper() for s in self.selectfrom] if self.selectfrom else keepvar
-        _selectfrom = keepvar
+        _selectfrom = [s.upper() for s in self.mmodel.vlist(self.selectfrom)] if self.selectfrom else keepvar
+        # _selectfrom = keepvar
+        # print(f'{_selectfrom=}')
         gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v) for v in _selectfrom] 
+        # print(f'{gross_selectfrom=}')
         width = self.select_width if self.select_width else '50%' if self.use_descriptions else '50%'
     
 
@@ -694,8 +704,9 @@ class keep_plot_shiny:
         select_prefix = [(c,iso) for iso,c in self.prefix_dict.items()]
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
                                       max=maxper, layout=Layout(width='75%'), description='Show interval')
-        selected_vars = SelectMultiple(value=defaultvar, options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),
+        selected_vars = SelectMultiple( options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),
                                        description='Select one or more', style={'description_width': description_width})
+        
         diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
                             value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
         showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
@@ -767,7 +778,7 @@ class keep_plot_shiny:
         if self.short:
             vui = [select, options1, i_smpl]
         else:
-            vui = [select, options1, options2, i_smpl]
+            vui = [select, options1, options2, i_smpl]  
         vui =  vui[:-1] if self.short >= 2 else vui  
         
         self.datawidget= VBox(vui+[self.out_widget])
@@ -775,6 +786,7 @@ class keep_plot_shiny:
         #                                     'scale': scale, 'legend': legend})
         # print('klar til register')
     def explain(self, i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend= None):
+        # print(f'Start explain {self.mmodel.current_per[0]=}')
         variabler = ' '.join(v for v in selected_vars)
         smpl = (self.mmodel.lastdf.index[i_smpl[0]], self.mmodel.lastdf.index[i_smpl[1]])
         if type(diff) == str:
@@ -784,7 +796,6 @@ class keep_plot_shiny:
             ldiff = diff
             diffpct = False
             
-        # print(f'Før plot {self.mmodel.current_per=}')
 
         with self.mmodel.set_smpl(*smpl):
 
@@ -796,14 +807,18 @@ class keep_plot_shiny:
                                                     scale=scale, showtype=showtype,
                                                     legend=legend, dec=self.dec, vline=self.vline)
                 self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
-            # print(f'Efter plot {self.mmodel.current_per=}')
+        # print(f'Efter plot {self.mmodel.current_per=}')
 
 
     def  trigger(self,g):
+        self.mmodel.current_per = copy(self.old_current_per)        
+
         values = {widname : wid.value for widname,wid in self.widget_dict.items() }
-        print(f'Triggerd:\n{values}')
+        # print(f'Triggerd:\n{values} \n Start trigger {self.mmodel.current_per=}')
         self.explain(**values)
         xxx = fig_to_image(self.keep_wiz_fig,format='svg')
         self.out_widget.value = xxx
+        # print(f'end  trigger {self.mmodel.current_per[0]=}')
+
             
 
