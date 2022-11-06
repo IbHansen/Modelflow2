@@ -267,11 +267,11 @@ class GrabWfModel():
                     desc='Normalizing model',total=len(line),bar_format=bars,disable=self.disable_progress)]
 
 
-
+        # print([ f.normalized for f in self.all_frml ])
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
         lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
         self.rorg = [fname + f.normalized for f,fname in zip(self.all_frml,lfname) ]
-        
+        # breakpoint()
         if self.make_fitted:
             self.rfitmodel = ['<FIT> ' + f.fitted for f in self.all_frml if len(f.fitted)]
             self.mfitmodel = model('\n'.join(self.rfitmodel))

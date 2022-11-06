@@ -50,8 +50,8 @@ class Normalized_frml:
     def _repr_html_(self):
         print(f'{self}')
         
-    def __repr__(self):
-        return ''
+    # def __repr__(self):
+    #     print(f'{self}')
         
         
     
@@ -344,3 +344,5 @@ if __name__ == '__main__':
     elem_trans('DLOG(PAKNVRENPRODXN)=DLOG((WLDHYDROPOWER*PAKPANUSATLS)/(@ELEM(WLDHYDROPOWER,2011)*@ELEM(PAKPANUSATLS,2011)))-0.00421833463034*DUMH')
     fixleads('a = b(1) + v(33)'.upper(),1)  
     fixleads(' 0.2121303706720161 * D( LOG(QLHP), 0, 1 )           + -0.04133299713432281 * D( LOG(QLHP(1)), 0, 1 )           + 0.9805787292172398 * ZLHP(1)           + -0.1948471451936957 * ZLHP(2) ')     
+    xx = normal('a = n(-1)',add_add_factor=0,make_fitted = 1)
+    xx.eviews = 'ffff '

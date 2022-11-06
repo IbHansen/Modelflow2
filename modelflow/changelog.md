@@ -45,4 +45,5 @@ do loops allow opset to lists with integer values
 fix a problem with  dataframe.at[ ] which now only allows single arguments 
 create modelwidgets_shiny to make dashboards
 modelgrabwf2 can now also import wf2 files 
+modelnormalize Normalized_frml __repl__ deleted else we think the frml is empty when dispplaying 
 
