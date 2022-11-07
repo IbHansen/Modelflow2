@@ -170,6 +170,9 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
     mfmsa_dict = {o['_name']:o.get('value','empty') for o in string_list if o.get('_name','').startswith('MFMSA') }
     mfmsa_options = mfmsa_dict.get('MFMSAOPTIONS','')
     
+    estimates = {eq['_name'].upper()+f'.@COEF({idata+1})': str(data)  
+                 for eq in object_dict['equation7'] for idata,data in enumerate(eq['results']['data']) }
+   
     # breakpoint()
     model_all_about['modelname'] = modelname
     model_all_about['frml'] = this_frml
@@ -177,6 +180,7 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
     model_all_about['var_description'] = var_description
     model_all_about['data'] = wf_df
     model_all_about['object_dict_from_wf'] = object_dict
+    model_all_about['estimates'] = estimates
     
 
     if save_file: 
@@ -242,7 +246,14 @@ class GrabWfModel():
             print(f'\nProcessing the model:{self.modelname}',flush=True)
             self.rawmodel_org = self.model_all_about['frml']
             
-        eviewsline  = self.rawmodel_org.split('\n') 
+        eviewsline  = self.rawmodel_org.split('\n')[:] 
+        
+        if '.@coef(' in    self.rawmodel_org :
+            print('Estimated coifficients are substituted')
+            self.rawmodel_org = self.rawmodel_org.upper()
+            for k,v in self.model_all_about['estimates'].items():
+                self.rawmodel_org = self.rawmodel_org.replace(k,v)
+            
         self.rawmodel = self.country_trans(self.rawmodel_org)
         rawmodel6 = self.trans_eviews(self.rawmodel)
         bars = '{desc}: {percentage:3.0f}%|{bar}|{n_fmt}/{total_fmt}'
