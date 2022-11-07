@@ -221,7 +221,7 @@ class GrabWfModel():
     filename           : any = ''  #wf1 name 
     modelname          : any = ''
     eviews_run_lines   : list =field(default_factory=list)
-    model_all_about    : dict = field(default_factory=dict)
+    model_all_about    : dict = field(default_factory=dict,init=False)
     start              : any = None    # start of testing if not overruled by mfmsa
     end                : any = None    # end of testing if not overruled by mfmsa 
     country_trans      : any = lambda x:x[:]    # function which transform model specification
@@ -401,10 +401,20 @@ class GrabWfModel():
 
             
         #% Now set the vars with fixedvalues 
-        value_vars = self.mmodel.vlist('*_value_*')
-        for var,val,year in (v.rsplit('_',2) for v in value_vars) : 
-            df.loc[:,f'{var}_{val}_{year}'] = df.loc[int(year),var]
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore')
+
+            value_vars = self.mmodel.vlist('*_value_*')
+            # print(f'{value_vars=}')
+            for var,val,year in (v.rsplit('_',2) for v in value_vars) : 
+                # print(f' {var=} {val=} {year=} {int(year)=}  var=  {var}_{val}_{year}')
+                df.loc[:,f'{var}_{val}_{year}'] = df.loc[int(year),var]
+            
+        
         self.showvaluevars = df[value_vars] 
+        
+        
         
         #% now set the values of the dummies   
         # breakpoint() 
@@ -521,8 +531,8 @@ if __name__ == '__main__':
     
     
     cmodel = GrabWfModel(filename, 
-                        eviews_run_lines= eviews_run_lines,
-                        country_trans    =  country_trans,
+                        # eviews_run_lines= eviews_run_lines,
+                        # country_trans    =  country_trans,
                         country_df_trans =  country_df_trans,
                         make_fitted = True,
                         do_add_factor_calc=True,
@@ -531,7 +541,7 @@ if __name__ == '__main__':
                         fit_start = 2000,          # Start of calculation of fittet model in baseline 
                         fit_end   = 2030           # end of calc for fittted model, if None taken from mdmfsa options  
                         ) 
-    
+    # assert 1==2
     cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
 
         
@@ -541,4 +551,4 @@ if __name__ == '__main__':
     lookat_equations  = mlookat.equations   
     lookat_all_frml_dict = grab_lookat.all_frml_dict
     base_input = cmodel.base_input
-    mlookat(2020,2021, )
+    mlookat(base_input,2020,2022)

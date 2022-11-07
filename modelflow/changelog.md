@@ -46,4 +46,6 @@ fix a problem with  dataframe.at[ ] which now only allows single arguments
 create modelwidgets_shiny to make dashboards
 modelgrabwf2 can now also import wf2 files 
 modelnormalize Normalized_frml __repl__ deleted else we think the frml is empty when dispplaying 
+modelGrabwf2 suppressing of pandas performance warnng when calculating @ELEM values 
+modelGrabwf2 estimation coiefficents are now automaticly replacing the <equattion>.coef(?) so less need for eviews run lines and country trans. 
 
