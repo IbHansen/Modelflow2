@@ -3,6 +3,9 @@
 Created on Mon Aug  9 14:46:11 2021
 
 To define Jupyter widgets to update and show variables. 
+
+this version is made to make is easy to define input widgets as dictikonaries. 
+
 @author: Ib 
 """
 # from shiny import App, event, html_dependencies, http_staticfiles, input_handler, module, reactive, render, render_image, render_plot, render_text, render_ui, req, run_app, session, types, ui
@@ -26,8 +29,7 @@ from ipysheet.pandas_loader import from_dataframe, to_dataframe
 from IPython.display import display, clear_output,Latex, Markdown
 from dataclasses import dataclass,field
 import matplotlib.pylab  as plt 
-
-
+import yaml 
 
 
 
@@ -37,9 +39,14 @@ class basewidget:
     ''' basis for widget updating in jupyter'''
     
     
-    datachildren : list = field(default_factory=list) # list of children widgets 
+    widgetdef : dict 
+    expname      : str =  "Carbon tax rate, US$ per tonn "
+    tab: bool = False
 
     def __post_init__(self):
+        self.datachildren = [globals()[widgettype+'widget'](widgetdict['content'],expname=widgetdict.get('heading','No heading')) 
+        for widgettype,widgetdict in self.widgetdef ]  
+        breakpoint()
         self.datawidget = VBox([child.datawidget for child in self.datachildren])
 
     
@@ -60,20 +67,26 @@ class basewidget:
 class tabwidget:
     '''A widget to create tab or acordium contaners'''
     
-    tabdefdict : dict # =  field(default_factory = lambda: ({}))
-    tab : bool = True 
-    selected_index :any = None
-    
+    widgetdef : dict  
+    expname      : str =  "Carbon tax rate, US$ per tonn "
+    tab: bool =True 
+
     def __post_init__(self):
+        # self.tabdefdict = self.widgetdef['content'] 
+        self.tabdefheadings = [subtabdef[0] for subtabdef in self.widgetdef] 
+        self.selected_index  = 0
         
         thiswidget = widgets.Tab if self.tab else widgets.Accordion
-        self.datachildren = [tabcontent 
-                             for tabcontent  in self.tabdefdict.values()]
+        # breakpoint() 
+        
+        self.datachildren = [globals()[subwidgettype+'widget'](subwidgetdict['content'],expname=subwidgetdict.get('heading','No heading')) 
+        for tabheading,(subwidgettype,subwidgetdict) in self.widgetdef ]  
+        
         self.datawidget = thiswidget([child.datawidget for child in self.datachildren], 
                                      selected_index = self.selected_index,                               
                                      layout={'height': 'max-content'})  
          
-        for i,key in enumerate(self.tabdefdict.keys()):
+        for i,key in enumerate(self.tabdefheadings):
            self.datawidget.set_title(i,key)
            
            
@@ -143,6 +156,7 @@ class slidewidget:
         wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})
         whead = widgets.HBox([wexp,walt,wbas])
         #
+        breakpoint()
         self.wset  = [widgets.FloatSlider(description=des,
                 min=cont['min'],
                 max=cont['max'],
@@ -931,5 +945,61 @@ class keep_plot_shiny:
         self.out_widget.value = xxx
         # print(f'end  trigger {self.mmodel.current_per[0]=}')
 
+
+
+
+def make_widget(widgetdef):
+    '''
+    '''
+    
+    # breakpoint()
+    widgettype,widgetdict  = widgetdef
+        # ...
+        # print(widgettype,widgetdict)
+    # reswidget = [globals()[widgettype+'widget'](widgetdict['content'],expname=widgetdict.get('heading','No heading')) 
+    #              for widgettype,widgetdict in widgetdefs ]    
+    # return basewidget({'content':reswidget})  
+    # reswidget = [globals()[widgettype+'widget'](widgetdict['content'],expname=widgetdict.get('heading','No heading')) 
+    # for widgettype,widgetdict in widgetdefs ]  
+    reswidget = globals()[widgettype+'widget'](widgetdict['content'],
+      tab=widgetdict.get('tab',True ), 
+      expname=widgetdict.get('heading','No heading')
+      )
+    return reswidget
+
+slidedef =  ['slide', {'heading':'Dette er en prøve', 
+            'content' :{'Productivity'    : {'var':'ALFA',             'value': 0.5 ,'min':0.0, 'max':1.0},
+             'DEPRECIATES_RATE' : {'var':'DEPRECIATES_RATE', 'value': 0.05,'min':0.0, 'max':1.0}, 
+             'LABOR_GROWTH'     : {'var':'LABOR_GROWTH',     'value': 0.01,'min':0.0, 'max':1.0},
+             'SAVING_RATIO'     : {'var': 'SAVING_RATIO',    'value': 0.05,'min':0.0, 'max':1.0}
+                    }}  ]
+
+radiodef =   ['radio', {'heading':'Dette er en anden prøve', 
+            'content' : {'Ib': [['Arbejdskraft','LABOR_GROWTH'],
+                   ['Opsparing','SAVING_RATIO'] ],
+           'Søren': [['alfa','ALFA'],
+                   ['a','A'] ],
+           'Marie': [['Hest','HEST'],
+                   ['Ko','KO'] ],
+           
+           }} ]
+
+checkdef =   ['check', {'heading':'Dette er en treidje prøve', 
+            'content' :{'Arbejdskraft':['LABOR_GROWTH KO',1],
+                       'Opsparing'  :['SAVING_RATIO',0] }}]
+
+alldef = [slidedef] + [radiodef] + [checkdef]
+              
+
+tabdef = ['tab',{'content':{'Den første':{'content':alldef},'Den anden':{'content':alldef}}}]
+tabdef = ['tab',{'content':[['Den første',['base',{'content':alldef}]],
+                            ['Den anden' ,['base',{'content':alldef}]]]
+                            }]
+
+basedef = ['base',{'content':alldef}]
+    
+make_widget(tabdef)
+
+# print(yaml.dump(tabdef,indent=4))
             
 

@@ -43,9 +43,9 @@ modelnewton warning when using set (model.endogene) in dataframe.loc fixed by us
 modelnewton get_eigen_vectors can not handle NaN in Jacobi it can be set to 0 
 do loops allow opset to lists with integer values 
 fix a problem with  dataframe.at[ ] which now only allows single arguments 
-create modelwidgets_shiny to make dashboards
+create modelwidgets_shiny to make web interface through shiny 
 modelgrabwf2 can now also import wf2 files 
 modelnormalize Normalized_frml __repl__ deleted else we think the frml is empty when dispplaying 
 modelGrabwf2 suppressing of pandas performance warnng when calculating @ELEM values 
 modelGrabwf2 estimation coiefficents are now automaticly replacing the <equattion>.coef(?) so less need for eviews run lines and country trans. 
-
+release 1.45 in conda 

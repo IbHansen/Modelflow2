@@ -3,6 +3,9 @@
 Created on Mon Aug  9 14:46:11 2021
 
 To define Jupyter widgets to update and show variables. 
+
+this version is made to make is easy to define input widgets as dictikonaries. 
+
 @author: Ib 
 """
 # from shiny import App, event, html_dependencies, http_staticfiles, input_handler, module, reactive, render, render_image, render_plot, render_text, render_ui, req, run_app, session, types, ui
@@ -26,20 +29,51 @@ from ipysheet.pandas_loader import from_dataframe, to_dataframe
 from IPython.display import display, clear_output,Latex, Markdown
 from dataclasses import dataclass,field
 import matplotlib.pylab  as plt 
+import yaml 
 
 
+class singelwidget:
+    '''Parent class for widgets
+    
+    Will do some common stuff''' 
+    
+    def __init__(self,widgetdef):
+        '''
+        
+
+        Parameters
+        ----------
+        widgetdef : dict 
+            A dict with the descrition of a widget
+        
+        Sets properties 
+        ----------------
+         widgetdef['content'] the content of this widget
+         widgetdef['heading'] the heading for this widget. 
+    
+        Returns
+        -------
+        None.
+
+        '''
+        # breakpoint() 
+        self.widgetdef = widgetdef
+        self.content = widgetdef['content']
+        self.heading = widgetdef.get('heading','')
 
 
-
-
-@dataclass
-class basewidget:
+class basewidget(singelwidget):
     ''' basis for widget updating in jupyter'''
     
     
-    datachildren : list = field(default_factory=list) # list of children widgets 
 
-    def __post_init__(self):
+    def __init__(self,widgetdef ):
+        super().__init__(widgetdef)
+
+        # breakpoint()
+        self.datachildren = [globals()[widgettype+'widget'](widgetdict)  
+                            for widgettype,widgetdict in self.content  ]  
+        
         self.datawidget = VBox([child.datawidget for child in self.datachildren])
 
     
@@ -55,25 +89,33 @@ class basewidget:
         for w in self.datachildren:
             w.reset(g)
 
+        
     
-@dataclass
-class tabwidget:
+class tabwidget(singelwidget):
     '''A widget to create tab or acordium contaners'''
     
-    tabdefdict : dict # =  field(default_factory = lambda: ({}))
-    tab : bool = True 
-    selected_index :any = None
-    
-    def __post_init__(self):
+    # widgetdef : dict  
+    # expname      : str =  "Carbon tax rate, US$ per tonn "
+    # tab: bool =True 
+
+    def __init__(self,widgetdef):
+        # self.tabdefdict = self.widgetdef['content'] 
+        super().__init__(widgetdef)
+        self.selected_index  = widgetdef.get('selected_index','0')
+        self.tab = widgetdef.get('tab',True)
+        self.tabdefheadings = [subtabdef[0] for subtabdef in self.content] 
         
         thiswidget = widgets.Tab if self.tab else widgets.Accordion
-        self.datachildren = [tabcontent 
-                             for tabcontent  in self.tabdefdict.values()]
+        # breakpoint() 
+        
+        self.datachildren = [globals()[subwidgettype+'widget'](subwidgetdict) 
+        for tabheading,(subwidgettype,subwidgetdict) in self.content ]  
+        
         self.datawidget = thiswidget([child.datawidget for child in self.datachildren], 
                                      selected_index = self.selected_index,                               
                                      layout={'height': 'max-content'})  
          
-        for i,key in enumerate(self.tabdefdict.keys()):
+        for i,key in enumerate(self.tabdefheadings):
            self.datawidget.set_title(i,key)
            
            
@@ -90,27 +132,38 @@ class tabwidget:
 
 
         
-@dataclass
-class sheetwidget:
-    ''' class defining a widget which updates from a sheet '''
-    df_var         : any = pd.DataFrame()         # definition 
-    trans          : any = lambda x : x      # renaming of variables 
-    transpose      : bool = False            # orientation of dataframe 
-    expname      : str =  "Carbon tax rate, US$ per tonn "
+# @dataclass
+# class sheetwidget:
+#     ''' class defining a widget which updates from a sheet '''
+#     df_var         : any = pd.DataFrame()         # definition 
+#     trans          : any = lambda x : x      # renaming of variables 
+#     transpose      : bool = False            # orientation of dataframe 
+#     expname      : str =  "Carbon tax rate, US$ per tonn "
    
-    
-    def __post_init__(self):
+class sheetwidget(singelwidget):
+    ''' class defefining a widget with lines of slides '''
+
+
+    def __init__(self,widgetdef ):
         ...
-        
-        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+        super().__init__(widgetdef)    
+        # print(f'{self.content=}')
+        self.df_var =self.content             # input dataframe to update
+        self.trans  = widgetdef.get('trans',lambda x:x)    # Translation of variable names 
+        self.transpose  = widgetdef.get('transpose',False)# if the dataframs should be transpossed 
+        # print(f'{self.transpose=}')
+        self.wexp  = widgets.Label(value = self.heading,layout={'width':'54%'})
 
     
         newnamedf = self.df_var.copy().rename(columns=self.trans)
-        self.org_df_var = self.newnamedf.T if self.transpose else newnamedf
+        self.org_df_var = newnamedf.T if self.transpose else newnamedf
         
-        self.wsheet = sheet(from_dataframe(self.org_df_var),column_resizing=True)
+        self.wsheet = sheet(from_dataframe(self.org_df_var),column_resizing=True,row_headers=False)
+        
         self.org_values = [c.value for c in self.wsheet.cells]
-        self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.expname) else self.wsheet
+        # breakpoint()
+        self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.heading) else self.wsheet
+
 
     def update_df(self,df,current_per=None):
         # breakpoint()
@@ -128,21 +181,23 @@ class sheetwidget:
             c.value = v
      
 
-@dataclass
-class slidewidget:
+class slidewidget(singelwidget):
     ''' class defefining a widget with lines of slides '''
-    slidedef     : dict         # definition 
-    altname      : str = 'Alternative'
-    basename     : str =  'Baseline'
-    expname      : str =  "Carbon tax rate, US$ per tonn "
-    def __post_init__(self):
+
+
+    def __init__(self,widgetdef ):
         ...
+        super().__init__(widgetdef)
+        self.altname = self.widgetdef .get('altname','Alternative')
+        self.basename = self.widgetdef .get('basename','Baseiline')
+        # breakpoint() 
         
-        wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+        wexp  = widgets.Label(value = self.heading,layout={'width':'54%'})
         walt  = widgets.Label(value = self.altname,layout={'width':'8%', 'border':"hide"})
         wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})
         whead = widgets.HBox([wexp,walt,wbas])
         #
+        # breakpoint()
         self.wset  = [widgets.FloatSlider(description=des,
                 min=cont['min'],
                 max=cont['max'],
@@ -152,7 +207,7 @@ class slidewidget:
                 readout_format = f":>,.{cont.get('dec',2)}f",
                 continuous_update=False
                 )
-             for des,cont in self.slidedef.items()]
+             for des,cont in self.content.items()]
         
             
         for w in self.wset: 
@@ -161,7 +216,7 @@ class slidewidget:
         waltval= [widgets.Label(
                 value=f"{cont['value']:>,.{cont.get('dec',2)}f}",
                 layout=widgets.Layout(display="flex", justify_content="center", width="10%", border="hide"))
-            for des,cont  in self.slidedef.items()
+            for des,cont  in self.content.items()
             
             ]
         self.wslide = [widgets.HBox([s,v]) for s,v in zip(self.wset,waltval)]
@@ -171,13 +226,13 @@ class slidewidget:
         # define the result object 
         self.current_values = {des:
              {key : v.split() if key=='var' else v for key,v in cont.items() if key in {'value','var','op'}} 
-             for des,cont in self.slidedef.items()} 
+             for des,cont in self.widgetdef ['content'].items()} 
             
         # register_widget(self.widget_id, self.datawidget)
     
             
     def reset(self,g): 
-        for i,(des,cont) in enumerate(self.slidedef.items()):
+        for i,(des,cont) in enumerate(self.content .items()):
             self.wset[i].value = cont['value']
             
         
@@ -219,21 +274,21 @@ class slidewidget:
          
         self.current_values[line_des]['value'] = g['new']
 
-@dataclass
-class sumslidewidget:
+class sumslidewidget(singelwidget):
     ''' class defefining a widget with lines of slides '''
-    slidedef     : dict         # definition
-    maxsum          : any  = None 
-    altname      : str = 'Alternative'
-    basename     : str =  'Baseline'
-    expname      : str =  "Carbon tax rate, US$ per tonn "
-    def __post_init__(self):
+    def __init__(self,widgetdef ):
         ...
+        super().__init__(widgetdef)
+        self.altname = self.widgetdef .get('altname','Alternative')
+        self.basename = self.widgetdef .get('basename','Baseiline')
+        self.maxsum = self.widgetdef .get('maxsum',1.0)
+       # breakpoint() 
+       
         
-        self.first = list(self.slidedef.keys())[:-1]     
-        self.lastdes = list(self.slidedef.keys())[-1]     
+        self.first = list(self.content.keys())[:-1]     
+        self.lastdes = list(self.content.keys())[-1]     
 
-        wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+        wexp  = widgets.Label(value = self.heading,layout={'width':'54%'})
         walt  = widgets.Label(value = self.altname,layout={'width':'8%', 'border':"hide"})
         wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})
         whead = widgets.HBox([wexp,walt,wbas])
@@ -248,7 +303,7 @@ class sumslidewidget:
                 continuous_update=False,
                 disabled= False
                 )
-             for des,cont in self.slidedef.items()]
+             for des,cont in self.content.items()]
         
              
             
@@ -258,7 +313,7 @@ class sumslidewidget:
         waltval= [widgets.Label(
                 value=f"{cont['value']:>,.{cont.get('dec',2)}f}",
                 layout=widgets.Layout(display="flex", justify_content="center", width="10%", border="hide"))
-            for des,cont  in self.slidedef.items()
+            for des,cont  in self.content.items()
             
             ]
         self.wslide = [widgets.HBox([s,v]) for s,v in zip(self.wset,waltval)]
@@ -268,10 +323,10 @@ class sumslidewidget:
         # define the result object 
         self.current_values = {des:
              {key : v.split() if key=='var' else v for key,v in cont.items() if key in {'value','var','op','min','max'}} 
-             for des,cont in self.slidedef.items()} 
+             for des,cont in self.content.items()} 
             
     def reset(self,g): 
-        for i,(des,cont) in enumerate(self.slidedef.items()):
+        for i,(des,cont) in enumerate(self.content.items()):
             self.wset[i].value = cont['value']
             
         
@@ -311,7 +366,7 @@ class sumslidewidget:
              print(f'{k}:{v}')
          
         self.current_values[line_des]['value'] = g['new']
-        # print(self.current_values)
+        # print(f'{self.current_values=}')
         if type(self.maxsum) == float:
             allvalues = [v['value'] for v  in self.current_values.values()]
             thissum = sum(allvalues)
@@ -332,8 +387,8 @@ class sumslidewidget:
                     
                 self.wset[-1].value = newlast
                 
-@dataclass
-class radiowidget:
+
+class radiowidget(singelwidget):
     ''' class defefining a widget with a number of radiobutton groups 
     
     When df_update is executed the cheked variable will be set to 1 the other to 0
@@ -354,16 +409,16 @@ class radiowidget:
     
     
     '''
-    radiodef     : dict         # definition 
-    expname      : str =  "Carbon tax rate, US$ per tonn "
-    def __post_init__(self):
+    
+    def __init__(self,widgetdef):
         ...
+        super().__init__(widgetdef)
         
-        wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+        wexp  = widgets.Label(value = self.heading,layout={'width':'54%'})
         whead = widgets.HBox([wexp])
         #
         self.wradiolist = [widgets.RadioButtons(options=[i for i,j in cont],description=des,layout={'width':'70%'},
-                                           style={'description_width':'37%'}) for des,cont in self.radiodef.items()]
+                                           style={'description_width':'37%'}) for des,cont in self.content.items()]
         if len(self.wradiolist) <=2:
             self.wradio = widgets.HBox(self.wradiolist)
         else: 
@@ -378,7 +433,7 @@ class radiowidget:
             
     def update_df(self,df,current_per):
         ''' updates a dataframe with the values from the widget'''
-        for wradio,(des,cont) in zip(self.wradiolist,self.radiodef.items()):
+        for wradio,(des,cont) in zip(self.wradiolist,self.content.items()):
             # print(f'{des=} {wradio.value=},{wradio.index=},{cont[wradio.index]=}')
             # print(f'{cont=}')
             for varlabel,variable in cont:
@@ -387,8 +442,8 @@ class radiowidget:
             df.loc[current_per,selected_variable] = 1 
             # print(df.loc[current_per,:])
         
-@dataclass
-class checkwidget:
+
+class checkwidget(singelwidget):
      ''' class defefining a widget with a number of radiobutton groups 
      
      When df_update is executed the cheked variable will be set to 1 the other to 0
@@ -403,28 +458,27 @@ class checkwidget:
      
      
      '''
-     checkdef     : any         # definition 
-     expname      : str =  ""
-     def __post_init__(self):
+     def __init__(self,widgetdef):
          ...
-         
-         wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
+         super().__init__(widgetdef)
+
+         wexp  = widgets.Label(value = self.heading,layout={'width':'54%'})
          whead = widgets.HBox([wexp])
          #
          self.wchecklist = [widgets.Checkbox(description=des,value=val)   for des,(var,val) 
-                            in self.checkdef.items()]
+                            in self.content.items()]
          self.wcheck  = widgets.VBox(self.wchecklist)   
          
          self.datawidget =  widgets.VBox([whead] + [self.wcheck])
              
      def reset(self,g): 
-             for wcheck,(des,(variable,val)) in zip(self.wchecklist,self.checkdef.items()):
+             for wcheck,(des,(variable,val)) in zip(self.wchecklist,self.content.items()):
                  wcheck.value = val
          
              
      def update_df(self,df,current_per):
          ''' updates a dataframe with the values from the widget'''
-         for wcheck,(des,(variable,val)) in zip(self.wchecklist,self.checkdef.items()):
+         for wcheck,(des,(variable,val)) in zip(self.wchecklist,self.content.items()):
              for selected_variable in  variable.split(): 
                  df.loc[current_per,selected_variable] = 1.0 if wcheck.value else 0.0
  
@@ -461,8 +515,11 @@ class updatewidget:
     
     def __post_init__(self):
         self.baseline = self.mmodel.basedf.copy()
-        wrun   = widgets.Button(description="Run scenario")
-        wrun.on_click(self.run)
+        self.wrun    = widgets.Button(description="Run scenario")
+        self.wrun .on_click(self.run)
+        self.wrun .tooltip = 'Click to run'
+        self.wrun.style.button_color = 'Lime'
+
         
         wupdate   = widgets.Button(description="Update the dataset ")
         wupdate.on_click(self.update)
@@ -477,7 +534,7 @@ class updatewidget:
         
         lbut = []
         
-        if self.lwrun: lbut.append(wrun)
+        if self.lwrun: lbut.append(self.wrun )
         if self.lwupdate: lbut.append(wupdate)
         if self.lwreset: lbut.append(wreset)
         if self.lwsetbas : lbut.append(wsetbas)
@@ -522,7 +579,7 @@ class updatewidget:
         
         self.datawidget.update_df(self.thisexperiment,self.mmodel.current_per)
         self.exodif = self.mmodel.exodif(self.baseline,self.thisexperiment)
-        print(f'update 2 smpl  {self.mmodel.current_per[0]=}')
+        # print(f'update 2 smpl  {self.mmodel.current_per[0]=}')
 
 
               
@@ -532,9 +589,14 @@ class updatewidget:
         # print(f'run  smpl  {self.mmodel.current_per[0]=}')
         # self.start = self.mmodel.current_per[0]
         # self.slut = self.mmodel.current_per[-1]
-        print(f'{self.start=}  {self.slut=}')
-        self.mmodel(self.thisexperiment,start=self.start,slut=self.slut,progressbar=1,keep = self.wname.value,                    
+        # print(f'{self.start=}  {self.slut=}')
+        self.wrun .tooltip = 'Running'
+        self.wrun.style.button_color = 'Red'
+
+        self.mmodel(self.thisexperiment,start=self.start,slut=self.slut,progressbar=0,keep = self.wname.value,                    
                 keep_variables = self.keeppat)
+        self.wrun .tooltip = 'Click to run'
+        self.wrun.style.button_color = 'Lime'
         # print(f'run  efter smpl  {self.mmodel.current_per[0]=}')
         self.mmodel.keep_exodif[self.wname.value] = self.exodif 
         self.mmodel.inputwidget_alternativerun = True
@@ -555,10 +617,10 @@ class updatewidget:
     def reset(self,g):
         self.datawidget.reset(g) 
 
-def fig_to_image(figs,format='svg'):
+def fig_to_image(fig,format='svg'):
     from io import StringIO
     f = StringIO()
-    figs.savefig(f,format=format,bbox_inches="tight")
+    fig.savefig(f,format=format,bbox_inches="tight")
     f.seek(0)
     image= f.read()
     return image
@@ -612,9 +674,12 @@ class htmlwidget_fig:
    
     
         image = fig_to_image(self.figs,format=self.format)
+        print(image)
         # self.whtml = widgets.HTML(image,layout={'width':'54%'})
         self.whtml = widgets.Image(image,width=300,format = 'svg')
         self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+        
+        
         
 @dataclass
 class htmlwidget_label:
@@ -797,8 +862,9 @@ class keep_plot_shiny:
         init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
         init_end = self.mmodel.lastdf.index.get_loc(show_per[-1])
         keepvar = sorted (list(self.mmodel.keep_solutions.values())[0].columns)
-        defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],)
+        defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],) # Default selected
         # print('******* selectfrom')
+        # variables to select from 
         _selectfrom = [s.upper() for s in self.mmodel.vlist(self.selectfrom)] if self.selectfrom else keepvar
         # _selectfrom = keepvar
         # print(f'{_selectfrom=}')
@@ -814,7 +880,7 @@ class keep_plot_shiny:
         select_prefix = [(c,iso) for iso,c in self.prefix_dict.items()]
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
                                       max=maxper, layout=Layout(width='75%'), description='Show interval')
-        selected_vars = SelectMultiple( options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),
+        selected_vars = SelectMultiple( options=gross_selectfrom, value=gross_selectfrom[0], layout=Layout(width=width, height=self.select_height, font="monospace"),
                                        description='Select one or more', style={'description_width': description_width})
         
         diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
@@ -833,11 +899,14 @@ class keep_plot_shiny:
             wid.observe(self.trigger,names='value',type='change')
             
         # breakpoint()
-        self.out_widget = widgets.HTML(value="Hello <b>World</b>",
+        self.out_widget = VBox([widgets.HTML(value="Hello <b>World</b>",
                                   placeholder='',
-                                  description='',)
-
+                                  description='',)])
         
+        # values = {widname : wid.value for widname,wid in self.widget_dict.items() }
+        # print(f'i post_init:\n{values} \n Start trigger {self.mmodel.current_per=}')
+        # self.explain(**values)
+        self.trigger(None)
         
         
        
@@ -897,7 +966,7 @@ class keep_plot_shiny:
         # print('klar til register')
         
     def explain(self, i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend= None):
-        # print(f'Start explain {self.mmodel.current_per[0]=}')
+        # print(f'Start explain:\n {self.mmodel.current_per[0]=}\n{selected_vars=}\n')
         variabler = ' '.join(v for v in selected_vars)
         smpl = (self.mmodel.lastdf.index[i_smpl[0]], self.mmodel.lastdf.index[i_smpl[1]])
         if type(diff) == str:
@@ -907,7 +976,7 @@ class keep_plot_shiny:
             ldiff = diff
             diffpct = False
             
-
+        # clear_output()
         with self.mmodel.set_smpl(*smpl):
 
             if self.multi: 
@@ -918,6 +987,8 @@ class keep_plot_shiny:
                                                     scale=scale, showtype=showtype,
                                                     legend=legend, dec=self.dec, vline=self.vline)
                 self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
+                plt.close('all')
+        return self.keep_wiz_figs        
         # print(f'Efter plot {self.mmodel.current_per=}')
 
 
@@ -925,11 +996,60 @@ class keep_plot_shiny:
         self.mmodel.current_per = copy(self.old_current_per)        
 
         values = {widname : wid.value for widname,wid in self.widget_dict.items() }
-        # print(f'Triggerd:\n{values} \n Start trigger {self.mmodel.current_per=}')
-        self.explain(**values)
-        xxx = fig_to_image(self.keep_wiz_fig,format='svg')
-        self.out_widget.value = xxx
+        # print(f'Triggerd:\n{values} \n Start trigger {self.mmodel.current_per=}\n')
+        figs = self.explain(**values)
+        if 0:
+            xxx = fig_to_image(self.keep_wiz_fig,format='svg')
+            self.out_widget.children  =  [widgets.HTML(xxx)]
+        else:
+            yyy = [widgets.HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='75%'))  
+                     for key,a_fig in figs.items() ]
+            self.out_widget.children = yyy
         # print(f'end  trigger {self.mmodel.current_per[0]=}')
 
-            
+
+
+
+def make_widget(widgetdef):
+    '''
+    '''
+    
+    widgettype,widgetdict  = widgetdef
+    reswidget = globals()[widgettype+'widget'](widgetdict)
+    return reswidget
+
+slidedef =  ['slide', {'heading':'Dette er en prøve', 
+            'content' :{'Productivity'    : {'var':'ALFA',             'value': 0.5 ,'min':0.0, 'max':1.0},
+             'DEPRECIATES_RATE' : {'var':'DEPRECIATES_RATE', 'value': 0.05,'min':0.0, 'max':1.0}, 
+             'LABOR_GROWTH'     : {'var':'LABOR_GROWTH',     'value': 0.01,'min':0.0, 'max':1.0},
+             'SAVING_RATIO'     : {'var': 'SAVING_RATIO',    'value': 0.05,'min':0.0, 'max':1.0}
+                    }}  ]
+
+radiodef =   ['radio', {'heading':'Dette er en anden prøve', 
+            'content' : {'Ib': [['Arbejdskraft','LABOR_GROWTH'],
+                   ['Opsparing','SAVING_RATIO'] ],
+           'Søren': [['alfa','ALFA'],
+                   ['a','A'] ],
+           'Marie': [['Hest','HEST'],
+                   ['Ko','KO'] ],
+           
+           }} ]
+
+checkdef =   ['check', {'heading':'Dette er en treidje prøve', 
+            'content' :{'Arbejdskraft':['LABOR_GROWTH KO',1],
+                       'Opsparing'  :['SAVING_RATIO',0] }}]
+
+alldef = [slidedef] + [radiodef] + [checkdef]
+              
+
+tabdef = ['tab',{'content':[['Den første',['base',{'content':alldef}]],
+                            ['Den anden' ,['base',{'content':alldef}]]]
+                            ,
+                'tab':False}]
+
+basedef = ['base',{'content':[slidedef,radiodef]}]
+    
+xx = make_widget(tabdef)
+ 
+# print(yaml.dump(tabdef,indent=4))
 
