@@ -6,6 +6,8 @@ To define Jupyter widgets to update and show variables.
 
 this version is made to make is easy to define input widgets as dictikonaries. 
 
+This module is a revision of the modelwidget. Which is used for legacy and output widgets 
+
 @author: Ib 
 """
 # from shiny import App, event, html_dependencies, http_staticfiles, input_handler, module, reactive, render, render_image, render_plot, render_text, render_ui, req, run_app, session, types, ui
@@ -152,13 +154,6 @@ class tabwidget(singelwidget):
 
 
         
-# @dataclass
-# class sheetwidget:
-#     ''' class defining a widget which updates from a sheet '''
-#     df_var         : any = pd.DataFrame()         # definition 
-#     trans          : any = lambda x : x      # renaming of variables 
-#     transpose      : bool = False            # orientation of dataframe 
-#     expname      : str =  "Carbon tax rate, US$ per tonn "
    
 class sheetwidget(singelwidget):
     ''' class defefining a widget with lines of slides '''
@@ -653,309 +648,6 @@ def fig_to_image(fig,format='svg'):
     image= f.read()
     return image
   
-@dataclass
-class htmlwidget_df:
-    ''' class displays a dataframe in a html widget '''
-    
-    mmodel : any     # a model   
-    df_var         : any = pd.DataFrame()         # definition 
-    trans          : any = lambda x : x      # renaming of variables 
-    transpose      : bool = False            # orientation of dataframe 
-    expname      : str =  "Test"
-    percent      : bool = False 
-   
-    
-    def __post_init__(self):
-        ...
-        
-   
-    
-        newnamedf = self.df_var.copy().rename(columns=self.trans)
-        self.org_df_var = newnamedf.T if self.transpose else newnamedf
-        self.wexp  = widgets.Label(value = f'{self.expname} {self.org_df_var.shape}',layout={'width':'54%'})
-        self.datawidget=self.wexp
-        # return
-        image = self.mmodel.ibsstyle(self.org_df_var,percent = self.percent).to_html()
-        # image = self.org_df_var.to_html()
-        self.whtml = widgets.HTML(image)
-        # self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
-        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
-        
-    @property
-    def show(self):
-        display(self.datawidget)
-        
-@dataclass
-class html_dfwidget(singelwidget):
-    ''' class displays a dataframe in a html widget '''
-    
-   
-    
-    def __init__(self,widgetdef):
-        ...
-        super().__init__(widgetdef)
-        self.df_var  = self.content         # definition 
-        
-        self.mmodel =  widgetdef['mmodel']
-        self.trans  =  widgetdef.get('trans',lambda x : x )           # renaming of variables 
-        self.transpose    =  widgetdef.get('transpose',False )        # orientation of dataframe 
-        self.expname      : str =  "Test"
-        self.percent    =  widgetdef.get('percent',False )   
-
-    
-        newnamedf = self.df_var.copy().rename(columns=self.trans)
-        self.org_df_var = newnamedf.T if self.transpose else newnamedf
-        self.wexp  = widgets.Label(value = f'{self.heading} {self.org_df_var.shape}',layout={'width':'54%'})
-        self.datawidget=self.wexp
-        # return
-        image = self.mmodel.ibsstyle(self.org_df_var,percent = self.percent).to_html()
-        # image = self.org_df_var.to_html()
-        self.whtml = widgets.HTML(image)
-        # self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
-        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.heading ) else self.whtml
-        
-    @property
-    def show(self):
-        display(self.datawidget)
-        
-
-@dataclass
-class htmlwidget_fig:
-    ''' class displays a dataframe in a html widget '''
-    
-    figs : any     # a model   
-    expname      : str =  ""
-    format       : str =  "svg"
-  
-    
-    def __post_init__(self):
-        ...
-        
-        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
-   
-    
-        image = fig_to_image(self.figs,format=self.format)
-        print(image)
-        # self.whtml = widgets.HTML(image,layout={'width':'54%'})
-        self.whtml = widgets.Image(image,width=300,format = 'svg')
-        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
-        
- 
-
-class html_figwidget_fig(singelwidget):
-    ''' class displays a dataframe in a html widget '''
-    
-   
-    def __init__(self,widgetdef):
-        ...
-        super().__init__(widgetdef)
-        self.figs = self.content
-        self.wexp  = widgets.Label(value = self.heading,layout={'width':'54%'})
-        self.format = widgetdefget('format','svg')
-    
-        image = fig_to_image(self.figs,format=self.format)
-        print(image)
-        # self.whtml = widgets.HTML(image,layout={'width':'54%'})
-        self.whtml = widgets.Image(image,width=300,format = 'svg')
-        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
-        
- 
-        
-@dataclass
-class htmlwidget_label:
-    ''' class displays a dataframe in a html widget '''
-    
-    expname      : str =  ""
-    format       : str =  "svg"
-  
-    
-    def __post_init__(self):
-        ...
-        
-        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
- 
-    
-        self.datawidget=self.wexp
-
-class visshowwidget(singelwidget):
- 
-
-        
-    def __init__(self,widgetdef):
-        ...
-        super().__init__(widgetdef)
-        ...
-        self.mmodel = self.content
-        self.varpat = singelwidget.get('varpat','*')
-        self.showvarpat = singelwidget.get('showvarpat',True)
-        self.show_on = singelwidget.get('show_on',True)
-
-        from IPython import get_ipython
-        try:
-            get_ipython().magic('matplotlib notebook')
-        except: 
-            ...
-        # print(plt.get_backend())
-        this_vis = self.mmodel[self.varpat]
-        self.out_dict = {}
-        self.out_dict['Baseline'] ={'df':this_vis.base}        
-        self.out_dict['Alternative'] ={'df':this_vis} 
-        self.out_dict['Difference'] ={'df':this_vis.dif} 
-        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpctlevel.mul100,'percent':True} 
-        self.out_dict['Base growth'] ={'df':this_vis.base.pct.mul100,'percent':True} 
-        self.out_dict['Alt. growth'] ={'df':this_vis.pct.mul100,'percent':True} 
-        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
-        
-        self.out_to_data = {
-            ['html_df',{
-            'content':value['df'].df.T,
-            'heading':key,
-            'mmodel': self.mmodel,
-            'percent': value.get('percent',False) } ]                         
-                           for key,value in self.out_dict.items()}
-            
-        out = widgets.Output() 
-        with out: # to suppress the display of matplotlib creation 
-            self.out_to_figs ={key:
-                 ['html_fig',{'content':value['df'].rename().plot(top=0.9,title='')}]
-                                             
-                              for key,value in self.out_dict.items() }
-                
-       
-        tabnew =  {key: tabwidget({'Charts':self.out_to_figs[key],'Data':self.out_to_data[key]},selected_index=0) 
-                   for key in self.out_to_figs.keys()}
-       
-        exodif = self.mmodel.exodif()
-        exonames = exodif.columns        
-        exoindex = exodif.index
-        if len(exonames):
-            exobase = self.mmodel.basedf.loc[exoindex,exonames]
-            exolast = self.mmodel.lastdf.loc[exoindex,exonames]
-            
-            out_exodif = htmlwidget_df(self.mmodel,exodif.T)
-            out_exobase = htmlwidget_df(self.mmodel,exobase.T)
-            out_exolast = htmlwidget_df(self.mmodel,exolast.T)
-        else: 
-            out_exodif = htmlwidget_label(expname = 'No difference in exogenous')
-            out_exobase =  htmlwidget_label(expname = 'No difference in exogenous')
-            out_exolast =  htmlwidget_label(expname = 'No difference in exogenous')
-            
-        
-        out_tab_info = tabwidget({'Delta exogenous':out_exodif,
-                                  'Baseline exogenous':out_exobase,
-                                  'Alt. exogenous':out_exolast},selected_index=0)
-        
-        tabnew['Exo info'] = out_tab_info
-        
-        this =   tabwidget(tabnew,selected_index=0)
-            
-            
-        
-        self.datawidget = this.datawidget  
-        if self.show_on:
-            ...
-            display(self.datawidget)
-        try:    
-            get_ipython().magic('matplotlib inline') 
-        except:
-            ...
-
-    def __repr__(self):
-        return ''
-
-    def _html_repr_(self):  
-        return self.datawidget 
-         
-    @property
-    def show(self):
-        display(self.datawidget)
-    
-
-
-@dataclass
-class visshow:
-    mmodel : any     # a model 
-    varpat    : str ='*' 
-    showvarpat  : bool = True 
-    show_on   : bool = True  # Display when called 
-        
-    def __post_init__(self):
-        ...
-        from IPython import get_ipython
-        try:
-            get_ipython().magic('matplotlib notebook')
-        except: 
-            ...
-        # print(plt.get_backend())
-        this_vis = self.mmodel[self.varpat]
-        self.out_dict = {}
-        self.out_dict['Baseline'] ={'df':this_vis.base}        
-        self.out_dict['Alternative'] ={'df':this_vis} 
-        self.out_dict['Difference'] ={'df':this_vis.dif} 
-        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpctlevel.mul100,'percent':True} 
-        self.out_dict['Base growth'] ={'df':this_vis.base.pct.mul100,'percent':True} 
-        self.out_dict['Alt. growth'] ={'df':this_vis.pct.mul100,'percent':True} 
-        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
-        
-        out = widgets.Output() 
-        self.out_to_data = {key:
-            htmlwidget_df(self.mmodel,value['df'].df.T,expname=key,
-
-                          percent=value.get('percent',False))                           
-                           for key,value in self.out_dict.items()}
-            
-        with out: # to suppress the display of matplotlib creation 
-            self.out_to_figs ={key:
-                 htmlwidget_fig(value['df'].rename().plot(top=0.9,title=''),expname='')               
-                              for key,value in self.out_dict.items() }
-                
-       
-        tabnew =  {key: tabwidget({'Charts':self.out_to_figs[key],'Data':self.out_to_data[key]},selected_index=0) for key in self.out_to_figs.keys()}
-       
-        exodif = self.mmodel.exodif()
-        exonames = exodif.columns        
-        exoindex = exodif.index
-        if len(exonames):
-            exobase = self.mmodel.basedf.loc[exoindex,exonames]
-            exolast = self.mmodel.lastdf.loc[exoindex,exonames]
-            
-            out_exodif = htmlwidget_df(self.mmodel,exodif.T)
-            out_exobase = htmlwidget_df(self.mmodel,exobase.T)
-            out_exolast = htmlwidget_df(self.mmodel,exolast.T)
-        else: 
-            out_exodif = htmlwidget_label(expname = 'No difference in exogenous')
-            out_exobase =  htmlwidget_label(expname = 'No difference in exogenous')
-            out_exolast =  htmlwidget_label(expname = 'No difference in exogenous')
-            
-        
-        out_tab_info = tabwidget({'Delta exogenous':out_exodif,
-                                  'Baseline exogenous':out_exobase,
-                                  'Alt. exogenous':out_exolast},selected_index=0)
-        
-        tabnew['Exo info'] = out_tab_info
-        
-        this =   tabwidget(tabnew,selected_index=0)
-            
-            
-        
-        self.datawidget = this.datawidget  
-        if self.show_on:
-            ...
-            display(self.datawidget)
-        try:    
-            get_ipython().magic('matplotlib inline') 
-        except:
-            ...
-
-    def __repr__(self):
-        return ''
-
-    def _html_repr_(self):  
-        return self.datawidget 
-         
-    @property
-    def show(self):
-        display(self.datawidget)
     
 
 @dataclass
@@ -999,22 +691,22 @@ class keep_plot_shiny:
     multi :any = False 
     
     """
-     Plots the keept dataframes
+      Plots the keept dataframes
 
-     Args:
-         mmodel : a modelflow model instance 
-         pat (str, optional): a string of variables to select pr default. Defaults to '*'. 
-         smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
-         selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
-         legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
-         dec (string, optional): decimals on the y-axis. Defaults to '0'.
-         use_descriptions : Use the variable descriptions from the model 
+      Args:
+          mmodel : a modelflow model instance 
+          pat (str, optional): a string of variables to select pr default. Defaults to '*'. 
+          smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
+          selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
+          legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
+          dec (string, optional): decimals on the y-axis. Defaults to '0'.
+          use_descriptions : Use the variable descriptions from the model 
 
-     Returns:
-         None.
+      Returns:
+          None.
 
-     self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
-     quality files. 
+      self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
+      quality files. 
 
     """
 
@@ -1029,9 +721,9 @@ class keep_plot_shiny:
         with self.mmodel.set_smpl(*self.smpl):
             # print(f'efter set smpl  {self.mmodel.current_per=}')
             with self.mmodel.set_smpl_relative(self.relativ_start,0):
-               # print(f'efter set smpl relativ  {self.mmodel.current_per=}')
-               ...
-               show_per = copy(list(self.mmodel.current_per)[:])
+                # print(f'efter set smpl relativ  {self.mmodel.current_per=}')
+                ...
+                show_per = copy(list(self.mmodel.current_per)[:])
         self.mmodel.current_per = copy(self.old_current_per)        
         # print(f'efter context  set smpl  {self.mmodel.current_per=}')
         # breakpoint() 
@@ -1056,14 +748,14 @@ class keep_plot_shiny:
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
                                       max=maxper, layout=Layout(width='75%'), description='Show interval')
         selected_vars = SelectMultiple( options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),
-                                       description='Select one or more', style={'description_width': description_width})
+                                        description='Select one or more', style={'description_width': description_width})
         
         diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
                             value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
         showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
                                 description='Data type', value='level', style={'description_width': description_width})
         scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',
-                             value='linear', style={'description_width': description_width})
+                              value='linear', style={'description_width': description_width})
         # 
         legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=self.legend, style={
                               'description_width': description_width})
@@ -1123,8 +815,8 @@ class keep_plot_shiny:
                    
         if len(self.prefix_dict): 
             selected_prefix = SelectMultiple(value=[select_prefix[0][1]], options=select_prefix, 
-                                             layout=Layout(width='25%', height=self.select_height, font="monospace"),
-                                       description='')
+                                              layout=Layout(width='25%', height=self.select_height, font="monospace"),
+                                        description='')
                
             selected_prefix.observe(get_prefix,names='value',type='change')
             select = HBox([selected_vars,selected_prefix])
@@ -1186,7 +878,7 @@ class keep_plot_shiny:
             self.out_widget.children  =  [widgets.HTML(xxx)]
         else:
             yyy = [widgets.HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='75%'))  
-                     for key,a_fig in figs.items() ]
+                      for key,a_fig in figs.items() ]
             self.out_widget.children = yyy
         # print(f'end  trigger {self.mmodel.current_per[0]=}')
 

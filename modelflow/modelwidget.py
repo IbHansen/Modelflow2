@@ -2,7 +2,7 @@
 """
 Created on Mon Aug  9 14:46:11 2021
 
-To define Jupyter widgets to update and show variables. 
+To define Jupyter widgets  show variables. 
 @author: Ib 
 """
 

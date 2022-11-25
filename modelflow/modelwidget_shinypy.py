@@ -2,7 +2,7 @@
 """
 Created on Mon Aug  9 14:46:11 2021
 
-To define Jupyter widgets to update and show variables. 
+To define Jupyter widgets to update and show variables. this is not used anymore 
 @author: Ib 
 """
 # from shiny import App, event, html_dependencies, http_staticfiles, input_handler, module, reactive, render, render_image, render_plot, render_text, render_ui, req, run_app, session, types, ui
