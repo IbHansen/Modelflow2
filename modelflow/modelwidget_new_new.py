@@ -48,8 +48,9 @@ class singelwidget:
         
         Sets properties 
         ----------------
-         widgetdef['content'] the content of this widget
-         widgetdef['heading'] the heading for this widget. 
+         self.widgetdef = widgetdef 
+         self.content =  self.widgetdef['content'] the content of this widget
+         self heading = self.widgetdef['heading'] the heading for this widget. 
     
         Returns
         -------
@@ -60,6 +61,25 @@ class singelwidget:
         self.widgetdef = widgetdef
         self.content = widgetdef['content']
         self.heading = widgetdef.get('heading','')
+
+
+    def update_df(self,df,current_per):
+        ''' will update container widgets'''
+        try: 
+            for w in self.datachildren:
+                w.update_df(df,current_per)
+        except: 
+            ... 
+            
+            
+    def reset(self,g):
+        ''' will reset  container widgets '''
+        try: 
+            for w in self.datachildren:
+                w.reset(g)
+        except: 
+            ... 
+
 
 
 class basewidget(singelwidget):
@@ -548,7 +568,6 @@ class updatewidget:
                         layout={'width':'65%'},style={'description_width':'30%'})
         
         self.wpat.layout.visibility = 'visible' if self.showvarpat else 'hidden'
-        
 
         winputstring = widgets.HBox([self.wname,self.wpat])
        
@@ -560,18 +579,27 @@ class updatewidget:
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
         
-        self.keep_ui = keep_plot_shiny(mmodel = self.mmodel, 
-                                  selectfrom = self.varpat, prefix_dict=self.prefix_dict,
-                                  vline=self.vline,relativ_start=self.relativ_start,
-                                  short = self.short) 
+        self.wtotal = VBox([widgets.HTML(value="Hello <b>World</b>")])  
         
-        self.wtotal = widgets.VBox([self.datawidget.datawidget,winputstring,wbut,
-                                    self.keep_ui.datawidget])
-        
-        self.start = copy(self.mmodel.current_per[0])
-        self.slut = copy(self.mmodel.current_per[-1])
+        def init_run(g):
+            # print(f'{g=}')
+            self.varpat = g['new']
+            self.keep_ui = keep_plot_shiny(mmodel = self.mmodel, 
+                                      selectfrom = self.varpat, prefix_dict=self.prefix_dict,
+                                      vline=self.vline,relativ_start=self.relativ_start,
+                                      short = self.short) 
+            
+            # self.wtotal = widgets.VBox([self.datawidget.datawidget,winputstring,wbut,
+            #                             self.keep_ui.datawidget])
+            self.wtotal.children  = [self.datawidget.datawidget,winputstring,wbut,
+                                        self.keep_ui.datawidget]
+            
+            self.start = copy(self.mmodel.current_per[0])
+            self.slut = copy(self.mmodel.current_per[-1])
+            
+        self.wpat.observe(init_run,names='value',type='change')
 
-
+        init_run({'new':self.varpat})
     
     def update(self,g):
         self.thisexperiment = self.baseline.copy()
@@ -827,7 +855,8 @@ class keep_plot_shiny:
      Plots the keept dataframes
 
      Args:
-         pat (str, optional): a string of variables to select pr default. Defaults to '*'.
+         mmodel : a modelflow model instance 
+         pat (str, optional): a string of variables to select pr default. Defaults to '*'. 
          smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
          selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
          legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
@@ -862,9 +891,8 @@ class keep_plot_shiny:
         init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
         init_end = self.mmodel.lastdf.index.get_loc(show_per[-1])
         keepvar = sorted (list(self.mmodel.keep_solutions.values())[0].columns)
-        defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],) # Default selected
+        defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],)
         # print('******* selectfrom')
-        # variables to select from 
         _selectfrom = [s.upper() for s in self.mmodel.vlist(self.selectfrom)] if self.selectfrom else keepvar
         # _selectfrom = keepvar
         # print(f'{_selectfrom=}')
@@ -880,7 +908,7 @@ class keep_plot_shiny:
         select_prefix = [(c,iso) for iso,c in self.prefix_dict.items()]
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
                                       max=maxper, layout=Layout(width='75%'), description='Show interval')
-        selected_vars = SelectMultiple( options=gross_selectfrom, value=gross_selectfrom[0], layout=Layout(width=width, height=self.select_height, font="monospace"),
+        selected_vars = SelectMultiple( options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),
                                        description='Select one or more', style={'description_width': description_width})
         
         diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
@@ -899,37 +927,42 @@ class keep_plot_shiny:
             wid.observe(self.trigger,names='value',type='change')
             
         # breakpoint()
-        self.out_widget = VBox([widgets.HTML(value="Hello <b>World</b>",
+        self.out_widget =VBox([widgets.HTML(value="Hello <b>World</b>",
                                   placeholder='',
                                   description='',)])
         
-        # values = {widname : wid.value for widname,wid in self.widget_dict.items() }
-        # print(f'i post_init:\n{values} \n Start trigger {self.mmodel.current_per=}')
-        # self.explain(**values)
-        self.trigger(None)
-        
-        
        
-        # selected_vars.observe(get_value_selected_vars,names='value',type='change')    
-            
         
         def get_prefix(g):
+            ''' this function is triggered when the prefix selection is changed. Used only when a  prefix_dict has ben set. 
             
+            g['new]'] contains the new prefix
+            
+            It sets the variables the user can select from 
+            
+            '''
+            # print(f'{g=}')
             try:
+                # fint the suffix for the variables in the current selection of variables
+                # to ensure we get the same variables for the next prefix 
                 current_suffix = {v[len(g['old'][0]):] for v in selected_vars.value}
             except:
+                # we are at the first call to getprefix 
                 current_suffix = ''
-            new_prefix = g['new']
+                
+            new_prefix = g['new']  # returns the selected prefix as tuple as therre can be more 
+            # print(new_prefix)
+            # find the variables which starts with the prefix 
             selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
                                     if any([variable.startswith(n)  for n in new_prefix]))
             # An exception is trigered but has no consequences     
             try:                      
-                selected_vars.options = selected_prefix_var
+                selected_vars.options = selected_prefix_var # Sets the variables to be selected from 
             except: 
                 ...
                 
                 
-            # print('here')
+            # print(f'{current_suffix=} \n{selected_prefix_var=}')
 
             if current_suffix:
                 new_selection   = [f'{n}{c}' for c in current_suffix for n in new_prefix
@@ -937,6 +970,7 @@ class keep_plot_shiny:
                 selected_vars.value  = new_selection 
                 # print(f"{new_selection=}{current_suffix=}{g['old']=}")
             else:    
+                # we are where no prefix has been selected
                 selected_vars.value  = [selected_prefix_var[0][1]]
                 
                    
@@ -948,8 +982,10 @@ class keep_plot_shiny:
             selected_prefix.observe(get_prefix,names='value',type='change')
             select = HBox([selected_vars,selected_prefix])
             # print(f'{select_prefix=}')
+            # we call get_prefix when the widget is set up. 
             get_prefix({'new':select_prefix[0]})
         else: 
+            # no prefix, so we only have to select variable names. 
             select = VBox([selected_vars])
    
         options1 = HBox([diff]) if self.short >=2 else HBox([diff,legend])
@@ -989,7 +1025,7 @@ class keep_plot_shiny:
                 self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
                 plt.close('all')
         return self.keep_wiz_figs        
-        # print(f'Efter plot {self.mmodel.current_per=}')
+        print(f'Efter plot {self.mmodel.current_per=}')
 
 
     def  trigger(self,g):
