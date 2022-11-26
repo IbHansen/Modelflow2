@@ -520,7 +520,8 @@ class updatewidget:
     lwsetbas  :  bool = True
     outputwidget : str  = 'jupviz'
     display_first :any = None 
-  # to the plot widget   
+  # to the plot widget  
+
     prefix_dict : dict = field(default_factory=dict)
     vline  : list = field(default_factory=list)
     relativ_start : int = 0 
@@ -826,7 +827,8 @@ class keep_plot_shiny:
         else: 
             # no prefix, so we only have to select variable names. 
             select = VBox([selected_vars])
-   
+            selected_vars.value  = [gross_selectfrom[0][1]]
+
         options1 = HBox([diff]) if self.short >=2 else HBox([diff,legend])
         options2 = HBox([scale, showtype])
         if self.short:
