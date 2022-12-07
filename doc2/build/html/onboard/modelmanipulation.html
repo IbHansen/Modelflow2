@@ -14,7 +14,6 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -90,9 +89,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="onboard.html">Processing model specification</a> &raquo;</li>
-      <li>modelmanipulation module</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="onboard.html">Processing model specification</a></li>
+      <li class="breadcrumb-item active">modelmanipulation module</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/onboard/modelmanipulation.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -106,7 +105,7 @@
            <div itemprop="articleBody">
              
   <section id="module-modelmanipulation">
-<span id="modelmanipulation-module"></span><h1>modelmanipulation module<a class="headerlink" href="#module-modelmanipulation" title="Permalink to this heading"></a></h1>
+<span id="modelmanipulation-module"></span><h1>modelmanipulation module<a class="headerlink" href="#module-modelmanipulation" title="Permalink to this headline"></a></h1>
 <p>Created on Mon Sep 02 19:41:11 2013</p>
 <p>This module is a textprocessing module which is used to transforms a <em>template model</em> for a generic bank into into a unrolled and
 expande model which covers all banks - under  control of a list feature.</p>
@@ -115,12 +114,26 @@ expande model which covers all banks - under  control of a list feature.</p>
 in historic periods.  This model can also be solved by the <em>modelclass</em> module.</p>
 <p>&#64;author: Ib</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="modelmanipulation.safesub">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">safesub</span></span><a class="reference internal" href="../_modules/modelmanipulation.html#safesub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.safesub" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="modelmanipulation.oldsafesub">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">oldsafesub</span></span><a class="reference internal" href="../_modules/modelmanipulation.html#oldsafesub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.oldsafesub" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
 <p>A subclass of dict.
 if a <em>safesub</em> is indexed by a nonexisting keyword it just return the keyword
 this alows missing keywords when substitution text inspired by Python cookbook</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="modelmanipulation.safesub">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelmanipulation.</span></span><span class="sig-name descname"><span class="pre">safesub</span></span><a class="reference internal" href="../_modules/modelmanipulation.html#safesub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelmanipulation.safesub" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<p>A subclass of dict.
+if a <em>safesub</em> is indexed by a nonexisting keyword it just return the keyword</p>
+<ul class="simple">
+<li><p>key-&lt;number&gt; where key is in integer returns the numeric value of key-number</p></li>
+<li><p>key+&lt;number&gt; where key is in integer returns the numeric value of key+number</p></li>
+<li></li>
+</ul>
+<p>this alows missing keywords when substitution text inspired by Python cookbook</p>
 </dd></dl>
 
 <dl class="py function">

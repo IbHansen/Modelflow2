@@ -14,7 +14,6 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -88,9 +87,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="Core.html">Core Modules, creates and solves model instances</a> &raquo;</li>
-      <li>modelnewton module</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="Core.html">Core Modules, creates and solves model instances</a></li>
+      <li class="breadcrumb-item active">modelnewton module</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/core/modelnewton.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -104,7 +103,7 @@
            <div itemprop="articleBody">
              
   <section id="module-modelnewton">
-<span id="modelnewton-module"></span><h1>modelnewton module<a class="headerlink" href="#module-modelnewton" title="Permalink to this heading"></a></h1>
+<span id="modelnewton-module"></span><h1>modelnewton module<a class="headerlink" href="#module-modelnewton" title="Permalink to this headline"></a></h1>
 <p>Created on Fri Jun 19 19:49:50 2020</p>
 <p>&#64;author: IBH</p>
 <p>Module which handles model differentiation, construction of jacobi matrizex,
@@ -154,7 +153,7 @@ and creates dense and sparse solving functions.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="modelnewton.diff_value_col">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelnewton.</span></span><span class="sig-name descname"><span class="pre">diff_value_col</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pvar</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_plac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pvar_plac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pvar_endo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pvar_exo_plac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnewton.html#diff_value_col"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnewton.diff_value_col" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#modelnewton.diff_value_base" title="modelnewton.diff_value_base"><code class="xref py py-class docutils literal notranslate"><span class="pre">diff_value_base</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#modelnewton.diff_value_base" title="modelnewton.diff_value_base"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelnewton.diff_value_base</span></code></a></p>
 <p>The hash able class which can be used as pandas columns</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelnewton.diff_value_col.var">
@@ -196,7 +195,7 @@ and creates dense and sparse solving functions.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="modelnewton.diff_value">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelnewton.</span></span><span class="sig-name descname"><span class="pre">diff_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pvar</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_plac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pvar_plac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pvar_endo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pvar_exo_plac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnewton.html#diff_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnewton.diff_value" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#modelnewton.diff_value_base" title="modelnewton.diff_value_base"><code class="xref py py-class docutils literal notranslate"><span class="pre">diff_value_base</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#modelnewton.diff_value_base" title="modelnewton.diff_value_base"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelnewton.diff_value_base</span></code></a></p>
 <p>class to contain values from differentiation</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="modelnewton.diff_value.number">
@@ -218,6 +217,26 @@ and creates dense and sparse solving functions.</p>
 this is for un-nomalized or normalized models ie models of the forrm</p>
 <p>0 = G(y,x)
 y = F(y,x)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mmodel</strong> (<em>TYPE</em>) – Model to analyze.</p></li>
+<li><p><strong>df</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Dataframe. if None mmodel.lastdf will be used</p></li>
+<li><p><strong>endovar</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – if set defines which endogeneous to include . Defaults to None.</p></li>
+<li><p><strong>onlyendocur</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Only calculate for the curren endogeneous variables. Defaults to False.</p></li>
+<li><p><strong>timeit</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – writeout time informations . Defaults to False.</p></li>
+<li><p><strong>silent</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Defaults to True.</p></li>
+<li><p><strong>forcenum</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Force differentiation to be numeric else try sumbolic (slower)  Defaults to False.</p></li>
+<li><p><strong>per</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Period for which to calculte the jacobi . Defaults to ‘’.</p></li>
+<li><p><strong>ljit</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Trigger just in time compilation of the differential coiefficient. Defaults to 0.</p></li>
+<li><p><strong>nchunk</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Chunks for which the model is written  - relevant if ljit == True. Defaults to None.</p></li>
+<li><p><strong>endoandexo</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – Calculate for both endogeneous and exogeneous . Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="modelnewton.newton_diff.modeldiff">
 <span class="sig-name descname"><span class="pre">modeldiff</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelnewton.html#newton_diff.modeldiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelnewton.newton_diff.modeldiff" title="Permalink to this definition"></a></dt>

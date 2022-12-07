@@ -14,7 +14,6 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -49,8 +48,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../plotly/modeldashsidebar.html">Dashboard</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Jupyter Stuff</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="modeljupyter.html">modeljupyter module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeljupytermagic.html">modeljupytermagic module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modelwidget_input.html">Jupyter interactive widgets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modelwidget.html">modelwidget module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeljupytermagic.html">modeljupytermagic module</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
@@ -86,8 +86,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Jupyter Stuff</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">Jupyter Stuff</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/jupyter/jupyter.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -101,12 +101,29 @@
            <div itemprop="articleBody">
              
   <section id="jupyter-stuff">
-<h1>Jupyter Stuff<a class="headerlink" href="#jupyter-stuff" title="Permalink to this heading"></a></h1>
+<h1>Jupyter Stuff<a class="headerlink" href="#jupyter-stuff" title="Permalink to this headline"></a></h1>
+<p>This section contains different modules which are specific to the Jupyter interface.
+Jupyter allows interactive input and nice structured output. Some of the capabilities are present at
+several modules. It has been paramount to maintain backward compability.</p>
+<p>The <strong>modeljupytermagic</strong> module sets up different magic cell commands which can be handy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">graphviz</dt>
+<dd class="field-odd"><p>Draw Graphviz graph</p>
+</dd>
+<dt class="field-even">dataframe</dt>
+<dd class="field-even"><p>Create Pandas Dataframe</p>
+</dd>
+<dt class="field-odd">latexflow</dt>
+<dd class="field-odd"><p>Create a modelflow modelinstance from latex script</p>
+</dd>
+</dl>
 <div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="modeljupyter.html">modeljupyter module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modeljupytermagic.html">modeljupytermagic module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modelwidget_input.html">Jupyter interactive widgets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modelwidget.html">modelwidget module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeljupytermagic.html">modeljupytermagic module</a></li>
 </ul>
 </div>
 </section>

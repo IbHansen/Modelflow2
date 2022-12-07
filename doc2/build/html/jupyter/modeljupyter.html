@@ -14,7 +14,6 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -51,6 +50,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">modeljupyter module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modeljupytermagic.html">modeljupytermagic module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modelwidget.html">modelwidget module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modelwidget_input.html">Jupyter interactive widgets</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../used/modelinvert.html">Targets and instruments</a></li>
@@ -86,9 +86,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="jupyter.html">Jupyter Stuff</a> &raquo;</li>
-      <li>modeljupyter module</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="jupyter.html">Jupyter Stuff</a></li>
+      <li class="breadcrumb-item active">modeljupyter module</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/jupyter/modeljupyter.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -102,7 +102,7 @@
            <div itemprop="articleBody">
              
   <section id="module-modeljupyter">
-<span id="modeljupyter-module"></span><h1>modeljupyter module<a class="headerlink" href="#module-modeljupyter" title="Permalink to this heading"></a></h1>
+<span id="modeljupyter-module"></span><h1>modeljupyter module<a class="headerlink" href="#module-modeljupyter" title="Permalink to this headline"></a></h1>
 <p>Created on Sat Jun 22 21:26:13 2019</p>
 <p>&#64;author: hanseni</p>
 <dl class="py function">
@@ -148,7 +148,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="modeljupyter.jupviz">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modeljupyter.</span></span><span class="sig-name descname"><span class="pre">jupviz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Show</span> <span class="pre">variables'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trans</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showfig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modeljupyter.html#jupviz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modeljupyter.jupviz" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#modeljupyter.jup_keepviz" title="modeljupyter.jup_keepviz"><code class="xref py py-class docutils literal notranslate"><span class="pre">jup_keepviz</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#modeljupyter.jup_keepviz" title="modeljupyter.jup_keepviz"><code class="xref py py-class docutils literal notranslate"><span class="pre">modeljupyter.jup_keepviz</span></code></a></p>
 <p>Class to vizualize a number of experiments in an tabbed ipywidget in a jupyter notebook</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="modeljupyter.jupviz.vis">

@@ -60,6 +60,8 @@ html_static_path = ['_static']
 autodoc_default_options = {
     'member-order': 'bysource',
     }
+autoclass_content = 'both'
+
 exclude_patterns = ['modelsource/','setup.rst','modules.rst','index old.rst','solve.rst']
 sys.path.insert(0, os.path.abspath('../'))  
 html_theme_options = {

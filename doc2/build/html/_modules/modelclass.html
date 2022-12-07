@@ -77,9 +77,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="index.html">Module code</a> &raquo;</li>
-      <li>modelclass</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">modelclass</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -1907,8 +1907,8 @@
             <span class="n">print_per</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>       <span class="c1"># each contrinution in pct of total change</span>
         <span class="c1"># breakpoint()</span>
         <span class="n">residual</span> <span class="o">=</span> <span class="n">pctendo</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="mi">100</span>
-        <span class="n">pctendo</span><span class="o">.</span><span class="n">at</span><span class="p">[(</span><span class="s1">&#39;Total&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">print_per</span><span class="p">]</span> <span class="o">=</span> <span class="n">pctendo</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="n">pctendo</span><span class="o">.</span><span class="n">at</span><span class="p">[(</span><span class="s1">&#39;Residual&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">print_per</span><span class="p">]</span> <span class="o">=</span> <span class="n">residual</span>
+        <span class="n">pctendo</span><span class="o">.</span><span class="n">loc</span><span class="p">[(</span><span class="s1">&#39;Total&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">print_per</span><span class="p">]</span> <span class="o">=</span> <span class="n">pctendo</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">pctendo</span><span class="o">.</span><span class="n">loc</span><span class="p">[(</span><span class="s1">&#39;Residual&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">print_per</span><span class="p">]</span> <span class="o">=</span> <span class="n">residual</span>
         <span class="k">if</span> <span class="n">lprint</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Formula        :&#39;</span><span class="p">,</span> <span class="n">mfrml</span><span class="o">.</span><span class="n">allvar</span><span class="p">[</span><span class="n">varnavn</span><span class="p">][</span><span class="s1">&#39;frml&#39;</span><span class="p">],</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="n">res2df</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span>
@@ -1941,6 +1941,7 @@
 
 <div class="viewcode-block" id="Dekomp_Mixin.dekomp_plot_per"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Dekomp_Mixin.dekomp_plot_per">[docs]</a>    <span class="k">def</span> <span class="nf">dekomp_plot_per</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">varnavn</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pct</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">per</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span>
                          <span class="p">,</span><span class="n">rename</span><span class="o">=</span><span class="kc">True</span>
+                         <span class="p">,</span><span class="n">nametrans</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">varnames</span><span class="p">,</span><span class="n">thismodel</span> <span class="p">:</span> <span class="n">varnames</span>
                          <span class="p">,</span><span class="n">time_att</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">ysize</span><span class="o">=</span><span class="mi">7</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Returns  a waterfall diagram with attribution for a variable in one time frame </span>
@@ -1971,7 +1972,10 @@
         <span class="n">thisper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_per</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">per</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="n">per</span>
         <span class="n">xx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dekomp</span><span class="p">(</span><span class="n">varnavn</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">lprint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">time_att</span><span class="o">=</span><span class="n">time_att</span><span class="p">)</span>
         <span class="n">ddf</span> <span class="o">=</span> <span class="n">join_name_lag</span><span class="p">(</span><span class="n">xx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="n">pct</span> <span class="k">else</span> <span class="n">xx</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">ddf</span> <span class="o">=</span> <span class="n">ddf</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_description</span><span class="p">)</span> <span class="k">if</span> <span class="n">rename</span> <span class="k">else</span> <span class="n">ddf</span>
+        <span class="k">if</span> <span class="n">rename</span><span class="p">:</span>
+            <span class="n">ddf</span> <span class="o">=</span> <span class="n">ddf</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_description</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ddf</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">nametrans</span><span class="p">(</span><span class="n">ddf</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span>
 
 <span class="c1">#        tempdf = pd.DataFrame(0,columns=ddf.columns,index=[&#39;Start&#39;]).append(ddf)</span>
         <span class="n">tempdf</span> <span class="o">=</span> <span class="n">ddf</span>
@@ -2029,6 +2033,7 @@
 
 <div class="viewcode-block" id="Dekomp_Mixin.dekomp_plot"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Dekomp_Mixin.dekomp_plot">[docs]</a>    <span class="k">def</span> <span class="nf">dekomp_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">varnavn</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pct</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">per</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">lag</span><span class="o">=</span><span class="kc">True</span>
                     <span class="p">,</span><span class="n">rename</span><span class="o">=</span><span class="kc">True</span> 
+                    <span class="p">,</span><span class="n">nametrans</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">varnames</span><span class="p">,</span><span class="n">thismodel</span> <span class="p">:</span> <span class="n">varnames</span>
                     <span class="p">,</span><span class="n">time_att</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
         <span class="sd">&#39;&#39;&#39;</span>
@@ -2067,7 +2072,10 @@
         <span class="c1"># ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(</span>
         <span class="c1">#     lambda df: df.loc[[i for i in df.index if i != &#39;Total&#39;], :])</span>
         <span class="n">ddf0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_att_pct</span><span class="p">(</span><span class="n">varnavn</span><span class="p">,</span><span class="n">lag</span><span class="o">=</span><span class="n">lag</span><span class="p">,</span><span class="n">time_att</span><span class="o">=</span><span class="n">time_att</span><span class="p">)</span> <span class="k">if</span> <span class="n">pct</span> <span class="k">else</span>  <span class="bp">self</span><span class="o">.</span><span class="n">get_att_level</span><span class="p">(</span><span class="n">varnavn</span><span class="p">,</span><span class="n">lag</span><span class="o">=</span><span class="n">lag</span><span class="p">)</span>
-        <span class="n">ddf0</span> <span class="o">=</span> <span class="n">ddf0</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_description</span><span class="p">)</span> <span class="k">if</span> <span class="n">rename</span> <span class="k">else</span> <span class="n">ddf0</span>
+        <span class="k">if</span> <span class="n">rename</span><span class="p">:</span>
+            <span class="n">ddf0</span> <span class="o">=</span> <span class="n">ddf0</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_description</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ddf0</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">nametrans</span><span class="p">(</span><span class="n">ddf0</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span>
         <span class="n">ddf</span> <span class="o">=</span> <span class="n">cutout</span><span class="p">(</span><span class="n">ddf0</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span>
             <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -2081,7 +2089,7 @@
 
         <span class="n">ntitle</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Attribution</span><span class="si">{</span><span class="n">nthreshold</span><span class="si">}</span><span class="s1">&#39;</span> 
         <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">ntitle</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="n">top</span><span class="p">)</span>
+        <span class="c1"># fig.subplots_adjust(top=top)</span>
 
         <span class="k">return</span> <span class="n">fig</span></div>
 
@@ -3705,7 +3713,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="c1"># breakpoint()</span>
         <span class="c1"># breakpoint()    </span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_notebook</span><span class="p">():</span>
+        <span class="k">if</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># self.in_notebook():</span>
             <span class="n">des</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_description</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">description_dict</span><span class="p">)</span><span class="o">==</span><span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="n">description_dict</span>
             <span class="n">keys</span><span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">des</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">transpose</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
@@ -6657,12 +6665,21 @@
 <div class="viewcode-block" id="Dash_Mixin"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Dash_Mixin">[docs]</a><span class="k">class</span> <span class="nc">Dash_Mixin</span><span class="p">():</span>
     <span class="sd">&#39;&#39;&#39;This mixin wraps call the Dash dashboard &#39;&#39;&#39;</span>
 <div class="viewcode-block" id="Dash_Mixin.modeldash"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Dash_Mixin.modeldash">[docs]</a>    <span class="k">def</span> <span class="nf">modeldash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">arg</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="kn">from</span> <span class="nn">modeldashsidebar</span> <span class="kn">import</span> <span class="n">Dash_graph</span>
-        <span class="o">...</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">Dash_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">arg</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">out</span> </div></div>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">modeldashsidebar</span> <span class="kn">import</span> <span class="n">Dash_graph</span>
+            <span class="o">...</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">Dash_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">arg</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">out</span> 
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No Dash, str(e)&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div></div>
+            
 
 <div class="viewcode-block" id="Fix_Mixin"><a class="viewcode-back" href="../core/modelclass.html#modelclass.Fix_Mixin">[docs]</a><span class="k">class</span> <span class="nc">Fix_Mixin</span><span class="p">():</span>
+    
+    
+    
+    
     <span class="sd">&#39;&#39;&#39;This mixin handles a number of world bank enhancements &#39;&#39;&#39;</span>
     
     <span class="nd">@cached_property</span>

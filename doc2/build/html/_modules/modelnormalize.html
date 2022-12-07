@@ -77,9 +77,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="index.html">Module code</a> &raquo;</li>
-      <li>modelnormalize</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">modelnormalize</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -139,10 +139,10 @@
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">_repr_html_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
         
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s1">&#39;&#39;</span></div>
+    <span class="c1"># def __repr__(self):</span>
+    <span class="c1">#     print(f&#39;{self}&#39;)</span>
         
         
     
@@ -428,13 +428,15 @@
     <span class="n">normal</span><span class="p">(</span><span class="s1">&#39;a = D( LOG(QLHP(+1)))&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fprint</span>
     <span class="n">normal</span><span class="p">(</span><span class="s1">&#39;a = gamma+ f+O&#39;</span><span class="p">,</span><span class="n">the_endo</span><span class="o">=</span><span class="s1">&#39;f&#39;</span><span class="p">,</span><span class="n">endo_lhs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">make_fixable</span> <span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">fprint</span>
     <span class="c1"># breakpoint()</span>
-    <span class="n">normal</span><span class="p">(</span><span class="s1">&#39;zlhp  =  81 * D( LOG(QLHP(1))     ,0, 1) &#39;</span><span class="p">,</span><span class="n">add_add_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">fprint</span>
+    <span class="n">normal</span><span class="p">(</span><span class="s1">&#39;zlhp-zlhp(-1)  =  81 * D( LOG(QLHP(1))     ,0, 1) &#39;</span><span class="p">,</span><span class="n">add_add_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">make_fitted</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">make_fixable</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">fprint</span>
     <span class="n">fixleads</span><span class="p">(</span><span class="s1">&#39;zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) &#39;</span><span class="p">)</span>
 <span class="c1">#%%</span>
 
     <span class="n">elem_trans</span><span class="p">(</span><span class="s1">&#39;DLOG(PAKNVRENPRODXN)=DLOG((WLDHYDROPOWER*PAKPANUSATLS)/(@ELEM(WLDHYDROPOWER,2011)*@ELEM(PAKPANUSATLS,2011)))-0.00421833463034*DUMH&#39;</span><span class="p">)</span>
     <span class="n">fixleads</span><span class="p">(</span><span class="s1">&#39;a = b(1) + v(33)&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span><span class="mi">1</span><span class="p">)</span>  
     <span class="n">fixleads</span><span class="p">(</span><span class="s1">&#39; 0.2121303706720161 * D( LOG(QLHP), 0, 1 )           + -0.04133299713432281 * D( LOG(QLHP(1)), 0, 1 )           + 0.9805787292172398 * ZLHP(1)           + -0.1948471451936957 * ZLHP(2) &#39;</span><span class="p">)</span>     
+    <span class="n">xx</span> <span class="o">=</span> <span class="n">normal</span><span class="p">(</span><span class="s1">&#39;a = n(-1)&#39;</span><span class="p">,</span><span class="n">add_add_factor</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">make_fitted</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">xx</span><span class="o">.</span><span class="n">eviews</span> <span class="o">=</span> <span class="s1">&#39;ffff &#39;</span>
 </pre></div>
 
            </div>

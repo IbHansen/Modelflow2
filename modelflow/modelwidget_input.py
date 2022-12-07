@@ -2,11 +2,32 @@
 """
 Created on Mon Aug  9 14:46:11 2021
 
-To define Jupyter widgets to update and show variables. 
+To define Jupyter widgets which accept user input and can update dataframes and show variables. 
 
-this version is made to make is easy to define input widgets as dictikonaries. 
+A user can define new widgets to suit the need for her use case. This requires some familliarity with the 
+ipywidget library https://ipywidgets.readthedocs.io/en/stable/
 
-This module is a revision of the modelwidget. Which is used for legacy and output widgets 
+
+This module is a revision of the modelwidget module. Modelwidget is still around and is used for legacy and output widgets. 
+
+Ipywidgets are used 
+to define widgets which can be used in jupyter notebooks and in shiny. 
+
+ :Tabwidget and basewidget:  defines a **container of widgets**.
+ :updatawidget: defines a **widget to update** variables using the widgets defined in the classes mentioned abowe
+ :keep_plot_widget:  Defines a **widget to display** the results from the model run made in the updatewidget
+ :sheetwidget slidewidget ect: defines a **basic widget** which can be dispayed and which might have the ability to 
+                   update a dataframe
+
+ 
+Some methods and properties of widgets.  
+     :datawidget: The ipywidget which can be dispayed and might accept input used for updating a dataframe 
+     :datachildren: A list of widgets in a container widget
+     :update_df: a function which updates a dataframe 
+     :reset: A function which resets the input values to the initial values. 
+     
+
+ 
 
 @author: Ib 
 """
@@ -41,22 +62,27 @@ class singelwidget:
     
     def __init__(self,widgetdef):
         '''
+        Some common properties and methods are defines. 
         
+        **Sets these properties:** 
+    
+         - self.widgetdef = widgetdef 
+         - self.content =  self.widgetdef['content'] the content of this widget
+         - self heading = self.widgetdef['heading'] the heading for this widget. 
 
+        
+        
         Parameters
         ----------
         widgetdef : dict 
             A dict with the descrition of a widget
         
-        Sets properties 
-        ----------------
-         self.widgetdef = widgetdef 
-         self.content =  self.widgetdef['content'] the content of this widget
-         self heading = self.widgetdef['heading'] the heading for this widget. 
     
         Returns
         -------
         None.
+
+    
 
         '''
         # breakpoint() 
@@ -198,6 +224,7 @@ class sheetwidget(singelwidget):
 
 class slidewidget(singelwidget):
     ''' class defefining a widget with lines of slides '''
+    
 
 
     def __init__(self,widgetdef ):
@@ -290,7 +317,8 @@ class slidewidget(singelwidget):
         self.current_values[line_des]['value'] = g['new']
 
 class sumslidewidget(singelwidget):
-    ''' class defefining a widget with lines of slides '''
+    ''' class defefining a widget with lines of slides  the sum of the input variables can max be the parameter
+    maxsum (default=1.0) '''
     def __init__(self,widgetdef ):
         ...
         super().__init__(widgetdef)
@@ -404,7 +432,7 @@ class sumslidewidget(singelwidget):
                 
 
 class radiowidget(singelwidget):
-    ''' class defefining a widget with a number of radiobutton groups 
+    ''' class defining a widget with a number of radiobutton groups 
     
     When df_update is executed the cheked variable will be set to 1 the other to 0
     
@@ -417,8 +445,7 @@ class radiowidget(singelwidget):
                     ['text2','variable2']
                       .....]
      
-     ....
-     ....
+     
      }
     
     
@@ -580,7 +607,7 @@ class updatewidget:
         def init_run(g):
             # print(f'{g=}')
             self.varpat = g['new']
-            self.keep_ui = keep_plot_shiny(mmodel = self.mmodel, 
+            self.keep_ui = keep_plot_widget(mmodel = self.mmodel, 
                                       selectfrom = self.varpat, prefix_dict=self.prefix_dict,
                                       vline=self.vline,relativ_start=self.relativ_start,
                                       short = self.short) 
@@ -651,30 +678,9 @@ def fig_to_image(fig,format='svg'):
   
     
 
-@dataclass
-class shinywidget:
-    '''A to translate a widget to shiny widget '''
-
-    a_widget : any # The datawidget to wrap 
-    widget_id  : str 
-    
-    def __post_init__(self):
-        from shinywidgets import register_widget
-        ...        
-        register_widget(self.widget_id, self.a_widget.datawidget)
-       
-           
-    def update_df(self,df,current_per):
-        ''' will update container widgets'''
-        self.a_widget.update_df(df,current_per)
-            
-            
-    def reset(self,g):
-        ''' will reset  container widgets'''
-        self.a_widget.reset(g) 
 
 @dataclass
-class keep_plot_shiny:
+class keep_plot_widget:
     mmodel : any     # a model 
     pat : str ='*'
     smpl=('', '')
@@ -866,7 +872,7 @@ class keep_plot_shiny:
                 self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
                 plt.close('all')
         return self.keep_wiz_figs        
-        print(f'Efter plot {self.mmodel.current_per=}')
+        # print(f'Efter plot {self.mmodel.current_per=}')
 
 
     def  trigger(self,g):
@@ -885,7 +891,27 @@ class keep_plot_shiny:
         # print(f'end  trigger {self.mmodel.current_per[0]=}')
 
 
+@dataclass
+class shinywidget:
+    '''A to translate a widget to shiny widget '''
 
+    a_widget : any # The datawidget to wrap 
+    widget_id  : str 
+    
+    def __post_init__(self):
+        from shinywidgets import register_widget
+        ...        
+        register_widget(self.widget_id, self.a_widget.datawidget)
+       
+           
+    def update_df(self,df,current_per):
+        ''' will update container widgets'''
+        self.a_widget.update_df(df,current_per)
+            
+            
+    def reset(self,g):
+        ''' will reset  container widgets'''
+        self.a_widget.reset(g) 
 
 def make_widget(widgetdef):
     '''
@@ -895,38 +921,41 @@ def make_widget(widgetdef):
     reswidget = globals()[widgettype+'widget'](widgetdict)
     return reswidget
 
-slidedef =  ['slide', {'heading':'Dette er en prøve', 
-            'content' :{'Productivity'    : {'var':'ALFA',             'value': 0.5 ,'min':0.0, 'max':1.0},
-             'DEPRECIATES_RATE' : {'var':'DEPRECIATES_RATE', 'value': 0.05,'min':0.0, 'max':1.0}, 
-             'LABOR_GROWTH'     : {'var':'LABOR_GROWTH',     'value': 0.01,'min':0.0, 'max':1.0},
-             'SAVING_RATIO'     : {'var': 'SAVING_RATIO',    'value': 0.05,'min':0.0, 'max':1.0}
-                    }}  ]
 
-radiodef =   ['radio', {'heading':'Dette er en anden prøve', 
-            'content' : {'Ib': [['Arbejdskraft','LABOR_GROWTH'],
-                   ['Opsparing','SAVING_RATIO'] ],
-           'Søren': [['alfa','ALFA'],
-                   ['a','A'] ],
-           'Marie': [['Hest','HEST'],
-                   ['Ko','KO'] ],
-           
-           }} ]
+if __name__ == '__main__':
 
-checkdef =   ['check', {'heading':'Dette er en treidje prøve', 
-            'content' :{'Arbejdskraft':['LABOR_GROWTH KO',1],
-                       'Opsparing'  :['SAVING_RATIO',0] }}]
-
-alldef = [slidedef] + [radiodef] + [checkdef]
-              
-
-tabdef = ['tab',{'content':[['Den første',['base',{'content':alldef}]],
-                            ['Den anden' ,['base',{'content':alldef}]]]
-                            ,
-                'tab':False}]
-
-basedef = ['base',{'content':[slidedef,radiodef]}]
+    slidedef =  ['slide', {'heading':'Dette er en prøve', 
+                'content' :{'Productivity'    : {'var':'ALFA',             'value': 0.5 ,'min':0.0, 'max':1.0},
+                 'DEPRECIATES_RATE' : {'var':'DEPRECIATES_RATE', 'value': 0.05,'min':0.0, 'max':1.0}, 
+                 'LABOR_GROWTH'     : {'var':'LABOR_GROWTH',     'value': 0.01,'min':0.0, 'max':1.0},
+                 'SAVING_RATIO'     : {'var': 'SAVING_RATIO',    'value': 0.05,'min':0.0, 'max':1.0}
+                        }}  ]
     
-xx = make_widget(tabdef)
- 
-# print(yaml.dump(tabdef,indent=4))
-
+    radiodef =   ['radio', {'heading':'Dette er en anden prøve', 
+                'content' : {'Ib': [['Arbejdskraft','LABOR_GROWTH'],
+                       ['Opsparing','SAVING_RATIO'] ],
+               'Søren': [['alfa','ALFA'],
+                       ['a','A'] ],
+               'Marie': [['Hest','HEST'],
+                       ['Ko','KO'] ],
+               
+               }} ]
+    
+    checkdef =   ['check', {'heading':'Dette er en treidje prøve', 
+                'content' :{'Arbejdskraft':['LABOR_GROWTH KO',1],
+                           'Opsparing'  :['SAVING_RATIO',0] }}]
+    
+    alldef = [slidedef] + [radiodef] + [checkdef]
+                  
+    
+    tabdef = ['tab',{'content':[['Den første',['base',{'content':alldef}]],
+                                ['Den anden' ,['base',{'content':alldef}]]]
+                                ,
+                    'tab':False}]
+    
+    basedef = ['base',{'content':[slidedef,radiodef]}]
+        
+    xx = make_widget(tabdef)
+     
+    # print(yaml.dump(tabdef,indent=4))
+    

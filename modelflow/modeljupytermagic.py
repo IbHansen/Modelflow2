@@ -7,7 +7,7 @@ This module defines several magic jupyter functions\:
 :dataframe: Create Pandas Dataframe    
 :latexflow: Create a modelflow modelinstance from latex script 
 
-To display the doc strings use the functions in jupyter. 
+he doc strings can only be displayed when the module is used from Jupyter. So they are not shown in the Sphinx documentation To display the doc strings use the functions in jupyter. 
 
 ''' 
 
@@ -50,6 +50,7 @@ def get_options(line,defaultname = 'test'):
     
     return name,opt           
 try:
+    # this is to 
 
     @register_cell_magic
     def graphviz(line, cell):

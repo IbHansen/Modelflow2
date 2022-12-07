@@ -14,7 +14,6 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -81,8 +80,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>modelsandbox module</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">modelsandbox module</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/used/modelsandbox.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -96,20 +95,21 @@
            <div itemprop="articleBody">
              
   <section id="module-modelsandbox">
-<span id="modelsandbox-module"></span><h1>modelsandbox module<a class="headerlink" href="#module-modelsandbox" title="Permalink to this heading"></a></h1>
+<span id="modelsandbox-module"></span><h1>modelsandbox module<a class="headerlink" href="#module-modelsandbox" title="Permalink to this headline"></a></h1>
 <p>This is a module for testing new features of the model class, but in a smaler file.</p>
 <p>Created on Sat Sep 29 06:03:35 2018</p>
 <p>&#64;author: hanseni</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="modelsandbox.newmodel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelsandbox.</span></span><span class="sig-name descname"><span class="pre">newmodel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'testmodel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">straight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tabcomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previousbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_preorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safeorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelsandbox.html#newmodel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelsandbox.newmodel" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../core/modelclass.html#modelclass.model" title="modelclass.model"><code class="xref py py-class docutils literal notranslate"><span class="pre">model</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="../core/modelclass.html#modelclass.model" title="modelclass.model"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelclass.model</span></code></a></p>
+<p>initialize a model</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="modelsandbox.newvis">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">modelsandbox.</span></span><span class="sig-name descname"><span class="pre">newvis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/modelsandbox.html#newvis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#modelsandbox.newvis" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../vis/modelvis.html#modelvis.vis" title="modelvis.vis"><code class="xref py py-class docutils literal notranslate"><span class="pre">vis</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="../vis/modelvis.html#modelvis.vis" title="modelvis.vis"><code class="xref py py-class docutils literal notranslate"><span class="pre">modelvis.vis</span></code></a></p>
 </dd></dl>
 
 </section>

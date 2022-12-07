@@ -77,9 +77,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="index.html">Module code</a> &raquo;</li>
-      <li>modelwidget</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">modelwidget</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -93,7 +93,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Created on Mon Aug  9 14:46:11 2021</span>
 
-<span class="sd">To define Jupyter widgets to update and show variables. </span>
+<span class="sd">To define Jupyter widgets  show variables. </span>
 <span class="sd">@author: Ib </span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -697,7 +697,7 @@
     <span class="k">if</span> <span class="s1">&#39;masia&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span> 
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loading model&#39;</span><span class="p">)</span>
         <span class="n">masia</span><span class="p">,</span><span class="n">baseline</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">modelload</span><span class="p">(</span><span class="s1">&#39;C:/wb Dawn/UNESCAP-/Asia/Asia.pcim&#39;</span><span class="p">,</span><span class="n">run</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">silent</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>    
-    <span class="c1"># test = slidewidget(masia,{})</span>
+    <span class="n">test</span> <span class="o">=</span> <span class="n">slidewidget</span><span class="p">(</span><span class="n">masia</span><span class="p">,{})</span>
      
 </pre></div>
 

@@ -14,7 +14,6 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -92,9 +91,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="onboard.html">Processing model specification</a> &raquo;</li>
-      <li>model_latex module</li>
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="onboard.html">Processing model specification</a></li>
+      <li class="breadcrumb-item active">model_latex module</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/onboard/model_latex.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -108,7 +107,7 @@
            <div itemprop="articleBody">
              
   <section id="module-model_latex">
-<span id="model-latex-module"></span><h1>model_latex module<a class="headerlink" href="#module-model_latex" title="Permalink to this heading"></a></h1>
+<span id="model-latex-module"></span><h1>model_latex module<a class="headerlink" href="#module-model_latex" title="Permalink to this headline"></a></h1>
 <p>Created on Sun Dec  3 19:07:03 2017</p>
 <p>&#64;author: hanseni</p>
 <p>Mostly to eat latex models and translate to business logic</p>
@@ -161,14 +160,26 @@ As there can be nested {} we need to match the braces</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="model_latex.findlistsold">
+<span class="sig-prename descclassname"><span class="pre">model_latex.</span></span><span class="sig-name descname"><span class="pre">findlistsold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/model_latex.html#findlistsold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_latex.findlistsold" title="Permalink to this definition"></a></dt>
+<dd><p>extracte liste from latex</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="model_latex.findlists">
 <span class="sig-prename descclassname"><span class="pre">model_latex.</span></span><span class="sig-name descname"><span class="pre">findlists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/model_latex.html#findlists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_latex.findlists" title="Permalink to this definition"></a></dt>
-<dd><p>extracte liste from latex</p>
+<dd><p>extracte list with sublist from latex</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="model_latex.latextotxt">
 <span class="sig-prename descclassname"><span class="pre">model_latex.</span></span><span class="sig-name descname"><span class="pre">latextotxt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynare</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bankadd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/model_latex.html#latextotxt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_latex.latextotxt" title="Permalink to this definition"></a></dt>
+<dd><p>Translates a latex input to a BL output</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="model_latex.latextotxtnew">
+<span class="sig-prename descclassname"><span class="pre">model_latex.</span></span><span class="sig-name descname"><span class="pre">latextotxtnew</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/model_latex.html#latextotxtnew"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model_latex.latextotxtnew" title="Permalink to this definition"></a></dt>
 <dd><p>Translates a latex input to a BL output</p>
 </dd></dl>
 
