@@ -3869,6 +3869,7 @@ class Display_Mixin():
         res = {}
         with self.set_smpl(start, slut) as a, self.set_smpl_relative(start_ofset, slut_ofset):
             for v in vars:
+                # print(f'{v=}')
                 outv = pd.concat([solution.loc[self.current_per, v]
                                  for solver, solution in self.keep_solutions.items()], axis=1)
                 outv.columns = [k for k in self.keep_solutions.keys()]
@@ -4655,6 +4656,7 @@ class Json_Mixin():
     @classmethod
     def modelload(cls, infile, funks=[], run=False, keep_json=False, **kwargs):
         '''Loads a model and an solution '''
+        import urllib.request
 
         def make_current_from_quarters(base, json_current_per):
             ''' Handle json for quarterly data to recover the right date index
@@ -4673,8 +4675,13 @@ class Json_Mixin():
             base.index = base_dates
             return base, current_dates
 
-        with open(infile, 'rt') as f:
-            input = json.load(f)
+        try:
+            with open(infile, 'rt') as f:
+                input = json.load(f)
+        except: 
+            print(f'Open file from URL:  {infile}')  
+            with urllib.request.urlopen(infile) as f:
+                input = json.load(f)
 
         version = input['version']
         frml = input['frml']
@@ -7046,3 +7053,5 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     
     xx = mmodel(df)
     yy = mmodel(df2)
+    
+    zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')

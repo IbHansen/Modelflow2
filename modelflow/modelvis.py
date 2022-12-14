@@ -380,7 +380,7 @@ class varvis():
                 print(f'Formular: {self.model.allvar[self.var]["frml"]}\n\n{des_string}\n')
                 try:                                            
                     if dif or all or last: print('Values :')
-                    if dif or all or last: display(self.model.ibsstyle(self.model.get_values(self.var))) 
+                    if dif or all or last: display(HTML(self.model.ibsstyle(self.model.get_values(self.var)).to_html() )) 
                     if        all or last: print('Input last run:')
                     if        all or last: display(self.model.ibsstyle(self.model.get_eq_values(self.var)))
                     if        all        : print('Input base run:')
