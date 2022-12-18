@@ -696,6 +696,8 @@ class keep_plot_widget:
     add_var_name=False
     short :any  = 0 
     multi :any = False 
+    select_scenario : bool = False
+    prefix_dict
     
     """
       Plots the keept dataframes
@@ -708,6 +710,12 @@ class keep_plot_widget:
           legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
           dec (string, optional): decimals on the y-axis. Defaults to '0'.
           use_descriptions : Use the variable descriptions from the model 
+          vline: List of vertical lines (position,text)
+          add_var_name: Add the variable name to description 
+          short: Short, 1 2 cut down on the inpout fields 
+          select_scenario: >Select the scenarios which has to be displayed
+          prefix_dict: a dictionary of prefixes to select for instance countries {'prefix':'some text', ...}
+          
 
       Returns:
           None.
@@ -731,18 +739,78 @@ class keep_plot_widget:
                 # print(f'efter set smpl relativ  {self.mmodel.current_per=}')
                 ...
                 show_per = copy(list(self.mmodel.current_per)[:])
-        self.mmodel.current_per = copy(self.old_current_per)        
-        # print(f'efter context  set smpl  {self.mmodel.current_per=}')
-        # breakpoint() 
-        init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
-        init_end = self.mmodel.lastdf.index.get_loc(show_per[-1])
+        self.mmodel.current_per = copy(self.old_current_per)       
+        
+        
+        # Now variable selection 
+
+
+        
+        self.wpat = widgets.Text(value= self.pat,placeholder='Type something',description='Display variables:',
+                        layout={'width':'65%'},style={'description_width':'30%'})
+        
+        self.wpat.layout.visibility = 'visible' if self.showvarpat else 'hidden'
+
         keepvar = sorted (list(self.mmodel.keep_solutions.values())[0].columns)
-        defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],)
+        
+        
+        # defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],)
         # print('******* selectfrom')
         _selectfrom = [s.upper() for s in self.mmodel.vlist(self.selectfrom)] if self.selectfrom else keepvar
         # _selectfrom = keepvar
         # print(f'{_selectfrom=}')
         gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v) for v in _selectfrom] 
+
+        
+        # Now the selection of scenarios 
+        
+        gross_keys = list(self.mmodel.keep_solutions.keys())
+        
+        
+        scenariobase = Select(options = gross_keys, 
+                              value = gross_keys[0],
+                                           description='First scenario',
+                                           layout=Layout(width='50%', font="monospace"))
+        scenarioselect = SelectMultiple(options = [s for s in gross_keys if not s == scenariobase.value],
+                                        value=  [s for s in gross_keys if not s == scenariobase.value],
+                                        description = 'Next',
+                                           layout=Layout(width='50%', font="monospace"))
+
+        
+        def changescenariobase(g):
+            scenarioselect.options=[s for s in gross_keys if not s == scenariobase.value]
+            scenarioselect.value  =[s for s in gross_keys if not s == scenariobase.value]
+            self.scenarioselected = '|'.join([scenariobase.value] + list(scenarioselect.value) )
+            # print(f'{self.scenarioselected=}')
+           
+            
+        def changescenarioselect(g):
+            # print(f'{scenarioselect.value}')
+            self.scenarioselected = '|'.join([scenariobase.value] + list(scenarioselect.value) )
+            self.trigger(None)
+            diff.description = fr'Difference to: "{scenariobase.value}"'
+            # print(f'{self.scenarioselected=}')
+            
+        scenariobase.observe(changescenariobase,names='value',type='change')
+        scenarioselect.observe(changescenarioselect,names='value',type='change')
+        
+        wscenario = HBox([scenariobase, scenarioselect])
+        
+        
+        
+        if self.select_scenario: 
+            ...
+        else: 
+            wscenario.layout.visibility = 'hidden'
+            
+        
+        
+        
+        
+        # print(f'efter context  set smpl  {self.mmodel.current_per=}')
+        # breakpoint() 
+        init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
+        init_end = self.mmodel.lastdf.index.get_loc(show_per[-1])
         # print(f'{gross_selectfrom=}')
         width = self.select_width if self.select_width else '50%' if self.use_descriptions else '50%'
     
@@ -750,6 +818,7 @@ class keep_plot_widget:
         description_width = 'initial'
         description_width_long = 'initial'
         keep_keys = list(self.mmodel.keep_solutions.keys())
+        self.scenarioselected = '|'.join(keep_keys)
         keep_first = keep_keys[0]
         select_prefix = [(c,iso) for iso,c in self.prefix_dict.items()]
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
@@ -769,6 +838,9 @@ class keep_plot_widget:
         
         self.widget_dict = {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
                                             'scale': scale, 'legend': legend}
+        
+        
+        
         for wid in self.widget_dict.values():
             wid.observe(self.trigger,names='value',type='change')
             
@@ -840,7 +912,7 @@ class keep_plot_widget:
         if self.short:
             vui = [select, options1, i_smpl]
         else:
-            vui = [select, options1, options2, i_smpl]  
+            vui = [wscenario, select, options1, options2, i_smpl]  
         vui =  vui[:-1] if self.short >= 2 else vui  
         
         self.datawidget= VBox(vui+[self.out_widget])
@@ -860,17 +932,18 @@ class keep_plot_widget:
             diffpct = False
             
         # clear_output()
-        with self.mmodel.set_smpl(*smpl):
-
-            if self.multi: 
-                self.keep_wiz_fig = self.mmodel.keep_plot_multi(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
-                                                    legend=legend, dec=self.dec, vline=self.vline)
-            else: 
-                self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
-                                                    scale=scale, showtype=showtype,
-                                                    legend=legend, dec=self.dec, vline=self.vline)
-                self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
-                plt.close('all')
+        with self.mmodel.keepswitch(scenarios= self.scenarioselected):
+            with self.mmodel.set_smpl(*smpl):
+    
+                if self.multi: 
+                    self.keep_wiz_fig = self.mmodel.keep_plot_multi(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
+                                                        legend=legend, dec=self.dec, vline=self.vline)
+                else: 
+                    self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
+                                                        scale=scale, showtype=showtype,
+                                                        legend=legend, dec=self.dec, vline=self.vline)
+                    self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
+                    plt.close('all')
         return self.keep_wiz_figs        
         # print(f'Efter plot {self.mmodel.current_per=}')
 
