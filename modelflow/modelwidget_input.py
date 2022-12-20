@@ -587,12 +587,12 @@ class updatewidget:
         
         self.wname = widgets.Text(value=self.basename,placeholder='Type something',description='Scenario name:',
                         layout={'width':'30%'},style={'description_width':'50%'})
-        self.wpat = widgets.Text(value= self.varpat,placeholder='Type something',description='Display variables:',
+        self.wselectfrom = widgets.Text(value= self.varpat,placeholder='Type something',description='Display variables:',
                         layout={'width':'65%'},style={'description_width':'30%'})
         
-        self.wpat.layout.visibility = 'visible' if self.showvarpat else 'hidden'
+        self.wselectfrom.layout.visibility = 'visible' if self.showvarpat else 'hidden'
 
-        winputstring = widgets.HBox([self.wname,self.wpat])
+        winputstring = widgets.HBox([self.wname,self.wselectfrom])
        
     
         self.mmodel.keep_solutions = {}
@@ -620,7 +620,7 @@ class updatewidget:
             self.start = copy(self.mmodel.current_per[0])
             self.slut = copy(self.mmodel.current_per[-1])
             
-        self.wpat.observe(init_run,names='value',type='change')
+        self.wselectfrom.observe(init_run,names='value',type='change')
 
         init_run({'new':self.varpat})
     
@@ -682,22 +682,25 @@ def fig_to_image(fig,format='svg'):
 @dataclass
 class keep_plot_widget:
     mmodel : any     # a model 
-    pat : str ='*'
+    # pat : str ='*'
+    # showvarpat : bool = True 
     smpl=('', '')
     relativ_start : int = 0 
+    
     selectfrom  : str ='*'
-    legend=0
+    showselectfrom : bool = True 
+
+    legend : bool = False 
     dec=''
-    use_descriptions=True
+    use_descriptions : bool = True
     select_width=''
     select_height='200px'
     vline : list = field(default_factory=list)
     prefix_dict : dict = field(default_factory=dict)
-    add_var_name=False
+    add_var_name : bool = False
     short :any  = 0 
     multi :any = False 
     select_scenario : bool = False
-    prefix_dict
     
     """
       Plots the keept dataframes
@@ -711,9 +714,9 @@ class keep_plot_widget:
           dec (string, optional): decimals on the y-axis. Defaults to '0'.
           use_descriptions : Use the variable descriptions from the model 
           vline: List of vertical lines (position,text)
-          add_var_name: Add the variable name to description 
+          add_var_name: Add the variable name to description  
           short: Short, 1 2 cut down on the inpout fields 
-          select_scenario: >Select the scenarios which has to be displayed
+          select_scenario: If True, select the scenarios which has to be displayed
           prefix_dict: a dictionary of prefixes to select for instance countries {'prefix':'some text', ...}
           
 
@@ -733,6 +736,8 @@ class keep_plot_widget:
         options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
         self.old_current_per = copy(self.mmodel.current_per) 
         # print(f'Før {self.mmodel.current_per=}')
+        
+        
         with self.mmodel.set_smpl(*self.smpl):
             # print(f'efter set smpl  {self.mmodel.current_per=}')
             with self.mmodel.set_smpl_relative(self.relativ_start,0):
@@ -744,22 +749,30 @@ class keep_plot_widget:
         
         # Now variable selection 
 
+        allkeepvar = [set(df.columns) for df in self.mmodel.keep_solutions.values()]
+        keepvar = sorted(allkeepvar[0].intersection(*allkeepvar[1:]))   # keept variables in all experiments
 
         
-        self.wpat = widgets.Text(value= self.pat,placeholder='Type something',description='Display variables:',
+        wselectfrom = widgets.Text(value= self.selectfrom,placeholder='Type something',description='Display variables:',
                         layout={'width':'65%'},style={'description_width':'30%'})
         
-        self.wpat.layout.visibility = 'visible' if self.showvarpat else 'hidden'
+        wselectfrom.layout.visibility = 'visible' if self.showselectfrom else 'hidden'
 
-        keepvar = sorted (list(self.mmodel.keep_solutions.values())[0].columns)
+        gross_selectfrom = []        
+        def changeselectfrom(g):
+            nonlocal gross_selectfrom
+            _selectfrom = [s.upper() for s in self.mmodel.vlist(wselectfrom.value) if s in keepvar  ] if self.selectfrom else keepvar
+            gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v) for v in _selectfrom] 
+            try: # Only if this is done after the first call
+                selected_vars.options=gross_selectfrom
+                selected_vars.value  = [gross_selectfrom[0][1]]
+            except: 
+                ...
+        wselectfrom.observe(changeselectfrom,names='value',type='change')   
         
-        
-        # defaultvar = ([v for v in self.mmodel.vlist(self.pat) if v in keepvar][0],)
-        # print('******* selectfrom')
-        _selectfrom = [s.upper() for s in self.mmodel.vlist(self.selectfrom)] if self.selectfrom else keepvar
-        # _selectfrom = keepvar
-        # print(f'{_selectfrom=}')
-        gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v) for v in _selectfrom] 
+        changeselectfrom(None)
+            
+            
 
         
         # Now the selection of scenarios 
@@ -797,11 +810,7 @@ class keep_plot_widget:
         wscenario = HBox([scenariobase, scenarioselect])
         
         
-        
-        if self.select_scenario: 
-            ...
-        else: 
-            wscenario.layout.visibility = 'hidden'
+        wscenario.layout.visibility = 'visible' if self.select_scenario else 'hidden'
             
         
         
@@ -873,6 +882,7 @@ class keep_plot_widget:
             # find the variables which starts with the prefix 
             selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
                                     if any([variable.startswith(n)  for n in new_prefix]))
+            # print(f'{selected_prefix_var=}')
             # An exception is trigered but has no consequences     
             try:                      
                 selected_vars.options = selected_prefix_var # Sets the variables to be selected from 
@@ -889,7 +899,8 @@ class keep_plot_widget:
                 # print(f"{new_selection=}{current_suffix=}{g['old']=}")
             else:    
                 # we are where no prefix has been selected
-                selected_vars.value  = [selected_prefix_var[0][1]]
+                if len(selected_prefix_var):
+                    selected_vars.value  = [selected_prefix_var[0][1]]
                 
                    
         if len(self.prefix_dict): 
@@ -912,13 +923,28 @@ class keep_plot_widget:
         if self.short:
             vui = [select, options1, i_smpl]
         else:
-            vui = [wscenario, select, options1, options2, i_smpl]  
+            vui = [wselectfrom, wscenario, select, options1, options2, i_smpl]  
         vui =  vui[:-1] if self.short >= 2 else vui  
         
         self.datawidget= VBox(vui+[self.out_widget])
         # show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
         #                                     'scale': scale, 'legend': legend})
         # print('klar til register')
+        
+        
+    @property
+    def show(self):
+        display(self.datawidget)
+
+        
+        
+
+    def _repr_html_(self):
+        display( self.datawidget)
+        
+    def __repr__(self):
+        return ' '
+
         
     def explain(self, i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend= None):
         # print(f'Start explain:\n {self.mmodel.current_per[0]=}\n{selected_vars=}\n')
@@ -935,33 +961,32 @@ class keep_plot_widget:
         with self.mmodel.keepswitch(scenarios= self.scenarioselected):
             with self.mmodel.set_smpl(*smpl):
     
-                if self.multi: 
-                    self.keep_wiz_fig = self.mmodel.keep_plot_multi(variabler, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
-                                                        legend=legend, dec=self.dec, vline=self.vline)
-                else: 
-                    self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
-                                                        scale=scale, showtype=showtype,
-                                                        legend=legend, dec=self.dec, vline=self.vline)
-                    self.keep_wiz_fig = self.keep_wiz_figs[selected_vars[0]]   
-                    plt.close('all')
-        return self.keep_wiz_figs        
+                self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
+                                                    scale=scale, showtype=showtype,
+                                                    legend=legend, dec=self.dec, vline=self.vline)
+                plt.close('all')
+                return self.keep_wiz_figs  
+            
+            
         # print(f'Efter plot {self.mmodel.current_per=}')
 
 
     def  trigger(self,g):
-        self.mmodel.current_per = copy(self.old_current_per)        
+        self.mmodel.current_per = copy(self.old_current_per)     
+        
 
         values = {widname : wid.value for widname,wid in self.widget_dict.items() }
         # print(f'Triggerd:\n{values} \n Start trigger {self.mmodel.current_per=}\n')
-        figs = self.explain(**values)
-        if 0:
-            xxx = fig_to_image(self.keep_wiz_fig,format='svg')
-            self.out_widget.children  =  [widgets.HTML(xxx)]
-        else:
-            yyy = [widgets.HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='75%'))  
+        if len(values['selected_vars']):
+
+            figs = self.explain(**values)
+            yyy = [widgets.HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='90%'))  
                       for key,a_fig in figs.items() ]
             self.out_widget.children = yyy
-        # print(f'end  trigger {self.mmodel.current_per[0]=}')
+            self.out_widget.layout.visibility = 'visible'
+            # print(f'end  trigger {self.mmodel.current_per[0]=}')
+        else: 
+            self.out_widget.layout.visibility = 'hidden'
 
 
 @dataclass
