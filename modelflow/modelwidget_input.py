@@ -701,6 +701,7 @@ class keep_plot_widget:
     short :any  = 0 
     multi :any = False 
     select_scenario : bool = False
+    displaytype : str = 'tab' # or '' or accordium
     
     """
       Plots the keept dataframes
@@ -980,9 +981,24 @@ class keep_plot_widget:
         if len(values['selected_vars']):
 
             figs = self.explain(**values)
-            yyy = [widgets.HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='90%'))  
+            figlist = [widgets.HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='90%'))  
                       for key,a_fig in figs.items() ]
-            self.out_widget.children = yyy
+            
+            if self.displaytype in { 'tab' , 'accordion'}:
+                ...
+                tablist = {key:widgets.HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='90%'))  
+                          for key,a_fig in figs.items() }
+                wtab = widgets.Tab(figlist) if  self.displaytype  == 'tab' else  widgets.Accordion(figlist)
+                for i,key in enumerate(figs.keys()):
+                   wtab.set_title(i,key)
+                wtab.selected_index = 0   
+                res = [wtab]
+
+            else:     
+                res = figlist 
+            
+            
+            self.out_widget.children = res
             self.out_widget.layout.visibility = 'visible'
             # print(f'end  trigger {self.mmodel.current_per[0]=}')
         else: 
