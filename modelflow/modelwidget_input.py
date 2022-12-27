@@ -695,7 +695,7 @@ class keep_plot_widget:
     use_descriptions : bool = True
     select_width=''
     select_height='200px'
-    vline : list = field(default_factory=list)
+    vline : any = None
     prefix_dict : dict = field(default_factory=dict)
     add_var_name : bool = False
     short :any  = 0 
