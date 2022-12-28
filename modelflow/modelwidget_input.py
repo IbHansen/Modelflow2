@@ -986,8 +986,6 @@ class keep_plot_widget:
             
             if self.displaytype in { 'tab' , 'accordion'}:
                 ...
-                tablist = {key:widgets.HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='90%'))  
-                          for key,a_fig in figs.items() }
                 wtab = widgets.Tab(figlist) if  self.displaytype  == 'tab' else  widgets.Accordion(figlist)
                 for i,key in enumerate(figs.keys()):
                    wtab.set_title(i,key)
@@ -1004,7 +1002,52 @@ class keep_plot_widget:
         else: 
             self.out_widget.layout.visibility = 'hidden'
 
+@dataclass
+class savefigs_widget:
+    '''
+    A widget ó save figs from a dictionary of matplotlib figures
+    
 
+    '''
+    figs : dict =  field(default_factory=dict)
+    location : str = './graph'
+    addname : str  =  ''
+        
+    def __post_init__(self):
+        
+        wgo     = widgets.Button(description = 'Save charts to file',colour='green')
+        
+        wlocation =  widgets.Text(value = self.location,description='Save location:',
+                            layout={'width':'55%'},style={'description_width':'45%'})
+        wexperimentname = widgets.Text(value='Experiment_1',description='Name of these experiments:',
+                            layout={'width':'55%'},style={'description_width':'45%'})
+        waddname  = widgets.Text(value=self.addname,placeholder='If needed type a suffix',description='suffix for these charts:',
+                                    layout={'width':'55%'},style={'description_width':'45%'})
+
+        wextensions = widgets.SelectMultiple(value = ('svg',),options =  ['svg', 'pdf', 'png', 'eps'],description='Output type:',
+                                    layout={'width':'55%'},style={'description_width':'45%'},rows=4)
+        wxopen = widgets.Checkbox(value=True,description = 'Open location',disabled=False,
+                                     layout={'width':'55%'}    ,style={'description_width':'45%'})
+        
+        def go(g):
+            from modelclass import model 
+            model.savefigs(self.figs,
+                           location       = wlocation.value,
+                           experimentname = wexperimentname.value,
+                           addname        = waddname.value,
+                           extensions    =  wextensions.value,
+                           xopen           = wxopen.value)
+                           
+                           
+        wgo.on_click(go)
+        
+        self.datawidget = widgets.VBox([wgo,wexperimentname,wlocation,waddname,wextensions,wxopen])
+        
+        
+        
+        
+   
+        
 @dataclass
 class shinywidget:
     '''A to translate a widget to shiny widget '''

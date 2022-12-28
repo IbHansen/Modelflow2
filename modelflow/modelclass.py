@@ -4139,7 +4139,38 @@ class Display_Mixin():
             ax.yaxis.set_major_formatter(formatter)
 
         return ax
+    
+    @staticmethod
 
+    def savefigs(figs,location='./graph',experimentname='experiment1',addname = '', extensions=['svg'],xopen=True):
+        '''
+        figs: A dictionary of matplotlib figures
+        location: The folder in which to save the charts defaults: './graph'
+        experimentname: A subfolder where these charts are saved defalt: 'experiment1'
+        extensions: list of types of output from ['svg', 'pdf', 'png', 'eps'] default: ['svg']
+        addname: A name added to the variable name default: ''
+        open: If True open the location in a brswser
+        
+        '''
+        import webbrowser as wb
+    
+        folder = Path(location) / experimentname
+        folder.mkdir(parents=True,exist_ok=True)
+        print(f'The charts wil be saved here: {folder.absolute()}' )
+        for variable,fig in figs.items():
+            for extension in extensions: 
+                filename = f'{variable}{addname}.{extension}'
+                fig.savefig(folder / filename)
+                if xopen and 1: 
+                    try: 
+                        wb.open(folder / filename,new=2)
+                    except: 
+                        print(f"Can't open {folder / filename}")
+        if xopen:      
+            print('open ')
+            wb.open(folder.absolute(),new=1)
+            
+ 
     def keep_plot(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, showtype='level',
                   diff=False, diffpct = False, mul=1.0,
                   title='Show variables', legend=False, scale='linear', yunit='', ylabel='', dec='',
