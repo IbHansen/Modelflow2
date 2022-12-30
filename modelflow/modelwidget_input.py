@@ -702,6 +702,7 @@ class keep_plot_widget:
     multi :any = False 
     select_scenario : bool = False
     displaytype : str = 'tab' # or '' or accordium
+    show_save_dialog : bool = True
     
     """
       Plots the keept dataframes
@@ -711,7 +712,7 @@ class keep_plot_widget:
           pat (str, optional): a string of variables to select pr default. Defaults to '*'. 
           smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
           selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
-          legend (bool, optional)c: DESCRIPTION. legends or to the right of the curve. Defaults to 1.
+          legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
           dec (string, optional): decimals on the y-axis. Defaults to '0'.
           use_descriptions : Use the variable descriptions from the model 
           vline: List of vertical lines (position,text)
@@ -719,7 +720,8 @@ class keep_plot_widget:
           short: Short, 1 2 cut down on the inpout fields 
           select_scenario: If True, select the scenarios which has to be displayed
           prefix_dict: a dictionary of prefixes to select for instance countries {'prefix':'some text', ...}
-          
+          displaytype: string type one of ['tab','accordium','anything']
+          show_save_dialog: show a save dialog for the charts 
 
       Returns:
           None.
@@ -747,7 +749,7 @@ class keep_plot_widget:
                 show_per = copy(list(self.mmodel.current_per)[:])
         self.mmodel.current_per = copy(self.old_current_per)       
         
-        
+        self.save_dialog = savefigs_widget()
         # Now variable selection 
 
         allkeepvar = [set(df.columns) for df in self.mmodel.keep_solutions.values()]
@@ -957,7 +959,14 @@ class keep_plot_widget:
         else: 
             ldiff = diff
             diffpct = False
-            
+        self.save_dialog.waddname.value =(
+                    ('_level'   if showtype == 'level' else '_growth') +   
+                    ('_diff'    if ldiff     else ''  )+
+                    ('_diffpct' if diffpct   else '' ) + 
+                    ('_log'     if scale == 'log' else '')
+                    )
+        # print(self.save_dialog.addname)
+        
         # clear_output()
         with self.mmodel.keepswitch(scenarios= self.scenarioselected):
             with self.mmodel.set_smpl(*smpl):
@@ -995,8 +1004,8 @@ class keep_plot_widget:
             else:     
                 res = figlist 
             
-            
-            self.out_widget.children = res
+            self.save_dialog.figs = figs
+            self.out_widget.children = res + [self.save_dialog.datawidget]
             self.out_widget.layout.visibility = 'visible'
             # print(f'end  trigger {self.mmodel.current_per[0]=}')
         else: 
@@ -1018,30 +1027,40 @@ class savefigs_widget:
         wgo     = widgets.Button(description = 'Save charts to file',colour='green')
         
         wlocation =  widgets.Text(value = self.location,description='Save location:',
-                            layout={'width':'55%'},style={'description_width':'45%'})
+                            layout={'width':'55%'},style={'description_width':'35%'})
         wexperimentname = widgets.Text(value='Experiment_1',description='Name of these experiments:',
-                            layout={'width':'55%'},style={'description_width':'45%'})
-        waddname  = widgets.Text(value=self.addname,placeholder='If needed type a suffix',description='suffix for these charts:',
-                                    layout={'width':'55%'},style={'description_width':'45%'})
+                            layout={'width':'55%'},style={'description_width':'35%'})
+        self.waddname  = widgets.Text(value=self.addname,placeholder='If needed type a suffix',description='suffix for these charts:',
+                                    layout={'width':'55%'},style={'description_width':'35%'})
 
-        wextensions = widgets.SelectMultiple(value = ('svg',),options =  ['svg', 'pdf', 'png', 'eps'],description='Output type:',
-                                    layout={'width':'55%'},style={'description_width':'45%'},rows=4)
+        wextensions = widgets.SelectMultiple(value = ('svg',),
+                                             options =  ['svg', 'pdf', 'png', 'eps'],
+                                             description='Output type:',
+                                    layout={'width':'55%'},style={'description_width':'35%'},rows=4)
         wxopen = widgets.Checkbox(value=True,description = 'Open location',disabled=False,
-                                     layout={'width':'55%'}    ,style={'description_width':'45%'})
+                                     layout={'width':'25%'}    ,style={'description_width':'5%'})
+        wsavelocation =  widgets.Text(value = self.location,description='Saved at:',
+                            layout={'width':'55%'},style={'description_width':'35%'})
+        wsavelocation.layout.visibility = 'hidden'
         
         def go(g):
             from modelclass import model 
-            model.savefigs(self.figs,
+            # print(f'{self.figs.keys()}')
+            result = model.savefigs(self.figs,
                            location       = wlocation.value,
                            experimentname = wexperimentname.value,
-                           addname        = waddname.value,
+                           addname        = self.waddname.value,
                            extensions    =  wextensions.value,
                            xopen           = wxopen.value)
+            wsavelocation.description,wsavelocation.value = result
+            wsavelocation.layout.visibility = 'visible'
+            
                            
                            
         wgo.on_click(go)
         
-        self.datawidget = widgets.VBox([wgo,wexperimentname,wlocation,waddname,wextensions,wxopen])
+        self.datawidget = widgets.VBox([HBox([wgo,wxopen]),
+                        wexperimentname,wlocation,self.waddname,wextensions,wsavelocation])
         
         
         

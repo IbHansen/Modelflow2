@@ -4155,21 +4155,27 @@ class Display_Mixin():
         import webbrowser as wb
     
         folder = Path(location) / experimentname
-        folder.mkdir(parents=True,exist_ok=True)
-        print(f'The charts wil be saved here: {folder.absolute()}' )
+        # print(figs.keys())
+        try:
+            folder.mkdir(parents=True,exist_ok=True)
+        except: 
+            return ("!!!Can't open:",f'{folder}')
         for variable,fig in figs.items():
             for extension in extensions: 
                 filename = f'{variable}{addname}.{extension}'
+                # print(f'{folder / filename = }')
                 fig.savefig(folder / filename)
                 if xopen and 1: 
                     try: 
                         wb.open(folder / filename,new=2)
                     except: 
-                        print(f"Can't open {folder / filename}")
+                        return ("!!!Can't open:",f'{folder / filename}')
         if xopen:      
-            print('open ')
+            # print('open ')
             wb.open(folder.absolute(),new=1)
             
+        return ('The charts wil be saved here:',f'{folder.absolute()}') 
+           
  
     def keep_plot(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, showtype='level',
                   diff=False, diffpct = False, mul=1.0,
