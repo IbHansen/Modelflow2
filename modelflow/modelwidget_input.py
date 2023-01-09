@@ -686,6 +686,7 @@ class keep_plot_widget:
     # showvarpat : bool = True 
     smpl=('', '')
     relativ_start : int = 0 
+    selected  : str =''
     
     selectfrom  : str ='*'
     showselectfrom : bool = True 
@@ -703,6 +704,8 @@ class keep_plot_widget:
     select_scenario : bool = False
     displaytype : str = 'tab' # or '' or accordium
     show_save_dialog : bool = True
+    save_location :str = './graph'
+    switch :bool = False
     
     """
       Plots the keept dataframes
@@ -719,9 +722,12 @@ class keep_plot_widget:
           add_var_name: Add the variable name to description  
           short: Short, 1 2 cut down on the inpout fields 
           select_scenario: If True, select the scenarios which has to be displayed
+          switch : if True use the scenarios in mmodel.basedf and mmodel.lastdf 
           prefix_dict: a dictionary of prefixes to select for instance countries {'prefix':'some text', ...}
-          displaytype: string type one of ['tab','accordium','anything']
+          
+          : string type one of ['tab','accordium','anything']
           show_save_dialog: show a save dialog for the charts 
+          save_location: Default save location 
 
       Returns:
           None.
@@ -734,13 +740,15 @@ class keep_plot_widget:
     
     def __post_init__(self):
         from copy import copy 
+        
         minper = self.mmodel.lastdf.index[0]
         maxper = self.mmodel.lastdf.index[-1]
         options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
         self.old_current_per = copy(self.mmodel.current_per) 
         # print(f'Før {self.mmodel.current_per=}')
         
-        
+        self.select_scenario = False if self.switch else self.select_scenario
+       
         with self.mmodel.set_smpl(*self.smpl):
             # print(f'efter set smpl  {self.mmodel.current_per=}')
             with self.mmodel.set_smpl_relative(self.relativ_start,0):
@@ -749,7 +757,7 @@ class keep_plot_widget:
                 show_per = copy(list(self.mmodel.current_per)[:])
         self.mmodel.current_per = copy(self.old_current_per)       
         
-        self.save_dialog = savefigs_widget()
+        self.save_dialog = savefigs_widget(location = self.save_location)
         # Now variable selection 
 
         allkeepvar = [set(df.columns) for df in self.mmodel.keep_solutions.values()]
@@ -765,7 +773,8 @@ class keep_plot_widget:
         def changeselectfrom(g):
             nonlocal gross_selectfrom
             _selectfrom = [s.upper() for s in self.mmodel.vlist(wselectfrom.value) if s in keepvar  ] if self.selectfrom else keepvar
-            gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v) for v in _selectfrom] 
+            gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v)
+                                 for v in _selectfrom] 
             try: # Only if this is done after the first call
                 selected_vars.options=gross_selectfrom
                 selected_vars.value  = [gross_selectfrom[0][1]]
@@ -777,7 +786,6 @@ class keep_plot_widget:
             
             
 
-        
         # Now the selection of scenarios 
         
         gross_keys = list(self.mmodel.keep_solutions.keys())
@@ -926,7 +934,10 @@ class keep_plot_widget:
         if self.short:
             vui = [select, options1, i_smpl]
         else:
-            vui = [wselectfrom, wscenario, select, options1, options2, i_smpl]  
+            if self.select_scenario:
+                vui = [wselectfrom, wscenario, select, options1, options2, i_smpl]  
+            else: 
+                vui = [wselectfrom,            select, options1, options2, i_smpl]  
         vui =  vui[:-1] if self.short >= 2 else vui  
         
         self.datawidget= VBox(vui+[self.out_widget])
@@ -968,7 +979,7 @@ class keep_plot_widget:
         # print(self.save_dialog.addname)
         
         # clear_output()
-        with self.mmodel.keepswitch(scenarios= self.scenarioselected):
+        with self.mmodel.keepswitch(switch=self.switch,scenarios= self.scenarioselected):
             with self.mmodel.set_smpl(*smpl):
     
                 self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 

@@ -446,21 +446,21 @@ class BaseModel():
              basename = self.basename if hasattr(self, 'basename') else 'Baseline solution'
              lastname = self.lastname if hasattr(self, 'lastname') else 'Last solution'
              self.keep_solutions = {basename:self.basedf.copy() , lastname:self.lastdf.copy()}
-         
-         scenariolist = [k for k in self.keep_solutions.keys()]
-         if scenarios == '*':
-             selected = scenariolist
          else:
-             sep= ' ' if '*' in scenarios or '?' in scenarios else '|' 
-             selected = [v for  up in scenarios.split(sep) for v in sorted(fnmatch.filter(scenariolist, up))]
-         # print(f'{selected=}')
-         # print(f'{scenariolist=}')
-         
-         if len(selected):
-             self.keep_solutions = {v:self.keep_solutions[v] for  v in selected}
-         else: 
-             print('No scenarios match the scenarios you try')
-             self.keep_solutions = old_keep_solutions
+             scenariolist = [k for k in self.keep_solutions.keys()]
+             if scenarios == '*':
+                 selected = scenariolist
+             else:
+                 sep= ' ' if '*' in scenarios or '?' in scenarios else '|' 
+                 selected = [v for  up in scenarios.split(sep) for v in sorted(fnmatch.filter(scenariolist, up))]
+             # print(f'{selected=}')
+             # print(f'{scenariolist=}')
+             
+             if len(selected):
+                 self.keep_solutions = {v:self.keep_solutions[v] for  v in selected}
+             else: 
+                 print('No scenarios match the scenarios you try')
+                 self.keep_solutions = old_keep_solutions
          
          yield
                      
