@@ -476,6 +476,7 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=0.90,
      
     
     ''' 
+    plt.ioff()
     if splitchar:
         out=df.pipe(lambda df_: df_.rename(columns={v: v.split(splitchar)[ppos] for v in df_.columns}))
     else:

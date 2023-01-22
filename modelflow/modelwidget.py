@@ -117,7 +117,7 @@ class slidewidget:
     expname      : str =  "Carbon tax rate, US$ per tonn "
     def __post_init__(self):
         ...
-        
+        plt.ioff()
         wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
         walt  = widgets.Label(value = self.altname,layout={'width':'8%', 'border':"hide"})
         wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})
@@ -497,10 +497,10 @@ class htmlwidget_fig:
     
     def __post_init__(self):
         ...
+        # print(f'Create {self.expname}')
         
         self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
    
-    
         image = fig_to_image(self.figs,format=self.format)
         self.whtml = widgets.HTML(image)
         self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
@@ -530,9 +530,10 @@ class visshow:
         
     def __post_init__(self):
         ...
-        from IPython import get_ipython
-        get_ipython().magic('matplotlib notebook') 
+        # from IPython import get_ipython
+        # get_ipython().magic('matplotlib notebook') 
         # print(plt.get_backend())
+        # print('hej haj')
         this_vis = self.mmodel[self.varpat]
         self.out_dict = {}
         self.out_dict['Baseline'] ={'df':this_vis.base}        
@@ -545,50 +546,66 @@ class visshow:
         
         out = widgets.Output() 
         self.out_to_data = {key:
-            htmlwidget_df(self.mmodel,value['df'].df.T,expname=key,
+            htmlwidget_df(self.mmodel,value['df'].df.head(10).T,expname=key,
 
                           percent=value.get('percent',False))                           
                            for key,value in self.out_dict.items()}
             
-        with out: # to suppress the display of matplotlib creation 
-            self.out_to_figs ={key:
-                 htmlwidget_fig(value['df'].rename().plot(top=0.9,title=''),expname='')               
-                              for key,value in self.out_dict.items() }
-                
+        # with out: # to suppress the display of matplotlib creation 
+        self.out_to_figs ={key:
+             htmlwidget_fig(value['df'].rename().plot(top=1.0,title=''),expname='')               
+                          for key,value in self.out_dict.items() }
+            
        
         tabnew =  {key: tabwidget({'Charts':self.out_to_figs[key],'Data':self.out_to_data[key]},selected_index=0) for key in self.out_to_figs.keys()}
-       
+        # print('tabnew created')
         exodif = self.mmodel.exodif()
         exonames = exodif.columns        
         exoindex = exodif.index
-        if len(exonames):
-            exobase = self.mmodel.basedf.loc[exoindex,exonames]
-            exolast = self.mmodel.lastdf.loc[exoindex,exonames]
+        
+        exoindexstart = max(self.mmodel.lastdf.index.get_loc(exodif.index[0]),self.mmodel.lastdf.index.get_loc(self.mmodel.current_per[0]))
+        exoindexend   = min(self.mmodel.lastdf.index.get_loc(exodif.index[-1]),self.mmodel.lastdf.index.get_loc(self.mmodel.current_per[-1]))
+        exoindexnew = self.mmodel.lastdf.index[exoindexstart:exoindexend]
+        
+        # print(f'{exoindexstart=} {exoindexend=}   {exoindexnew=}')
+        if 1:
+            rows,cols  =exodif.loc[exoindexnew,:].shape
+            exosize = rows*cols 
             
-            out_exodif = htmlwidget_df(self.mmodel,exodif.T)
-            out_exobase = htmlwidget_df(self.mmodel,exobase.T)
-            out_exolast = htmlwidget_df(self.mmodel,exolast.T)
-        else: 
-            out_exodif = htmlwidget_label(expname = 'No difference in exogenous')
-            out_exobase =  htmlwidget_label(expname = 'No difference in exogenous')
-            out_exolast =  htmlwidget_label(expname = 'No difference in exogenous')
+            if len(exonames):
+                if exosize < 2000 : 
+                    exobase = self.mmodel.basedf.loc[exoindexnew,exonames]
+                    exolast = self.mmodel.lastdf.loc[exoindexnew,exonames]
+                    
+                    out_exodif = htmlwidget_df(self.mmodel,exodif.loc[exoindexnew,:].T)
+                    out_exobase = htmlwidget_df(self.mmodel,exobase.T)
+                    out_exolast = htmlwidget_df(self.mmodel,exolast.T)
+                else: 
+                    out_exodif = htmlwidget_label(expname = 'To many to display ')
+                    out_exobase =  htmlwidget_label(expname = 'To many to display ')
+                    out_exolast =  htmlwidget_label(expname = 'To many to display ')
+            else: 
+                out_exodif = htmlwidget_label(expname = 'No difference in exogenous')
+                out_exobase =  htmlwidget_label(expname = 'No difference in exogenous')
+                out_exolast =  htmlwidget_label(expname = 'No difference in exogenous')
+                
             
-        
-        out_tab_info = tabwidget({'Delta exogenous':out_exodif,
-                                  'Baseline exogenous':out_exobase,
-                                  'Alt. exogenous':out_exolast},selected_index=0)
-        
-        tabnew['Exo info'] = out_tab_info
-        
+            out_tab_info = tabwidget({'Delta exogenous':out_exodif,
+                                      'Baseline exogenous':out_exobase,
+                                      'Alt. exogenous':out_exolast},selected_index=0)
+            
+            tabnew['Exo info'] = out_tab_info
+            # print('exo inf  created')
+
         this =   tabwidget(tabnew,selected_index=0)
-            
+        # print('this created ')   
             
         
         self.datawidget = this.datawidget  
         if self.show_on:
             ...
             display(self.datawidget)
-        get_ipython().magic('matplotlib inline') 
+        # get_ipython().magic('matplotlib inline') 
     
 
     def __repr__(self):

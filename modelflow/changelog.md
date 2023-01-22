@@ -49,3 +49,9 @@ modelnormalize Normalized_frml __repl__ deleted else we think the frml is empty 
 modelGrabwf2 suppressing of pandas performance warnng when calculating @ELEM values 
 modelGrabwf2 estimation coiefficents are now automaticly replacing the <equattion>.coef(?) so less need for eviews run lines and country trans. 
 release 1.45 in conda 
+new modelwidget_input with both opdate widget and display widget 
+now both support of colab and binder in jupytyer book 
+changed jupyterbook location to modelflow manual
+if modelload fails with filename it will try to download from a common .pcim model repo (name of which can be changed)
+modelload can load a .pcim file from github or other url 
+

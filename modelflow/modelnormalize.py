@@ -47,11 +47,11 @@ class Normalized_frml:
     def fdict(self):
         return dataclasses.asdict(self)
     
-    def _repr_html_(self):
-        print(f'{self}')
-        
-    # def __repr__(self):
+    # def _repr_html_(self):
     #     print(f'{self}')
+        
+    def __repr__(self):
+        return  f'{self}'
         
         
     

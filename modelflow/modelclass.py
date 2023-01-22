@@ -4691,8 +4691,29 @@ class Json_Mixin():
             return json.dumps(dumpjson)
 
     @classmethod
-    def modelload(cls, infile, funks=[], run=False, keep_json=False, **kwargs):
+    def modelload(cls, infile, funks=[], run=False, keep_json=False, 
+         default_url=r'https://raw.githubusercontent.com/IbHansen/modelflow-manual/main/model_repo/',**kwargs):
+        '''
+             
+
+             Parameters
+             ----------
+             infile : A file name or an url with a .pcim file
+             funks : Functions to use in the resulting model
+             run : simulate the model with the saved time and options 
+             keep_json : save a dict (self.json_keep) in the model instance 
+             default_url : TYPE, optional
+                 Where to look if the file is not avaiable. The default is r'https://raw.githubusercontent.com/IbHansen/modelflow-manual/main/model_repo/'.
+             **kwargs : TYPE
+                 DESCRIPTION.
+
+             Returns
+             -------
+             None.
+
+             '''
         '''Loads a model and an solution '''
+        
         import urllib.request
 
         def make_current_from_quarters(base, json_current_per):
@@ -4715,9 +4736,16 @@ class Json_Mixin():
         try:
             with open(infile, 'rt') as f:
                 input = json.load(f)
+                print(f'file read:  {Path(infile).resolve()}')  
+
         except: 
-            print(f'Open file from URL:  {infile}')  
-            with urllib.request.urlopen(infile) as f:
+            if infile.startswith(r'https:'):
+                urlfile = infile
+            else: 
+                urlfile = (Path(default_url) / Path(infile).name).as_posix().replace('https:/','https://')
+                
+            print(f'Open file from URL:  {urlfile}')  
+            with urllib.request.urlopen(urlfile) as f:
                 input = json.load(f)
 
         version = input['version']
@@ -4745,6 +4773,7 @@ class Json_Mixin():
             res = mmodel(lastdf, current_per[0], current_per[-1], **kwargs)
             return mmodel, res
         else:
+            mmodel.basedf = lastdf.copy()  
             return mmodel, lastdf
 
 
@@ -6624,7 +6653,7 @@ class Dash_Mixin():
             out = Dash_graph(self,*arg,**kwargs)
             return out 
         except Exception as e:
-            print(f'No Dash, str(e)')
+            print(f'No Dash, {str(e)}')
             return None
             
 
@@ -7091,4 +7120,5 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     xx = mmodel(df)
     yy = mmodel(df2)
     
-    zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
+    # zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
+    zz = model.modelload(r'pak.pcim')
