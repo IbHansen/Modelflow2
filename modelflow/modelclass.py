@@ -153,6 +153,7 @@ class BaseModel():
                 self.use_preorder = False
             self.keep_solutions = {}
             self.set_var_description(var_description)
+            self.group_dict = {} 
         return
 
     @classmethod
@@ -4678,6 +4679,7 @@ class Json_Mixin():
             'equations_latex': self.equations_latex if hasattr(self, 'equations_latex') else '',
             'keep_solutions': {k:v.to_json() for k,v in self.keep_solutions.items()} if keep else {},
             'wb_MFMSAOPTIONS': self.wb_MFMSAOPTIONS if hasattr(self, 'wb_MFMSAOPTIONS') else '',
+            'group_dict'     : self.group_dict,
 
  
         }
@@ -4760,6 +4762,7 @@ class Json_Mixin():
         mmodel.equations_latex = input.get('equations_latex', None)
         if input.get('wb_MFMSAOPTIONS', None) : mmodel.wb_MFMSAOPTIONS = input.get('wb_MFMSAOPTIONS', None)
         mmodel.keep_solutions = {k : pd.read_json(jdf) for k,jdf in input.get('keep_solutions',{}).items()}
+        mmodel.group_dict = input.get('group_dict', {})
         if keep_json:
             mmodel.json_keep = input
 

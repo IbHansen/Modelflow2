@@ -702,7 +702,7 @@ class keep_plot_widget:
     short :any  = 0 
     multi :any = False 
     select_scenario : bool = False
-    displaytype : str = 'tab' # or '' or accordium
+    displaytype : str = 'tab' # or '' or accordion
     show_save_dialog : bool = True
     save_location :str = './graph'
     switch :bool = False
@@ -725,7 +725,7 @@ class keep_plot_widget:
           switch : if True use the scenarios in mmodel.basedf and mmodel.lastdf 
           prefix_dict: a dictionary of prefixes to select for instance countries {'prefix':'some text', ...}
           
-          : string type one of ['tab','accordium','anything']
+          displaytype : string type one of ['tab','accordion','anything']
           show_save_dialog: show a save dialog for the charts 
           save_location: Default save location 
 
@@ -872,6 +872,7 @@ class keep_plot_widget:
        
         
         def get_prefix(g):
+            from modelclass import model
             ''' this function is triggered when the prefix selection is changed. Used only when a  prefix_dict has ben set. 
             
             g['new]'] contains the new prefix
@@ -891,8 +892,19 @@ class keep_plot_widget:
             new_prefix = g['new']  # returns the selected prefix as tuple as therre can be more 
             # print(new_prefix)
             # find the variables which starts with the prefix 
-            selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
-                                    if any([variable.startswith(n)  for n in new_prefix]))
+            if 0: # only prefix
+                selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
+                                        if any([variable.startswith(n) 
+                                                
+                                                for n in new_prefix]))
+            else: 
+                gross_selectfrom_vars = [variable for des,variable in gross_selectfrom ]
+                gross_pat  = ' '.join([ppat for ppat in new_prefix])
+                selected_match_var = set(model.list_names(gross_selectfrom_vars,gross_pat))
+                
+                selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
+                                        if variable in selected_match_var)
+                
             # print(f'{selected_prefix_var=}')
             # An exception is trigered but has no consequences     
             try:                      
@@ -1007,8 +1019,8 @@ class keep_plot_widget:
             if self.displaytype in { 'tab' , 'accordion'}:
                 ...
                 wtab = widgets.Tab(figlist) if  self.displaytype  == 'tab' else  widgets.Accordion(figlist)
-                for i,key in enumerate(figs.keys()):
-                   wtab.set_title(i,key)
+                for i,v in enumerate(figs.keys()):
+                   wtab.set_title(i,f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}')
                 wtab.selected_index = 0   
                 res = [wtab]
 
