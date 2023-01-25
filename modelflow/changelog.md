@@ -54,4 +54,7 @@ now both support of colab and binder in jupytyer book
 changed jupyterbook location to modelflow manual
 if modelload fails with filename it will try to download from a common .pcim model repo (name of which can be changed)
 modelload can load a .pcim file from github or other url 
+modelload will - in case a .pcim file is not found - load from githuib repo 
+modelwidget_input.keep_plot_widget is now impemented , 
+.group_dict is saved whem model is dumped. Used as grouping in keep_plot_widget 
 
