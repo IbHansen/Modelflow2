@@ -4533,7 +4533,15 @@ class Display_Mixin():
         display(ui)
         display(show)
         return
-
+    
+    def keep_plot_widget(self,*args,**kwargs):
+        import modelwidget_input
+        widget = modelwidget_input.keep_plot_widget(self,*args,**kwargs)
+        return widget
+        
+        ...
+    
+    
     @staticmethod
     def display_toc(text='**Jupyter notebooks in this and all subfolders**',all=False):
         '''In a jupyter notebook this function displays a clickable table of content of all 

@@ -681,6 +681,37 @@ def fig_to_image(fig,format='svg'):
 
 @dataclass
 class keep_plot_widget:
+    
+    """
+      Plots the keept dataframes
+
+      Args:
+          :mmodel : a modelflow model instance 
+          :pat (str, optional): a string of variables to select pr default. Defaults to '*'.  
+          smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
+          selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
+          legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
+          dec (string, optional): decimals on the y-axis. Defaults to '0'.
+          use_descriptions : Use the variable descriptions from the model 
+          vline: List of vertical lines (position,text)
+          add_var_name: Add the variable name to description  
+          short: Short, 1 2 cut down on the inpout fields 
+          select_scenario: If True, select the scenarios which has to be displayed
+          switch : if True use the scenarios in mmodel.basedf and mmodel.lastdf 
+          prefix_dict: a dictionary of prefixes to select for instance countries {'prefix':'some text', ...}
+          
+          displaytype : string type one of ['tab','accordion','anything']
+          save_location: Default save location 
+
+      Returns:
+          None.
+
+      self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
+      quality files. 
+
+    """
+
+    
     mmodel : any     # a model 
     # pat : str ='*'
     # showvarpat : bool = True 
@@ -697,46 +728,18 @@ class keep_plot_widget:
     select_width=''
     select_height='200px'
     vline : any = None
-    prefix_dict : dict = field(default_factory=dict)
+    group_dict : dict = field(default_factory=dict)
+    use_group_dict : bool = True 
     add_var_name : bool = False
     short :any  = 0 
     multi :any = False 
     select_scenario : bool = False
     displaytype : str = 'tab' # or '' or accordion
-    show_save_dialog : bool = True
     save_location :str = './graph'
     switch :bool = False
+    use_smpl : bool = False 
     
-    """
-      Plots the keept dataframes
-
-      Args:
-          mmodel : a modelflow model instance 
-          pat (str, optional): a string of variables to select pr default. Defaults to '*'. 
-          smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
-          selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
-          legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
-          dec (string, optional): decimals on the y-axis. Defaults to '0'.
-          use_descriptions : Use the variable descriptions from the model 
-          vline: List of vertical lines (position,text)
-          add_var_name: Add the variable name to description  
-          short: Short, 1 2 cut down on the inpout fields 
-          select_scenario: If True, select the scenarios which has to be displayed
-          switch : if True use the scenarios in mmodel.basedf and mmodel.lastdf 
-          prefix_dict: a dictionary of prefixes to select for instance countries {'prefix':'some text', ...}
-          
-          displaytype : string type one of ['tab','accordion','anything']
-          show_save_dialog: show a save dialog for the charts 
-          save_location: Default save location 
-
-      Returns:
-          None.
-
-      self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
-      quality files. 
-
-    """
-
+  
     
     def __post_init__(self):
         from copy import copy 
@@ -744,6 +747,7 @@ class keep_plot_widget:
         minper = self.mmodel.lastdf.index[0]
         maxper = self.mmodel.lastdf.index[-1]
         options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
+        
         self.old_current_per = copy(self.mmodel.current_per) 
         # print(f'Før {self.mmodel.current_per=}')
         
@@ -768,7 +772,10 @@ class keep_plot_widget:
                         layout={'width':'65%'},style={'description_width':'30%'})
         
         wselectfrom.layout.visibility = 'visible' if self.showselectfrom else 'hidden'
-
+        
+        self.wxopen = widgets.Checkbox(value=False,description = 'Allow save figures',disabled=False,
+                                     layout={'width':'25%'}    ,style={'description_width':'5%'})
+        
         gross_selectfrom = []        
         def changeselectfrom(g):
             nonlocal gross_selectfrom
@@ -781,6 +788,7 @@ class keep_plot_widget:
             except: 
                 ...
         wselectfrom.observe(changeselectfrom,names='value',type='change')   
+        self.wxopen.observe(self.trigger,names='value',type='change')
         
         changeselectfrom(None)
             
@@ -788,17 +796,21 @@ class keep_plot_widget:
 
         # Now the selection of scenarios 
         
-        gross_keys = list(self.mmodel.keep_solutions.keys())
         
-        
-        scenariobase = Select(options = gross_keys, 
-                              value = gross_keys[0],
-                                           description='First scenario',
-                                           layout=Layout(width='50%', font="monospace"))
-        scenarioselect = SelectMultiple(options = [s for s in gross_keys if not s == scenariobase.value],
-                                        value=  [s for s in gross_keys if not s == scenariobase.value],
-                                        description = 'Next',
-                                           layout=Layout(width='50%', font="monospace"))
+        with self.mmodel.keepswitch(switch=self.switch,scenarios= '*'):
+            gross_keys = list(self.mmodel.keep_solutions.keys())
+       
+            scenariobase = Select(options = gross_keys, 
+                                  value = gross_keys[0],
+                                               description='First scenario',
+                                               layout=Layout(width='50%', font="monospace"))
+            scenarioselect = SelectMultiple(options = [s for s in gross_keys if not s == scenariobase.value],
+                                            value=  [s for s in gross_keys if not s == scenariobase.value],
+                                            description = 'Next',
+                                               layout=Layout(width='50%', font="monospace"))
+            keep_keys = list(self.mmodel.keep_solutions.keys())
+            self.scenarioselected = '|'.join(keep_keys)
+            keep_first = keep_keys[0]
 
         
         def changescenariobase(g):
@@ -837,9 +849,16 @@ class keep_plot_widget:
 
         description_width = 'initial'
         description_width_long = 'initial'
-        keep_keys = list(self.mmodel.keep_solutions.keys())
-        self.scenarioselected = '|'.join(keep_keys)
-        keep_first = keep_keys[0]
+        
+        if self.use_group_dict:
+            if len(self.group_dict):
+                self.prefix_dict = self.group_dict
+            elif hasattr(self.mmodel,'group_dict'):
+                self.prefix_dict = self.mmodel.group_dict
+            else: 
+                self.prefix_dict = {}
+                
+        
         select_prefix = [(c,iso) for iso,c in self.prefix_dict.items()]
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
                                       max=maxper, layout=Layout(width='75%'), description='Show interval')
@@ -923,7 +942,7 @@ class keep_plot_widget:
             else:    
                 # we are where no prefix has been selected
                 if len(selected_prefix_var):
-                    selected_vars.value  = [selected_prefix_var[0][1]]
+                    selected_vars.value  = [varname for des,varname in  selected_prefix_var]
                 
                    
         if len(self.prefix_dict): 
@@ -942,15 +961,15 @@ class keep_plot_widget:
             selected_vars.value  = [gross_selectfrom[0][1]]
 
         options1 = HBox([diff]) if self.short >=2 else HBox([diff,legend])
-        options2 = HBox([scale, showtype])
+        options2 = HBox([scale, showtype, self.wxopen])
         if self.short:
-            vui = [select, options1, i_smpl]
+            vui = [select, options1,]
         else:
             if self.select_scenario:
-                vui = [wselectfrom, wscenario, select, options1, options2, i_smpl]  
+                vui = [wscenario, select, options1, options2,]  
             else: 
-                vui = [wselectfrom,            select, options1, options2, i_smpl]  
-        vui =  vui[:-1] if self.short >= 2 else vui  
+                vui = [           select, options1, options2,]  
+        vui =  vui + [i_smpl] if self.use_smpl else vui 
         
         self.datawidget= VBox(vui+[self.out_widget])
         # show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
@@ -1028,7 +1047,7 @@ class keep_plot_widget:
                 res = figlist 
             
             self.save_dialog.figs = figs
-            self.out_widget.children = res + [self.save_dialog.datawidget]
+            self.out_widget.children = (res + [self.save_dialog.datawidget]) if self.wxopen.value else res
             self.out_widget.layout.visibility = 'visible'
             # print(f'end  trigger {self.mmodel.current_per[0]=}')
         else: 
