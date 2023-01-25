@@ -686,8 +686,7 @@ class keep_plot_widget:
       Plots the keept dataframes
 
       Args:
-          :mmodel : a modelflow model instance 
-          :pat (str, optional): a string of variables to select pr default. Defaults to '*'.  
+          mmodel : a modelflow model instance 
           smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
           selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
           legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
@@ -698,13 +697,17 @@ class keep_plot_widget:
           short: Short, 1 2 cut down on the inpout fields 
           select_scenario: If True, select the scenarios which has to be displayed
           switch : if True use the scenarios in mmodel.basedf and mmodel.lastdf 
-          prefix_dict: a dictionary of prefixes to select for instance countries {'prefix':'some text', ...}
+          group_dict: a dictionary of variable pattern  to select for instance countries
           
           displaytype : string type one of ['tab','accordion','anything']
           save_location: Default save location 
+          
+      property: 
+          show: Display the widget
+          datawidget: the actual widget 
 
       Returns:
-          None.
+          keep_plot_widget instance .
 
       self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
       quality files. 

@@ -4539,7 +4539,6 @@ class Display_Mixin():
         widget = modelwidget_input.keep_plot_widget(self,*args,**kwargs)
         return widget
         
-        ...
     
     
     @staticmethod
@@ -4660,8 +4659,8 @@ class Display_Mixin():
 
         except:
             print('modelflow_auto not run')
-
-
+import modelwidget_input
+Display_Mixin.keep_plot_widget.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
 class Json_Mixin():
     '''This mixin class can dump a model and solution
     as json serialiation to a file. 
