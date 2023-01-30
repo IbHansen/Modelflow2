@@ -346,3 +346,4 @@ if __name__ == '__main__':
     fixleads(' 0.2121303706720161 * D( LOG(QLHP), 0, 1 )           + -0.04133299713432281 * D( LOG(QLHP(1)), 0, 1 )           + 0.9805787292172398 * ZLHP(1)           + -0.1948471451936957 * ZLHP(2) ')     
     xx = normal('a = n(-1)',add_add_factor=0,make_fitted = 1)
     xx.eviews = 'ffff '
+    normal('a_{b} = D( LOG(QLHP_{ee}(+1)), 0, 1 )').fprint

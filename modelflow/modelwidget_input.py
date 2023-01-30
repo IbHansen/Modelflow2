@@ -750,6 +750,7 @@ class keep_plot_widget:
         minper = self.mmodel.lastdf.index[0]
         maxper = self.mmodel.lastdf.index[-1]
         options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
+        self.first_prefix = True 
         
         self.old_current_per = copy(self.mmodel.current_per) 
         # print(f'Før {self.mmodel.current_per=}')
@@ -937,13 +938,14 @@ class keep_plot_widget:
                 
             # print(f'{current_suffix=} \n{selected_prefix_var=}')
 
-            if current_suffix:
+            if not self.first_prefix:
                 new_selection   = [f'{n}{c}' for c in current_suffix for n in new_prefix
                                         if f'{n}{c}' in {s  for p,s in selected_prefix_var}]
                 selected_vars.value  = new_selection 
                 # print(f"{new_selection=}{current_suffix=}{g['old']=}")
             else:    
                 # we are where no prefix has been selected
+                self.first_prefix = False 
                 if len(selected_prefix_var):
                     selected_vars.value  = [varname for des,varname in  selected_prefix_var]
                 

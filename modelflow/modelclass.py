@@ -4291,6 +4291,10 @@ class Display_Mixin():
                     # breakpoint()
                     location = parent / f'{stem}_{v}{suffix}'
                     f.savefig(location)
+            if showfig:
+                ...
+                for f in figs.values(): 
+                    display(f)
 
             return figs
         except ZeroDivisionError:
@@ -4539,6 +4543,11 @@ class Display_Mixin():
         widget = modelwidget_input.keep_plot_widget(self,*args,**kwargs)
         return widget
         
+    def keep_show(self,*args,**kwargs):
+       import modelwidget_input
+       widget = modelwidget_input.keep_plot_widget(self,*args,**kwargs)
+       return widget
+       
     
     
     @staticmethod
@@ -4661,6 +4670,7 @@ class Display_Mixin():
             print('modelflow_auto not run')
 import modelwidget_input
 Display_Mixin.keep_plot_widget.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
+Display_Mixin.keep_show.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
 class Json_Mixin():
     '''This mixin class can dump a model and solution
     as json serialiation to a file. 

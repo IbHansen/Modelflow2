@@ -534,6 +534,7 @@ class visshow:
         # get_ipython().magic('matplotlib notebook') 
         # print(plt.get_backend())
         # print('hej haj')
+        plt.ioff() 
         this_vis = self.mmodel[self.varpat]
         self.out_dict = {}
         self.out_dict['Baseline'] ={'df':this_vis.base}        
@@ -546,7 +547,7 @@ class visshow:
         
         out = widgets.Output() 
         self.out_to_data = {key:
-            htmlwidget_df(self.mmodel,value['df'].df.head(10).T,expname=key,
+            htmlwidget_df(self.mmodel,value['df'].df.T,expname=key,
 
                           percent=value.get('percent',False))                           
                            for key,value in self.out_dict.items()}
@@ -563,16 +564,17 @@ class visshow:
         exonames = exodif.columns        
         exoindex = exodif.index
         
-        exoindexstart = max(self.mmodel.lastdf.index.get_loc(exodif.index[0]),self.mmodel.lastdf.index.get_loc(self.mmodel.current_per[0]))
-        exoindexend   = min(self.mmodel.lastdf.index.get_loc(exodif.index[-1]),self.mmodel.lastdf.index.get_loc(self.mmodel.current_per[-1]))
-        exoindexnew = self.mmodel.lastdf.index[exoindexstart:exoindexend]
         
         # print(f'{exoindexstart=} {exoindexend=}   {exoindexnew=}')
         if 1:
-            rows,cols  =exodif.loc[exoindexnew,:].shape
-            exosize = rows*cols 
             
             if len(exonames):
+                exoindexstart = max(self.mmodel.lastdf.index.get_loc(exodif.index[0]),self.mmodel.lastdf.index.get_loc(self.mmodel.current_per[0]))
+                exoindexend   = min(self.mmodel.lastdf.index.get_loc(exodif.index[-1]),self.mmodel.lastdf.index.get_loc(self.mmodel.current_per[-1]))
+                exoindexnew = self.mmodel.lastdf.index[exoindexstart:exoindexend]
+                rows,cols  =exodif.loc[exoindexnew,:].shape
+                exosize = rows*cols 
+
                 if exosize < 2000 : 
                     exobase = self.mmodel.basedf.loc[exoindexnew,exonames]
                     exolast = self.mmodel.lastdf.loc[exoindexnew,exonames]

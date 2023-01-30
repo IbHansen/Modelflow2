@@ -234,6 +234,8 @@ def latextotxt(input,dynare=False,bankadd=False):
            r'\min':'min',
            r'\max':'max',   
            r'\rho':'rho',   
+           r'\tau':'tau',   
+           r'\sigma':'sigma',   
            r'&':'',
            r'\\':'',
            r'[':'(',
@@ -328,6 +330,7 @@ def latextotxtnew(input):
            'logit^{-1}' : 'logit_inverse',
            r'\{'      : '{',
            r'\}'      : '}',
+           r'\sigma'  :'sigma',
 
           
            }
