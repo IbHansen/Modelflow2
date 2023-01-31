@@ -72,11 +72,11 @@ try:
         lmodel = cell
         
         
-        display(Markdown(f'# Now creating the model **{name}**'))
+        # display(Markdown(f'## Now creating the model **{name}**'))
         
         fmodel = latextotxt(cell)
         if options.get('debug',False):
-            display(Markdown('# Creating this Template model'))
+            display(Markdown('## Creating this Template model'))
             print(fmodel)
         mmodel  = model.from_eq(fmodel)
         mmodel.equations_latex = cell
@@ -86,13 +86,15 @@ try:
         
         ia = get_ipython()
         ia.push(f'{name}',interactive=True)
+        if options.get('render',False):
+            display(Markdown(cell))
         
-        display(Markdown('## The model'))
-        display(Markdown(cell))
+        # display(Markdown('## The model'))
         if options.get('display',False):
-            display(Markdown('# Creating this Template model'))
+            display(Markdown(cell))
+            display(Markdown('## Creating this Template model'))
             print(mmodel.equations_original)
-            display(Markdown('# And this Business Logic Language  model'))
+            display(Markdown('## And this Business Logic Language  model'))
             print(mmodel.equations)
     
         return

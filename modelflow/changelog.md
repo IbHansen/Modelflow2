@@ -57,5 +57,7 @@ modelload can load a .pcim file from github or other url
 modelload will - in case a .pcim file is not found - load from githuib repo 
 modelwidget_input.keep_plot_widget is now impemented , 
 .group_dict is saved whem model is dumped. Used as grouping in keep_plot_widget 
-changed keep_plot_widdget to keep_show 
+changed keep_plot_widdget to keep_show  (1.52)
+modelwidget_input.keep_plot_widget (keep_show) can handle zero length exodif
+modelflow_lates \tau and \sigma
 

@@ -552,11 +552,11 @@ class visshow:
                           percent=value.get('percent',False))                           
                            for key,value in self.out_dict.items()}
             
-        # with out: # to suppress the display of matplotlib creation 
-        self.out_to_figs ={key:
-             htmlwidget_fig(value['df'].rename().plot(top=1.0,title=''),expname='')               
-                          for key,value in self.out_dict.items() }
-            
+        with out: # to suppress the display of matplotlib creation 
+            self.out_to_figs ={key:
+                 htmlwidget_fig(value['df'].rename().plot(top=1.0,title=''),expname='')               
+                              for key,value in self.out_dict.items() }
+                
        
         tabnew =  {key: tabwidget({'Charts':self.out_to_figs[key],'Data':self.out_to_data[key]},selected_index=0) for key in self.out_to_figs.keys()}
         # print('tabnew created')
@@ -607,7 +607,11 @@ class visshow:
         if self.show_on:
             ...
             display(self.datawidget)
-        # get_ipython().magic('matplotlib inline') 
+            
+        try:    
+            get_ipython().magic('matplotlib inline') 
+        except:
+            ...
     
 
     def __repr__(self):
@@ -622,8 +626,9 @@ class visshow:
     
 
 if __name__ == '__main__':
-    if 'masia' not in locals(): 
-        print('loading model')
-        masia,baseline = model.modelload('C:/wb Dawn/UNESCAP-/Asia/Asia.pcim',run=0,silent=1)    
-    test = slidewidget(masia,{})
+    # if 'masia' not in locals(): 
+    #     print('loading model')
+    #     masia,baseline = model.modelload('C:/wb Dawn/UNESCAP-/Asia/Asia.pcim',run=0,silent=1)    
+    # test = slidewidget(masia,{})
+    ...
      
