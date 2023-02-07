@@ -154,6 +154,7 @@ class BaseModel():
             self.keep_solutions = {}
             self.set_var_description(var_description)
             self.group_dict = {} 
+            self.model_description= ''
         return
 
     @classmethod
@@ -4669,8 +4670,10 @@ class Display_Mixin():
         except:
             print('modelflow_auto not run')
 import modelwidget_input
+
 Display_Mixin.keep_plot_widget.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
 Display_Mixin.keep_show.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
+
 class Json_Mixin():
     '''This mixin class can dump a model and solution
     as json serialiation to a file. 
@@ -4684,6 +4687,7 @@ class Json_Mixin():
         '''Dumps a model and its lastdf to a json file
         
         if keep=True the model.keep_solutions will alse be dumped'''
+        # print('dump ready')
 
         dumpjson = {
             'version': '1.00',
@@ -4697,10 +4701,11 @@ class Json_Mixin():
             'keep_solutions': {k:v.to_json() for k,v in self.keep_solutions.items()} if keep else {},
             'wb_MFMSAOPTIONS': self.wb_MFMSAOPTIONS if hasattr(self, 'wb_MFMSAOPTIONS') else '',
             'group_dict'     : self.group_dict,
+            'model_description'     : self.model_description,
 
  
         }
-
+        # print('dump ready to write')
         if outfile != '':
             pathname = Path(outfile)
             pathname.parent.mkdir(parents=True, exist_ok=True)
@@ -4780,6 +4785,7 @@ class Json_Mixin():
         if input.get('wb_MFMSAOPTIONS', None) : mmodel.wb_MFMSAOPTIONS = input.get('wb_MFMSAOPTIONS', None)
         mmodel.keep_solutions = {k : pd.read_json(jdf) for k,jdf in input.get('keep_solutions',{}).items()}
         mmodel.group_dict = input.get('group_dict', {})
+        mmodel.model_description = input.get('model_description', '')
         if keep_json:
             mmodel.json_keep = input
 
@@ -6559,10 +6565,10 @@ class Solver_Mixin():
         return outdf
 
     def invert(self, databank, targets, instruments, silent=1,
-               DefaultImpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, **kwargs):
+               DefaultImpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, delay=0,**kwargs):
         '''Solves instruments for targets'''
         from modelinvert import targets_instruments
-        t_i = targets_instruments(databank, targets, instruments, self, silent=silent,
+        t_i = targets_instruments(databank, targets, instruments, self, silent=silent,delay=delay,
                                   DefaultImpuls=DefaultImpuls, defaultconv=defaultconv, nonlin=nonlin, maxiter=maxiter)
         self.t_i = t_i
         res = t_i()

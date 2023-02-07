@@ -48,7 +48,7 @@ class targets_instruments():
     
     '''
     
-    def __init__(self,databank,targets,instruments,model,DefaultImpuls=0.01,defaultconv=0.01, 
+    def __init__(self,databank,targets,instruments,model,DefaultImpuls=0.01,defaultconv=0.01, delay=0, 
                  nonlin=False,silent = True, maxiter=30,solveopt={},varimpulse=False):
 
         self.model = model

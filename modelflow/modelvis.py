@@ -421,7 +421,7 @@ class varvis():
             
 
         
-def vis_alt(grund,mul,title='Show variables',top=0.9):
+def vis_alt(grund,mul,title='Show variables',ttop=None):
     ''' Graph of one of more variables each variable is displayed for 3 banks'''
     avar = grund.columns
     antal=len(avar)
@@ -442,12 +442,12 @@ def vis_alt(grund,mul,title='Show variables',top=0.9):
 
         ax.xaxis.set_minor_locator(plt.NullLocator())
         ax.tick_params(axis='x', labelleft=True)
-    fig.subplots_adjust(top=top)
+    fig.subplots_adjust(top=ttop if type(ttop)  != type(None) else 0.98-(0.2/antal))
 
     return fig
     
 
-def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=0.90,
+def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=None,
              splitchar='__',savefig='',*args,**kwargs):
     '''
     
@@ -499,7 +499,7 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=0.90,
     fig.tight_layout()
     # top = (row*(2-0.1)-0.2)/(row*(2-0.1))
 #    print(top)
-    fig.subplots_adjust(top=top)
+    fig.subplots_adjust(top=top if type(top)  != type(None) else 0.98-(0.2/row))
     if savefig:
         fig.savefig(savefig)
    # plt.subplot_tool()

@@ -7,7 +7,7 @@ Created on Fri Mar  2 17:01:49 2018
 Functions placed here are included in the Pyfs business language 
 
 """
-from math import exp, log, sqrt
+from math import exp, log, sqrt, tanh
 from numpy import transpose , array
 from scipy.stats import norm,lognorm
 from scipy.stats import gamma
@@ -64,7 +64,8 @@ def clognorm(input,mu=0.0,sigma=1.0):
     return res    
 
 if __name__ == '__main__' and 1:
-    xx = logit_inverse(3)
+    xx = logit_inverse(-3*10
+                      )
     print(xx)
 
 
