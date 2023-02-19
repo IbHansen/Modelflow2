@@ -7123,6 +7123,8 @@ def timer_old(input='test', show=True, short=False):
                 print(f'{input} took       : {minutes:>{15},.{afterdec}f} Minutes')
 
 
+
+
 if __name__ == '__main__':
 
 #%%  test 

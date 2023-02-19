@@ -22,6 +22,7 @@ from subprocess import run
 from model_latex import latextotxt
 from modelclass import model
 from modelmanipulation import explode
+from model_latex_class import a_latex_model
 
 
 def get_options(line,defaultname = 'test'):
@@ -86,7 +87,7 @@ try:
         
         ia = get_ipython()
         ia.push(f'{name}',interactive=True)
-        if options.get('render',False):
+        if options.get('render',True):
             display(Markdown(cell))
         
         # display(Markdown('## The model'))
@@ -98,6 +99,50 @@ try:
             print(mmodel.equations)
     
         return
+
+    @register_cell_magic
+    def latexmodelgrab(line, cell):
+       '''Creates a ModelFlow model from a Latex document'''
+       name,options = get_options(line)
+       ia = get_ipython()
+       modelsegment = None
+       # print(f'{options=}')
+       if options.get('segment',False):
+           modelsegment= options.get('segment','Please use a segment name')
+           if f'{name}_dict' not in globals():
+               globals()[f'{name}_dict'] = {}
+               ia.push(f'{name}_dict',interactive=True)
+           globals()[f'{name}_dict'][modelsegment]=cell   
+           
+           if modelsegment.startswith('list'):
+               display(Markdown(cell))
+               return  
+           # we want this cell plus all list cells to make this small model
+           model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items() if name.startswith('list')])+cell 
+       
+           latex_model = a_latex_model(model_text)
+           mmodel  = latex_model.mmodel
+           mmodel.equations_latex = model_text
+   
+       
+       globals()[f'{name}'] = mmodel
+       globals()[f'{name}_instance'] = latex_model
+       
+       ia.push(f'{name}',interactive=True)
+       ia.push(f'{name}_instance',interactive=True)
+       if options.get('render',True):
+           display(Markdown(cell))
+       
+       # display(Markdown('## The model'))
+       if options.get('display',False):
+           display(Markdown(cell))
+           display(Markdown('## Creating this Template model'))
+           print(mmodel.equations_original)
+           display(Markdown('## And this Business Logic Language  model'))
+           print(mmodel.equations)
+   
+       return
+
 
 
     def ibmelt(df,prefix='',per=3):

@@ -197,20 +197,38 @@ if 0:
     
 def findlists(input):
     '''extracte list with sublist from latex'''
-    relevant = re.findall(r'LIST \s*\$[^$]*\$',input.upper())  
-    # print(f'{relevant=}')
+    # relevant = re.findall(r'LIST \s*\$[^$]*\$',input.upper())  
+    relevant = re.findall(r'\$LIST\s*\\;\s*[^$]*\$',input.upper())  
+
+    print(f'{relevant=}')
     temp1 = [l.replace('$','').replace('\\','').replace(',',' ') 
          .replace('{','').replace('}','').replace('\n','/ \n')                                 
          for l in relevant]
-    # print(f'{temp1=}')
+    print(f'{temp1=}')
     temp2 = [l.split('=')[0]+' = '
            + l.split('=')[0][4:]
            +' : '+ l.split('=')[1]+'$' for l in temp1]
     return temp2
 
+def findlistsx(input):
+    '''extracte list with sublist from latex'''
+    relevant = re.findall(r'\$LIST\s*\\;\s*[^$]*\$',input.upper())  
+    print(f'{relevant=}')
+    temp1 = [l.replace('$','').replace('\\','')
+             .replace(',',' ').replace(';',' ')  
+            .replace('{','').replace('}','').replace('\n','/ \n')                                 
+         for l in relevant]
+    print(f'{temp1=}')
+    temp2 = ['LIST ' + l.split('=')[0][4:].strip() +' = '
+           + l.split('=')[0][4:]
+           +' : '+ l.split('=')[1]+'$' for l in temp1]
+    
+    print(f'{temp2=}')
+    return ('\n'.join(temp2)+'\n') 
+
 if 0:
-    listtest='''      
-   List $ stage=\{s1, s2,s3\} \\
+    listtest=r'''      
+   $List \; stage=\{s1, s2,s3\} \\
       stagened:\{  0,    0,  1,\} $
     '''
     print(findlists(listtest))
@@ -296,7 +314,7 @@ def latextotxt(input,dynare=False,bankadd=False):
     ltemp  = [doable(l) for l in ltemp]
     
     
-    out = '\n'.join(ltemp+findlists(input))
+    out = '\n'.join(ltemp+[findlists(input)])
     return out
 
 def latextotxtnew(input):

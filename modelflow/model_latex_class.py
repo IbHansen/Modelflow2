@@ -183,7 +183,7 @@ def findlists(input):
              .replace(',',' ').replace(';',' ')  
             .replace('{','').replace('}','').replace('\n','/ \n')                                 
          for l in relevant]
-    # print(f'{temp1=}')
+    # print(f'\n{temp1=}\n')
     temp2 = ['LIST ' + l.split('=')[0][4:].strip() +' = '
            + l.split('=')[0][4:]
            +' : '+ l.split('=')[1]+'$' for l in temp1]
@@ -254,7 +254,6 @@ def doable(ind,show=False):
          print('\nBefore doable',ind,sep='\n')
          print('After doable',out,sep='\n')
     return out
-#%% class
 
 @dataclass 
 class a_latex_model:
@@ -262,27 +261,53 @@ class a_latex_model:
     modeltext : str() 
     modelequations : str = field(init=False)
     modellists : str = field(init=False)
+    model_template : str = field(init=False)
+    model_exploded : str = field(init=False)
     
     def __post_init__(self):    
         self.modelequations = [equation for name,equation in re.findall(r'\\label\{eq:(.*?)\}\n(.*?)\\end\{',self.modeltext,re.DOTALL) 
-                               if name != 'Exclude'] # select the relevant equations 
+                               if not name.endswith('Exclude')] # select the relevant equations 
         # print(f'{self.modelequations=}')
-        self.modellists = mp.list_extract(findlists(self.modeltext ))
+        # breakpoint()
+        self.modellisttext = findlists(self.modeltext )
+        self.modellists = mp.list_extract(self.modellisttext)
         
         self.eq_list = [a_latex_equation(eq,self.modellists) for eq in self.modelequations]
+        
+        self.model_template  = '\n'.join(eq.doable_equation for eq in self.eq_list) + '\n' + self.modellisttext
 
-        self.model_exploded = '\n'.join(eq.exploded for eq in self.eq_list)
-        print(f'{self.model_exploded=}')
-        self.mmodel = model( self.model_exploded )
+        self.model_exploded = '\n'.join(eq.exploded for eq in self.eq_list) + '\n' + self.modellisttext
+        # print(f'{self.model_exploded=}')
+        try:
+            self.mmodel = model( self.model_exploded )
+            self.mmodel.equations_original = self.model_template
+        except:     
+            self.pprint()
+        
+    @property 
+    def pprint(self):
+        print('\nModel before explode\n',self.model_template)
+        print('\nModel after explode\n',self.model_exploded)
+
+        
+        
 
 @dataclass 
 class a_latex_equation():
     original_equation      : str = ''            # an equation in latex 
     modellists             : list =''  
-    original_interior_equation : str = field(init=False)
-    original_terminal_equation : str = field(init=False)
     
-    def __post_init__(self):  
+    def __post_init__(self): 
+        
+        self.transformed_equation = self.straighten_eq(self.original_equation)
+        self.doable_equation = doable(self.transformed_equation)
+        
+        self.exploded = mp.sumunroll(mp.dounloop(self.doable_equation,listin=self.modellists),listin=self.modellists)
+        
+        
+        # self.int_frmlname,self.int_do_conditions,self.int_do_indices,self.expression = (
+        #     findallindex(self.transformed_interior)) 
+    def __post_init__old(self):  
         self.original_interior_equation = self.original_terminal_equation = ''
         if self.original_equation.startswith(r'\begin{split}'):
             self.original_interior_equation,self.original_terminal_equation = self.original_equation.split(r'\\')
@@ -302,10 +327,9 @@ class a_latex_equation():
         
     @property
     def pprint(self):
-        print(self.original_interior_equation )
-        print(self.transformed_interior)
-        print(self.transformed_terminal)
-        print(doable(self.transformed_interior))
+        print(f'\nriginal \n{self.original_equation}\n')
+        print(f'dooable\n{self.doable_equation}\n')
+        print(f'exploded\n{self.transformed_equation}\n')
 
     def straighten_eq(self,temp):
         if type(temp) == type(None):
@@ -315,6 +339,8 @@ class a_latex_equation():
                r'\min':'min',
                r'\max':'max',   
                r'\rho':'rho',   
+               r'\tau':'tau',   
+               r'\sigma':'sigma',   
                r'&':'',
                r'\\':'',
                r'\nonumber'  : '',
@@ -328,6 +354,7 @@ class a_latex_equation():
                '\n' :'',
                r'\forall' :'',
                r'\;' :'',
+               r'  ' :' ',
 
               
                }
@@ -347,8 +374,11 @@ class a_latex_equation():
                r'\^{([\w+-]+)}'              : r'__{\1}',      # ^{xx}     => _xx
                r'\^{([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}',    # ^{xx,yy}     => _xx_yy
                r'\s*\\times\s*':'*' ,
+               r'\s*\\cdot\s*':'*' ,
                r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
-               r'\\sum_{('+pt.namepat+')}\(' : r'sum(\1,'
+               r'\\sum_{('+pt.namepat+')}\(' : r'sum(\1,',
+               r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)\.([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \1_\2=1,',
+               
                 }
        # breakpoint()
         try:       
@@ -421,8 +451,8 @@ $List \; agegroupwww= \{16,    17,   18,    19,  20,   99,   100 \}$
     '''        
 #%% test
 
-    this = a_latex_model(test1)
-    print('\nOutput\n',this.model_exploded)
+    # this = a_latex_model(test1)
+    # print('\nOutput\n',this.model_exploded)
 
     test2 =r'''
 $List \; agegroup= \{16,    17,   18,    19,  20,   99,   100 ,101,102\}$
@@ -433,8 +463,8 @@ QC_t =  \sum_{agegroup}\right(xx^{agegroup}\left)  + 33
 \end{equation}
 
     '''        
-    this2 = a_latex_model(test2)
-    print('\nOutput\n',this2.model_exploded)
+    # this2 = a_latex_model(test2)
+    # print('\nOutput\n',this2.model_exploded)
 #%% test2 
     test3 =r'''
 
@@ -474,5 +504,75 @@ Dead =  \sum_{agegroup}(Dead^{agegroup}_t )
 
     '''        
     this3 = a_latex_model(test3)
-    print('\nOutput\n',this3.model_exploded)
-    this3.mmodel.drawmodel(HR=1,sink='POPULATION',svg=1,browser=1)
+    print('\nModel before explode\n',this3.model_template)
+    print('\nModel after explode\n',this3.model_exploded)
+    #this3.mmodel.drawmodel(HR=1,sink='POPULATION',svg=1,browser=1)
+    
+#%% test ftt
+    test4= r'''
+    FTT model with limits 
+
+Two lists of technology  are defined: 
+    
+$List \; i = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
+         i_fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
+
+$List \; j = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\}$
+    
+   $List \; stage=\{s1, s2,s3\} \\
+      stagened:\{  0,    0,  1,\} $
+    
+
+In this example we only use 4 technologies. Any number of technology can be specified (limited by the avaiable memory)
+
+Also the time index $_t$ is implicit. 
+
+
+### preferences 
+
+Each technology is compared to all other based on the percieved costs and the preferences (choice likelihood) $F^{i,j}$ are calculated.
+    
+For all technologies $F^{i,j}+F^{j,i} = 1 $
+
+\begin{equation}
+\label{eq:preferences}
+\underbrace{F^{i,j}}_{Preferences} = \frac{1}{
+1+exp(
+    \frac{(Cost^{i}-Cost^{j})}{\sigma^{i,j}} )}
+\end{equation}
+
+
+### Share dynamic 
+
+\begin{equation}
+\label{eq:SHARES2}
+\Delta Share^{i} = \sum_{j}(Share^{i} \times Share^{j} \times
+                            (\underbrace{F^{i,j}}_{Preferences}/\underbrace{\tau^{j}}_{Life expectancy}
+                             - F^{j,i}/\tau^{i}))
+\end{equation}
+
+\begin{equation}
+\label{eq:SHARES3}
+\forall [i.fosile]\Delta Share2^{i} = Share^{i} 
+\end{equation}
+
+
+''' 
+    this_ftt = a_latex_model(test4)
+    this_ftt.pprint
+#%%    sum test
+    testsum  = '''   
+      
+$List \; i = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
+         i_fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
+         
+\begin{equation}
+\label{eq:check_shares}
+Share\_total  = \sum_{i.fosile}(Share\_{i})
+\end{equation}
+
+         
+   '''
+   
+    msumtest = a_latex_model(testsum)  
+    msumtest.pprint
