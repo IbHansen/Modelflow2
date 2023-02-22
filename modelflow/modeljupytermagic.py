@@ -140,10 +140,10 @@ try:
    
        
        globals()[f'{name}'] = mmodel
-       globals()[f'{name}_instance'] = latex_model
+       globals()[f'{name}_latex_model_instance'] = latex_model
        
        ia.push(f'{name}',interactive=True)
-       ia.push(f'{name}_instance',interactive=True)
+       ia.push(f'{name}_latex_model_instance',interactive=True)
        
        if options.get('render',True):
            display(Markdown(cell))
@@ -152,7 +152,7 @@ try:
        if options.get('display',False):
            display(Markdown(cell))
            try:
-               display(f'Model:{name} is created from these segments:',
+               print(f'Model:{name} is created from these segments:\n'+
                      f"{temp.join([s for s in globals()[f'{name}_dict'].keys()])} \n")
            except:
                ...

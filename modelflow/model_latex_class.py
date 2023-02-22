@@ -291,9 +291,23 @@ class a_latex_model:
         
     @property 
     def pprint(self):
+        print('\nModel in latex\n',self.modeltext)
         print('\nModel before explode\n',self.model_template)
         print('\nModel after explode\n',self.model_exploded)
 
+    @property 
+    def show(self):
+
+        display(Markdown(self.modeltext))
+        try:
+            print(f'Model:{name} is created from these segments:\n'+
+                  f"{temp.join([s for s in globals()[f'{name}_dict'].keys()])} \n")
+        except:
+            ...
+        display(Markdown('## Creating this Template model'))
+        display(Markdown("```"+self.model_template+"```"))
+        display(Markdown('## And this Business Logic Language  model'))
+        print(self.model_exploded)
         
         
 
@@ -366,7 +380,6 @@ class a_latex_equation():
                r'\s*\\cdot\s*':'*' ,
                r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
                r'\\sum_{('+pt.namepat+')}\(' : r'sum(\1,',
-               # r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)\.([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \1_\2=1,',
                r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \2=1,',
                
                 }
@@ -383,6 +396,7 @@ class a_latex_equation():
         temp = debrace(temp)
         temp = defrack(temp)
         temp = depower(temp)
+        temp = ' '.join(temp.split())
         return temp 
 
 
@@ -556,6 +570,8 @@ For all technologies $F^{i,j}+F^{j,i} = 1 $
       
 $List \; i = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
          fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
+$List \; j = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
+         fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
          
 \begin{equation}
 \label{eq:check_shares}
@@ -566,7 +582,15 @@ Share\_total  = \sum_{i=fosile}(Share\_{i}) \\
 \begin{equation}
 \label{eq:SHARES3}
 \forall [i=fosile] \Delta Share2^{i} = Share^{i} 
-\end{equation}         
+\end{equation}     
+
+\begin{equation}
+\label{eq:SHARES2}
+\Delta Share^{i} = \sum_{j}(Share^{i} \times Share^{j} \times
+                            (\frac{F^{i,j}}{\tau^{j}}
+                                              - \frac{F^{j,i}}{\tau^{i}}))
+\end{equation}
+    
    '''
    
     msumtest = a_latex_model(testsum)  
