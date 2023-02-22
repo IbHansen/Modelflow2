@@ -105,24 +105,38 @@ try:
        '''Creates a ModelFlow model from a Latex document'''
        name,options = get_options(line)
        ia = get_ipython()
-       modelsegment = None
+
        # print(f'{options=}')
        if options.get('segment',False):
-           modelsegment= options.get('segment','Please use a segment name')
+          
            if f'{name}_dict' not in globals():
-               globals()[f'{name}_dict'] = {}
-               ia.push(f'{name}_dict',interactive=True)
+              globals()[f'{name}_dict'] = {}
+              ia.push(f'{name}_dict',interactive=True)
+
+           modelsegment= options.get('segment','rest')
            globals()[f'{name}_dict'][modelsegment]=cell   
            
            if modelsegment.startswith('list'):
                display(Markdown(cell))
                return  
+           
            # we want this cell plus all list cells to make this small model
-           model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items() if name.startswith('list')])+cell 
+           if options.get('all',False):
+               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
+    
+           else:     
+               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items() 
+                                  if name.startswith('list')])+cell 
+       else:
+           if f'{name}_dict' in globals():
+               temp='\n'
+               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
+           else: 
+               model_text = cell 
        
-           latex_model = a_latex_model(model_text)
-           mmodel  = latex_model.mmodel
-           mmodel.equations_latex = model_text
+       latex_model = a_latex_model(model_text)
+       mmodel  = latex_model.mmodel
+       mmodel.equations_latex = model_text
    
        
        globals()[f'{name}'] = mmodel
@@ -130,12 +144,18 @@ try:
        
        ia.push(f'{name}',interactive=True)
        ia.push(f'{name}_instance',interactive=True)
+       
        if options.get('render',True):
            display(Markdown(cell))
        
        # display(Markdown('## The model'))
        if options.get('display',False):
            display(Markdown(cell))
+           try:
+               display(f'Model:{name} is created from these segments:',
+                     f"{temp.join([s for s in globals()[f'{name}_dict'].keys()])} \n")
+           except:
+               ...
            display(Markdown('## Creating this Template model'))
            print(mmodel.equations_original)
            display(Markdown('## And this Business Logic Language  model'))

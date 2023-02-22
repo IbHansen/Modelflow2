@@ -207,17 +207,17 @@ def findallindex(ind0):
         frmlname='<>'
         ind=ind0.strip()
     # print(f'{ind=}')
-        
+    # breakpoint()    
     if ind.startswith('['):
         do_conditions = ind[1:ind.index(']')]
         rest = ind[ind.index(']')+1:].strip() 
-        all_do_condition = {condition.split('.')[0] : condition.replace('.','_') for condition in do_conditions.split(',')}
+        all_do_condition = {condition.split('=')[0] : condition.split('=')[1] for condition in do_conditions.split(',')}
         # print(f'{do_conditions=}')
     else:
         all_do_condition = dict()
         rest = ind.strip() 
         
-    lhs=ind.split('=')[0]
+    lhs=rest.split('=')[0]
     do_indicies =   re.findall('__\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
     
     do_indicies_dict = {ind : all_do_condition.get(ind) for ind in do_indicies}             
@@ -248,7 +248,7 @@ def doable(ind,show=False):
         post = 'enddo $ '*len(do_indicies_dict)
         out = f'{pre}\n  frml    {frmlname} {rest} $\n{post}'
     else:
-        out=f'frml <> {rest.strip()} $'
+        out=f'frml {frmlname} {rest.strip()} $'
         
     if show:
          print('\nBefore doable',ind,sep='\n')
@@ -265,14 +265,19 @@ class a_latex_model:
     model_exploded : str = field(init=False)
     
     def __post_init__(self):    
-        self.modelequations = [equation for name,equation in re.findall(r'\\label\{eq:(.*?)\}\n(.*?)\\end\{',self.modeltext,re.DOTALL) 
+        self.modelequation_blocks = [(name,block) for name,block in re.findall(r'\\label\{eq:(.*?)\}\n(.*?)\\end\{',self.modeltext,re.DOTALL) 
                                if not name.endswith('Exclude')] # select the relevant equations 
+        self.modelequations = [(equation_name,equation) 
+                               for equation_name,block in self.modelequation_blocks 
+                               for equation in [e for e in block.split(r'\\')]  ]
+        # self.modelequations = [ in self.modelequation_blocks ]
+        # print(f'{self.modelequation_blocks=}')
         # print(f'{self.modelequations=}')
         # breakpoint()
         self.modellisttext = findlists(self.modeltext )
         self.modellists = mp.list_extract(self.modellisttext)
         
-        self.eq_list = [a_latex_equation(eq,self.modellists) for eq in self.modelequations]
+        self.eq_list = [a_latex_equation(equation_name,eq,self.modellists) for equation_name,eq in self.modelequations]
         
         self.model_template  = '\n'.join(eq.doable_equation for eq in self.eq_list) + '\n' + self.modellisttext
 
@@ -294,33 +299,17 @@ class a_latex_model:
 
 @dataclass 
 class a_latex_equation():
+    equation_name          : str = ''            # The name 
     original_equation      : str = ''            # an equation in latex 
     modellists             : list =''  
     
     def __post_init__(self): 
         
         self.transformed_equation = self.straighten_eq(self.original_equation)
-        self.doable_equation = doable(self.transformed_equation)
+        self.doable_equation = doable(f'<{self.equation_name}> {self.transformed_equation}')
         
         self.exploded = mp.sumunroll(mp.dounloop(self.doable_equation,listin=self.modellists),listin=self.modellists)
         
-        
-        # self.int_frmlname,self.int_do_conditions,self.int_do_indices,self.expression = (
-        #     findallindex(self.transformed_interior)) 
-    def __post_init__old(self):  
-        self.original_interior_equation = self.original_terminal_equation = ''
-        if self.original_equation.startswith(r'\begin{split}'):
-            self.original_interior_equation,self.original_terminal_equation = self.original_equation.split(r'\\')
-        else: 
-            self.original_interior_equation,self.original_terminal_equation = self.original_equation, None 
-    
-        self.transformed_interior = self.straighten_eq(self.original_interior_equation)
-        self.transformed_terminal = self.straighten_eq(self.original_terminal_equation )
-        self.doable_interior = doable(self.transformed_interior)
-        
-        self.exploded_interior = mp.sumunroll(mp.dounloop(self.doable_interior,listin=self.modellists),listin=self.modellists)
-        
-        self.exploded = self.exploded_interior
         
         # self.int_frmlname,self.int_do_conditions,self.int_do_indices,self.expression = (
         #     findallindex(self.transformed_interior)) 
@@ -346,7 +335,7 @@ class a_latex_equation():
                r'\nonumber'  : '',
                r'\_'      : '_',
                r'_{t}'      : '',
-               r'_t' :'',
+               r"_t(?![a-zA-Z0-9])" :'',
                'logit^{-1}' : 'logit_inverse',
                r'\{'      : '{',
                r'\}'      : '}',
@@ -377,7 +366,8 @@ class a_latex_equation():
                r'\s*\\cdot\s*':'*' ,
                r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
                r'\\sum_{('+pt.namepat+')}\(' : r'sum(\1,',
-               r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)\.([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \1_\2=1,',
+               # r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)\.([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \1_\2=1,',
+               r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \2=1,',
                
                 }
        # breakpoint()
@@ -502,10 +492,11 @@ population =  \sum_{agegroup}(Population^{agegroup}_t )
 Dead =  \sum_{agegroup}(Dead^{agegroup}_t )  
 \end{equation}
 
-    '''        
-    this3 = a_latex_model(test3)
-    print('\nModel before explode\n',this3.model_template)
-    print('\nModel after explode\n',this3.model_exploded)
+    '''   
+    if 0:      
+        this3 = a_latex_model(test3)
+        print('\nModel before explode\n',this3.model_template)
+        print('\nModel after explode\n',this3.model_exploded)
     #this3.mmodel.drawmodel(HR=1,sink='POPULATION',svg=1,browser=1)
     
 #%% test ftt
@@ -553,25 +544,29 @@ For all technologies $F^{i,j}+F^{j,i} = 1 $
 
 \begin{equation}
 \label{eq:SHARES3}
-\forall [i.fosile]\Delta Share2^{i} = Share^{i} 
+\forall [i.fosile]\Delta Share2^{i} = Share^{i} \\
 \end{equation}
 
 
 ''' 
-    this_ftt = a_latex_model(test4)
-    this_ftt.pprint
+    # this_ftt = a_latex_model(test4)
+    # this_ftt.pprint
 #%%    sum test
-    testsum  = '''   
+    testsum  = r'''   
       
 $List \; i = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
-         i_fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
+         fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
          
 \begin{equation}
 \label{eq:check_shares}
-Share\_total  = \sum_{i.fosile}(Share\_{i})
+Share\_total  = \sum_{i=fosile}(Share\_{i}) \\
+    a=b
 \end{equation}
 
-         
+\begin{equation}
+\label{eq:SHARES3}
+\forall [i=fosile] \Delta Share2^{i} = Share^{i} 
+\end{equation}         
    '''
    
     msumtest = a_latex_model(testsum)  
