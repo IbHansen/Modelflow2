@@ -47,7 +47,8 @@ def get_options(line,defaultname = 'test'):
         name = defaultname
         arglist=[]
 
-    opt = {o.split('=')[0]: o.split('=')[1] if len(o.split('='))==2 else True for o in arglist}
+    opt = {o.split('=')[0] : o.split('=')[1] if len(o.split('='))==2 else True for o in arglist}
+    opt = {o : False if ( v== '0' or v=='False')  else v for o,v in opt.items()}
     
     return name,opt           
 try:
@@ -145,8 +146,8 @@ try:
        ia.push(f'{name}',interactive=True)
        ia.push(f'{name}_latex_model_instance',interactive=True)
        
-       if options.get('render',True):
-           display(Markdown(cell))
+       if options.get('render',True) and not options.get('display',False):
+           display(Markdown(model_text))
        
        # display(Markdown('## The model'))
        if options.get('display',False):

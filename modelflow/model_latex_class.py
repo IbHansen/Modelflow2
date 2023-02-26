@@ -23,6 +23,8 @@ from dataclasses import dataclass,field
 import modelmanipulation as mp
 from modelclass import model 
 import modelpattern as pt 
+from modelnormalize import normal 
+
 def rebank(model):
     ''' All variable names are decorated by a {bank}
     The {bank} is injected as the first dimension ''' 
@@ -239,7 +241,6 @@ def doable(ind,show=False):
     
     frmlname,do_indicies_dict,rest = findallindex(ind)  # all the index variables 
     # breakpoint()
-    
     # print(f'{do_indicies_dict=}*******************')
     if do_indicies_dict : 
         pre = ' '.join([do_list(i,c) for i,c in do_indicies_dict.items() ]) 
@@ -320,10 +321,17 @@ class a_latex_equation():
     def __post_init__(self): 
         
         self.transformed_equation = self.straighten_eq(self.original_equation)
+        # breakpoint()
         self.doable_equation = doable(f'<{self.equation_name}> {self.transformed_equation}')
         
-        self.exploded = mp.sumunroll(mp.dounloop(self.doable_equation,listin=self.modellists),listin=self.modellists)
         
+        normalizedeq = mp.normalize(self.doable_equation)
+        self.exploded = mp.sumunroll(mp.dounloop(normalizedeq,listin=self.modellists),listin=self.modellists)
+        self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists)
+        # print('nr2',self.exploded2)
+        # print(f'{self.exploded2=}')
+        # breakpoint()
+        # self.exploded = '\n'.join(self.unrolled.split('\n'))
         
         # self.int_frmlname,self.int_do_conditions,self.int_do_indices,self.expression = (
         #     findallindex(self.transformed_interior)) 
@@ -340,7 +348,7 @@ class a_latex_equation():
         trans={r'\left':'',
                r'\right':'',
                r'\min':'min',
-               r'\max':'max',   
+               # r'\max':'max',   
                r'\rho':'rho',   
                r'\tau':'tau',   
                r'\sigma':'sigma',   
@@ -381,6 +389,10 @@ class a_latex_equation():
                r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
                r'\\sum_{('+pt.namepat+')}\(' : r'sum(\1,',
                r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \2=1,',
+               r'\\max_{('+pt.namepat+')}\(' : r'max(\1,',
+               r"\\max_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'max(\1 \2=1,',
+               r'\\min_{('+pt.namepat+')}\(' : r'min(\1,',
+               r"\\min_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'min(\1 \2=1,',
                
                 }
        # breakpoint()
@@ -592,6 +604,22 @@ Share\_total  = \sum_{i=fosile}(Share\_{i}) \\
 \end{equation}
     
    '''
+    if 0:        
+        msumtest = a_latex_model(testsum)  
+        msumtest.pprint
+#%%    max test
+    testsum  = r'''   
+      
+$List \; i = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
+         fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
+$List \; j = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
+         fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
+         
+\begin{equation}
+\label{eq:check_shares}
+Share\_total  = \max_{i}(Share^{i}) 
+\end{equation}
+'''
    
     msumtest = a_latex_model(testsum)  
     msumtest.pprint

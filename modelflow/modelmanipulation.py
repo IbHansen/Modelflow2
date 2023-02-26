@@ -447,6 +447,59 @@ def sumunroll(in_equations,listin=False):
     equations = '\n'.join(nymodel)
     return equations
 
+#%% funkunroll
+
+def funkunroll(in_equations,funk='MAX',listin=False):
+    ''' expands all funk(list,'expression') in a model
+    if funk(list xvar=lig,'expression') only list elements where the condition is 
+    satisfied wil be summed
+    
+    returns a new model'''
+    nymodel = []
+    equations = in_equations[:].upper()  # we want do change the e
+    liste_dict = listin if listin else list_extract(equations)   # Search the whold model for lists
+    for comment, command, value in find_statements(equations):
+       # print('>>',comment,'<',command,'>',value)
+        if comment:
+            nymodel.append(comment)
+        else:
+            hit=False
+            while f'{funk.upper()}(' in value.upper():
+                hit=True
+                forsum, sumudtryk, eftersum = find_arg(f'{funk.upper()}', value.upper())
+                suminit, sumled = sumudtryk.split(',', 1)
+                
+                if '=' in suminit:
+                    sumover,remain = suminit.split(' ',1)
+                    xvar,lig =remain.replace(' ','').split('=')
+                else:
+                    sumover = suminit
+                    xvar=''
+                    lig=''
+                    
+                current_dict = liste_dict[sumover]
+                print(f'{value=}')
+                ibsud = sub_frml(current_dict, sumled, ',', xvar=xvar,lig=lig,sep='')
+                value = forsum + 'xxxx_funk_ibhansen(' + ibsud + ')' + eftersum
+            if hit:
+                nymodel.append(f'{command} {value}'.replace('xxxx_funk_ibhansen',funk))
+            else: 
+                nymodel.append(command + ' ' + value)
+
+            
+    equations = '\n'.join(nymodel)
+    # print(equations)
+    return equations
+
+print(funkunroll(dounloop(
+'''list BANKDIC = bank : Danske , Nordea $
+do BANKDIC $ 
+frml x {bank}_income = {bank}_a +{bank}_b $
+enddo $ 
+frml x ialt=max(bankdic,{bank}_income) $''')))  
+
+#%% 
+
 def argunroll(in_equations,listin=False):
     ''' expands all ARGEXPAND(list,'expression') in a model
     returns a new model'''
@@ -1138,13 +1191,20 @@ if __name__ == '__main__' and 1 :
     frml x ialt=sum(bankdic ko= yes,{bank}_income ) $'''))
     # breakpoint()
     print(sumunroll(x))
-#%%
+#%% sumunroll
     print(sumunroll(dounloop(
     '''list BANKDIC = bank : Danske , Nordea $
     do BANKDIC $ 
     frml x {bank}_income = {bank}_a +{bank}_b $
     enddo $ 
     frml x ialt=sum(bankdic,{bank}_income) $''')))  
+#%% funkunroll
+    print(funkunroll(dounloop(
+    '''list BANKDIC = bank : Danske , Nordea $
+    do BANKDIC $ 
+    frml x {bank}_income = {bank}_a +{bank}_b $
+    enddo $ 
+    frml x ialt=max(bankdic,{bank}_income) $''')))  
 #%%
 #     Trying some of the features: 
     fmodel='''

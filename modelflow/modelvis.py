@@ -495,11 +495,13 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=None,
         ax.xaxis.set_minor_locator(plt.NullLocator())
         ax.tick_params(axis='x', labelleft=True)
     fig = axes.flatten()[0].get_figure()
+    fig.set_constrained_layout(True)
     fig.suptitle(name,fontsize=20)
-    fig.tight_layout()
+    # fig.tight_layout()
+    
     # top = (row*(2-0.1)-0.2)/(row*(2-0.1))
 #    print(top)
-    fig.subplots_adjust(top=top if type(top)  != type(None) else 0.98-(0.2/row))
+    # fig.subplots_adjust(top=top if type(top)  != type(None) else 0.98-(0.2/row))
     if savefig:
         fig.savefig(savefig)
    # plt.subplot_tool()
@@ -642,7 +644,7 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
     att = [(name,water(ser,sort=sort,autosum=autosum,allsort=allsort,threshold=threshold)) 
                        for name,ser in basis.transpose().iterrows()]
     # print(att[0][1])
-    fig, axis = plt.subplots(nrows=len(att),ncols=1,figsize=(10,ysize*len(att)),constrained_layout=False)
+    fig, axis = plt.subplots(nrows=len(att),ncols=1,figsize=(10,ysize*len(att)),constrained_layout=True)
     width = 0.5  # the width of the barsser
     laxis = axis if isinstance(axis,numpy.ndarray) else [axis]
     for i,((name,dfatt),ax) in enumerate(zip(att,laxis)):

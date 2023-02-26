@@ -53,7 +53,7 @@ def txttolatex(model):
     # takes a template model to latex
     tpoc2 = model[:]
     #tpoc2 = re.sub(r'((list)|(do)|(enddo)|(ppppend))[^$]+[$]','',tpoc2)
-    tpoc2 = re.sub(r'((list)|(do)|(enddo)|(ppppend))([^$]*) [$]',r' \mbox{\1 \6}  \\\\ \n',tpoc2)
+    tpoc2 = re.sub(r'((list)|(do)|(enddo)|(ppppend))([^$]*) [$]',r' \\mbox{\1 \6}  \\\\ \n',tpoc2)
     tpoc2 = re.sub(r'__{bank}',r'^{bank}',tpoc2)
     tpoc2 = re.sub(r'diff()',r'\Delta ',tpoc2)
     tpoc2 = re.sub(r'norm.ppf',r'\Phi ',tpoc2)
@@ -172,7 +172,7 @@ def doable(ind,show=False):
         out=ind
     return out
 
-def findlistsold(input):
+def findlists(input):
     '''extracte liste from latex'''
     relevant = re.findall(r'LIST \s*\$[^$]*\$',input.upper())  
     temp1 = [l.replace('$','').replace('\\','').replace(',',' ') 
@@ -195,7 +195,7 @@ if 0:
     '''
     print(findlistsold(listtest))
     
-def findlists(input):
+def findlistsnew(input):
     '''extracte list with sublist from latex'''
     # relevant = re.findall(r'LIST \s*\$[^$]*\$',input.upper())  
     relevant = re.findall(r'\$LIST\s*\\;\s*[^$]*\$',input.upper())  
@@ -314,7 +314,7 @@ def latextotxt(input,dynare=False,bankadd=False):
     ltemp  = [doable(l) for l in ltemp]
     
     
-    out = '\n'.join(ltemp+[findlists(input)])
+    out = '\n'.join(ltemp+findlists(input))
     return out
 
 def latextotxtnew(input):
