@@ -120,6 +120,9 @@ try:
            if modelsegment.startswith('list'):
                display(Markdown(cell))
                return  
+           if modelsegment.startswith('text'):
+               display(Markdown(cell))
+               return  
            
            # we want this cell plus all list cells to make this small model
            if options.get('all',False):

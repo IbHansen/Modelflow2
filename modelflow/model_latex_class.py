@@ -239,6 +239,9 @@ def do_list(do_index,do_condition):
 def doable(ind,show=False):
     ''' find all dimensions in the left hand side of = and and decorate with the nessecary do .. enddo ''' 
     
+    if show:
+         print('\nBefore doable',ind,sep='\n')
+
     frmlname,do_indicies_dict,rest = findallindex(ind)  # all the index variables 
     # breakpoint()
     # print(f'{do_indicies_dict=}*******************')
@@ -252,8 +255,7 @@ def doable(ind,show=False):
         out=f'frml {frmlname} {rest.strip()} $'
         
     if show:
-         print('\nBefore doable',ind,sep='\n')
-         print('After doable',out,sep='\n')
+         print('\nAfter doable',out,sep='\n')
     return out
 
 @dataclass 
@@ -271,10 +273,6 @@ class a_latex_model:
         self.modelequations = [(equation_name,equation) 
                                for equation_name,block in self.modelequation_blocks 
                                for equation in [e for e in block.split(r'\\')]  ]
-        # self.modelequations = [ in self.modelequation_blocks ]
-        # print(f'{self.modelequation_blocks=}')
-        # print(f'{self.modelequations=}')
-        # breakpoint()
         self.modellisttext = findlists(self.modeltext )
         self.modellists = mp.list_extract(self.modellisttext)
         
@@ -287,7 +285,8 @@ class a_latex_model:
         try:
             self.mmodel = model( self.model_exploded )
             self.mmodel.equations_original = self.model_template
-        except:     
+        except:  
+            raise Exception
             self.pprint()
         
     @property 
@@ -316,25 +315,21 @@ class a_latex_model:
 class a_latex_equation():
     equation_name          : str = ''            # The name 
     original_equation      : str = ''            # an equation in latex 
-    modellists             : list =''  
+    modellists             : list = ''  
     
     def __post_init__(self): 
         
         self.transformed_equation = self.straighten_eq(self.original_equation)
         # breakpoint()
-        self.doable_equation = doable(f'<{self.equation_name}> {self.transformed_equation}')
+        self.doable_equation = doable(f'<{self.equation_name}> {self.transformed_equation}',show=0)
         
         
         normalizedeq = mp.normalize(self.doable_equation)
-        self.exploded = mp.sumunroll(mp.dounloop(normalizedeq,listin=self.modellists),listin=self.modellists)
-        self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists)
-        # print('nr2',self.exploded2)
-        # print(f'{self.exploded2=}')
-        # breakpoint()
-        # self.exploded = '\n'.join(self.unrolled.split('\n'))
-        
-        # self.int_frmlname,self.int_do_conditions,self.int_do_indices,self.expression = (
-        #     findallindex(self.transformed_interior)) 
+        self.exploded = normalizedeq
+        self.exploded = mp.sumunroll(self.exploded,listin=self.modellists)
+        self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists,funk='LMAX')
+        self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists,funk='lMIN')
+        self.exploded = mp.dounloop(self.exploded,listin=self.modellists)
         
     @property
     def pprint(self):
@@ -347,7 +342,7 @@ class a_latex_equation():
              return None 
         trans={r'\left':'',
                r'\right':'',
-               r'\min':'min',
+               # r'\min':'min',
                # r'\max':'max',   
                r'\rho':'rho',   
                r'\tau':'tau',   
@@ -532,7 +527,7 @@ Dead =  \sum_{agegroup}(Dead^{agegroup}_t )
 Two lists of technology  are defined: 
     
 $List \; i = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
-         i_fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
+         fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
 
 $List \; j = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\}$
     
@@ -570,13 +565,14 @@ For all technologies $F^{i,j}+F^{j,i} = 1 $
 
 \begin{equation}
 \label{eq:SHARES3}
-\forall [i.fosile]\Delta Share2^{i} = Share^{i} \\
+\forall [i=fosile]\Delta Share2^{i} = Share^{i} \\
 \end{equation}
 
 
 ''' 
-    # this_ftt = a_latex_model(test4)
-    # this_ftt.pprint
+    if 0:
+        this_ftt = a_latex_model(test4)
+        this_ftt.pprint
 #%%    sum test
     testsum  = r'''   
       
@@ -608,7 +604,7 @@ Share\_total  = \sum_{i=fosile}(Share\_{i}) \\
         msumtest = a_latex_model(testsum)  
         msumtest.pprint
 #%%    max test
-    testsum  = r'''   
+    testmax  = r'''   
       
 $List \; i = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
          fosile: \{  1, 1, 1, 0, 0, 0, 0, 0 \}$  
@@ -617,9 +613,16 @@ $List \; j = \{Oil, Coal, Gas, Biomass, Solar, Wind, Hydro, Geothermal\} \\
          
 \begin{equation}
 \label{eq:check_shares}
-Share\_total  = \max_{i}(Share^{i}) 
+Share\_max  = \max_{i=fosile}(Share^{i}) \\
+hest = max(2,3,4)  
 \end{equation}
+
+\begin{equation}
+\label{eq:SHARES3}
+\forall [i=fosile] \Delta Share2^{i} = Share^{i} 
+\end{equation}     
+
 '''
    
-    msumtest = a_latex_model(testsum)  
-    msumtest.pprint
+    mmaxtest = a_latex_model(testmax)  
+    mmaxtest.pprint

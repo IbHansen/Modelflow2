@@ -6652,8 +6652,9 @@ class Solver_Mixin():
                 axes = out[varnames].rename(columns=self.var_description).plot(kind='line', subplots=True, layout=(number, 1), figsize=(10, number*3),
                                                        use_index=True, title=f'Iterations in {per_}  {tchange}', sharey=0)
             fig = axes.flatten()[0].get_figure()
-            fig.tight_layout()
-            fig.subplots_adjust(top=top)
+            fig.set_constrained_layout(True)
+            # fig.tight_layout()
+            # fig.subplots_adjust(top=top)
             return fig
         except:
             print('No iteration dump')

@@ -478,7 +478,7 @@ def funkunroll(in_equations,funk='MAX',listin=False):
                     lig=''
                     
                 current_dict = liste_dict[sumover]
-                print(f'{value=}')
+                # print(f'{value=}')
                 ibsud = sub_frml(current_dict, sumled, ',', xvar=xvar,lig=lig,sep='')
                 value = forsum + 'xxxx_funk_ibhansen(' + ibsud + ')' + eftersum
             if hit:
@@ -491,12 +491,12 @@ def funkunroll(in_equations,funk='MAX',listin=False):
     # print(equations)
     return equations
 
-print(funkunroll(dounloop(
-'''list BANKDIC = bank : Danske , Nordea $
-do BANKDIC $ 
-frml x {bank}_income = {bank}_a +{bank}_b $
-enddo $ 
-frml x ialt=max(bankdic,{bank}_income) $''')))  
+# print(funkunroll(dounloop(
+# '''list BANKDIC = bank : Danske , Nordea $
+# do BANKDIC $ 
+# frml x {bank}_income = {bank}_a +{bank}_b $
+# enddo $ 
+# frml x ialt=max(bankdic,{bank}_income) $''')))  
 
 #%% 
 
