@@ -449,12 +449,25 @@ def sumunroll(in_equations,listin=False):
 
 #%% funkunroll
 
-def funkunroll(in_equations,funk='MAX',listin=False):
-    ''' expands all funk(list,'expression') in a model
-    if funk(list xvar=lig,'expression') only list elements where the condition is 
-    satisfied wil be summed
-    
-    returns a new model'''
+def funkunroll(in_equations,funk='MAX',listin=False,replacefunk=''):
+    """
+    Expands all funk(list, 'expression') in a model.
+
+    If funk(list xvar=lig, 'expression') is used, only list elements where the condition is
+    satisfied will be summed.
+
+    Parameters:
+        in_equations (str): A string representing the model to be modified.
+        funk (str, optional): The name of the function to be expanded. Defaults to 'MAX'.
+        listin (list, optional): A list of dictionaries representing the lists in the model. 
+            If not provided, the function will search the model for lists.
+        replacefunk (str, optional): The name of the function to replace the expanded funk. 
+            If not provided, the original name will be used.
+
+    Returns:
+        str: A string representing the modified model.
+    """
+
     nymodel = []
     equations = in_equations[:].upper()  # we want do change the e
     liste_dict = listin if listin else list_extract(equations)   # Search the whold model for lists
@@ -480,9 +493,9 @@ def funkunroll(in_equations,funk='MAX',listin=False):
                 current_dict = liste_dict[sumover]
                 # print(f'{value=}')
                 ibsud = sub_frml(current_dict, sumled, ',', xvar=xvar,lig=lig,sep='')
-                value = forsum + 'xxxx_funk_ibhansen(' + ibsud + ')' + eftersum
+                value = forsum + 'xxxx_funk_ibhansen(' + ibsud + ')' + eftersum  # as we dont replace the funk name 
             if hit:
-                nymodel.append(f'{command} {value}'.replace('xxxx_funk_ibhansen',funk))
+                nymodel.append(f'{command} {value}'.replace('xxxx_funk_ibhansen',replacefunk if replacefunk else funk))
             else: 
                 nymodel.append(command + ' ' + value)
 

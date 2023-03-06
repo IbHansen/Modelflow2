@@ -52,7 +52,34 @@ def rebank(model):
 
     banked  = ypat.sub(trans, model) 
     return banked
+def addcountry(model,country='KEN'):
+    ''' All variable names are decorated by a {country name}
+    '''
+    
+    ypat    = re.compile(pt.namepat+pt.lagpat)
+    funk    = set(pt.funkname) | {'SUM','MAX'}
+    nocountry  = set('NORM PPF CDF'.split())  # specific variable names not to be decorated 
+    notouch = funk | nocountry  # names not to be decorated 
+    def trans(matchobj):
+            '''  The function recieves a matchobj entity. The matching groups can be accesed by matchobj.group() 
+            it returns a string with a bankname added at the end or at the first __ which marks dimensions  '''            
+            var = matchobj.group(1)
+            lag = '(' + matchobj.group(2) + ')'if matchobj.group(2) else ''
+            if var.upper() in notouch:
+                return var+lag
+            else:
+                if '__' in var:
+                    pre,post = var.split('__',1)
+                    post = ''+post
+                else:
+                    pre  = var
+                    post = '' 
 
+                return f'{country}{var}{lag}'
+
+    countryfied  = ypat.sub(trans, model) 
+    return countryfied
+# addcountry('a+b+c')
 
 def defrack(streng):
     '''  
@@ -262,6 +289,7 @@ def doable(ind,show=False):
 class a_latex_model:
     '''a model in latex '''
     modeltext : str() 
+    modelname : str = 'Latexmodel'
     modelequations : str = field(init=False)
     modellists : str = field(init=False)
     model_template : str = field(init=False)
@@ -283,7 +311,7 @@ class a_latex_model:
         self.model_exploded = '\n'.join(eq.exploded for eq in self.eq_list) + '\n' + self.modellisttext
         # print(f'{self.model_exploded=}')
         try:
-            self.mmodel = model( self.model_exploded )
+            self.mmodel = model( self.model_exploded,modelname = self.modelname )
             self.mmodel.equations_original = self.model_template
         except:  
             raise Exception
@@ -327,8 +355,8 @@ class a_latex_equation():
         normalizedeq = mp.normalize(self.doable_equation)
         self.exploded = normalizedeq
         self.exploded = mp.sumunroll(self.exploded,listin=self.modellists)
-        self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists,funk='LMAX')
-        self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists,funk='lMIN')
+        self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists,funk='LMAX',replacefunk='MAX')
+        self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists,funk='lMIN',replacefunk='MIN')
         self.exploded = mp.dounloop(self.exploded,listin=self.modellists)
         
     @property
@@ -384,10 +412,11 @@ class a_latex_equation():
                r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
                r'\\sum_{('+pt.namepat+')}\(' : r'sum(\1,',
                r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \2=1,',
-               r'\\max_{('+pt.namepat+')}\(' : r'max(\1,',
-               r"\\max_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'max(\1 \2=1,',
-               r'\\min_{('+pt.namepat+')}\(' : r'min(\1,',
-               r"\\min_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'min(\1 \2=1,',
+               
+               r'\\max_{('+pt.namepat+')}\(' : r'lmax(\1,',
+               r"\\max_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmax(\1 \2=1,',
+               r'\\min_{('+pt.namepat+')}\(' : r'lmin(\1,',
+               r"\\min_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmin(\1 \2=1,',
                
                 }
        # breakpoint()

@@ -61,4 +61,5 @@ changed keep_plot_widdget to keep_show  (1.52)
 modelwidget_input.keep_plot_widget (keep_show) can handle zero length exodif
 modelflow_lates \tau and \sigma
 model_latex_class coonditions in sum, and funk expand 
+now \max means max of list and max means max of values 
 

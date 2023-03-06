@@ -2329,7 +2329,7 @@ class Modify_Mixin():
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
         newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=updatefunks)
         
-        if len(frmldict_calc_add) and add_adjust:          
+        if len(frmldict_calc_add) and calc_add:          
 
             calc_add_frml = '\n'.join([f for f in frmldict_calc_add.values()])
             calc_add_model = self.__class__(calc_add_frml,modelname = f'adjustment calculation for updated {self.name}',funks=updatefunks)
@@ -5017,7 +5017,7 @@ class Solver_Mixin():
         if  newkwargs.get('cache_clear', True): 
             self.dekomp.cache_clear()
             
-        if newkwargs.get('keep', '') and self.save:
+        if newkwargs.get('keep', ''):
             if newkwargs.get('keep_variables', ''):
                 keepvar = self.vlist(newkwargs.get('keep_variables', ''))
                 self.keep_solutions[newkwargs.get(

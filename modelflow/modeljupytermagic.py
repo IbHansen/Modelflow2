@@ -138,7 +138,7 @@ try:
            else: 
                model_text = cell 
        
-       latex_model = a_latex_model(model_text)
+       latex_model = a_latex_model(model_text,modelname=name)
        mmodel  = latex_model.mmodel
        mmodel.equations_latex = model_text
    
