@@ -341,6 +341,22 @@ class a_latex_model:
 
 @dataclass 
 class a_latex_equation():
+    """
+A class that represents a LaTeX equation and provides methods for transforming it to a modelflow equation.
+
+Attributes:
+    equation_name (str): The name of the equation.
+    original_equation (str): The equation in LaTeX format.
+    modellists (list): A list of model objects used in the equation.
+
+Methods:
+    __post_init__(self): Initializes the object by transforming the original equation, making it "doable", 
+                         and performing calculations on the equation.
+"""
+
+
+
+
     equation_name          : str = ''            # The name 
     original_equation      : str = ''            # an equation in latex 
     modellists             : list = ''  
@@ -366,6 +382,19 @@ class a_latex_equation():
         print(f'exploded\n{self.transformed_equation}\n')
 
     def straighten_eq(self,temp):
+        """
+Given a LaTeX equation string in `temp`, this function processes and converts it to a more standardized format.
+
+Args:
+    temp (str): A LaTeX equation string to be processed and standardized.
+
+Returns:
+    str: A processed and standardized version of the input `temp` string.
+
+Raises:
+    None.
+"""
+
         if type(temp) == type(None):
              return None 
         trans={r'\left':'',
