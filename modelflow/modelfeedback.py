@@ -74,7 +74,7 @@ print("The remaning part is a DAG             :",nx.is_directed_acyclic_graph(G_
 import networkx as nx
 import random
 
-def approx_feedback_vertex_set(G, pop_size=50, iterations=100, elite_size=5, mutation_rate=0.1):
+def approx_feedback_vertex_set(G, pop_size=50, iterations=400, elite_size=5, mutation_rate=0.1):
     """
     Returns an approximate feedback vertex set of the input graph G using a genetic algorithm.
     """
@@ -149,4 +149,53 @@ def approx_feedback_vertex_set(G, pop_size=50, iterations=100, elite_size=5, mut
     return best_set
 
 mfvs = approx_feedback_vertex_set(G)
-print("Found feedback vertex set:", mfvs)
+print("Approximate minimal feedback vertex set:", mfvs)
+print("Approximate minimal feedback length    :", len(mfvs))
+print("Original length                        :", len(G))
+print("The remaning part is a DAG             :",nx.is_directed_acyclic_graph(G_test))
+#%%
+import random
+
+    def fitness(G, node_set):
+        """
+        Calculates the fitness of a set of nodes to remove from the graph.
+        """
+        H = G.copy()
+        H.remove_nodes_from([node for node in H if node not in node_set])
+        try:
+            return len(nx.find_cycle(H))
+        except nx.NetworkXNoCycle:
+            return float('inf')
+
+
+def find_feedback_set(G, pop_size=100, elite_size=20, mutation_rate=0.01, generations=100):
+    # create a list of all nodes in the graph
+    node_list = list(G.nodes())
+    # initialize the population randomly
+    population = [random.sample(node_list, random.randint(1, len(node_list))) for _ in range(pop_size)]
+    # loop through the generations
+    for gen in range(generations):
+        # evaluate the fitness of each individual in the population
+        fitness = [(individual, min([len(cycle) for cycle in nx.cycle_basis(G.subgraph(individual))], default=float('inf'))) for individual in population]
+        # sort the individuals by fitness
+        fitness.sort(key=lambda x: x[1])
+        # select the elite individuals for the next generation
+        elite = [x[0] for x in fitness[:elite_size]]
+        # create a new population by breeding the elite individuals
+        population = elite
+        while len(population) < pop_size:
+            parent1, parent2 = random.sample(elite, 2)
+            child = []
+            for gene in node_list:
+                if gene in parent1 and gene in parent2:
+                    child.append(gene)
+                elif random.random() < mutation_rate:
+                    child.append(gene)
+            population.append(child)
+    # return the minimum feedback vertex set found
+    return set(fitness[0][0])
+mfvs = find_feedback_set(G)
+print("Approximate minimal feedback vertex set:", mfvs)
+print("Approximate minimal feedback length    :", len(mfvs))
+print("Original length                        :", len(G))
+print("The remaning part is a DAG             :",nx.is_directed_acyclic_graph(G_test))

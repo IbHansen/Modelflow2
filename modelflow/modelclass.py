@@ -67,7 +67,8 @@ from functools import partial,cached_property,lru_cache
 from tqdm.auto import tqdm
 import operator
 
-
+from matplotlib import rcParams
+rcParams.update({'figure.autolayout': True})
 
 import seaborn as sns
 from IPython.display import SVG, display, Image, IFrame, HTML
@@ -5077,8 +5078,12 @@ class Solver_Mixin():
                                ljit=ljit, debug=kwargs.get('debug', 1), type='res')
 
         if not silent:
-            print(f'Create compiled solving function for {self.name}')
-            print(f'{ljit=} {stringjit=}  {transpile_reset=}  {hasattr(self, f"pro_{jitname}")=}')
+            if  newdata or transpile_reset or (ljit and not hasattr(self, f'pro_{jitname}')):
+                print('New data or transpile_reset')
+                print(f'Create compiled solving function for {self.name}')
+                print(f'{ljit=} {stringjit=}  {transpile_reset=}  {hasattr(self, f"pro_{jitname}")=}')
+            else: 
+                print('Reusing the solver as no new data ')
 
         if ljit:
             if newdata or transpile_reset or not hasattr(self, f'pro_{jitname}'):

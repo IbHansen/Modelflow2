@@ -18,7 +18,7 @@ from modelclass import model
 import modelvis as mv
 
 
-if not hasattr(pd.DataFrame,'mf') or 0:
+if not hasattr(pd.DataFrame,'mf') or 1:
     @pd.api.extensions.register_dataframe_accessor("mf")
     class mf():
         '''A class to extend Pandas Dataframes with ModelFlow functionalities
@@ -169,11 +169,16 @@ if not hasattr(pd.DataFrame,'mf') or 0:
                 else:     
                     raise Exception(f'To many times \nOffending:"{l0}"')
                 xeq = timesplit[1]
+                blanksmpl = False
             else: 
                 xeq=eq
+                blanksmpl = True 
 
             res = self._obj.mf(xeq,**kwargs).solve(**{**kwargs,**{'start':start,'slut':slut,'silent':True}})
             # print('jddd')
+            if blanksmpl:  
+                if self._obj.mf.model.maxlag or self._obj.mf.model.maxlead: 
+                    print(f'* Take care. Lags or leads in the equations, mfcalc run for {self._obj.mf.model.current_per[0]} to {self._obj.mf.model.current_per[1]}')
             if showeq: 
                 print(self._obj.mf.equations)
             return res
