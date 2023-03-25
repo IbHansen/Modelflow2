@@ -280,7 +280,9 @@ class GrabWfModel():
 
         # print([ f.normalized for f in self.all_frml ])
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
-        lfname = ["<Z,EXO> " if typ == 'stoc' else '' for typ in line_type ]
+        lfname = ["<QUASIIDENT> " if typ == 'stoc' and  endo_var in self.mfmsa_quasiIdentities else
+                  "<DAMP,STOC> "        if typ == 'stoc' else '<IDENT> ' 
+                  for typ,endo_var in zip( line_type,self.all_frml_dict.keys()) ]
         self.rorg = [fname + f.normalized for f,fname in zip(self.all_frml,lfname) ]
         # breakpoint()
         if self.make_fitted:
@@ -384,10 +386,24 @@ class GrabWfModel():
     def mfmsa_start_end(self):
         '''Finds the start and end from the MFMSA entry'''
         import xml
-        root = xml.etree.ElementTree.fromstring(self.mfmsa_options)
-        start = (root.find('iFace').find('SolveStart').text)   
-        end = (root.find('iFace').find('SolveEnd').text)  
+        root  = xml.etree.ElementTree.fromstring(self.mfmsa_options)
+        start = (root.find('.//SolveStart').text)   
+        end   = (root.find('.//SolveEnd').text)  
         return start,end 
+
+    @functools.cached_property
+    def mfmsa_quasiIdentities(self):
+        '''Finds the a set containing quasiidendities'''
+        import xml
+        try:
+            root = xml.etree.ElementTree.fromstring(self.mfmsa_options)
+            quasi =  root.find(".//quasiIdentities").text 
+            quasiset = {f'{self.modelname}{stem}' for stem in quasi.split()}.union(
+                       {f'{stem}'                 for stem in quasi.split()})
+        except: 
+            print(f'No quasiIdentities in {self.modelname}')
+            quasiset = set() 
+        return quasiset      
             
     # @property
     
@@ -521,7 +537,7 @@ if __name__ == '__main__':
     
 
     filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-    modelname = 'kaz'
+    modelname = 'pak'
     filename = filedict[modelname]
     
     
@@ -532,7 +548,7 @@ if __name__ == '__main__':
     
     cmodel = GrabWfModel(filename, 
                         # eviews_run_lines= eviews_run_lines,
-                        # country_trans    =  country_trans,
+                        country_trans    =  country_trans,
                         country_df_trans =  country_df_trans,
                         make_fitted = True,
                         do_add_factor_calc=True,
@@ -552,3 +568,9 @@ if __name__ == '__main__':
     lookat_all_frml_dict = grab_lookat.all_frml_dict
     base_input = cmodel.base_input
     mlookat(base_input,2020,2022)
+    
+    #%%
+    print(grab_lookat.mfmsa_quasiIdentities)
+    #%%
+    mlookat.var_with_frmlname('fit')
+    mlookat.equations

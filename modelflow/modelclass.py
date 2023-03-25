@@ -1228,20 +1228,31 @@ class Org_model_Mixin():
 
         '''
         a = self.vis(name)
+
         return a
 
     def __getattr__(self, name):
         '''To execute the . operator
         
-        uses :any:`modelvis.varvis`
+       
         
         '''
-        try:
-            return mv.varvis(model=self, var=name.upper())
-        except:
-            #            print(name)
-            raise AttributeError
-            pass
+        
+        if name.startswith('model_var_'):
+            wishfor= name[len('model_var_'):]
+            return(self.var_with_frmlname(wishfor))
+        elif name.startswith('model_eq_'):
+            wishfor= name[len('model_eq_'):]
+            return(self.frml_with_frmlname(wishfor))
+
+
+        else: 
+            try:
+                return mv.varvis(model=self, var=name.upper())
+            except:
+                #            print(name)
+                raise AttributeError
+                pass
 
     def __dir__(self):
         if self.tabcomplete:
@@ -1285,7 +1296,38 @@ class Org_model_Mixin():
 
 class Model_help_Mixin():
     ''' Helpers to model'''
+    
+    def var_with_frmlname(self,kwname=''):
+        ''' returns endogenous variables where the frmlname contains kwname''' 
+        return {v for v in self.endogene if pt.kw_frml_name(self.allvar[v]['frmlname'],kwname)}
+    
+    def frml_with_frmlname(self,kwname=''):
+        ''' returns equations where the frmlname contains kwname''' 
 
+        relevant_var = self.var_with_frmlname(kwname)
+        out = {v:self.allvar[v]['frml'] for v in relevant_var}
+        return out
+
+    @property
+    def model_exogene(self):
+        ''' True model exogeneous 
+        
+         - all exogenous excluding _D _A and _X variables 
+        ''' 
+        out = self.exogene-set(self.fix_dummy + self.fix_add_factor + self.fix_value)
+        return out
+    
+    @property 
+    def model_endogene(self):
+        '''True endogenous, for normalized models
+        
+        all endogenoue - fitted variables
+        
+        ''' 
+        
+        out = self.endogene - self.var_with_frmlname('fit')
+        return out
+    
     @staticmethod
     @contextmanager
     def timer(input='test', show=True, short=True):
@@ -2087,7 +2129,21 @@ class Description_Mixin():
     '''This Class defines description related methods and properties
     '''
 
+    @property 
+    def var_description(self):
+        return self._var_description
+    
+    @var_description.setter
+    def var_description(self,a_dict):
+        allvarset = set(self.allvar.keys())
+    
+        self._var_description = self.defsub({k:v for k,v in a_dict.items() if k in allvarset})
+
+    
     def set_var_description(self, a_dict):
+        self.var_description = a_dict
+        
+    def set_var_description_old (self, a_dict):
         allvarset = set(self.allvar.keys())
         self.var_description = self.defsub({k:v for k,v in a_dict.items() if k in allvarset})
 
@@ -2172,6 +2228,12 @@ class Description_Mixin():
 
 class Modify_Mixin():
     '''Class to modify a model with new equations, (later alse delete, and new normalization)'''
+    
+    
+    def copy_properties(self,mmodel):
+        ''' Transfer useful propoerties from self to a new model''' 
+        
+        
 
 
     def eqflip(self,flip=None,calc_add=True,newname='',sep='\n'):
@@ -7155,4 +7217,4 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     yy = mmodel(df2)
     
     # zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
-    zz = model.modelload(r'pak.pcim')
+    mpak,baseline = model.modelload(r'pak.pcim')

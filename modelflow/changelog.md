@@ -63,5 +63,20 @@ modelflow_lates \tau and \sigma
 model_latex_class coonditions in sum, and funk expand 
 now \max means max of list and max means max of values 
 matplotlib figure.autolayout set to true, in ordder to not to cut chart legends 
+ - STOC for stocastic variables 
+ - DAMP for dampable equations
+ - IDENT for identit
+ - QUASIIDENT for variables which match either 
+    - a name in the quasiident or 
+    - {modelname}name 
+        - where the name's are listed in the  quasiIdentities section in the MFMSA variable in the wf1/2 eviews file. 
+ 
+ A stocastic variable will have the frmlname <DAMP,STOC> 
+  - `var_with_frmlname(string)` returns a set of variable names 
+ - `frml_with_frmlname(string)` returns a dict with equations
+ - `model_exogene` returns a set of variable names 
+ - `model_endogene` returns a set of variable names 
+
+now __getatt wraps var_with_frmlname and frml_with_frmlname 
 
 
