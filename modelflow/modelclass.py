@@ -130,7 +130,8 @@ class BaseModel():
 
     def __init__(self, i_eq='', modelname='testmodel', silent=False, straight=False, funks=[],
                  tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= False,
-                 var_description={},  **kwargs):
+                 var_description={}, model_description = '', var_groups = {}, equations_latex='',
+                 **kwargs):
         ''' initialize a model'''
         if i_eq != '':
             self.funks = funks
@@ -153,9 +154,11 @@ class BaseModel():
             else:
                 self.use_preorder = False
             self.keep_solutions = {}
-            self.set_var_description(var_description)
             self.group_dict = {} 
-            self.model_description= ''
+            
+            self.var_description = var_description
+            self.var_groups = var_groups
+            self.model_description= model_description
         return
 
     @classmethod
@@ -2131,6 +2134,7 @@ class Description_Mixin():
 
     @property 
     def var_description(self):
+        '''A dictionary with variable descriptions, if no value matching the key the variable name is returned ''' 
         return self._var_description
     
     @var_description.setter
@@ -2141,7 +2145,13 @@ class Description_Mixin():
 
     
     def set_var_description(self, a_dict):
+        ''' sets var_description **Obsolete** now just use = to set a new var_description''' 
         self.var_description = a_dict
+        
+    def var_description_add (self, a_dict):
+        ''' adds a dict with var_descriptions to the var_description, new will overwrite old values''' 
+        
+        self.var_description = {**self._var_description, **a_dict} 
         
     def set_var_description_old (self, a_dict):
         allvarset = set(self.allvar.keys())
@@ -2229,6 +2239,22 @@ class Description_Mixin():
 class Modify_Mixin():
     '''Class to modify a model with new equations, (later alse delete, and new normalization)'''
     
+    def __add__(self,another_model):
+        if len(endooverlab:=self.endogene & another_model.endogene):
+            print(f'No overlab in endogenous allowed. Fix it.\nOffending variables: \n{endooverlab}')
+            raise Exception('When adding two models, no overlab in endogenous allowed ')
+        mnew = self.__class__(self.equations+another_model.equations,
+        modelname=f'Combined {self.name} and {another_model.name}',
+        var_description = {**self.var_description , **another_model.var_description},
+        var_groups  = {**self.var_groups      , **another_model.var_groups },
+        equations_latex = self.equations_latex+ another_model.equations_latex ,
+        model_description = f'''This model was created by combining the two models:{self.name} and {another_model.name}\n
+        {self.name} description:\n{self.model_description}\n
+        {another_model.name} description:\n{another_model.model_description}''')
+        mnew.lastdf = pd.concat([self.lastdf,another_model.lastdf],axis=1).fillna(0.0 )
+        mnew.current_per = self.current_per
+        return mnew     
+    
     
     def copy_properties(self,mmodel):
         ''' Transfer useful propoerties from self to a new model''' 
@@ -2274,7 +2300,15 @@ class Modify_Mixin():
         newfrmldict = {**frmldict,**frmldict_normalized} # frml's in the new model 
             
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
-        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=updatefunks)
+        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',
+                                      funks=updatefunks,
+                          var_description=self.var_description, 
+                          model_description = self.model_description, 
+                          var_groups = self.var_groups , 
+                          equations_latex='',
+                             
+                                      
+                                      )
         print(f'\nThe model:"{self.name}" Has endogeneous variable flipped, new model name is:"{newmodelname}"')
         for  (beforeendo,afterendo),(fname,nexpression)  in frml_normalize_gross.items():
             print(f'\nEndogeneous flip for {beforeendo} to {afterendo}')
@@ -2284,8 +2318,6 @@ class Modify_Mixin():
 
         newdf = self.lastdf.copy()
         newmodel.current_per = self.current_per.copy()
-        newmodel.var_description = self.var_description
-        newmodel.name = newmodelname 
         return newmodel,newdf 
         ... 
 
@@ -2315,7 +2347,14 @@ class Modify_Mixin():
         newfrmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_todelete} # frml's in the existing model 
             
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
-        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=self.funks)
+        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}'
+                                      ,funks=self.funks,
+                          var_description=self.var_description, 
+                          model_description = self.model_description, 
+                          var_groups = self.var_groups , 
+                          equations_latex='',
+                                      
+                                      )
         print(f'\nThe model:"{self.name}" Has equations deleted, new model name is:"{newmodelname}"')
 
         print('The following equations are deleted')
@@ -2329,7 +2368,6 @@ class Modify_Mixin():
         newdf = self.lastdf.copy()
             
         newmodel.current_per = self.current_per.copy()
-        newmodel.var_description = self.var_description
         newmodel.name = newmodelname 
 
         return newmodel,newdf 
@@ -2390,7 +2428,15 @@ class Modify_Mixin():
         newfrmldict = {**frmldict,**frmldict_update} # frml's in the new model 
             
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
-        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',funks=updatefunks)
+        newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',
+                                      funks=updatefunks,
+                                 var_description=self.var_description, 
+                                 model_description = self.model_description, 
+                                 var_groups = self.var_groups , 
+                                 equations_latex='',
+                               
+                                      
+                                      )
         
         if len(frmldict_calc_add) and calc_add:          
 
@@ -2411,7 +2457,7 @@ class Modify_Mixin():
         
         thisdf = newmodel.insertModelVar(self.lastdf)
         
-        
+        # breakpoint() 
         if len(frmldict_calc_add and calc_add):
             calc_add_model.current_per = self.current_per
             newdf = calc_add_model(thisdf)
@@ -2421,8 +2467,6 @@ class Modify_Mixin():
             newdf = thisdf
             
         newmodel.current_per = self.current_per.copy()
-        newmodel.var_description = self.var_description
-        newmodel.name = newmodelname 
 
         return newmodel,newdf 
         ... 

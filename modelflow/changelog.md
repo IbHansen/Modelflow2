@@ -78,5 +78,7 @@ matplotlib figure.autolayout set to true, in ordder to not to cut chart legends
  - `model_endogene` returns a set of variable names 
 
 now __getatt wraps var_with_frmlname and frml_with_frmlname 
+now var_description uses a setter som no more use for set_var_description
+var_description_add adds a dictionaryu with var discriptions to the var_description
 
 
