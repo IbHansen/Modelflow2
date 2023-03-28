@@ -46,7 +46,10 @@ class vis():
      def __init__(self, model=None, pat='',names=None,df=None):
          self.model = model
          self.__pat__ = pat
-         self.names = self.model.vlist(self.__pat__)
+         if self.__pat__.startswith('!'):
+             self.names = self.model.deslist(self.__pat__[1:])
+         else:
+            self.names = self.model.vlist(self.__pat__)
          if isinstance(df,pd.DataFrame):
              self.thisdf = df 
          else:
@@ -148,6 +151,20 @@ class vis():
          mlength = max([len(v) for v in self.names]) 
 
          out = '\n'.join(getdes(var,mlength) for var in self.names)
+         print(out)
+
+     @property
+     def eviews(self):
+         '''Returns variable descriptions '''
+         def geteviews(var,l):
+             if var in self.model.endogene: 
+                 ev = self.model.eviews_dict.get(var,'Not avaible')
+                 return f'{var:<{l}} : {ev}'
+            else: 
+                 
+         mlength = max([len(v) for v in self.names]) 
+
+         out = '\n'.join(geteviews(var,mlength) for var in self.names)
          print(out)
           
 

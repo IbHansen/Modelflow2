@@ -215,7 +215,8 @@ class GrabWfModel():
         do_add_factor_calc : bool = True  # calculate the add factors 
         test_frml          : str =''    # a testmodel as string if used no wf processing 
         disable_progress   : bool = False # Disable progress bar
-    
+        save_file          : bool = False # save information to file 
+  
     '''
     
     filename           : any = ''  #wf1 name 
@@ -232,7 +233,7 @@ class GrabWfModel():
     do_add_factor_calc : bool = True  # calculate the add factors 
     test_frml          : str =''    # a testmodel as string if used no wf processing 
     disable_progress   : bool = False # Disable progress bar
-    
+    save_file          : bool = False # save information to file 
     def __post_init__(self):
         '''Process the model'''
         
@@ -241,7 +242,7 @@ class GrabWfModel():
         else:     
         # breakpoint()
             wf2name,self.modelname  = wf1_to_wf2(self.filename ,modelname=self.modelname,eviews_run_lines= self.eviews_run_lines) 
-            self.model_all_about = wf2_to_clean(wf2name,modelname=self.modelname)
+            self.model_all_about = wf2_to_clean(wf2name,modelname=self.modelname,save_file= self.save_file)
             
             print(f'\nProcessing the model:{self.modelname}',flush=True)
             self.rawmodel_org = self.model_all_about['frml']
@@ -301,6 +302,8 @@ class GrabWfModel():
         
         self.mmodel = model(self.fmodel,modelname =self.model_all_about['modelname'])
         # self.mmodel.set_var_description(self.model_all_about['var_description'])
+        self.mmodel.eviews_dict =  {v: f.eviews for v,f in  self.all_frml_dict.items()}
+       
         self.mmodel.set_var_description(self.var_description)
         self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options']
         self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')

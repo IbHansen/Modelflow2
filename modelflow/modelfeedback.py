@@ -199,3 +199,45 @@ print("Approximate minimal feedback vertex set:", mfvs)
 print("Approximate minimal feedback length    :", len(mfvs))
 print("Original length                        :", len(G))
 print("The remaning part is a DAG             :",nx.is_directed_acyclic_graph(G_test))
+#%%
+
+import networkx as nx
+
+def min_feedback_set(G):
+    """
+    Find a good minimum feedback set from directed graph G.
+    """
+    # Create a new graph with the same nodes as G but no edges.
+    H = nx.DiGraph()
+    H.add_nodes_from(G.nodes())
+
+    # Add edges to H one at a time, in decreasing order of edge betweenness.
+    edges = sorted(G.edges(), key=lambda e: G[e[0]][e[1]]["betweenness"], reverse=True)
+    for u, v in edges:
+        # Check if adding edge (u, v) would create a cycle in H.
+        if nx.has_path(H, v, u):
+            continue
+
+        # Add edge (u, v) to H.
+        H.add_edge(u, v)
+
+        # Check if adding edge (v, u) would create a cycle in H.
+        if nx.has_path(H, u, v):
+            # Removing edge (u, v) creates a cycle in G.
+            # Remove edge (u, v) from H and add it to the feedback set.
+            H.remove_edge(u, v)
+
+    # Return the feedback set as a list of edges.
+    return list(H.edges())
+
+"""This program uses the NetworkX library to find a good minimum feedback set from directed graph `G`. It creates a new graph `H` with the same nodes as `G` but no edges. It then adds edges to `H` one at a time, in decreasing order of edge betweenness. If adding an edge `(u, v)` would create a cycle in `H`, it skips that edge. If adding an edge `(v, u)` would create a cycle in `H`, it removes the edge `(u, v)` from `H` and adds it to the feedback set. Finally, it returns the feedback set as a list of edges¹.
+
+I hope this helps!
+
+Kilde: Samtale med Bing, 28.3.2023(1) Feedback arc set - Wikipedia. https://en.wikipedia.org/wiki/Feedback_arc_set Vist 28.3.2023.
+(2) How to find feedback edge set in undirected graph. https://stackoverflow.com/questions/10791689/how-to-find-feedback-edge-set-in-undirected-graph Vist 28.3.2023.
+(3) Minimum Cost Path in a directed graph via given set of intermediate .... https://www.geeksforgeeks.org/minimum-cost-path-in-a-directed-graph-via-given-set-of-intermediate-nodes/ Vist 28.3.2023.
+(4) Implementing a directed graph in python - Stack Overflow. https://stackoverflow.com/questions/11869644/implementing-a-directed-graph-in-python Vist 28.3.2023.
+(5) Kruskal's Algorithm - Programiz. https://www.programiz.com/dsa/kruskal-algorithm Vist 28.3.2023.
+(6) Finding a loop in a directed graph in Python - Code Review Stack Exchange. https://codereview.stackexchange.com/questions/111737/finding-a-loop-in-a-directed-graph-in-python Vist 28.3.2023.
+"""

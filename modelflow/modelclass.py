@@ -1100,6 +1100,7 @@ class Org_model_Mixin():
             out = [v for p in ipat for up in p.split() for v in sorted(
                 fnmatch.filter(self.lastdf.columns, up.upper()))]
         return out
+    
 
     @staticmethod
     def list_names(input, pat, sort=True):
@@ -2233,6 +2234,29 @@ class Description_Mixin():
         var_description_new =  {**var_description,**add_d,**dummy_d,**fix_d,**fitted_d}
         return var_description_new
         
+    def deslist(self, pat):
+        '''
+        Returns a list of variable where the description in the model matching the pattern, the pattern can be a list of patterns
+
+        Args:
+            pat (string or list of strings): One or more pattern seperated by space wildcards * and ?, special pattern\: #ENDO  
+        
+        Returns:
+            out (list): list of variable names where the description matching the pat.
+
+        '''
+        ''''''
+        if isinstance(pat, list):
+            upat = pat
+        else:
+            upat = [pat]
+
+        ipat = upat
+        reverse_des  = {v.upper() : k for k,v in self.var_description.items()}
+        
+        out = [v for p in ipat for up in p.split() for v in sorted(
+                [reverse_des[v] for v in fnmatch.filter(reverse_des.keys(),up.upper())])]
+        return out
         
 
 
