@@ -130,7 +130,8 @@ class BaseModel():
 
     def __init__(self, i_eq='', modelname='testmodel', silent=False, straight=False, funks=[],
                  tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= False,
-                 var_description={}, model_description = '', var_groups = {}, equations_latex='',
+                 var_description={}, model_description = '', 
+                 var_groups = {}, equations_latex='', eviews_dict = {},
                  **kwargs):
         ''' initialize a model'''
         if i_eq != '':
@@ -159,6 +160,7 @@ class BaseModel():
             self.var_description = var_description
             self.var_groups = var_groups
             self.model_description= model_description
+            self.eviews_dict = eviews_dict
         return
 
     @classmethod
@@ -2143,6 +2145,8 @@ class Description_Mixin():
         allvarset = set(self.allvar.keys())
     
         self._var_description = self.defsub({k:v for k,v in a_dict.items() if k in allvarset})
+        self.var_description_reverse  = {v.upper() : k for k,v in self._var_description.items()}
+
 
     
     def set_var_description(self, a_dict):
@@ -2255,7 +2259,7 @@ class Description_Mixin():
         reverse_des  = {v.upper() : k for k,v in self.var_description.items()}
         
         out = [v for p in ipat for up in p.split() for v in sorted(
-                [reverse_des[v] for v in fnmatch.filter(reverse_des.keys(),up.upper())])]
+                [reverse_des[v] for v in fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
         return out
         
 
@@ -2272,6 +2276,7 @@ class Modify_Mixin():
         var_description = {**self.var_description , **another_model.var_description},
         var_groups  = {**self.var_groups      , **another_model.var_groups },
         equations_latex = self.equations_latex+ another_model.equations_latex ,
+        eviews_dict = {**self.eviews_dict,**another_model.eviews_dict},
         model_description = f'''This model was created by combining the two models:{self.name} and {another_model.name}\n
         {self.name} description:\n{self.model_description}\n
         {another_model.name} description:\n{another_model.model_description}''')
@@ -2369,13 +2374,14 @@ class Modify_Mixin():
             
             
         newfrmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_todelete} # frml's in the existing model 
-            
+        neweviewsdict  = {k: v for k,v in self.eviews_dict if not  k in vars_todelete}    
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
         newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}'
                                       ,funks=self.funks,
                           var_description=self.var_description, 
-                          model_description = self.model_description, 
+                          model_description = self.model_description + f'\nWith deledet variables: {vars_todelete}', 
                           var_groups = self.var_groups , 
+                          eviews_dict = neweviewsdict ,
                           equations_latex='',
                                       
                                       )
