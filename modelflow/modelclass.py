@@ -1088,19 +1088,26 @@ class Org_model_Mixin():
             upat = pat
         else:
             upat = [pat]
-            if pat.upper() == '#ENDO':
-                out = sorted(self.endogene)
-                return out
+            try:
+                if pat.upper() == '#ENDO':
+                    out = sorted(self.endogene)
+                    return out
+            except:
+                ... 
 
         ipat = upat
-
+        # breakpoint() 
         try:
             out = [v for p in ipat for up in p.split() for v in sorted(
-                fnmatch.filter(self.allvar.keys(), up.upper()))]
+                self.deslist(up[1:] ) if up.startswith('!')
+                else fnmatch.filter(self.allvar.keys(), up.upper()))]
         except:
             ''' in case the model instance is an empty instance around datatframes, typical for visualization'''
             out = [v for p in ipat for up in p.split() for v in sorted(
-                fnmatch.filter(self.lastdf.columns, up.upper()))]
+                
+                fnmatch.filter(self.lastdf.columns, up.upper()) 
+                )
+                ]
         return out
     
 
@@ -2250,16 +2257,18 @@ class Description_Mixin():
 
         '''
         ''''''
+        # breakpoint() 
+        
         if isinstance(pat, list):
             upat = pat
         else:
             upat = [pat]
 
         ipat = upat
-        reverse_des  = {v.upper() : k for k,v in self.var_description.items()}
+        # reverse_des  = {v.upper() : k for k,v in self.var_description.items()}
         
         out = [v for p in ipat for up in p.split() for v in sorted(
-                [reverse_des[v] for v in fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
+                [self.var_description_reverse[v] for v in fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
         return out
         
 
@@ -7291,4 +7300,4 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     yy = mmodel(df2)
     
     # zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
-    mpak,baseline = model.modelload(r'pak.pcim')
+    mpak,baseline = model.modelload(r'pak.pcim',run=1)

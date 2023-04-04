@@ -46,15 +46,17 @@ class vis():
      def __init__(self, model=None, pat='',names=None,df=None):
          self.model = model
          self.__pat__ = pat
-         if self.__pat__.startswith('!'):
-             self.names = self.model.deslist(self.__pat__[1:])
-         else:
-            self.names = self.model.vlist(self.__pat__)
+         if type(names) == type(None):
+             self.names = self.model.vlist(self.__pat__)
+         else: 
+             self.names = names 
+             
          if isinstance(df,pd.DataFrame):
              self.thisdf = df 
          else:
              self.thisdf = self.model.lastdf.loc[:,self.names] 
          return
+
 
      def explain(self,**kwargs):
          for var in self.names:
@@ -160,7 +162,8 @@ class vis():
              if var in self.model.endogene: 
                  ev = self.model.eviews_dict.get(var,'Not avaible')
                  return f'{var:<{l}} : {ev}'
-            else: 
+             else: 
+                return f'{var:<{l}} : Exogen'
                  
          mlength = max([len(v) for v in self.names]) 
 
@@ -184,6 +187,14 @@ class vis():
          ''' Returns the differens between the pct changes in basedf and lastdf'''
          difdf = self.thisdf.pct_change()-self.model.basedf.loc[:,self.names].pct_change()
          return vis(model=self.model,df=difdf,pat=self.__pat__)
+     
+     @property 
+     def endo(self):
+         endonames = [v for v in self.names if v in self.model.endogene]
+         thisdf = self.thisdf.loc[:,endonames] 
+
+         return vis(model=self.model,df = thisdf, names= endonames, pat= self.__pat__ )
+     
      @property
      def print(self):
          ''' prints the current result'''
