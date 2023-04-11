@@ -697,7 +697,7 @@ class keep_plot_widget:
           short: Short, 1 2 cut down on the inpout fields 
           select_scenario: If True, select the scenarios which has to be displayed
           switch : if True use the scenarios in mmodel.basedf and mmodel.lastdf 
-          group_dict: a dictionary of variable pattern  to select for instance countries
+          var_groups: a dictionary of variable pattern  to select for instance countries
           
           displaytype : string type one of ['tab','accordion','anything']
           save_location: Default save location 
@@ -732,7 +732,8 @@ class keep_plot_widget:
     select_height='200px'
     vline : any = None
     group_dict : dict = field(default_factory=dict)
-    use_group_dict : bool = True 
+    var_groups : dict = field(default_factory=dict)
+    use_var_groups : bool = True 
     add_var_name : bool = False
     short :any  = 0 
     multi :any = False 
@@ -854,16 +855,25 @@ class keep_plot_widget:
         description_width = 'initial'
         description_width_long = 'initial'
         
-        if self.use_group_dict:
-            if len(self.group_dict):
-                self.prefix_dict = self.group_dict
-            elif hasattr(self.mmodel,'group_dict'):
-                self.prefix_dict = self.mmodel.group_dict
+        # if self.use_group_dict:
+        #     if len(self.group_dict):
+        #         self.prefix_dict = self.group_dict
+        #     elif hasattr(self.mmodel,'group_dict'):
+        #         self.prefix_dict = self.mmodel.group_dict
+        #     else: 
+        #         self.prefix_dict = {}
+                
+        if self.use_var_groups:
+            if len(self.var_groups):
+                self.prefix_dict = self.var_groups
+            elif hasattr(self.mmodel,'var_groups'):
+                self.prefix_dict = self.mmodel.var_groups
             else: 
                 self.prefix_dict = {}
                 
         
-        select_prefix = [(c,iso) for iso,c in self.prefix_dict.items()]
+        select_prefix = [(iso,c) for iso,c in self.prefix_dict.items()]
+        # print(select_prefix)
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
                                       max=maxper, layout=Layout(width='75%'), description='Show interval')
         selected_vars = SelectMultiple( options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),

@@ -161,6 +161,7 @@ class BaseModel():
             self.var_groups = var_groups
             self.model_description= model_description
             self.eviews_dict = eviews_dict
+            self.equations_latex = equations_latex
         return
 
     @classmethod
@@ -1113,7 +1114,7 @@ class Org_model_Mixin():
 
     @staticmethod
     def list_names(input, pat, sort=True):
-        '''returns a list of variable in input  matching the pattern, the pattern can be a list of patterns'''
+        '''returns a list of variable in input  matching the pattern'''
         if sort:
             out = [v for up in pat.split()
                    for v in sorted(fnmatch.filter(input, up.upper()))]
@@ -4843,11 +4844,12 @@ class Json_Mixin():
             'modelname': self.name,
             'oldkwargs': self.oldkwargs,
             'var_description': self.var_description,
-            'equations_latex': self.equations_latex if hasattr(self, 'equations_latex') else '',
+            'equations_latex': self.equations_latex ,
             'keep_solutions': {k:v.to_json() for k,v in self.keep_solutions.items()} if keep else {},
             'wb_MFMSAOPTIONS': self.wb_MFMSAOPTIONS if hasattr(self, 'wb_MFMSAOPTIONS') else '',
-            'group_dict'     : self.group_dict,
+            'var_groups'     : self.var_groups,
             'model_description'     : self.model_description,
+            'eviews_dict'           : self.eviews_dict,
 
  
         }
@@ -4927,10 +4929,10 @@ class Json_Mixin():
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description', {}))
-        mmodel.equations_latex = input.get('equations_latex', None)
+        mmodel.equations_latex = input.get('equations_latex', '')
         if input.get('wb_MFMSAOPTIONS', None) : mmodel.wb_MFMSAOPTIONS = input.get('wb_MFMSAOPTIONS', None)
         mmodel.keep_solutions = {k : pd.read_json(jdf) for k,jdf in input.get('keep_solutions',{}).items()}
-        mmodel.group_dict = input.get('group_dict', {})
+        mmodel.var_groups = input.get('var_groups', {})
         mmodel.model_description = input.get('model_description', '')
         if keep_json:
             mmodel.json_keep = input
