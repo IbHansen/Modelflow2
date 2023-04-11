@@ -2269,17 +2269,12 @@ class Description_Mixin():
             upat = [pat]
 
         ipat = upat
-<<<<<<< Updated upstream
-        # reverse_des  = {v.upper() : k for k,v in self.var_description.items()}
-        
-        out = [v for p in ipat for up in p.split() for v in sorted(
-                [self.var_description_reverse[v] for v in fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
-=======
+
         
         out = [v for p in ipat for up in p.split() for v in sorted(
                 [self.var_description_reverse[v] for v in 
                  fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
->>>>>>> Stashed changes
+
         return out
         
 

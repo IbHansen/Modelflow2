@@ -46,22 +46,11 @@ class vis():
      def __init__(self, model=None, pat='',names=None,df=None):
          self.model = model
          self.__pat__ = pat
-<<<<<<< Updated upstream
          if type(names) == type(None):
              self.names = self.model.vlist(self.__pat__)
          else: 
              self.names = names 
              
-=======
-         if type(names) == list:
-             self.names=names
-         else:    
-             if self.__pat__.startswith('!'):
-                 self.names = self.model.deslist(self.__pat__[1:])
-             else:
-                self.names = self.model.vlist(self.__pat__)
-                
->>>>>>> Stashed changes
          if isinstance(df,pd.DataFrame):
              self.thisdf = df 
          else:
@@ -174,11 +163,7 @@ class vis():
                  ev = self.model.eviews_dict.get(var,'Not avaible')
                  return f'{var:<{l}} : {ev}'
              else: 
-<<<<<<< Updated upstream
                 return f'{var:<{l}} : Exogen'
-=======
-                return 'Exogeneous'
->>>>>>> Stashed changes
                  
          mlength = max([len(v) for v in self.names]) 
 
