@@ -1241,6 +1241,7 @@ class Org_model_Mixin():
         Uses the :any:`modelvis.vis` operator        
 
         '''
+        
         a = self.vis(name)
 
         return a
@@ -2153,8 +2154,10 @@ class Description_Mixin():
         allvarset = set(self.allvar.keys())
     
         self._var_description = self.defsub({k:v for k,v in a_dict.items() if k in allvarset})
-        self.var_description_reverse  = {v.upper() : k for k,v in self._var_description.items()}
-
+    
+    @property    
+    def var_description_reverse(self):
+        return  {v.upper() : k for k,v in self.var_description.items()}
 
     
     def set_var_description(self, a_dict):
@@ -2266,10 +2269,17 @@ class Description_Mixin():
             upat = [pat]
 
         ipat = upat
+<<<<<<< Updated upstream
         # reverse_des  = {v.upper() : k for k,v in self.var_description.items()}
         
         out = [v for p in ipat for up in p.split() for v in sorted(
                 [self.var_description_reverse[v] for v in fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
+=======
+        
+        out = [v for p in ipat for up in p.split() for v in sorted(
+                [self.var_description_reverse[v] for v in 
+                 fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
+>>>>>>> Stashed changes
         return out
         
 

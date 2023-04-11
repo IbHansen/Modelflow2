@@ -80,5 +80,13 @@ matplotlib figure.autolayout set to true, in ordder to not to cut chart legends
 now __getatt wraps var_with_frmlname and frml_with_frmlname 
 now var_description uses a setter som no more use for set_var_description
 var_description_add adds a dictionaryu with var discriptions to the var_description
+var_groups is stored as a dict 
+.endo can be used in [] to select the endogenous variables 
+when onboarding a eviews model the default wb variable describtion is also added 
+when onborarind a eviews model a default var_groups is added 
+in [] if first character is ! the patterns will match variable descriptions not variabble names 
+when onboarding an eviews model the eviews frmls will be contained in the model instance and carried on in .pcim files
+eviews_dict is used in .varvis so model.variable.eviews will display eviews
+
 
 

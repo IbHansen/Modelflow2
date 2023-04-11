@@ -327,8 +327,8 @@ if __name__ == '__main__':
     mmodel,para = getexcelmodel(testxls)
     eq=mmodel.equations
     mmodel.draw('_LCR_C62',up=10,down=1,HR=0,pdf=1)  # The LCR 
-    mmodel.draw('_LCR_C25',up=4,down=1)  # liquid assets
-    mmodel.draw('_LCR_C10',up=2)  # Leel 1 covered bonds 
+    mmodel.draw('_LCR_C25',up=4,down=1,pdf=1)  # liquid assets
+    mmodel.draw('_LCR_C10',up=2,pdf=1)  # Leel 1 covered bonds 
     
     c,r = findcoordinates(testxls)
     xx = findequations(testxls)

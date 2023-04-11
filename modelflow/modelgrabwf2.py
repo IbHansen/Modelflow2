@@ -278,6 +278,7 @@ class GrabWfModel():
                          for l,typ,e in tqdm(zip(line,line_type,eviewsline),
                     desc='Normalizing model',total=len(line),bar_format=bars,disable=self.disable_progress)]
 
+        # print(' ',flush=True)
 
         # print([ f.normalized for f in self.all_frml ])
         self.all_frml_dict = {f.endo_var: f for f in self.all_frml}
@@ -300,12 +301,15 @@ class GrabWfModel():
         # breakpoint()
         self.fres =   ('\n'.join(self.rres))
         
-        self.mmodel = model(self.fmodel,modelname =self.model_all_about['modelname'])
-        # self.mmodel.set_var_description(self.model_all_about['var_description'])
-        self.mmodel.eviews_dict =  {v: f.eviews for v,f in  self.all_frml_dict.items()}
+        self.mmodel = model(self.fmodel,modelname =self.model_all_about['modelname'],
+                      var_groups = self.var_groups, 
+                      )
+        self.mmodel.eviews_dict =  {v: f.eviews for v,f in  self.all_frml_dict.items()},        
+        self.mmodel.var_description = self.var_description      
+        self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options'] ,
        
-        self.mmodel.set_var_description(self.var_description)
-        self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options']
+        # self.mmodel.set_var_description(self.model_all_about['var_description'])
+       
         self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')
         # breakpoint()
         
@@ -371,12 +375,42 @@ class GrabWfModel():
 
         
         try:
-            this = self.model_all_about['var_description']
-            this_new  = self.mmodel.enrich_var_description(this)
+            this = {k:v for k,v in self.model_all_about['var_description'].items()
+                    if v!='TEMP' and k in (self.mmodel.endogene | self.mmodel.exogene) }
+            print('Variable description in wf1 file read')
         except:
-            print('*** No variable description',flush=True)
-            this_new  = {}
-        return this_new    
+            print(' ')
+            print('*** No variable description in wf1 file',flush=True)
+            this  = {}
+        generic = self.wb_default_descriptions
+        # breakpoint() 
+        this_both = {**generic,**this}         
+        out = self.mmodel.enrich_var_description(this_both)
+        return out 
+    
+    @property 
+    def wb_default_descriptions(self):
+        import urllib.request
+        try:
+            
+            default_url=r'https://raw.githubusercontent.com/IbHansen/modelflow-manual/main/model_repo/'
+            urlfile = (Path(default_url) / Path('wbvarnames.txt').name).as_posix().replace('https:/','https://')
+            
+            with urllib.request.urlopen(urlfile) as f:
+                lines_all = f.read().decode("utf-8") 
+            
+                
+            lines = lines_all.split('\n') 
+            alldes = {line.split(' ',1)[0] : line.split(' ',1)[1] for line in lines }
+            var_description_this = {resvar: des for  desvar, des in alldes.items() if ((resvar:= f'{self.modelname}{desvar}') in self.mmodel.allvar.keys()) }
+            var_description_wld = {desvar: des for  desvar, des in alldes.items() if desvar  in self.mmodel.allvar.keys()} 
+            
+            var_description = {**var_description_this, **var_description_wld} 
+            print('Default WB var_description loaded')
+            return var_description
+        except:
+            print('No default WB var_description loaded')
+            return {}
     
     @functools.cached_property
     def mfmsa_options(self):
@@ -408,7 +442,21 @@ class GrabWfModel():
             quasiset = set() 
         return quasiset      
             
-    # @property
+    @property
+    def var_groups(self):
+        print('Default WB var_group loaded')
+
+        return {'Headline': '???GDPpckn ???NRTOTLCN ???LMEMPTOTL ???BFFINCABDCD  ???BFBOPTOTLCD ???GGBALEXGRCN ???BNCABLOCLCD_ ???FPCPITOTLXN',
+ 'National income accounts': '???NY*',
+ 'National expenditure accounts': '???NE*',
+ 'Value added accounts': '???NV*',
+ 'Balance of payments exports': '???BX*',
+ 'Balance of payments exports and value added ': '???BX* ???NV*',
+ 'Balance of Payments Financial Account': '???BF*',
+ 'General government fiscal accounts': '???GG*',
+ 'World all': 'WLD*',
+ f'{self.modelname} all' : f'{self.modelname}*'}
+    
     
     @functools.cached_property
     def dfmodel(self):
@@ -561,7 +609,8 @@ if __name__ == '__main__':
                         fit_end   = 2030           # end of calc for fittted model, if None taken from mdmfsa options  
                         ) 
     # assert 1==2
-    cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
+    if 0:
+        cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
 
         
     grab_lookat = cmodel           
@@ -573,7 +622,5 @@ if __name__ == '__main__':
     mlookat(base_input,2020,2022)
     
     #%%
-    print(grab_lookat.mfmsa_quasiIdentities)
-    #%%
-    mlookat.var_with_frmlname('fit')
-    mlookat.equations
+    # mlookat.var_with_frmlname('fit')
+    # mlookat.equations
