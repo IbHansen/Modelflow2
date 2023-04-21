@@ -189,7 +189,15 @@ class vis():
      
      @property 
      def endo(self):
+         '''Selects only endogenous variables'''
          endonames = [v for v in self.names if v in self.model.endogene]
+         thisdf = self.thisdf.loc[:,endonames] 
+
+         return vis(model=self.model,df = thisdf, names= endonames, pat= self.__pat__ )
+     @property 
+     def exo(self):
+         '''Selects only exogenous variables''' 
+         endonames = [v for v in self.names if v in self.model.exogene]
          thisdf = self.thisdf.loc[:,endonames] 
 
          return vis(model=self.model,df = thisdf, names= endonames, pat= self.__pat__ )
@@ -446,6 +454,11 @@ class varvis():
      @property
      def frml(self):
          out = self._showall(all=0,dif=0)
+         print(out)
+         return 
+     @property
+     def eviews(self):
+         out = self.model.eviews_dict.get(self.var,'Not avaiable')
          print(out)
          return 
 

@@ -1073,7 +1073,8 @@ class Org_model_Mixin():
 
             udlist.append(' $ \n')
         return ''.join(udlist)
-
+    
+    @lru_cache(maxsize=2048)
     def vlist(self, pat):
         '''
         Returns a list of variable in the model matching the pattern, the pattern can be a list of patterns
@@ -1096,13 +1097,26 @@ class Org_model_Mixin():
                     return out
             except:
                 ... 
+                
+            if pat.startswith('#'):
+                if pat[1:] in self.var_groups.keys(): 
+                     upat = [self.var_groups[pat[1:]]] 
+                else: 
+                    lf='\n'
+                    print(f'No grouping like this. Select from: {lf}{lf.join(self.var_groups.keys())}')
+                    raise Exception('Try with a correct group name')
 
         ipat = upat
         # breakpoint() 
+        patlist = [apat.upper()  for p in ipat for apat in p.split()]
+        # patlist = [self.var_groups[apat[1:]] if apat.startswith('#') else apat for apat in patlist0]
+        # print(f'{patlist=}') 
         try:
-            out = [v for p in ipat for up in p.split() for v in sorted(
+            out = [v for  up in patlist  for v in sorted(
                 self.deslist(up[1:] ) if up.startswith('!')
-                else fnmatch.filter(self.allvar.keys(), up.upper()))]
+                else 
+                fnmatch.filter(self.allvar.keys(), up.upper())                
+                )]
         except:
             ''' in case the model instance is an empty instance around datatframes, typical for visualization'''
             out = [v for p in ipat for up in p.split() for v in sorted(

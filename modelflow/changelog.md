@@ -82,13 +82,15 @@ now var_description uses a setter som no more use for set_var_description
 var_description_add adds a dictionaryu with var discriptions to the var_description
 var_groups is stored as a dict 
 .endo can be used in [] to select the endogenous variables 
+.exo can be used in [] to select the exogenous  variables 
 when onboarding a eviews model the default wb variable describtion is also added 
 when onborarind a eviews model a default var_groups is added 
 in [] if first character is ! the patterns will match variable descriptions not variabble names 
 when onboarding an eviews model the eviews frmls will be contained in the model instance and carried on in .pcim files
-eviews_dict is used in .varvis so model.variable.eviews will display eviews
+eviews_dict is used in .varvis and var so model.variable.eviews will display eviews
 rcparam setting max open figures to 50
 plt.close(all) inserted several places to prevent cluttering of figures and less memory 
+
 
 
 
