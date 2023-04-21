@@ -166,7 +166,6 @@ class vis():
                 return f'{var:<{l}} : Exogen'
                  
          mlength = max([len(v) for v in self.names]) 
-
          out = '\n'.join(geteviews(var,mlength) for var in self.names)
          print(out)
           

@@ -87,6 +87,8 @@ when onborarind a eviews model a default var_groups is added
 in [] if first character is ! the patterns will match variable descriptions not variabble names 
 when onboarding an eviews model the eviews frmls will be contained in the model instance and carried on in .pcim files
 eviews_dict is used in .varvis so model.variable.eviews will display eviews
+rcparam setting max open figures to 50
+plt.close(all) inserted several places to prevent cluttering of figures and less memory 
 
 
 

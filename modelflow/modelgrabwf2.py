@@ -304,9 +304,9 @@ class GrabWfModel():
         self.mmodel = model(self.fmodel,modelname =self.model_all_about['modelname'],
                       var_groups = self.var_groups, 
                       )
-        self.mmodel.eviews_dict =  {v: f.eviews for v,f in  self.all_frml_dict.items()},        
+        self.mmodel.eviews_dict =  {v: f.eviews for v,f in  self.all_frml_dict.items()}        
         self.mmodel.var_description = self.var_description      
-        self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options'] ,
+        self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options'] 
        
         # self.mmodel.set_var_description(self.model_all_about['var_description'])
        

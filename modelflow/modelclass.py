@@ -69,6 +69,7 @@ import operator
 
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
+rcParams.update({'figure.max_open_warning': 50})
 
 import seaborn as sns
 from IPython.display import SVG, display, Image, IFrame, HTML
@@ -4365,6 +4366,7 @@ class Display_Mixin():
        Returns:
            figs (dict): dict of the generated Matplotlib figures. 
        """
+        plt.close('all')
 
         try:
             if keep_dim:
