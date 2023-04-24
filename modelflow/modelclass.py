@@ -4955,6 +4955,7 @@ class Json_Mixin():
         mmodel.keep_solutions = {k : pd.read_json(jdf) for k,jdf in input.get('keep_solutions',{}).items()}
         mmodel.var_groups = input.get('var_groups', {})
         mmodel.model_description = input.get('model_description', '')
+        mmodel.eviews_dict = input.get('eviews_dict', {})
         if keep_json:
             mmodel.json_keep = input
 
