@@ -618,7 +618,7 @@ class updatewidget:
                                         self.keep_ui.datawidget]
             
             self.start = copy(self.mmodel.current_per[0])
-            self.slut = copy(self.mmodel.current_per[-1])
+            self.end = copy(self.mmodel.current_per[-1])
             
         self.wselectfrom.observe(init_run,names='value',type='change')
 
@@ -639,12 +639,12 @@ class updatewidget:
         self.update(g)
         # print(f'run  smpl  {self.mmodel.current_per[0]=}')
         # self.start = self.mmodel.current_per[0]
-        # self.slut = self.mmodel.current_per[-1]
-        # print(f'{self.start=}  {self.slut=}')
+        # self.end = self.mmodel.current_per[-1]
+        # print(f'{self.start=}  {self.end=}')
         self.wrun .tooltip = 'Running'
         self.wrun.style.button_color = 'Red'
 
-        self.mmodel(self.thisexperiment,start=self.start,slut=self.slut,progressbar=0,keep = self.wname.value,                    
+        self.mmodel(self.thisexperiment,start=self.start,end=self.end,progressbar=0,keep = self.wname.value,                    
                 keep_variables = self.keeppat)
         self.wrun .tooltip = 'Click to run'
         self.wrun.style.button_color = 'Lime'

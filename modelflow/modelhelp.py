@@ -20,7 +20,7 @@ import operator as op
 
 
 
-def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, lprint=False,scale=1.0):
+def update_var(databank,xvar,operator='=',inputval=0,start='',end='',create=1, lprint=False,scale=1.0):
     
         """Updates a variable in the databank. Possible update choices are: 
         \n \= : val = inputval 
@@ -36,7 +36,7 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
         var = xvar.upper()
         if var not in databank: 
             if not create:
-                errmsg = f'Variable to update not found:{var}, timespan = [{start} {slut}] \nSet create=True if you want the variable created: '
+                errmsg = f'Variable to update not found:{var}, timespan = [{start} {end}] \nSet create=True if you want the variable created: '
                 raise Exception(errmsg)
             else:
                 if 0:
@@ -44,7 +44,7 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
                 databank[var]=0.0
 
         current_per = databank.index[databank.index.get_slice_bound(start,'left')
-                                     :databank.index.get_slice_bound(slut,'right')]
+                                     :databank.index.get_slice_bound(end,'right')]
         if operator.upper() == '+GROWTH':
             if databank.index.get_loc(start) == 0:
                 raise Exception(f"+growth update can't start at first row, var:{var}")
@@ -72,7 +72,7 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
 
         if len(inputdata) != antalper :
             print('** Error, There should be',antalper,'values. There is:',len(inputdata))
-            print('** Update =',var,'Data=',inputdata,start,slut)
+            print('** Update =',var,'Data=',inputdata,start,end)
             raise Exception('wrong number of datapoints')
         else:     
             inputserie=pd.Series(inputdata,current_per)*scale            
@@ -120,7 +120,7 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',slut='',create=1, 
             outputserie.name=var
             databank.loc[current_per,var]=outputserie
             if lprint:
-                print('Update',operator,inputdata,start,slut)
+                print('Update',operator,inputdata,start,end)
                 forspalte=str(max(6,len(var)))
                 print(('{:<'+forspalte+'} {:>20} {:>20} {:>20}').format(var,'Before', 'After', 'Diff'))
                 newdata=databank.loc[current_per,var]

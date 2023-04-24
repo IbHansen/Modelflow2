@@ -50,11 +50,11 @@ if not hasattr(pd.DataFrame,'mf') or 1:
             res.mf.eq = self.eq 
             return res
         
-        def solve(self,start='',slut='',**kwargs):
+        def solve(self,start='',end='',**kwargs):
             '''Solves a model'''
             this = self._obj
     #        print(kwargs)
-            self.solveopt = {**self.solveopt,**kwargs,**{'start':start,'slut':slut}} 
+            self.solveopt = {**self.solveopt,**kwargs,**{'start':start,'end':end}} 
     #        print(self.solveopt)
     #        print(self.solveopt)
             res = self.model(this,**self.solveopt)
@@ -127,7 +127,7 @@ if not hasattr(pd.DataFrame,'mf') or 1:
         Args:
             eq (TYPE): Equations one on each line. can be started with <start end> to control calculation sample .
             start (TYPE, optional): DESCRIPTION. Defaults to ''. 
-            slut (TYPE, optional): DESCRIPTION. Defaults to ''.
+            end (TYPE, optional): DESCRIPTION. Defaults to ''.
             showeq (TYPE, optional): If True the equations will be printed. Defaults to False.
             **kwargs (TYPE): Here all solve options can be provided.
 
@@ -140,14 +140,14 @@ if not hasattr(pd.DataFrame,'mf') or 1:
             self._obj = pandas_obj
     #        print(self._obj)
         
-        def __call__(self,eq,start='',slut='',showeq=False, **kwargs):
+        def __call__(self,eq,start='',end='',showeq=False, **kwargs):
             '''
             This call performs the calculation 
 
             Args:
                 eq (TYPE): Equations one on each line. can be started with <start end> to control calculation sample .
                 start (TYPE, optional): DESCRIPTION. Defaults to ''. 
-                slut (TYPE, optional): DESCRIPTION. Defaults to ''.
+                end (TYPE, optional): DESCRIPTION. Defaults to ''.
                 showeq (TYPE, optional): If True the equations will be printed. Defaults to False.
                 **kwargs (TYPE): Here all solve options can be provided.
 
@@ -156,16 +156,16 @@ if not hasattr(pd.DataFrame,'mf') or 1:
 
             '''
             
-    #        print({**kwargs,**{'start':start,'slut':slut}})
+    #        print({**kwargs,**{'start':start,'end':end}})
             if (l0:=eq.strip()).startswith('<'):
                 timesplit = l0.split('>',1)
                 time_options = timesplit[0].replace('<','').replace(',',' ').replace(':',' ').replace('/',' ').split()
                 
                 if len(time_options)==1:
                     start = time_options[0]
-                    slut = time_options[0]
+                    end = time_options[0]
                 elif len(time_options)==2:
-                    start,slut = time_options
+                    start,end = time_options
                 else:     
                     raise Exception(f'To many times \nOffending:"{l0}"')
                 xeq = timesplit[1]
@@ -174,7 +174,7 @@ if not hasattr(pd.DataFrame,'mf') or 1:
                 xeq=eq
                 blanksmpl = True 
 
-            res = self._obj.mf(xeq,**kwargs).solve(**{**kwargs,**{'start':start,'slut':slut,'silent':True}})
+            res = self._obj.mf(xeq,**kwargs).solve(**{**kwargs,**{'start':start,'end':end,'silent':True}})
             # print('jddd')
             if blanksmpl:  
                 if self._obj.mf.model.maxlag or self._obj.mf.model.maxlead: 

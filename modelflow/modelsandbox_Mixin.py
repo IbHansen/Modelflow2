@@ -117,11 +117,11 @@ class Newmodel_Mixin():
         return {v:self.allvar[v]['startnr'] for v in variabler}        
         
        
-    def sim2d(self, databank, start='', slut='', silent=0,samedata=0,alfa=1.0,stats=False,first_test=1,
+    def sim2d(self, databank, start='', end='', silent=0,samedata=0,alfa=1.0,stats=False,first_test=1,
               antal=1,conv=[],absconv=0.01,relconv=0.0000000000000001,
               dumpvar=[],init=False,ldumpvar=False,dumpwith=15,dumpdecimal=5,chunk=None,ljit=False,timeon=False,
               fairopt={'fairantal':1},**kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
         
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -134,7 +134,7 @@ class Newmodel_Mixin():
         '''
         starttimesetup=time.time()
         fairantal = {**fairopt,**kwargs}.get('fairantal',1)
-        sol_periode = self.smpl(start,slut,databank)
+        sol_periode = self.smpl(start,end,databank)
         if self.maxlag and not (self.current_per[0]+self.maxlag) in databank.index :
             print('***** Warning: You are solving the model before all lags are avaiable')
             print('Maxlag:',self.maxlag,'First solveperiod:',self.current_per[0],'First dataframe index',databank.index[0])
@@ -423,11 +423,11 @@ class Newmodel_Mixin():
         fib2.append(short + 'return prolog,los,epilog\n')
         return ''.join(chain(fib1,procontent,content,epilog,fib2))   
     
-    def sim1d(self, databank, start='', slut='', silent=0,samedata=0,alfa=1.0,stats=False,first_test=1,
+    def sim1d(self, databank, start='', end='', silent=0,samedata=0,alfa=1.0,stats=False,first_test=1,
               antal=1,conv=[],absconv=0.01,relconv=0.00001,
               dumpvar=[],ldumpvar=False,dumpwith=15,dumpdecimal=5,chunk=None,ljit=False, 
               fairopt={'fairantal':1},timeon=0,**kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
         
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -440,7 +440,7 @@ class Newmodel_Mixin():
         '''
         starttimesetup=time.time()
         fairantal = {**fairopt,**kwargs}.get('fairantal',1)
-        sol_periode = self.smpl(start,slut,databank)
+        sol_periode = self.smpl(start,end,databank)
         if self.maxlag and not (self.current_per[0]+self.maxlag) in databank.index :
             print('***** Warning: You are solving the model before all lags are avaiable')
             print('Maxlag:',self.maxlag,'First solveperiod:',self.current_per[0],'First dataframe index',databank.index[0])
@@ -703,11 +703,11 @@ class Newmodel_Mixin():
 
     pass
 
-    def newton1per(self, databank, start='', slut='', silent=1,samedata=0,alfa=1.0,stats=False,first_test=1,
+    def newton1per(self, databank, start='', end='', silent=1,samedata=0,alfa=1.0,stats=False,first_test=1,
               antal=20,conv=[],absconv=0.01,relconv=0.00001, nonlin=False ,timeit = False,reset=1,
               dumpvar=[],ldumpvar=False,dumpwith=15,dumpdecimal=5,chunk=None,ljit=False, 
               fairopt={'fairantal':1},**kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
         
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -721,7 +721,7 @@ class Newmodel_Mixin():
     #    print('new nwwton')
         starttimesetup=time.time()
         fairantal = {**fairopt,**kwargs}.get('fairantal',1)
-        sol_periode = self.smpl(start,slut,databank)
+        sol_periode = self.smpl(start,end,databank)
         if self.maxlag and not (self.current_per[0]+self.maxlag) in databank.index :
             print('***** Warning: You are solving the model before all lags are avaiable')
             print('Maxlag:',self.maxlag,'First solveperiod:',self.current_per[0],'First dataframe index',databank.index[0])
@@ -877,12 +877,12 @@ class Newmodel_Mixin():
         if not silent : print (self.name + ' solved  ')
         return outdf 
 
-    def newtonstack(self, databank, start='', slut='', silent=1,samedata=0,alfa=1.0,stats=False,first_test=1,
+    def newtonstack(self, databank, start='', end='', silent=1,samedata=0,alfa=1.0,stats=False,first_test=1,
               antal=20,conv=[],absconv=0.01,relconv=0.00001,
               dumpvar=[],ldumpvar=False,dumpwith=15,dumpdecimal=5,chunk=None,nchunk=None,ljit=False,nljit=0, 
               fairopt={'fairantal':1},debug=False,timeit=False,nonlin=False,nonlinfirst=0,
               newtonalfa = 1.0 , newtonnodamp=0,forcenum=True,reset = False, **kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
         
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -898,7 +898,7 @@ class Newmodel_Mixin():
         diffcount = 0 
         starttimesetup=time.time()
         fairantal = {**fairopt,**kwargs}.get('fairantal',1)
-        sol_periode = self.smpl(start,slut,databank)
+        sol_periode = self.smpl(start,end,databank)
         if self.maxlag and not (self.current_per[0]+self.maxlag) in databank.index :
             print('***** Warning: You are solving the model before all lags are avaiable')
             print('Maxlag:',self.maxlag,'First solveperiod:',self.current_per[0],'First dataframe index',databank.index[0])
@@ -1068,12 +1068,12 @@ class Newmodel_Mixin():
         if not silent : print (self.name + ' solved  ')
         return outdf 
 
-    def newton1per_un_normalized(self, databank, start='', slut='', silent=1,samedata=0,alfa=1.0,stats=False,first_test=1,
+    def newton1per_un_normalized(self, databank, start='', end='', silent=1,samedata=0,alfa=1.0,stats=False,first_test=1,
               antal=20,conv=[],absconv=0.01,relconv=0.00001, nonlin=False ,timeit = False,reset=1,
               dumpvar=[],ldumpvar=False,dumpwith=15,dumpdecimal=5,chunk=None,ljit=False, 
               fairopt={'fairantal':1},
               newtonalfa = 1.0 , newtonnodamp=0,**kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
         
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -1087,7 +1087,7 @@ class Newmodel_Mixin():
     #    print('new nwwton')
         starttimesetup=time.time()
         fairantal = {**fairopt,**kwargs}.get('fairantal',1)
-        sol_periode = self.smpl(start,slut,databank)
+        sol_periode = self.smpl(start,end,databank)
         if self.maxlag and not (self.current_per[0]+self.maxlag) in databank.index :
             print('***** Warning: You are solving the model before all lags are avaiable')
             print('Maxlag:',self.maxlag,'First solveperiod:',self.current_per[0],'First dataframe index',databank.index[0])
@@ -1245,12 +1245,12 @@ class Newmodel_Mixin():
         if not silent : print (self.name + ' solved  ')
         return outdf 
 
-    def newtonstack_un_normalized(self, databank, start='', slut='', silent=1,samedata=0,alfa=1.0,stats=False,first_test=1,
+    def newtonstack_un_normalized(self, databank, start='', end='', silent=1,samedata=0,alfa=1.0,stats=False,first_test=1,
               antal=20,conv=[],absconv=0.01,relconv=0.00001,
               dumpvar=[],ldumpvar=False,dumpwith=15,dumpdecimal=5,chunk=None,nchunk=None,ljit=False,nljit=0, 
               fairopt={'fairantal':1},debug=False,timeit=False,nonlin=False,
               newtonalfa = 1.0 , newtonnodamp=0,forcenum=True,reset = False, **kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
         
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -1266,7 +1266,7 @@ class Newmodel_Mixin():
         diffcount = 0 
         starttimesetup=time.time()
         fairantal = {**fairopt,**kwargs}.get('fairantal',1)
-        sol_periode = self.smpl(start,slut,databank)
+        sol_periode = self.smpl(start,end,databank)
         if self.maxlag and not (self.current_per[0]+self.maxlag) in databank.index :
             print('***** Warning: You are solving the model before all lags are avaiable')
             print('Maxlag:',self.maxlag,'First solveperiod:',self.current_per[0],'First dataframe index',databank.index[0])
@@ -1439,7 +1439,7 @@ class Newmodel_Mixin():
         if not silent : print (self.name + ' solved  ')
         return outdf 
 
-    def res2d(self, databank, start='', slut='',debug=False,timeit=False,silent=False,
+    def res2d(self, databank, start='', end='',debug=False,timeit=False,silent=False,
               chunk=None,ljit=0,alfa=1,stats=0,samedata=False,**kwargs):
         '''calculates the result of a model, no iteration or interaction 
         The text for the evaluater function is placed in the model property **make_res_text** 
@@ -1449,7 +1449,7 @@ class Newmodel_Mixin():
         '''
     #    print('new nwwton')
         starttimesetup=time.time()
-        sol_periode = self.smpl(start,slut,databank)
+        sol_periode = self.smpl(start,end,databank)
         # breakpoint()
         if self.maxlag and not (self.current_per[0]+self.maxlag) in databank.index :
             print('***** Warning: You are solving the model before all lags are avaiable')

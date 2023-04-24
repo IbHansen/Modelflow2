@@ -512,7 +512,7 @@ class updatewidget:
                                     self.keep_ui.datawidget])
         
         self.start = copy(self.mmodel.current_per[0])
-        self.slut = copy(self.mmodel.current_per[-1])
+        self.end = copy(self.mmodel.current_per[-1])
 
 
     
@@ -531,9 +531,9 @@ class updatewidget:
         self.update(g)
         # print(f'run  smpl  {self.mmodel.current_per[0]=}')
         # self.start = self.mmodel.current_per[0]
-        # self.slut = self.mmodel.current_per[-1]
-        print(f'{self.start=}  {self.slut=}')
-        self.mmodel(self.thisexperiment,start=self.start,slut=self.slut,progressbar=1,keep = self.wname.value,                    
+        # self.end = self.mmodel.current_per[-1]
+        print(f'{self.start=}  {self.end=}')
+        self.mmodel(self.thisexperiment,start=self.start,end=self.end,progressbar=1,keep = self.wname.value,                    
                 keep_variables = self.keeppat)
         # print(f'run  efter smpl  {self.mmodel.current_per[0]=}')
         self.mmodel.keep_exodif[self.wname.value] = self.exodif 

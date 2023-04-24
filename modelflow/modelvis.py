@@ -319,15 +319,15 @@ class  container():
         self.lastdf = lastdf
         self.basedf = basedf
         
-     def smpl(self,start='',slut='',df=None):
+     def smpl(self,start='',end='',df=None):
         ''' Defines the model.current_per which is used for calculation period/index
         when no parameters are issues the current current period is returned \n
         Either none or all parameters have to be provided '''
-        if start =='' and slut == '':
+        if start =='' and end == '':
             pass
         else:
-            istart,islut= self.lastdf.index.slice_locs(start,slut)
-            per=self.lastdf.index[istart:islut]
+            istart,iend= self.lastdf.index.slice_locs(start,end)
+            per=self.lastdf.index[istart:iend]
             self.current_per =  per 
         return self.current_per
      def vlist(self,pat):

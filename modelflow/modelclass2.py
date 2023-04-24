@@ -379,10 +379,10 @@ bb = los(xx)
         #%% get the baseline  
         grund   = pd.read_pickle(r'J:\Udvikling - feedback\Systemfiler\supergrund.pc')   
         start='2015q1'
-        slut='2017q4' 
+        end='2017q4' 
         
         #%% Run the baseline 
-#        xx=mmonas.sim2(grund,start='2015q1',slut='2017q4',antal=2000,first_test=500,conv='FY',silent=False,ljit=False,lcython=True)
+#        xx=mmonas.sim2(grund,start='2015q1',end='2017q4',antal=2000,first_test=500,conv='FY',silent=False,ljit=False,lcython=True)
 
     if 1: 
         testmodel = mmonas 
@@ -428,9 +428,9 @@ cmdclass={"build_ext": build_ext})
 #%%
     if mmonas is testmodel:    
         with ttimer('1 th Simulation'):
-            xx=mmonas.sim2(grund,start='2015q1',slut='2017q4',antal=2000,first_test=6000,conv='FY',silent=True,ljit=False,lcython=True)
+            xx=mmonas.sim2(grund,start='2015q1',end='2017q4',antal=2000,first_test=6000,conv='FY',silent=True,ljit=False,lcython=True)
         with ttimer('2 th Simulation'):
-            xx=mmonas.sim2(grund,start='2015q1',slut='2017q4',antal=3000,first_test=6000,conv='FY',silent=True,ljit=False,lcython=True)
+            xx=mmonas.sim2(grund,start='2015q1',end='2017q4',antal=3000,first_test=6000,conv='FY',silent=True,ljit=False,lcython=True)
 
 #%%  
     if mtest is testmodel:  
@@ -457,7 +457,7 @@ cmdclass={"build_ext": build_ext})
         mtotal.save = True
 #%%
         with ttimer():
-            adversenew=mtotal.sim2(adversefb,antal=3,first_test=200,slut='2018q4',silent=True,
+            adversenew=mtotal.sim2(adversefb,antal=3,first_test=200,end='2018q4',silent=True,
              conv='SHOCK__ITS__IT',ldumpvar=1,dumpvar=['G4_YER*IT'],
                dumpdecimal=3,dumpwith=10,lcython=True)
   

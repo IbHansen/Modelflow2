@@ -377,20 +377,20 @@ class BaseModel():
 #        gc.collect()
         return
 
-    def smpl(self, start='', slut='', df=None):
+    def smpl(self, start='', end='', df=None):
         ''' Defines the model.current_per which is used for calculation period/index
         when no parameters are issues the current current period is returned \n
         Either none or all parameters have to be provided '''
         df_ = self.basedf if df is None else df
-        if start == '' and slut == '':
+        if start == '' and end == '':
             # if first invocation just use the max slize
             if not hasattr(self, 'current_per'):
-                istart, islut = df_.index.slice_locs(
+                istart, iend = df_.index.slice_locs(
                     df_.index[0-self.maxlag], df_.index[-1-self.maxlead])
-                self.current_per = df_.index[istart:islut]
+                self.current_per = df_.index[istart:iend]
         else:
-            istart, islut = df_.index.slice_locs(start, slut)
-            per = df_.index[istart:islut]
+            istart, iend = df_.index.slice_locs(start, end)
+            per = df_.index[istart:iend]
             self.current_per = per
         self.old_current_per = copy.deepcopy(self.current_per)
         return self.current_per
@@ -406,36 +406,36 @@ class BaseModel():
             raise Exception(f'{war}\nMaxLeead:{self.maxlead}, Last solveperiod:{self.current_per[-1]}, Last dataframe index:{databank.index[-1]}')  
 
     @contextmanager
-    def set_smpl(self, start='', slut='', df=None):
+    def set_smpl(self, start='', end='', df=None):
         """
         Sets the scope for the models time range, and restors it afterward 
 
         Args:
             start : Start time. Defaults to ''.
-            slut : End time. Defaults to ''.
+            end : End time. Defaults to ''.
             df (Dataframe, optional): Used on a dataframe not self.basedf. Defaults to None.
 
         """
         if hasattr(self, 'current_per'):
             old_current_per = self.current_per.copy()
-            _ = self.smpl(start, slut, df)
+            _ = self.smpl(start, end, df)
         else:
-            _ = self.smpl(start, slut, df)
+            _ = self.smpl(start, end, df)
             old_current_per = self.current_per.copy()
 
         yield
         self.current_per = old_current_per
 
     @contextmanager
-    def set_smpl_relative(self, start_ofset=0, slut_ofset=0):
+    def set_smpl_relative(self, start_ofset=0, end_ofset=0):
         ''' Sets the scope for the models time range relative to the current, and restores it afterward'''
 
         old_current_per = self.current_per.copy()
-        old_start, old_slut = self.basedf.index.slice_locs(
+        old_start, old_end = self.basedf.index.slice_locs(
             old_current_per[0], old_current_per[-1])
         new_start = max(0, old_start+start_ofset)
-        new_slut = min(len(self.basedf.index), old_slut+slut_ofset)
-        self.current_per = self.basedf.index[new_start:new_slut]
+        new_end = min(len(self.basedf.index), old_end+end_ofset)
+        self.current_per = self.basedf.index[new_start:new_end]
         yield
 
         self.current_per = old_current_per
@@ -619,8 +619,8 @@ class BaseModel():
         else:
             return all(a == b)
 
-    def xgenr(self, databank, start='', slut='', silent=0, samedata=1, **kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+    def xgenr(self, databank, start='', end='', silent=0, samedata=1, **kwargs):
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -632,7 +632,7 @@ class BaseModel():
 
         '''
 
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
 
         if not silent:
@@ -815,7 +815,7 @@ class BaseModel():
                 "f8[:](f8[:],f8)", cache=cache, fastmath=True)(self.solve)
         return
 
-    def base_sim(self, databank, start='', slut='', max_iterations=1, first_test=1, ljit=False, exclude=[], silent=False, new=False,
+    def base_sim(self, databank, start='', end='', max_iterations=1, first_test=1, ljit=False, exclude=[], silent=False, new=False,
                  conv=[], samedata=True, dumpvar=[], ldumpvar=False,
                  dumpwith=15, dumpdecimal=5, lcython=False, setbase=False,
                  setlast=True, alfa=0.2, sim=True, absconv=0.01, relconv=0.00001,
@@ -824,7 +824,7 @@ class BaseModel():
 
         The default options are resonable for most use:
 
-        :parameter start,slut: Start and end of simulation, default as much as possible taking max lag into acount  
+        :parameter start,end: Start and end of simulation, default as much as possible taking max lag into acount  
         :parameter max_iterations: Max interations
         :parameter first_test: First iteration where convergence is tested
         :parameter ljit: If True Numba is used to compile just in time - takes time but speeds solving up 
@@ -849,7 +849,7 @@ class BaseModel():
 
        '''
 
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
         self.findpos()
         # fill all Missing value with 0.0
@@ -994,7 +994,7 @@ class BaseModel():
         res_calc = make(funks=self.funks)
         return res_calc
 
-    def base_res(self, databank, start='', slut='', silent=1, **kwargs):
+    def base_res(self, databank, start='', end='', silent=1, **kwargs):
         ''' calculates a model with data from a databank
         Used for check wether each equation gives the same result as in the original databank'
         '''
@@ -1004,7 +1004,7 @@ class BaseModel():
         databank = insertModelVar(databank, self)   # kan man det her? I b
         values = databank.values
         bvalues = values.copy()
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         stuff3, saveeval3 = self.createstuff3(databank)
         for per in sol_periode:
             row = databank.index.get_loc(per)
@@ -1453,8 +1453,8 @@ class Model_help_Mixin():
                 continue
             # print(f'line:{l}:')
             var, op, *value, arg1, arg2 = l.split()
-            istart, islut = df.index.slice_locs(arg1, arg2)
-            arg = df.index[istart], df.index[islut]
+            istart, iend = df.index.slice_locs(arg1, arg2)
+            arg = df.index[istart], df.index[iend]
            # print(var,op,value,arg,sep='|')
             update_var(df, var.upper(), op, value, *
                        arg, create=True, lprint=lprint)
@@ -1562,8 +1562,8 @@ class Model_help_Mixin():
                 raise Exception(f'Probably no blank after time \nOffending:"{whole_line}"')
 
                 
-            istart, islut = df.index.slice_locs(arg1, arg2)
-            current = df.index[istart:islut]
+            istart, iend = df.index.slice_locs(arg1, arg2)
+            current = df.index[istart:iend]
             time1,time2 = current[0],current[-1] 
             var, op, *value = l.split()
             update_growth = False
@@ -1573,7 +1573,7 @@ class Model_help_Mixin():
                 if var not in df.columns:
                     raise Exception(f'Can not keep growth for created variable\nOffending:"{whole_line}"')
 
-                resttime = df.index[islut:]
+                resttime = df.index[iend:]
                 if len(resttime):
                     update_growth = True
                     growth_rate = (df.loc[:,var].pct_change())[resttime].to_list()
@@ -1669,8 +1669,8 @@ class Model_help_Mixin():
             # print(f'{start=},{end=}')    
             # print(f'line:{l}:{time_options=}  :{arg1=} {arg2=}')
                 
-            istart, islut = df.index.slice_locs(arg1, arg2)
-            current = df.index[istart:islut]
+            istart, iend = df.index.slice_locs(arg1, arg2)
+            current = df.index[istart:iend]
             time1,time2 = current[0],current[-1] 
             varstring,opstring,valuestring =re.split(operatorpat,l)
                  
@@ -1690,7 +1690,7 @@ class Model_help_Mixin():
                     if varname not in df.columns:
                         raise Exception(f'Can not keep growth for created variable\nOffending:"{whole_line}"')
     
-                    resttime = df.index[islut:]
+                    resttime = df.index[iend:]
                     if len(resttime):
                         update_growth = True
                         growth_rate = (df.loc[:,varname].pct_change())[resttime].to_list()
@@ -1917,7 +1917,7 @@ class Dekomp_Mixin():
                 if leq:
                     print('---'*v.lev+self.allvar[v.child]['frml'])
                     self.print_eq(v.child.upper(), data=self.lastdf,
-                                  start='2015Q4', slut='2018Q2')
+                                  start='2015Q4', end='2018Q2')
                 else:
                     print('---'*v.lev+v.child)
                 if ldekomp:
@@ -3840,11 +3840,11 @@ class Display_Mixin():
 
             out.write(outfrml)
 
-    def print_eq(self, varnavn, data='', start='', slut=''):
+    def print_eq(self, varnavn, data='', start='', end=''):
         #from pandabank import get_var
         '''Print all variables that determines input variable (varnavn)
         optional -- enter period and databank to get var values for chosen period'''
-        print_per = self.smpl(start, slut, data)
+        print_per = self.smpl(start, end, data)
         minliste = [(term.var, term.lag if term.lag else '0')
                     for term in self.allvar[varnavn]['terms'] if term.var]
         print(self.allvar[varnavn]['frml'])
@@ -3894,11 +3894,11 @@ class Display_Mixin():
         for v in self.solveorder:
             self.print_eq_values(v, databank, dec=dec)
 
-    def print_eq_mul(self, varnavn, grund='', mul='', start='', slut='', impact=False):
+    def print_eq_mul(self, varnavn, grund='', mul='', start='', end='', impact=False):
         #from pandabank import get_var
         '''Print all variables that determines input variable (varnavn)
           optional -- enter period and databank to get var values for chosen period'''
-        grund.smpl(start, slut)
+        grund.smpl(start, end)
         minliste = [[term.var, term.lag if term.lag else '0']
                     for term in self.allvar[varnavn]['terms'] if term.var]
         print(self.allvar[varnavn]['frml'])
@@ -3919,12 +3919,12 @@ class Display_Mixin():
                 print('{:>20.4f}'.format(tal2), end='')
             print(' ')
 
-    def print_all_equations(self, inputdata, start, slut):
+    def print_all_equations(self, inputdata, start, end):
         '''Print values and formulas for alle equations in the model, based input database and period \n
         Example: stress.print_all_equations(bankdata,'2013Q3')'''
         for var in self.solveorder:
             # if var.find('DANSKE')<>-2:
-            self.print_eq(var, inputdata, start, slut)
+            self.print_eq(var, inputdata, start, end)
             print('\n' * 3)
 
     def print_lister(self):
@@ -3937,13 +3937,13 @@ class Display_Mixin():
 
    
 
-    def keep_print(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, diff=True):
+    def keep_print(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, diff=True):
         """ prints variables from experiments look at keep_get_dict for options
         """
 
         try:
             res = self.keep_get_dict(
-                pat, start, slut, start_ofset, slut_ofset, diff)
+                pat, start, end, start_ofset, end_ofset, diff)
             for v, outdf in res.items():
                 if diff:
                     print(f'\nVariable {v} Difference to first column')
@@ -3972,15 +3972,15 @@ class Display_Mixin():
         out.columns.names = ('Variable', 'Experiment')
         return out
     
-    # def var_get_df(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0):
+    # def var_get_df(self, pat='*', start='', end='', start_ofset=0, end_ofset=0):
     #     varlist  = self.vlist(pat)
     #     res = {}
-    #     with self.set_smpl(start, slut) as a, self.set_smpl_relative(start_ofset, slut_ofset):res = []
+    #     with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):res = []
     #         res['basedf'] = self.basedf.loc[self.current_per,varlist]
     #         res['lastdf'] = self.lastdf.loc[self.current_per,varlist]
     #     return out
 
-    def keep_var_dict(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, diff=False):
+    def keep_var_dict(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, diff=False):
         """
        Returns a dict of the keept experiments. Key is the scrnario names, values are a dataframe with  values for each variable
 
@@ -3989,9 +3989,9 @@ class Display_Mixin():
         Args:
             pat (TYPE, optional): variable selection. Defaults to '*'.
             start (TYPE, optional): start period. Defaults to ''.
-            slut (TYPE, optional): end period. Defaults to ''.
+            end (TYPE, optional): end period. Defaults to ''.
             start_ofset (TYPE, optional): start ofset period. Defaults to 0.
-            slut_ofset (TYPE, optional): end ofste period. Defaults to 0.
+            end_ofset (TYPE, optional): end ofste period. Defaults to 0.
 
         Returns:
             res (dictionary): a dict with a dataframe for each experiment 
@@ -4004,7 +4004,7 @@ class Display_Mixin():
                        for c in df.columns})
         vars = self.list_names(allvars, pat)
         res = {}
-        with self.set_smpl(start, slut) as a, self.set_smpl_relative(start_ofset, slut_ofset):
+        with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):
             for solver, solution in self.keep_solutions.items():
                 outv = pd.concat([solution.loc[self.current_per, v] for v in vars ], axis=1)
                 outv.columns = [self.var_description[v] for v  in vars]
@@ -4012,7 +4012,7 @@ class Display_Mixin():
                 res[solver] = outv
         return res
 
-    def keep_get_dict(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, diff=False):
+    def keep_get_dict(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, diff=False):
         """
        Returns a dict of the keept experiments. Key is the variable names, values are a dataframe with variable values for each experiment
 
@@ -4021,9 +4021,9 @@ class Display_Mixin():
         Args:
             pat (TYPE, optional): variable selection. Defaults to '*'.
             start (TYPE, optional): start period. Defaults to ''.
-            slut (TYPE, optional): end period. Defaults to ''.
+            end (TYPE, optional): end period. Defaults to ''.
             start_ofset (TYPE, optional): start ofset period. Defaults to 0.
-            slut_ofset (TYPE, optional): end ofste period. Defaults to 0.
+            end_ofset (TYPE, optional): end ofste period. Defaults to 0.
 
         Returns:
             res (dictionary): a dict with a dataframe for each experiment 
@@ -4036,7 +4036,7 @@ class Display_Mixin():
                        for c in df.columns})
         vars = self.list_names(allvars, pat)
         res = {}
-        with self.set_smpl(start, slut) as a, self.set_smpl_relative(start_ofset, slut_ofset):
+        with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):
             for v in vars:
                 # print(f'{v=}')
                 outv = pd.concat([solution.loc[self.current_per, v]
@@ -4047,7 +4047,7 @@ class Display_Mixin():
                     outv.iloc[:, 0], axis=0) if diff else outv
         return res
 
-    def keep_get_plotdict(self, pat='*', start='', slut='', 
+    def keep_get_plotdict(self, pat='*', start='', end='', 
                           showtype='level',
                    diff=False, diffpct = False, keep_dim=1):
             """
@@ -4058,7 +4058,7 @@ class Display_Mixin():
             Args:
                 pat (string, optional): Variable selection. Defaults to '*'.
                 start (TYPE, optional): start periode. Defaults to ''.
-                slut (TYPE, optional): end periode. Defaults to ''.
+                end (TYPE, optional): end periode. Defaults to ''.
                 showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
                 diff (Logical, optional): if True shows the difference to the
                                           first experiment or the first scenario. Defaults to False.
@@ -4070,9 +4070,9 @@ class Display_Mixin():
     """
             # breakpoint()
             if keep_dim:
-                dfs = self.keep_get_dict(pat, start, slut, -1 if  showtype == 'growth' else 0, 0)
+                dfs = self.keep_get_dict(pat, start, end, -1 if  showtype == 'growth' else 0, 0)
             else: 
-                dfs = self.keep_var_dict(pat, start, slut,  -1 if  showtype == 'growth' else 0, 0)
+                dfs = self.keep_var_dict(pat, start, end,  -1 if  showtype == 'growth' else 0, 0)
                 
             if showtype == 'growth':
                 dfs = {v: (vdf.pct_change()*100.).iloc[1:,:] for v, vdf in dfs.items()}
@@ -4112,7 +4112,7 @@ class Display_Mixin():
     
              
     
-    def keep_plot_multi(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, showtype='level',
+    def keep_plot_multi(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
                    diff=False, diffpct = False, mul=1.0,
                    title='', legend=False, scale='linear', yunit='', ylabel='', dec='',
                    trans={},
@@ -4125,9 +4125,9 @@ class Display_Mixin():
         Args:
             pat (string, optional): Variable selection. Defaults to '*'.
             start (TYPE, optional): start periode. Defaults to ''.
-            slut (TYPE, optional): end periode. Defaults to ''.
+            end (TYPE, optional): end periode. Defaults to ''.
             start_ofset (int, optional): start periode relativ ofset to current. Defaults to 0.
-            slut_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
+            end_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
             showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
             diff (Logical, optional): if True shows the difference to the first experiment. Defaults to False.
             diffpct (logical,optional) : if True shows the difference in percent to tirst experiment. defalut to false
@@ -4159,7 +4159,7 @@ class Display_Mixin():
          try:
             
                     
-             dfsres = self.keep_get_plotdict(pat=pat, start=start, slut=slut, 
+             dfsres = self.keep_get_plotdict(pat=pat, start=start, end=end, 
                                    showtype=showtype,
                             diff=diff, diffpct = diffpct, keep_dim=keep_dim)
              
@@ -4193,7 +4193,7 @@ class Display_Mixin():
                      if vline:
                          self.vline = vline
                      for xtime, text in self.vline:
-                         model.keep_add_vline(figs, xtime, text)
+                         model.keep_add_vline(fig, xtime, text)
              plt.tight_layout()            
              if savefig:
                  figpath = Path(savefig)
@@ -4210,15 +4210,15 @@ class Display_Mixin():
     
     
 
-    def inputwidget(self, start='', slut='', basedf=None, **kwargs):
+    def inputwidget(self, start='', end='', basedf=None, **kwargs):
         ''' calls modeljupyter input widget, and keeps the period scope '''
         if type(basedf) == type(None):
-            with self.set_smpl(start=start, slut=slut):
+            with self.set_smpl(start=start, end=end):
                 return mj.inputwidget(self, self.basedf, **kwargs)
         else:
             tempdf = insertModelVar(basedf, self)
             self.basedf = tempdf
-            with self.set_smpl(start=start, slut=slut):
+            with self.set_smpl(start=start, end=end):
                 return mj.inputwidget(self, self.basedf, **kwargs)
 
     
@@ -4346,7 +4346,7 @@ class Display_Mixin():
         return ('The charts wil be saved here:',f'{folder.absolute()}') 
            
  
-    def keep_plot(self, pat='*', start='', slut='', start_ofset=0, slut_ofset=0, showtype='level',
+    def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
                   diff=False, diffpct = False, mul=1.0,
                   title='Show variables', legend=False, scale='linear', yunit='', ylabel='', dec='',
                   trans={},
@@ -4358,9 +4358,9 @@ class Display_Mixin():
        Args:
            pat (string, optional): Variable selection. Defaults to '*'.
            start (TYPE, optional): start periode. Defaults to ''.
-           slut (TYPE, optional): end periode. Defaults to ''.
+           end (TYPE, optional): end periode. Defaults to ''.
            start_ofset (int, optional): start periode relativ ofset to current. Defaults to 0.
-           slut_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
+           end_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
            showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
            diff (Logical, optional): if True shows the difference to the first experiment. Defaults to False.
            diffpct (logical,optional) : if True shows the difference in percent to tirst experiment. defalut to false
@@ -4384,9 +4384,9 @@ class Display_Mixin():
 
         try:
             if keep_dim:
-                dfs = self.keep_get_dict(pat, start, slut, start_ofset, slut_ofset)
+                dfs = self.keep_get_dict(pat, start, end, start_ofset, end_ofset)
             else: 
-                dfs = self.keep_var_dict(pat, start, slut, start_ofset, slut_ofset)
+                dfs = self.keep_var_dict(pat, start, end, start_ofset, end_ofset)
                 
             if showtype == 'growth':
                 dfs = {v: vdf.pct_change()*100. for v, vdf in dfs.items()}
@@ -5325,13 +5325,13 @@ class Solver_Mixin():
             newdata = False
         return newdata, databank
 
-    def sim(self, databank, start='', slut='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=5,
+    def sim(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=5,
             max_iterations=200, conv='*', absconv=0.01, relconv=DEFAULT_relconv,
             stringjit=True, transpile_reset=False,
             dumpvar='*', init=False, ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, timeon=False,
             fairopt={'fair_max_iterations ': 1}, progressbar=False,**kwargs):
         '''
-        Evaluates this model on a databank from start to slut (means end in Danish). 
+        Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         
@@ -5348,8 +5348,8 @@ class Solver_Mixin():
         :type databank: dataframe
         :param start: start of simulation, defaults to ''
         :type start: optional
-        :param slut: end of simulation, defaults to ''
-        :type slut:  optional
+        :param end: end of simulation, defaults to ''
+        :type end:  optional
         :param silent: keep simulation silent , defaults to 1
         :type silent: bool, optional
         :param samedata: the inputdata has exactly same structure as last simulation , defaults to 0
@@ -5399,7 +5399,7 @@ class Solver_Mixin():
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
                                kwargs}.get('fair_max_iterations ', 1)
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         # breakpoint()
         self.check_sim_smpl(databank)
 
@@ -5719,11 +5719,11 @@ class Solver_Mixin():
         fib2.append(short + 'return prolog,core,epilog\n')
         return ''.join(chain(fib1, procontent, content, epilog, fib2))
 
-    def sim1d(self, databank, start='', slut='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1,
+    def sim1d(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1,
               max_iterations=100, conv='*', absconv=1.0, relconv=DEFAULT_relconv, init=False,
               dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=True, transpile_reset=False,
               fairopt={'fair_max_iterations ': 1}, timeon=0, **kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -5737,7 +5737,7 @@ class Solver_Mixin():
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
                                kwargs}.get('fair_max_iterations ', 1)
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
 
         self.check_sim_smpl(databank)
 
@@ -5978,12 +5978,12 @@ class Solver_Mixin():
         fib2.append(short + 'return prolog,core,epilog\n')
         return ''.join(chain(fib1, procontent, content, epilog, fib2))
 
-    def newton(self, databank, start='', slut='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
+    def newton(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False, newton_reset=1,
                dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=True, transpile_reset=False, lnjit=False, init=False,
                newtonalfa=1.0, newtonnodamp=0, forcenum=True,
                fairopt={'fair_max_iterations ': 1}, **kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -5998,7 +5998,7 @@ class Solver_Mixin():
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
                                kwargs}.get('fair_max_iterations ', 1)
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
 
         # if not self.eqcolumns(self.genrcolumns,databank.columns):
@@ -6149,12 +6149,12 @@ class Solver_Mixin():
             print(self.name + ' solved  ')
         return outdf
 
-    def newtonstack(self, databank, start='', slut='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
+    def newtonstack(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                     max_iterations=20, conv='*', absconv=1., relconv=DEFAULT_relconv,
                     dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=30, ljit=False, stringjit=True, transpile_reset=False, nljit=0,
                     fairopt={'fair_max_iterations ': 1}, debug=False, timeit=False, nonlin=False,
                     newtonalfa=1.0, newtonnodamp=0, forcenum=True, newton_reset=False, **kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -6171,7 +6171,7 @@ class Solver_Mixin():
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
                                kwargs}.get('fair_max_iterations ', 1)
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
 
         if not silent:
@@ -6324,12 +6324,12 @@ class Solver_Mixin():
             print(self.name + ' solved  ')
         return outdf
 
-    def newton_un_normalized(self, databank, start='', slut='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
+    def newton_un_normalized(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                              max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False, newton_reset=1,
                              dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=True, transpile_reset=False, lnjit=False,
                              fairopt={'fair_max_iterations ': 1},
                              newtonalfa=1.0, newtonnodamp=0, forcenum=True, **kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -6344,7 +6344,7 @@ class Solver_Mixin():
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
                                kwargs}.get('fair_max_iterations ', 1)
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         # breakpoint()
         self.check_sim_smpl(databank)
 
@@ -6496,12 +6496,12 @@ class Solver_Mixin():
             print(self.name + ' solved  ')
         return outdf
 
-    def newtonstack_un_normalized(self, databank, start='', slut='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
+    def newtonstack_un_normalized(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                                   max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv,
                                   dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=None, ljit=False, nljit=0, stringjit=True, transpile_reset=False,
                                   fairopt={'fair_max_iterations ': 1}, debug=False, timeit=False, nonlin=False,
                                   newtonalfa=1.0, newtonnodamp=0, forcenum=True, newton_reset=False, **kwargs):
-        '''Evaluates this model on a databank from start to slut (means end in Danish). 
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
         (:func:`modelclass.model.fouteval`) 
@@ -6518,7 +6518,7 @@ class Solver_Mixin():
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
                                kwargs}.get('fair_max_iterations ', 1)
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
 
         newdata, databank = self.is_newdata(databank)
@@ -6681,7 +6681,7 @@ class Solver_Mixin():
             print(self.name + ' solved  ')
         return outdf
 
-    def res(self, databank, start='', slut='', debug=False, timeit=False, silent=False,
+    def res(self, databank, start='', end='', debug=False, timeit=False, silent=False,
             chunk=None, ljit=0, stringjit=True, transpile_reset=False, alfa=1, stats=0, samedata=False, **kwargs):
         '''calculates the result of a model, no iteration or interaction 
         The text for the evaluater function is placed in the model property **make_res_text** 
@@ -6691,7 +6691,7 @@ class Solver_Mixin():
         '''
     #    print('new nwwton')
         starttimesetup = time.time()
-        sol_periode = self.smpl(start, slut, databank)
+        sol_periode = self.smpl(start, end, databank)
         # breakpoint()
         self.check_sim_smpl(databank)
 
