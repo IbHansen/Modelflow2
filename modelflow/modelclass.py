@@ -6881,7 +6881,7 @@ class Fix_Mixin():
         '''returns endogeneous variables not in wb_behavioral '''
         return  self.endogene-self.wb_behavioral
     
-    def fix(self,df,pat='*',start='',end=''):
+    def fix(self,df,pat='*',start='',end='',silent=0):
         '''
         Fixes variables to the current values. 
         
@@ -6921,6 +6921,10 @@ class Fix_Mixin():
             selected_values.columns = exo 
             # breakpoint()
             dataframe.loc[self.current_per,exo] = selected_values.loc[self.current_per,exo]
+            
+        if not silent: 
+            print('The folowing variables are fixed')
+            print(*selected,sep='\n')
     
         return dataframe
     

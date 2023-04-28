@@ -662,7 +662,8 @@ class newton_diff():
         number=len(xlags)
         dim = len(self.endovar) 
         I=lib.eye(dim)
-        
+        breakpoint()
+       
                                       # a idendity matrix
         AINV_dic = {date: np_to_df(lib.linalg.inv(I-A['lag=0']))
                     for date,A in A_dic.items()}  
@@ -670,23 +671,38 @@ class newton_diff():
                     for date,A in A_dic.items()}         # calculate A**-1*A(lag)
         top=lib.eye((number-1)*dim,number*dim,dim)
         # breakpoint()
-        bottom_dic = {date: lib.hstack([values(thisC) for thisC in C.values()]) for date,C in C_dic.items()}
+        bottom_dic = {date: lib.hstack([values(thisC) for thisC in C.values()]) for 
+                      date,C in C_dic.items()}
         comp_dic = {}
         for date,bottom in bottom_dic.items():
             comp_dic[date] = lib.vstack([top,bottom]) 
-        # breakpoint()
+        
         try:
-            eig_dic =  {date : calc_eig(comp)[0] for date,comp in comp_dic.items()} 
+            eigen_values_and_vectors =  {date : calc_eig(comp) for date,comp in comp_dic.items()} 
         except:            
-            eig_dic =  {date : calc_eig_reserve(comp)[0] for date,comp in comp_dic.items()} 
-        # return A_dic, AINV_dic, C_dic, xlags,bottom_dic,comp_dic,eig_dic
+            eigen_values_and_vectors =  {date : calc_eig_reserve(comp) for date,comp in comp_dic.items()} 
+
+
+        eig_dic = {date : both[0] for date,both in eigen_values_and_vectors.items() } 
+        self.comp_dic = comp_dic  
+        self.eigen_values_and_vectors = eigen_values_and_vectors
         self.eig_dic = eig_dic
         return eig_dic
-    
+
+    def get_df_eigen_dict(self):
+        values_and_vectors  = {per: [pd.DataFrame(vv[0],columns = ['Eigenvalues']).T, 
+                   pd.DataFrame(vv[1])]
+                       for per,vv in self.eigen_values_and_vectors.items()}
+
+        combined = {per : pd.concat(vandv) 
+                       for per,vandv in values_and_vectors.items()}
+        
+        return combined
+
     
     def eigplot(self, eig_dic=None,per=None,size=(4,3),top=0.9):
         import matplotlib.pyplot as plt
-        
+        plt.close('all')
         if type(eig_dic) == type(None):
             this_eig_dic = self.eig_dic 
         else:
@@ -700,7 +716,7 @@ class newton_diff():
         w = this_eig_dic[first_key]
     
         fig, ax = plt.subplots(figsize=size,subplot_kw={'projection': 'polar'})  #A4 
-        fig.suptitle(f'Eigen vectors in {first_key}\n',fontsize=20)
+        fig.suptitle(f'Eigen values in {first_key}\n',fontsize=20)
     
         for x in w:
             ax.plot([0,np.angle(x)],[0,np.abs(x)],marker='o')
@@ -721,7 +737,7 @@ class newton_diff():
         w = this_eig_dic[first_key]
     
         fig, ax = plt.subplots(figsize=size,subplot_kw={'projection': 'polar'})  #A4 
-        fig.suptitle(f'Eigen vectors in {first_key}\n',fontsize=20)
+        fig.suptitle(f'Eigen values in {first_key}\n',fontsize=20)
     
         for x in w:
             ax.plot([0,np.angle(x)],[0,np.abs(x)],marker='o')
@@ -783,7 +799,7 @@ class newton_diff():
 #%%    
 if __name__ == '__main__':
     #%% testing
-    os.environ['PYTHONBREAKPOINT'] = ''
+    os.environ['PYTHONBREAKPOINT'] = '1'
     from modelclass import model
     fsolow = '''\
     Y         = a * k**alfa * l **(1-alfa) 
@@ -804,7 +820,7 @@ if __name__ == '__main__':
     msolow(df,silent=1,ljit=0,transpile_reset=1)
     msolow.normalized = True
     
-    newton_all    = newton_diff(msolow,endoandexo=True,onlyendocur=True,forcenum=0)
+    newton_all    = newton_diff(msolow,forcenum=0)
     dif__model = newton_all.diff_model.equations
     melt = newton_all.get_diff_melted_var()
     tt = newton_all.get_diff_mat_all_1per(2002,asdf=True)
