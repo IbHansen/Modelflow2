@@ -6870,7 +6870,7 @@ class Fix_Mixin():
         ''' returns endogeneous where the frml name contains a Z which signals a stocastic equation 
         '''
         out1 =   {vx for vx in self.endogene if 'Z' in self.allvar[vx]['frmlname']}
-        alt  =   {vx for vx in self.endogene if ('EXO' in self.allvar[vx]['frmlname'] or 'FIXABLE' in self.allvar[vx]['frmlname'])  
+        alt  =   {vx for vx in self.endogene if ('EXO' in self.allvar[vx]['frmlname'] or 'FIXABLE' in self.allvar[vx]['frmlname'] or 'STOC' in self.allvar[vx]['frmlname'])  
                   and    vx+'_X' in self.exogene and  vx+'_D' in self.exogene }
         # breakpoint()
         # assert out1 == alt, 'Problems wih wb behavioral '
@@ -6895,7 +6895,7 @@ class Fix_Mixin():
             var_d = 1
         
         
-        The variables fulfilling this are elements of .wb_behavioral 
+        The variables fulfilling this are elements of .self.fix_endo
 
         Args:
             df (TYPE): Input dataframe should contain a solution and all variables ..
@@ -6910,7 +6910,7 @@ class Fix_Mixin():
         '''Fix all  variables which can be exogenized to their value '''
     
         dataframe=df.copy() 
-        beh   = sorted(self.wb_behavioral )
+        beh   = sorted(self.fix_endo )
         selected  = [v for up in pat.split() for v in fnmatch.filter(beh, up.upper())]
         exo   = [v+'_X' for v in selected ]
         dummy = [v+'_D' for v in selected ]
@@ -6942,7 +6942,7 @@ class Fix_Mixin():
         
         dataframe=df.copy() 
     
-        beh   = sorted(self.wb_behavioral )
+        beh   = sorted(self.fix_endo )
         selected  = [v for up in pat.split() for v in fnmatch.filter(beh, up.upper())]
 
         dummy = [v+'_D' for v in selected ]
