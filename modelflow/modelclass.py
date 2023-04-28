@@ -1074,7 +1074,7 @@ class Org_model_Mixin():
             udlist.append(' $ \n')
         return ''.join(udlist)
     
-    @lru_cache(maxsize=2048)
+    # @lru_cache(maxsize=2048)
     def vlist(self, pat):
         '''
         Returns a list of variable in the model matching the pattern, the pattern can be a list of patterns

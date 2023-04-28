@@ -416,7 +416,6 @@ class varvis():
  
      def _showall(self,all=1,dif=0,last=0,show_all=True):
             from IPython.display import SVG, display, Image, IFrame, HTML, Markdown
- 
             if self.endo:
                 des_string = self.model.get_eq_des(self.var,show_all)
                 out0,out1,out2 = '','',''

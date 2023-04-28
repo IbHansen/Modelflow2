@@ -90,6 +90,7 @@ when onboarding an eviews model the eviews frmls will be contained in the model 
 eviews_dict is used in .varvis and var so model.variable.eviews will display eviews
 rcparam setting max open figures to 50
 plt.close(all) inserted several places to prevent cluttering of figures and less memory 
+slut has been replaced with end 
 
 
 
