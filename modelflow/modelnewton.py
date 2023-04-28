@@ -662,14 +662,16 @@ class newton_diff():
         number=len(xlags)
         dim = len(self.endovar) 
         I=lib.eye(dim)
-        breakpoint()
+        # breakpoint()
        
                                       # a idendity matrix
         AINV_dic = {date: np_to_df(lib.linalg.inv(I-A['lag=0']))
                     for date,A in A_dic.items()}  
         C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items()if lag!='lag=0'} 
+        # C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items()} 
                     for date,A in A_dic.items()}         # calculate A**-1*A(lag)
-        top=lib.eye((number-1)*dim,number*dim,dim)
+        top=lib.eye((number-1)*dim,(number)*dim,dim)
+        # top=lib.eye((number)*dim,(number+1)*dim,dim)
         # breakpoint()
         bottom_dic = {date: lib.hstack([values(thisC) for thisC in C.values()]) for 
                       date,C in C_dic.items()}
