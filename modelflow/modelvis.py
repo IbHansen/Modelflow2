@@ -225,7 +225,9 @@ class vis():
          '''Displays a nice summary of the results when called in a Jupyter enviorement'''
 
          from modelwidget import visshow
-         visshow(self.model,self.__pat__)
+         pat = ' '.join(self.names)
+         # visshow(self.model,self.__pat__)
+         visshow(self.model,pat)
          return ''
 
          # return self.model.ibsstyle(self.thisdf.loc[self.model.current_per,:]).to_html(doctype_html=True) 
@@ -240,8 +242,10 @@ class vis():
      @property
      def show(self):
          if self.model.in_notebook():
+             pat = ' '.join(self.names)
+
              from modelwidget import visshow
-             visshow(self.model,self.__pat__)
+             visshow(self.model,pat)
          else:     
              print(self.thisdf.loc[self.model.current_per,:].to_string()) 
 
@@ -542,6 +546,10 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=None,
 
         ax.xaxis.set_minor_locator(plt.NullLocator())
         ax.tick_params(axis='x', labelleft=True)
+        if out.index.dtype == 'int64':
+            fmtr = ticker.StrMethodFormatter('{x:.0f}')
+            ax.xaxis.set_major_formatter(fmtr)
+        
     fig = axes.flatten()[0].get_figure()
     fig.set_constrained_layout(True)
     fig.suptitle(name,fontsize=20)

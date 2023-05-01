@@ -147,6 +147,7 @@ class BaseModel():
             self.analyzemodelnew(silent)  # on board the model equations
             self.maxstart = 0
             self.genrcolumns = []
+
             # do we want tabcompletion (slows dovn input to large models)
             self.tabcomplete = tabcomplete
             # set basedf to the previous run instead of the first run
@@ -426,6 +427,7 @@ class BaseModel():
         yield
         self.current_per = old_current_per
 
+
     @contextmanager
     def set_smpl_relative(self, start_ofset=0, end_ofset=0):
         ''' Sets the scope for the models time range relative to the current, and restores it afterward'''
@@ -436,6 +438,7 @@ class BaseModel():
         new_start = max(0, old_start+start_ofset)
         new_end = min(len(self.basedf.index), old_end+end_ofset)
         self.current_per = self.basedf.index[new_start:new_end]
+
         yield
 
         self.current_per = old_current_per
@@ -4005,6 +4008,7 @@ class Display_Mixin():
         vars = self.list_names(allvars, pat)
         res = {}
         with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):
+            # print(f'{self.current_per[-1]=}')
             for solver, solution in self.keep_solutions.items():
                 outv = pd.concat([solution.loc[self.current_per, v] for v in vars ], axis=1)
                 outv.columns = [self.var_description[v] for v  in vars]
@@ -4247,6 +4251,10 @@ class Display_Mixin():
         years = mdates.YearLocator()   # every year
         months = mdates.MonthLocator()  # every month
         years_fmt = mdates.DateFormatter('%Y')
+        if df.index.dtype == 'int64':
+            fmtr = ticker.StrMethodFormatter('{x:.0f}')
+            ax.xaxis.set_major_formatter(fmtr)
+
 
         ax.set_title(f'{title} {trans.get(var,var)}', fontsize=14)
         if legend:
@@ -4350,7 +4358,7 @@ class Display_Mixin():
                   diff=False, diffpct = False, mul=1.0,
                   title='Show variables', legend=False, scale='linear', yunit='', ylabel='', dec='',
                   trans={},
-                  showfig=False,
+                  showfig=True,
                   vline=[], savefig='', keep_dim= True,dataonly=False):
         """
 
@@ -4372,7 +4380,7 @@ class Display_Mixin():
            ylabel (TYPE, optional): DESCRIPTION. Defaults to ''.
            dec (TYPE, optional): decimals if '' automated. Defaults to ''.
            trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
-           showfig (TYPE, optional): Time will come . Defaults to False.
+           showfig (TYPE, optional): Time will come . Defaults to True.
            vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
            savefig (string,optional): folder to save figures in. Can include folder name, if needed the folder will be created 
            keep_dim (bool,True): if True each line is a scenario else each line is a variable 
@@ -4381,7 +4389,7 @@ class Display_Mixin():
            figs (dict): dict of the generated Matplotlib figures. 
        """
         plt.close('all')
-
+        # print(f'{self.current_per[-1]=}')
         try:
             if keep_dim:
                 dfs = self.keep_get_dict(pat, start, end, start_ofset, end_ofset)
@@ -4398,7 +4406,7 @@ class Display_Mixin():
 
             else:
                 dftype = 'Level'
-            
+
             if keep_dim: 
                 if diff:
                     dfsres = {v: (vdf.subtract(

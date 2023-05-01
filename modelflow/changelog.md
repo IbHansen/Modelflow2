@@ -91,6 +91,9 @@ eviews_dict is used in .varvis and var so model.variable.eviews will display evi
 rcparam setting max open figures to 50
 plt.close(all) inserted several places to prevent cluttering of figures and less memory 
 slut has been replaced with end 
+1.64 
+if index is a integer x axis in keepplot and vis are shown without decimals
+showfig is default on in keep_plot
 
 
 

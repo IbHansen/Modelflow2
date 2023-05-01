@@ -536,6 +536,7 @@ class visshow:
         # print('hej haj')
         plt.close('all')
 
+        # print(f'{self.show_on=}')
         plt.ioff() 
         this_vis = self.mmodel[self.varpat]
         self.out_dict = {}
@@ -567,7 +568,6 @@ class visshow:
         exoindex = exodif.index
         
         
-        # print(f'{exoindexstart=} {exoindexend=}   {exoindexnew=}')
         if 1:
             
             if len(exonames):
