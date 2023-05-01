@@ -117,7 +117,7 @@ class slidewidget:
     expname      : str =  "Carbon tax rate, US$ per tonn "
     def __post_init__(self):
         ...
-        plt.ioff()
+        # plt.ioff()
         wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
         walt  = widgets.Label(value = self.altname,layout={'width':'8%', 'border':"hide"})
         wbas  = widgets.Label(value = self.basename,layout={'width':'10%', 'border':"hide"})

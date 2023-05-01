@@ -561,6 +561,8 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=None,
     if savefig:
         fig.savefig(savefig)
    # plt.subplot_tool()
+    plt.ion() 
+    plt.close('all')
     return fig
     
 def melt(df,source='Latest'):
@@ -584,6 +586,7 @@ def heatshow(df,name='',cmap="Reds",mul=1.,annot=False,size=(11.69,8.27),dec=0,c
     ax.set_xticklabels(ax.xaxis.get_majorticklabels(), va = 'top' ,rotation=70.)
     fig.subplots_adjust(bottom=0.15)
     #ax.tick_paraOms(axis='y',direction='out', length=3, width=2, colors='b',labelleft=True)
+    plt.close('all')
     return fig
 ##%%
 def attshow(df,treshold=False,head=5000,tail=0,t=True,annot=False,showsum=False,sort=True,size=(11.69,8.27),title='',
@@ -726,6 +729,9 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
         # fig.subplots_adjust(top=top)
 
 #    plt.show()
+    plt.close('all')
+
+
     return fig
 
 if __name__ == '__main__' and 1:

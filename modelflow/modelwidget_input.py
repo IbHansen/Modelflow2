@@ -1020,12 +1020,12 @@ class keep_plot_widget:
         # clear_output()
         with self.mmodel.keepswitch(switch=self.switch,scenarios= self.scenarioselected):
             with self.mmodel.set_smpl(*smpl):
-                plt.close('all')
     
                 self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
                                                     scale=scale, showtype=showtype,
                                                     showfig=False,
                                                     legend=legend, dec=self.dec, vline=self.vline)
+                plt.close('all')
                 return self.keep_wiz_figs  
             
             

@@ -4389,6 +4389,8 @@ class Display_Mixin():
            figs (dict): dict of the generated Matplotlib figures. 
        """
         plt.close('all')
+        plt.ioff() 
+
         # print(f'{self.current_per[-1]=}')
         try:
             if keep_dim:
@@ -4472,6 +4474,7 @@ class Display_Mixin():
                 ...
                 for f in figs.values(): 
                     display(f)
+            plt.ion() 
 
             return figs
         except ZeroDivisionError:
