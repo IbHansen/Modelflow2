@@ -534,10 +534,10 @@ class visshow:
         # get_ipython().magic('matplotlib notebook') 
         # print(plt.get_backend())
         # print('hej haj')
-        plt.close('all')
+        # plt.close('all')
 
         # print(f'{self.show_on=}')
-        plt.ioff() 
+        # plt.ioff() 
         this_vis = self.mmodel[self.varpat]
         self.out_dict = {}
         self.out_dict['Baseline'] ={'df':this_vis.base}        

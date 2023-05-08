@@ -1920,9 +1920,10 @@ class Dekomp_Mixin():
                 if leq:
                     print('---'*v.lev+self.allvar[v.child]['frml'])
                     self.print_eq(v.child.upper(), data=self.lastdf,
-                                  start='2015Q4', end='2018Q2')
+                                  start=start, end=end)
                 else:
                     print('---'*v.lev+v.child)
+                    
                 if ldekomp:
                     x = self.dekomp(v.child, lprint=1, start=start, end=end)
 
@@ -1978,7 +1979,7 @@ class Dekomp_Mixin():
                            sort=sort, title=ntitle, bartype='bar', threshold=threshold,ysize=ysize)
         return res
 
-    def get_att_pct(self, n, filter=False, lag=True, start='', end='',time_att=False):
+    def get_att_pct(self, n, filter=False, lag=True, start='', end='',time_att=False,threshold=0.0):
         ''' det attribution pct for a variable.
          I little effort to change from multiindex to single node name'''
         tstart = self.current_per[0] if start =='' else start
@@ -1992,6 +1993,7 @@ class Dekomp_Mixin():
             out_pct = res_pct.groupby(level=[0]).sum()
         out = out_pct.loc[(out_pct != 0.0).any(
             axis=1), :] if filter else out_pct
+        out=cutout(out_pct,threshold)
         return out
 
     def get_att_pct_to_from(self,to_var,from_var,lag=False,time_att=False):
@@ -2471,7 +2473,6 @@ class Modify_Mixin():
             updatemodel = updatemodel.replace('  ', ' ')
         frml2   = updatemodel.split('$') 
         frml2_strip = [mp.split_frml(f+'$') for f in frml2 if len(f)>2]
-        # breakpoint()
         frml2_normal = [[frml,fname, 
                          normal(expression[:-1],do_preprocess=do_preprocess,add_add_factor=add_add_factor,
                                 make_fixable = pt.kw_frml_name(fname.upper(),'FIXABLE'))]
@@ -2481,8 +2482,8 @@ class Modify_Mixin():
         
         
         if add_add_factor:
-            frmldict_calc_add = {nexpression.endovar: f'{frml} {fname} {nexpression.calc_adjustment}$' for 
-                    frml,fname,nexpression in frml2_normal if nexpression.endovar in self.endogene|self.exogene|dfvars } 
+            frmldict_calc_add = {nexpression.endo_var: f'{frml} {fname} {nexpression.calc_add_factor}$' for 
+                    frml,fname,nexpression in frml2_normal if nexpression.endo_var in self.endogene|self.exogene|dfvars } 
         else: 
             frmldict_calc_add={}
         # breakpoint()
@@ -2521,7 +2522,7 @@ class Modify_Mixin():
         thisdf = newmodel.insertModelVar(self.lastdf)
         
         # breakpoint() 
-        if len(frmldict_calc_add and calc_add):
+        if len(frmldict_calc_add) and calc_add:
             calc_add_model.current_per = self.current_per
             newdf = calc_add_model(thisdf)
             print('\nNew add factors to get the same results for existing variables:')
@@ -3830,8 +3831,10 @@ class Display_Mixin():
             return result
         else: 
             return df
-        
-
+ ##xx = mpak.ibsstyle(mpak.get_att_pct('PAKNYGDPMKTPKN',lag=True,threshold=0),dec=0,percent=1)       
+ ##display(HTML("<div style='min-width: 80%; max-width: 600%; width: 600%; overflow: auto;'>" +
+             # xx.to_html() +
+             # "</div>"))
 
     def write_eq(self, name='My_model.fru', lf=True):
         ''' writes the formulas to file, can be input into model 
