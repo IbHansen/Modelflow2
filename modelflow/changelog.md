@@ -96,6 +96,7 @@ if index is a integer x axis in keepplot and vis are shown without decimals
 showfig is default on in keep_plot
 now vis.endo and vis.exo works with visshow 
 in keep_plot showfig is False as default (again)
+modifyeq fixed
 
 
 

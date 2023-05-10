@@ -2506,7 +2506,7 @@ class Modify_Mixin():
 
             calc_add_frml = '\n'.join([f for f in frmldict_calc_add.values()])
             calc_add_model = self.__class__(calc_add_frml,modelname = f'adjustment calculation for updated {self.name}',funks=updatefunks)
-            var_add = calc_add_model.endogene
+            var_add = sorted(calc_add_model.endogene)
             
         print(f'\nThe model:"{self.name}" got new equations, new model name is:"{newmodelname}"')
         for varname,frml  in frmldict_update.items():
