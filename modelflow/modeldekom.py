@@ -197,7 +197,7 @@ class totdif():
            self.res = attribution_new(self.model,self.experiments,self.start,self.end,
             summaryvar=self.summaryvar,showtime=1,silent=1,type=type)
        
-    def explain_last(self,pat='',top=0.9,title='',use='level',threshold=0.0):  
+    def explain_last(self,pat='',top=0.9,title='',use='level',threshold=0.0,ysize=5):  
         '''
         Explains last period 
 
@@ -207,18 +207,20 @@ class totdif():
             title (TYPE, optional): DESCRIPTION. Defaults to ''.
             use (TYPE, optional): DESCRIPTION. Defaults to 'level'.
             threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.
+            ysize (TYPE, optional): DESCRIPTION. Defaults to 5.
 
         Returns:
             fig (TYPE): DESCRIPTION.
 
         '''
         if self.go:         
-            self.impact = mk.GetLastImpact(self.res[use],pat=pat).T
+            self.impact = mk.GetLastImpact(self.res[use],pat=pat).T.rename(index=self.desdic)
             ntitle = f'Attribution last period, {use}' if title == '' else title
-            fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title= title,desdic=self.desdic,threshold=threshold)
+            fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title= ntitle,desdic=self.desdic,
+                               threshold=threshold,ysize=ysize)
             return fig
    
-    def explain_sum(self,pat='',top=0.9,title='',use='level',threshold=0.0): 
+    def explain_sum(self,pat='',top=0.9,title='',use='level',threshold=0.0,ysize=5): 
         '''
         Explains the sum
         
@@ -229,15 +231,17 @@ class totdif():
             title (TYPE, optional): DESCRIPTION. Defaults to ''.
             use (TYPE, optional): DESCRIPTION. Defaults to 'level'.
             threshold (TYPE, optional): DESCRIPTION. Defaults to 0.0.
+            ysize (TYPE, optional): DESCRIPTION. Defaults to 5.
 
         Returns:
             fig (TYPE): DESCRIPTION.
 
         '''
         if self.go:          
-           self.impact = mk.GetSumImpact(self.res[use],pat=pat).T
+           self.impact = mk.GetSumImpact(self.res[use],pat=pat).T.rename(index=self.desdic)
            ntitle = f'Attribution, sum over all periods, {use}' if title == '' else title
-           fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic,threshold=threshold )
+           fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic,
+                              threshold=threshold,ysize=ysize )
            return fig
    
     def explain_per(self,pat='',per='',top=0.9,title='',use='level',threshold=0.0,ysize=5):   
@@ -262,7 +266,8 @@ class totdif():
            self.impact = mk.GetOneImpact(self.res[use],pat=pat,per=tper).T.rename(index=self.desdic) 
            t2per = str(tper.date()) if type(tper) == pd._libs.tslibs.timestamps.Timestamp else tper
            ntitle = f'Attribution, {use}: {t2per}' if title == '' else title
-           fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic ,threshold=threshold,ysize=ysize)
+           fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic ,
+                              threshold=threshold,ysize=ysize)
            return fig
    
             
@@ -299,9 +304,10 @@ class totdif():
             if type(axvline) != type(None): axis.axvline(axvline)    
             fig.suptitle(ntitle,fontsize=20)
             if 1:
-                plt.tight_layout()
-                fig.subplots_adjust(top=top)
-        
+                # plt.tight_layout()
+                # fig.subplots_adjust(top=top)
+                fig.set_constrained_layout(True)
+
             return fig
 
     def explain_all(self,pat='',stacked=True,kind='bar',top=0.9,title='',use='level',
@@ -368,9 +374,11 @@ class totdif():
             if type(axvline) != type(None): axis.axvline(axvline)    
             fig.suptitle(ntitle,fontsize=20)
             if 1:
-                plt.tight_layout()
-                fig.subplots_adjust(top=top)
-        
+                fig.set_constrained_layout(True)
+
+                # plt.tight_layout()
+                # fig.subplots_adjust(top=top)
+                ...
             return fig
         
 #

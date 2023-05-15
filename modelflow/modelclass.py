@@ -2141,7 +2141,8 @@ class Dekomp_Mixin():
 
     def totdif(self,summaryvar='*',desdic=None,experiments = None):
        self.totdekomp = totdif(model=self, summaryvar=summaryvar, 
-                               desdic=desdic if desdic != None else self.var_description,experiments=experiments)  
+                               desdic=desdic if desdic != None else self.var_description,
+                               experiments=experiments)  
        return self.totdekomp
 
     def get_att_gui(self, var='FY', spat='*', desdic={}, use='level',ysize=7):
@@ -2439,7 +2440,8 @@ class Modify_Mixin():
         ... 
 
         
-    def equpdate(self,updateeq=None,newfunks=[],add_add_factor=False,calc_add=True,do_preprocess=True,newname=''):
+    def equpdate(self,updateeq=None,newfunks=[],add_add_factor=False,calc_add=True,
+                 do_preprocess=True,newname='',silent=True):
         '''
         
 
@@ -2524,7 +2526,7 @@ class Modify_Mixin():
         # breakpoint() 
         if len(frmldict_calc_add) and calc_add:
             calc_add_model.current_per = self.current_per
-            newdf = calc_add_model(thisdf)
+            newdf = calc_add_model(thisdf,silent=silent)
             print('\nNew add factors to get the same results for existing variables:')
             print(newdf.loc[self.current_per,var_add])
         else: 
