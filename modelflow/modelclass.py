@@ -3005,7 +3005,7 @@ class Graph_Draw_Mixin():
         downlinks = (node(-level, navn, parent) for level, parent, navn in
                      self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,filter=filter))
         alllinks = chain(uplinks, downlinks)
-        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter,fokus2all=True,  **kwargs)
+        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter, **kwargs)
 
     def trans(self, ind, root, transdic=None, debug=False):
         ''' as there are many variable starting with SHOCK, the can renamed to save nodes'''
@@ -3368,7 +3368,7 @@ class Graph_Draw_Mixin():
         fokus2 = set(self.vlist(fokus200)) if type(fokus200) == str else fokus200
         fokus2all = kwargs.get('fokus2all', False)
         #breakpoint()
-       # print('set fokus2all',fokus2all)
+        # print('set fokus2all',fokus2all)
 
         dec = kwargs.get('dec', 3)
         att = kwargs.get('att', True)
@@ -3477,9 +3477,9 @@ class Graph_Draw_Mixin():
 
         def makenode(v, navn):
             # print(v,fokus2all)
-            show  = (v  in fokus2) # or fokus2all
+            show  = (v  in fokus2)  or fokus2all
             # print(f'{v=}, {show=}  {fokus2=}')
-            if (kwargs.get('last', False) or kwargs.get('all', False) or 
+            if (kwargs.get('last', True) or kwargs.get('all', False) or 
                 kwargs.get('attshow', False) or kwargs.get('growthshow', False)) and show :
                 # breakpoint()
                 try:
