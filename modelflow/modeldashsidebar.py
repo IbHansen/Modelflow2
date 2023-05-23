@@ -191,7 +191,7 @@ class Dash_graph():
      all : bool = False 
      dashport : int = 5001
      debug : bool = False
-     jupyter : bool = False 
+     jupyter : bool = True 
      show_trigger : bool = False 
      inline : bool =False
      lag : bool = False 

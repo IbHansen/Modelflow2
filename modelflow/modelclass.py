@@ -6755,13 +6755,68 @@ class Solver_Mixin():
         return outdf
 
     def invert(self, databank, targets, instruments, silent=1,
-               DefaultImpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, delay=0,**kwargs):
-        '''Solves instruments for targets'''
+               DefaultImpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, delay=0,varimpulse=False):
+        ''' 
+     Solves a target instrument problem 
+     
+     Number of targets should be equal to number of instruments 
+     
+     An instrument can comprice of severeral variables
+     
+     **Instruments** are inputtet as a list of instruments
+     
+     To calculate the jacobian each instrument variable has a impuls, 
+     which is used as delta when evaluating the jacobi matrix:: 
+         
+       [ 'QO_J','TG']   Simple list each variable are shocked by the default impulse 
+       [ ('QO_J',0.5), 'TG']  Here QO_J is getting its own impuls (0.5)
+       [ [('QO_J',0.5),('ORLOV',1.)] , ('TG',0.01)] here an impuls is given for each variable, and the first instrument consiste of two variables 
+     
+     **Targets** are list of variables
+     
+     Convergence is achieved when all targets are within convergens distance from the target value
+     
+     Convergencedistance can be set individual for a target variable by setting a value in <modelinstance>.targetconv 
+     
+     Targets and target values are provided by a dataframe. 
+
+        
+        Parameters
+          ----------
+          databank : TYPE
+              values to run on .
+          targets : TYPE
+              dataframe with a column for each target.
+          instruments : TYPE
+              list of instruments .
+          model : TYPE
+              the model to use .
+          DefaultImpuls : TYPE, optional
+              default delta . The default is 0.01.
+          defaultconv : TYPE, optional
+              default convergence . The default is 0.01.
+          delay : TYPE, optional
+              delay in effects . The default is 0.
+          nonlin : TYPE, optional
+              if a number the number of iterations to trigger recalculation of jacobi. The default is False.
+          silent : TYPE, optional
+              show iterations if false. The default is True.
+          maxiter : TYPE, optional
+              max newton iteration. The default is 30.
+          solveopt : TYPE, optional
+              options to bring to the solver. The default is {}.
+          varimpulse : TYPE, optional
+              if True only update the current period, else update into the future. The default is False.
+
+          Returns
+          -------
+          a dataframe with the result .
+'''
         from modelinvert import targets_instruments
-        t_i = targets_instruments(databank, targets, instruments, self, silent=silent,delay=delay,
+        t_i = targets_instruments(databank, targets, instruments, self, silent=silent,delay=delay,varimpulse=varimpulse,
                                   DefaultImpuls=DefaultImpuls, defaultconv=defaultconv, nonlin=nonlin, maxiter=maxiter)
         self.t_i = t_i
-        res = t_i()
+        res = t_i(delay=delay)
         return res
 
     def errfunk1d(self, a, linenr, overhead=4, overeq=0):

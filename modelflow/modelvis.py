@@ -370,6 +370,12 @@ class varvis():
        '''Trace dependensies of name down to level down'''
        self.model.draw(self.var,down=0,up=up,sink=self.var,**kwargs)
 
+     @property
+     def dash(self):
+       '''Trace dependensies of name down to level down'''
+       self.model.modeldash(self.var)
+
+
 
          
      def dekomp(self,**kwargs):

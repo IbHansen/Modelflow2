@@ -97,7 +97,9 @@ showfig is default on in keep_plot
 now vis.endo and vis.exo works with visshow 
 in keep_plot showfig is False as default (again)
 modifyeq fixed
-
+invert fixed and docstring
+model.<variable>.dash implemented. 
+modeldash now default jupyter=True 
 
 
 

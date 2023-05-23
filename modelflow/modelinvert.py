@@ -50,7 +50,41 @@ class targets_instruments():
     
     def __init__(self,databank,targets,instruments,model,DefaultImpuls=0.01,defaultconv=0.01, delay=0, 
                  nonlin=False,silent = True, maxiter=30,solveopt={},varimpulse=False):
+        '''
+        
 
+        Parameters
+        ----------
+        databank : TYPE
+            values to run on .
+        targets : TYPE
+            dataframe with a column for each target.
+        instruments : TYPE
+            list of instruments .
+        model : TYPE
+            the model to use .
+        DefaultImpuls : TYPE, optional
+            default delta . The default is 0.01.
+        defaultconv : TYPE, optional
+            default convergence . The default is 0.01.
+        delay : TYPE, optional
+            delay in effects . The default is 0.
+        nonlin : TYPE, optional
+            if a number the number of iterations to trigger recalculation of jacobi. The default is False.
+        silent : TYPE, optional
+            show iterations if false. The default is True.
+        maxiter : TYPE, optional
+            max newton iteration. The default is 30.
+        solveopt : TYPE, optional
+            options to bring to the solver. The default is {}.
+        varimpulse : TYPE, optional
+            if True only update the current period, else update into the future. The default is False.
+
+        Returns
+        -------
+        None.
+
+        '''
         self.model = model
         self.df = model.lastdf
         self.targetvars = targets if isinstance(targets,list) else targets.columns
