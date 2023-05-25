@@ -6918,11 +6918,11 @@ class Solver_Mixin():
         
 class Dash_Mixin():
     '''This mixin wraps call the Dash dashboard '''
-    def modeldash(self,*arg,**kwargs):
+    def modeldash(self,var,**kwargs):
         try:
             from modeldashsidebar import Dash_graph
             ...
-            out = Dash_graph(self,*arg,**kwargs)
+            out = Dash_graph(self,var.upper() ,**kwargs)
             return out 
         except Exception as e:
             print(f'No Dash, {str(e)}')

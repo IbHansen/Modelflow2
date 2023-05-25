@@ -375,6 +375,14 @@ class varvis():
        '''Trace dependensies of name down to level down'''
        self.model.modeldash(self.var)
 
+     @property
+     def dash2(self):
+       '''Trace dependensies of name down to level down poer = 5002'''
+       self.model.modeldash(self.var,dashport=5002)
+
+     def dashport(self,port=5002):
+       '''Trace dependensies of name down to level down'''
+       self.model.modeldash(self.var,dashport=port)
 
 
          

@@ -115,18 +115,25 @@ def app_run(app,jupyter=False,debug=False,port=5000,inline=True):
     def open_browser(port=port):
     	webbrowser.open_new(f"http://localhost:{port}")
     
-       
+    # print('hest')   
     if jupyter:
         if inline:
-            app.run_server(debug=debug,port=port,mode='inline')
+            xx = app.run_server(debug=debug,port=port,mode='inline')
         else:     
-            Timer(1, open_browser).start()            
-            app.run_server(debug=debug,port=port,mode='external')
+            Timer(1, open_browser).start()   
+            # print('ko')   
+
+            xx =app.run_server(debug=debug,port=port,mode='external')
+            # print('gris')   
+
+            # print(f'{xx=}')
 
     else:    
         Timer(1, open_browser).start()            
 
-        app.run_server(debug=debug,port=port)
+        xx = app.run_server(debug=debug,port=port)
+        
+    
 
 
 def get_stack(df,v='Guess it',heading='Yes',pct=True,threshold=0.5,desdict = {}):
@@ -439,4 +446,4 @@ if __name__ == "__main__":
         _ = madam(scenarie)
         
     
-    _ =  Dash_graph(madam,'FE',debug = 0,all=1,filter=30,show_trigger=True,jupyter=False,up=1,dashport=5005)
+    _ =  Dash_graph(madam,'FY',debug = 0,all=1,filter=30,show_trigger=True,jupyter=True,up=1,dashport=5005)

@@ -367,8 +367,12 @@ Methods:
         # breakpoint()
         self.doable_equation = doable(f'<{self.equation_name}> {self.transformed_equation}',show=0)
         
-        
-        normalizedeq = mp.normalize(self.doable_equation)
+        try:
+            normalizedeq = mp.normalize(self.doable_equation)
+        except: 
+            print('problem')
+            print(self.doable_equation)
+            assert 1==2
         self.exploded = normalizedeq
         self.exploded = mp.sumunroll(self.exploded,listin=self.modellists)
         self.exploded = mp.funkunroll(self.exploded ,listin=self.modellists,funk='LMAX',replacefunk='MAX')
@@ -467,6 +471,8 @@ Raises:
 
 
 if __name__ == '__main__'  :
+    
+    assert 1==1
     test1 =r'''
 $List \; agegroup= \{16,    17,   18,    19,  20,   99,   100 ,101,102\}$
 $List \; agegroupwww= \{16,    17,   18,    19,  20,   99,   100 \}$
@@ -475,7 +481,7 @@ $List \; agegroupwww= \{16,    17,   18,    19,  20,   99,   100 \}$
 \begin{equation}
 \label{eq:mod_another}
 \begin{split}
-\forall [agegroup.noend]\;& \underbrace{QC^{agegroup}_t}_{ddd} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
+\forall [agegroup=agegroup_noend]\;& \underbrace{QC^{agegroup}_t}_{ddd} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
 \\
 & & &= 
 \dfrac{VB^{agegroup-1}_{t-1} *  \dfrac{NPOP^{agegroup-1}_{t-1}}{NPOP^{agegroup}_t} 
@@ -486,7 +492,7 @@ $List \; agegroupwww= \{16,    17,   18,    19,  20,   99,   100 \}$
 \begin{equation}
 \label{eq:mod_another}
 \begin{split}
-\forall [agegroup.middle]\;& \underbrace{QCx^{agegroup}_t}_{ddd} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
+\forall [agegroup=agegroup_middle]\;& \underbrace{QCx^{agegroup}_t}_{ddd} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
 \\
 & & &= 
 \dfrac{VB^{agegroup-1}_{t-1} *  \dfrac{NPOP^{agegroup-1}_{t-1}}{NPOP^{agegroup}_t} 
@@ -497,7 +503,7 @@ $List \; agegroupwww= \{16,    17,   18,    19,  20,   99,   100 \}$
 \begin{equation}
 \label{eq:mod_another}
 \begin{split}
-\forall [agegroup.end]\;& \underbrace{QCx^{agegroup}_t}_{ddd} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
+\forall [agegroup=agegroup_end]\;& \underbrace{QCx^{agegroup}_t}_{ddd} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
 \\
 & & &= 
 \dfrac{VB^{agegroup-1}_{t-1} *  \dfrac{NPOP^{agegroup-1}_{t-1}}{NPOP^{agegroup}_t} 
@@ -508,7 +514,7 @@ $List \; agegroupwww= \{16,    17,   18,    19,  20,   99,   100 \}$
 \begin{equation}
 \label{eq:mod_another}
 \begin{split}
-\forall [agegroup.start]\;& \underbrace{QCx^{agegroup}_t}_{ddd} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
+\forall [agegroup=agegroup_start]\;& \underbrace{QCx^{agegroup}_t}_{ddd} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
 \\
 & & &= 
 \dfrac{VB^{agegroup-1}_{t-1} *  \dfrac{NPOP^{agegroup-1}_{t-1}}{NPOP^{agegroup}_t} 
@@ -520,8 +526,8 @@ $List \; agegroupwww= \{16,    17,   18,    19,  20,   99,   100 \}$
     '''        
 #%% test
 
-    # this = a_latex_model(test1)
-    # print('\nOutput\n',this.model_exploded)
+    this = a_latex_model(test1)
+    print('\nOutput\n',this.model_exploded)
 
     test2 =r'''
 $List \; agegroup= \{16,    17,   18,    19,  20,   99,   100 ,101,102\}$
@@ -623,12 +629,12 @@ For all technologies $F^{i,j}+F^{j,i} = 1 $
 
 \begin{equation}
 \label{eq:SHARES3}
-\forall [i=fosile]\Delta Share2^{i} = Share^{i} \\
+\forall [i=fosile] \Delta Share2^{i} = Share^{i} 
 \end{equation}
 
 
 ''' 
-    if 0:
+    if 1:
         this_ftt = a_latex_model(test4)
         this_ftt.pprint
 #%%    sum test
@@ -684,3 +690,9 @@ hest = max(2,3,4)
    
     mmaxtest = a_latex_model(testmax)  
     mmaxtest.pprint
+    
+#%% doable test
+doable('[i=i_all,j=j_noend]  a__{i}__{j} = x ',show=True);
+
+ftest = 'LIST AGEGROUP =    AGEGROUP :  16     17    18     19   20    99    100  101 102$ '
+xx = mp.list_extract(ftest)

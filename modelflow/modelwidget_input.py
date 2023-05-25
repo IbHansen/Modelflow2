@@ -54,6 +54,9 @@ from dataclasses import dataclass,field
 import matplotlib.pylab  as plt 
 import yaml 
 
+from typing import Tuple
+
+
 
 class singelwidget:
     '''Parent class for widgets
@@ -719,7 +722,7 @@ class keep_plot_widget:
     mmodel : any     # a model 
     # pat : str ='*'
     # showvarpat : bool = True 
-    smpl=('', '')
+    smpl : Tuple[int, int] = ('', '')
     relativ_start : int = 0 
     selected  : str =''
     
