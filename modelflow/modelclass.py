@@ -1877,7 +1877,7 @@ class Dekomp_Mixin():
             
         res_growthdf = pd.DataFrame(index=multi, columns=print_per)
         for e in eksperiments:
-            res_growthdf.at[e[0], e[1]] = res_growth[e]
+            res_growthdf.at[e[0], e[1]] = res_growth[e]*100.
 
     #  a dataframe with some summaries
         res2df = pd.DataFrame(index=multi, columns=print_per)
@@ -1912,7 +1912,7 @@ class Dekomp_Mixin():
                 float_format=lambda x: '{0:10.1f}%'.format(x)))
 
         pctendo = pctendo[pctendo.columns].astype(float)
-        return res2df, resdf, pctendo
+        return res2df, resdf, pctendo,res_growthdf
 
     def impact(self, var, ldekomp=False, leq=False, adverse=None, base=None, maxlevel=3, start='', end=''):
         for v in self.treewalk(self.endograph, var.upper(), parent='start', lpre=True, maxlevel=maxlevel):
@@ -3800,6 +3800,13 @@ class Display_Mixin():
         if True: # self.in_notebook():
             des = self.var_description if type(description_dict)==type(None) else description_dict
             keys= set(des.keys())
+            def get_des(v):
+                if '(' in v:
+                    return des.get(v.split('(')[0],v)
+                else: 
+                    return des.get(v,v)
+
+
             if type(transpose) == type(None):
                 xtranspose = (df.index[0] in self.lastdf.index)
             else:
@@ -3807,9 +3814,9 @@ class Display_Mixin():
                 
                 
             if any([i in keys for i in df.index]) :
-                tt = pd.DataFrame([[des.get(v,v) for t in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
+                tt = pd.DataFrame([[get_des(v) for t in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
             else:
-                tt = pd.DataFrame([[des.get(v,v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
+                tt = pd.DataFrame([[get_des(v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
             xdec = f'{dec}'
             xpct = '%' if percent else ''
             result = df.style\
