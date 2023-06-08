@@ -1824,7 +1824,30 @@ class Dekomp_Mixin():
     @lru_cache(maxsize=2048)
     def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
         '''Print all variables that determines input variable (varnavn)
-        optional -- enter period and databank to get var values for chosen period'''
+        optional -- enter period and databank to get var values for chosen period
+        
+        Optional Parameters:
+    varnavn (str): Input variable name.
+    start (str): Start period for retrieving variable values (default: '').
+    end (str): End period for retrieving variable values (default: '').
+    basedf (pd.DataFrame): Base dataframe to use (default: None).
+    altdf (pd.DataFrame): Alternative dataframe to use (default: None).
+    lprint (bool): Flag to print the results (default: True).
+    time_att (bool): Flag to do a timevise  attribute (default: False).
+    
+Returns:
+    namedtuple: A named tuple containing the following decomposition results:
+        - diff_level: DataFrame with level differences.
+        - att_level: DataFrame with attributions  to the level difference.
+        - att_pct: DataFrame with the share of attributions to the difference in level .
+        - diff_growth: DataFrame with differences in growth rate.
+        - att_growth: DataFrame with attributions to the difference in growth rate.
+
+        
+        
+        
+        
+        '''
         basedf_ = basedf if isinstance(basedf, pd.DataFrame) else self.basedf
         altdf_ = altdf if isinstance(altdf, pd.DataFrame) else self.lastdf
         start_ = start if start != '' else self.current_per[0]
@@ -1871,48 +1894,65 @@ class Dekomp_Mixin():
         multi = pd.MultiIndex.from_tuples([e[0] for e in eksperiments], names=[
                                           'Variable', 'lag']).drop_duplicates()
         
-        resdf = pd.DataFrame(index=multi, columns=print_per)
+        att_level = pd.DataFrame(index=multi, columns=print_per)
         for e in eksperiments:
-            resdf.at[e[0], e[1]] = res[e]
+            att_level.at[e[0], e[1]] = res[e]
             
-        res_growthdf = pd.DataFrame(index=multi, columns=print_per)
+        att_growth = pd.DataFrame(index=multi, columns=print_per)
         for e in eksperiments:
-            res_growthdf.at[e[0], e[1]] = res_growth[e]*100.
+            att_growth.at[e[0], e[1]] = res_growth[e]*100.
 
     #  a dataframe with some summaries
-        res2df = pd.DataFrame(index=multi, columns=print_per)
-        res2df.loc[('t-1' if time_att else 'Base', '0'), print_per] = smallbase.loc[print_per, varnavn]
-        res2df.loc[('t' if time_att else 'Alternative', '0'),
+        diff_level = pd.DataFrame(index=multi, columns=print_per)
+        diff_level.loc[('t-1' if time_att else 'Base', '0'), print_per] = smallbase.loc[print_per, varnavn]
+        diff_level.loc[('t' if time_att else 'Alternative', '0'),
                    print_per] = smallalt.loc[print_per, varnavn]
-        res2df.loc[('Difference', '0'), print_per] = difendo = smallalt.loc[print_per,
+        diff_level.loc[('Difference', '0'), print_per] = difendo = smallalt.loc[print_per,
                                                                             varnavn] - smallbase.loc[print_per, varnavn]
-        res2df.loc[('Percent   ', '0'), print_per] = 100*(smallalt.loc[print_per,
+        diff_level.loc[('Percent   ', '0'), print_per] = 100*(smallalt.loc[print_per,
                                                                        varnavn] / (0.0000001+smallbase.loc[print_per, varnavn])-1)
-        res2df = res2df.dropna()
+        diff_level = diff_level.dropna()
+        
+    # a dataframe  with summaries of growth
+        diff_growth_index = diff_level.index[:-1]
+        diff_growth = pd.DataFrame(index=diff_growth_index, columns=print_per)
+        diff_growth.loc[diff_growth.index[0],print_per] = smallbase.loc[:,varnavn].pct_change().loc[print_per] * 100.
+        diff_growth.loc[diff_growth.index[1],print_per] = smallalt.loc[:,varnavn].pct_change().loc[print_per] * 100. 
+        diff_growth.loc[diff_growth.index[2],print_per] = (diff_growth.loc[diff_growth.index[1],print_per]-
+                                                         diff_growth.loc[diff_growth.index[0],print_per])
+        
+        growth_residual = att_growth.sum() - diff_growth.loc[diff_growth.index[2],print_per]
+        att_growth.loc[('Total', 0), print_per] = att_growth.sum()
+        att_growth.loc[('Residual', 0), print_per] = growth_residual
+
+
+    
     #
-        pctendo = (resdf / (difendo[print_per]) *(abs(difendo[print_per])>0.000001) * 100).sort_values(
+        att_pct = (att_level / (difendo[print_per]) *(abs(difendo[print_per])>0.000001) * 100).sort_values(
             print_per[-1], ascending=False)       # each contrinution in pct of total change
         # breakpoint()
-        residual = pctendo.sum() - 100
-        pctendo.loc[('Total', 0), print_per] = pctendo.sum()
-        pctendo.loc[('Residual', 0), print_per] = residual
+        residual = att_pct.sum() - 100
+        att_pct.loc[('Total', 0), print_per] = att_pct.sum()
+        att_pct.loc[('Residual', 0), print_per] = residual
         if lprint:
             print('\nFormula        :', mfrml.allvar[varnavn]['frml'], '\n')
-            print(res2df.to_string(
+            print(diff_level.to_string(
                 float_format=lambda x: '{0:10.2f}'.format(x)))
             print('\n Contributions to differende for ', varnavn)
-            print(resdf.to_string(
+            print(att_level.to_string(
                 float_format=lambda x: '{0:10.2f}'.format(x)))
             print('\n Share of contributions to differende for ', varnavn)
-            print(pctendo.to_string(
+            print(att_pct.to_string(
                 float_format=lambda x: '{0:10.0f}%'.format(x)))
             
             print('\n Contribution to growth rate', varnavn)
-            print(res_growthdf.to_string(
+            print(att_growth.to_string(
                 float_format=lambda x: '{0:10.1f}%'.format(x)))
 
-        pctendo = pctendo[pctendo.columns].astype(float)
-        return res2df, resdf, pctendo,res_growthdf
+        att_pct = att_pct[att_pct.columns].astype(float)
+        dekomp_res_name  = namedtuple('dekompres', 'diff_level, att_level, att_pct, ,diff_growth , att_growth')
+        dekomp_res = dekomp_res_name(diff_level, att_level, att_pct, diff_growth, att_growth )
+        return dekomp_res
 
     def impact(self, var, ldekomp=False, leq=False, adverse=None, base=None, maxlevel=3, start='', end=''):
         for v in self.treewalk(self.endograph, var.upper(), parent='start', lpre=True, maxlevel=maxlevel):
@@ -7407,3 +7447,6 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     
     # zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
     mpak,baseline = model.modelload(r'pak.pcim',run=1)
+    alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
+    result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30') # simulates the model 
+    diff_level, att_level, att_pct, diff_growth, att_growth = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
