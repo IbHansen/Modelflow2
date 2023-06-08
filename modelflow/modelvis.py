@@ -385,7 +385,26 @@ class varvis():
        self.model.modeldash(self.var,dashport=port)
 
 
-         
+     def get_att(self,start='',end='',dec=None,bare=True,**kwargs):
+         diff = self.model.get_att_diff(self.var,start=start,end=end,**kwargs)
+         res = self.model.get_att(self.var,start=start,end=end,**kwargs)
+         percent=(kwargs.get('type','pct') in {'pct','growth'})
+         if type(dec) == type(None):
+             xdec =  2 if (kwargs.get('type','pct') in {'level','growth'}) else 0
+         else: 
+             xdec = dec 
+         if bare: 
+             out = res
+             out.index.name= 'Growth percent' if kwargs.get('type','pct') == 'growth' else 'Percent att.' if kwargs.get('type','pct') == 'pct' else 'Level att.'
+  
+         else:     
+             out = pd.concat([diff,res])
+             out.index.name= 'Growth percent' if kwargs.get('type','pct') == 'growth' else 'Level/percent' if kwargs.get('type','pct') == 'pct' else 'Level/level'
+             
+         sout = self.model.ibsstyle(out,percent=percent,dec=xdec )   
+         display(sout)
+             
+     
      def dekomp(self,**kwargs):
          if kwargs.get('lprint','False'):
              self.model.dekomp.cache_clear()

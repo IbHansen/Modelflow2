@@ -1745,6 +1745,20 @@ class Model_help_Mixin():
         except ImportError:
             return False
         return True
+    
+    @staticmethod   
+    def is_running_in_jupyter():
+        try:
+            # Check if the 'get_ipython' function is available
+            shell = get_ipython().__class__.__name__
+            if shell == 'ZMQInteractiveShell':
+                # Running in Jupyter Notebook or JupyterLab
+                return True
+        except NameError:
+            # 'get_ipython' function not found, not running in Jupyter Notebook
+            pass
+    
+        return False
 
     @staticmethod
     class defsub(dict):
@@ -1993,7 +2007,7 @@ Returns:
 
         Returns
         -------
-        a matplotlib figure instance .
+        a matplotlib figure instance . 
 
         '''
 
@@ -2018,6 +2032,72 @@ Returns:
         res = mv.waterplot(waterdf, autosum=1, allsort=sort, top=0.86,
                            sort=sort, title=ntitle, bartype='bar', threshold=threshold,ysize=ysize)
         return res
+    
+     
+    def get_att_diff(self,n,type='pct',  start='', end='',time_att=False,**kwargs): 
+        
+        tstart = self.current_per[0] if start == '' else start
+        tend = self.current_per[-1] if end == '' else end
+        
+        res = self.dekomp(n, lprint=0, start=tstart, end=tend, time_att=time_att)
+   
+        if type in { 'level' , 'pct'}:
+            diffdf  = getattr(res, f'diff_level').groupby(level=[0]).sum()
+        else:
+            diffdf = getattr(res, f'diff_{type}').groupby(level=[0]).sum()
+            
+        return diffdf.astype('float')    
+
+    
+    def get_att(self, n, type='pct', filter=False, lag=True, start='', end='', time_att=False, threshold=0.0):
+        '''
+        Calculate the attribution percentage for a variable.
+    
+        Parameters:
+            n (str): Name of the variable to calculate attribution for.
+            type (str): Type of attribution calculation. Options: 'pct' (percentage), 'level', 'growth'. Default: 'pct'.
+            filter (bool): [Deprecated] Use threshold instead of filter. Default: False.
+            lag (bool): Flag to indicate whether to include lag information in the output. Default: True.
+            start (str): Start period for calculation. If not provided, uses the first period in the model instance. Default: ''.
+            end (str): End period for calculation. If not provided, uses the last period in the model instance. Default: ''.
+            time_att (bool): Flag to indicate time attribute calculation. Default: False.
+            threshold (float): Threshold value for excluding rows with values close to zero. Default: 0.0.
+    
+        Returns:
+            pandas.DataFrame: DataFrame containing the calculated attribution results.
+    
+        Raises:
+            Exception: If an invalid type is provided.
+        '''
+    
+        legal_types = {'pct', 'level', 'growth'}
+        if type not in legal_types:
+            raise Exception(f'Invalid type provided. Type must be one of {legal_types}, not {type}')
+    
+        if filter:
+            raise Exception("The 'filter' parameter is deprecated. Use 'threshold' instead.")
+    
+        tstart = self.current_per[0] if start == '' else start
+        tend = self.current_per[-1] if end == '' else end
+        res = self.dekomp(n, lprint=0, start=tstart, end=tend, time_att=time_att)
+        
+    
+        if type == 'level':
+            res_relevant = getattr(res, f'att_{type}')
+
+        else:
+            res_relevant = getattr(res, f'att_{type}').iloc[:-2, :] 
+            
+    
+        if lag:
+            out = pd.DataFrame(res_relevant.values, columns=res_relevant.columns,
+                               index=[r[0] + (f'({str(r[1])})' if r[1] else '') for r in res_relevant.index])
+        else:
+            out = res_relevant.groupby(level=[0]).sum()
+    
+        out = cutout(out, threshold)
+        
+        return out.astype('float')
 
     def get_att_pct(self, n, filter=False, lag=True, start='', end='',time_att=False,threshold=0.0):
         ''' det attribution pct for a variable.
@@ -3841,7 +3921,7 @@ class Display_Mixin():
             des = self.var_description if type(description_dict)==type(None) else description_dict
             keys= set(des.keys())
             def get_des(v):
-                if '(' in v:
+                if type(v) == str and '(' in v:
                     return des.get(v.split('(')[0],v)
                 else: 
                     return des.get(v,v)
@@ -3880,7 +3960,76 @@ class Display_Mixin():
             return result
         else: 
             return df
- ##xx = mpak.ibsstyle(mpak.get_att_pct('PAKNYGDPMKTPKN',lag=True,threshold=0),dec=0,percent=1)       
+
+    def ibsstyle(self,df,description_dict = None, dec=2,
+                 transpose=None,use_tooltip=True,percent=False):
+        '''
+        
+
+        Args:
+            df (TYPE): Dataframe.
+            description_dict (TYPE, optional):  Defaults to None then the var_description else this dict .
+            dec (TYPE, optional): decimals. Defaults to 2. Deciu
+            transpose (TYPE, optional): if Trus then rows are time else thje. Defaults to 0.
+
+        Returns:
+            TYPE: DESCRIPTION.
+
+        '''
+        # breakpoint()
+        # breakpoint()    
+        if True: # self.in_notebook():
+            des = self.var_description if type(description_dict)==type(None) else description_dict
+            keys= set(des.keys())
+            def get_des(v):
+                if type(v) == str and '(' in v:
+                    return des.get(v.split('(')[0],v)
+                else: 
+                    return des.get(v,v)
+
+
+            if type(transpose) == type(None):
+                xtranspose = (df.index[0] in self.lastdf.index)
+            else:
+                xtranspose = transpose 
+                
+                
+            if any([i in keys for i in df.index]) :
+                tt = pd.DataFrame([[get_des(v) for t in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
+            else:
+                tt = pd.DataFrame([[get_des(v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
+            xdec = f'{dec}'
+            xpct = '%' if percent else ''
+            styles = [
+            {'selector': '.row_heading, .corner',
+             'props': [('position', 'sticky'), ('left', '0'), ('background', 'white')]},
+            {'selector': '.col_heading',
+             'props': [('position', 'sticky'), ('top', '0'), ('background', 'white')]}
+              ]
+            
+            result = df.style.set_table_styles(styles)
+
+            if any(df.dtypes == 'object'):
+                result = result
+            else:
+                result = result.format('{:,.'+xdec+'f}'+xpct+' ')
+
+            if use_tooltip:
+                try:
+                    result=result.set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'
+                                    'background-color: white; color: #000066; font-size: 0.8em;width:100%'
+                                    'transform: translate(0px, -24px); padding: 0.6em; border-radius: 0.5em;')
+                except:
+                    ...
+                
+            return result
+        else: 
+            return df
+    
+
+
+
+##xx = mpak.ibsstyle(mpak.get_att_pct('PAKNYGDPMKTPKN',lag=True,threshold=0),dec=0,percent=1)       
  ##display(HTML("<div style='min-width: 80%; max-width: 600%; width: 600%; overflow: auto;'>" +
              # xx.to_html() +
              # "</div>"))
@@ -7449,4 +7598,4 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     mpak,baseline = model.modelload(r'pak.pcim',run=1)
     alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
     result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30') # simulates the model 
-    diff_level, att_level, att_pct, diff_growth, att_growth = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
+    diff_level, att_level, att_pct, diff_growth, att_growth = tup = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
