@@ -1959,6 +1959,10 @@ Returns:
             print(att_pct.to_string(
                 float_format=lambda x: '{0:10.0f}%'.format(x)))
             
+            print('\n Difference in growth rate', varnavn)
+            print(print(diff_growth.to_string(
+                float_format=lambda x: '{0:10.1f}%'.format(x))))
+            
             print('\n Contribution to growth rate', varnavn)
             print(att_growth.to_string(
                 float_format=lambda x: '{0:10.1f}%'.format(x)))
@@ -2049,7 +2053,8 @@ Returns:
         return diffdf.astype('float')    
 
     
-    def get_att(self, n, type='pct', filter=False, lag=True, start='', end='', time_att=False, threshold=0.0):
+    def get_att(self, n, type='pct', filter=False, lag=True, start='', end='', 
+                time_att=False, threshold=0.0):
         '''
         Calculate the attribution percentage for a variable.
     

@@ -100,6 +100,9 @@ modifyeq fixed
 invert fixed and docstring
 model.<variable>.dash implemented. 
 modeldash now default jupyter=True 
+<var>.dash 
+reworked dekomp 
+get_att will find attribution 
 
 
 

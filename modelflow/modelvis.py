@@ -386,9 +386,31 @@ class varvis():
 
 
      def get_att(self,start='',end='',dec=None,bare=True,**kwargs):
+         '''
+Retrieve and display the attribution for a variable within a specified period.
+
+Parameters:
+    start (str): Start date of the period (default: '').
+    end (str): End date of the period (default: '').
+    dec (int): Number of decimal places for formatting (default: None).
+    bare (bool): If True, display only the attribution result; if False, display both the difference and attribution results (default: True).
+    type (str) : One of 'pct', 'growth', 'level' (default: 'pct') 
+    **kwargs: Additional keyword arguments for specifying attribution type and other options.
+
+Returns:
+    None (displays the attribution result)
+
+Note:
+    - The method retrieves the difference and attribution results using the specified period and attribution type.
+    - The `dec` parameter controls the number of decimal places for formatting. If not provided, the default number of decimal places is determined based on the attribution type.
+    - The `bare` parameter determines whether to display only the attribution result or both the difference and attribution results.
+    - The `type` parameter wether to display the level, pct or growth attribution determines whether to display level, growth or pct attribution
+'''
+
          diff = self.model.get_att_diff(self.var,start=start,end=end,**kwargs)
          res = self.model.get_att(self.var,start=start,end=end,**kwargs)
-         percent=(kwargs.get('type','pct') in {'pct','growth'})
+         percent=(kwargs.get('type','pct') in {'growth'}) or \
+               ((kwargs.get('type','pct') in {'pct'}) and  bare) 
          if type(dec) == type(None):
              xdec =  2 if (kwargs.get('type','pct') in {'level','growth'}) else 0
          else: 
