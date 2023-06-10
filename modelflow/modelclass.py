@@ -3725,7 +3725,11 @@ class Graph_Draw_Mixin():
 '''
 
         dot = self.makedotnew(alledges, navn=navn, **kwargs)
-        
+        if type(dot) == type(None):
+            print('The graph is empty')
+            if kwargs.get('filter',False):
+                print('Perhaps filter prunes to much')
+            return 
         fname = kwargs.get('saveas', navn if navn else "A_model_graph")
 
         if kwargs.get('dot', False):

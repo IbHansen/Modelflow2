@@ -103,6 +103,7 @@ modeldash now default jupyter=True
 <var>.dash 
 reworked dekomp 
 get_att will find attribution 
+errormessge when graph is empty 
 
 
 
