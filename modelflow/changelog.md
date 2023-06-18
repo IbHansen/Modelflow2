@@ -104,6 +104,7 @@ modeldash now default jupyter=True
 reworked dekomp 
 get_att will find attribution 
 errormessge when graph is empty 
+magic latexgrabmodel dont repeat lists for every cell, it was anoying 
 
 
 

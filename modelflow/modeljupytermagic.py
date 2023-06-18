@@ -150,7 +150,7 @@ try:
        ia.push(f'{name}_latex_model_instance',interactive=True)
        
        if options.get('render',True) and not options.get('display',False):
-           display(Markdown(model_text))
+           display(Markdown(cell))
        
        # display(Markdown('## The model'))
        if options.get('display',False):

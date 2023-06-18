@@ -691,8 +691,8 @@ hest = max(2,3,4)
     mmaxtest = a_latex_model(testmax)  
     mmaxtest.pprint
     
-#%% doable test
-doable('[i=i_all,j=j_noend]  a__{i}__{j} = x ',show=True);
-
-ftest = 'LIST AGEGROUP =    AGEGROUP :  16     17    18     19   20    99    100  101 102$ '
-xx = mp.list_extract(ftest)
+    #%% doable test
+    doable('[i=i_all,j=j_noend]  a__{i}__{j} = x ',show=True);
+    
+    ftest = 'LIST AGEGROUP =    AGEGROUP :  16     17    18     19   20    99    100  101 102$ '
+    xx = mp.list_extract(ftest)
