@@ -49,6 +49,7 @@ import modeljupyter as mj
 @dataclass
 class diff_value_base:
     ''' class define columns in database with values from differentiation'''
+    
     var       : str         # lhs var 
     pvar      : str         # rhs var
     lag       : int         # lag of rhs var
