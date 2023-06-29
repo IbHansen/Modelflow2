@@ -17,6 +17,7 @@ from io import StringIO
 import pandas as pd
 from IPython.core.magic import register_line_magic, register_cell_magic
 from subprocess import run 
+import re 
 
 
 from model_latex import latextotxt
@@ -137,6 +138,33 @@ try:
                model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
            else: 
                model_text = cell 
+               
+           model_text = r'''
+\documentclass{article}
+
+% Add necessary packages
+
+
+\usepackage{amsmath} % For mathematical equations
+
+
+\begin{document} 
+
+
+
+''' +  model_text + r'''
+
+
+\end{document}'''
+           replace = [('##','title'),('###','section')]
+           for pat,rep in replace: 
+                pattern = fr'^{pat} (.*?)\s*$'
+                replacement = fr'\\{rep}{{\1}}'+'\n'
+    
+                model_text = re.sub(pattern, replacement, model_text, flags=re.MULTILINE)
+    
+
+
        
        latex_model = a_latex_model(model_text,modelname=name)
        mmodel  = latex_model.mmodel
