@@ -3477,7 +3477,6 @@ class Graph_Draw_Mixin():
         :dec: decimal places in numbers
         :HR: horisontal orientation default = False 
         :des: inject variable descriptions 
-        :fokus: Variable to get special colour
         :fokus2: Variable for which values are shown 
         :fokus2all: Show values for all variables 
 
@@ -3487,13 +3486,28 @@ class Graph_Draw_Mixin():
 
         des = kwargs.get('des', True)
 
-        fokus = kwargs.get('fokus', '')
-        fokus200 = kwargs.get('fokus2', '')
         # breakpoint() 
-        fokus2 = set(self.vlist(fokus200)) if type(fokus200) == str else fokus200
-        fokus2all = kwargs.get('fokus2all', False)
-        #breakpoint()
-        # print('set fokus2all',fokus2all)
+        attshow = kwargs.get('attshow',kwargs.get('ats',False))
+        growthshow  = kwargs.get('growthshow',kwargs.get('gs',False))
+
+        showdata = kwargs.get('showdata',kwargs.get('sd',None))
+        
+        fokus2= []
+        fokus2all = False
+        # breakpoint() 
+        if type(showdata) in {int,bool}:
+
+            fokus2all = showdata
+        elif type(showdata) == str:
+
+            fokus2 = set(self.vlist(showdata)) 
+        else: 
+
+            # for legacy 
+            fokus200 = kwargs.get('fokus2', '')
+        
+            fokus2 = set(self.vlist(fokus200)) if type(fokus200) == str else fokus200
+            fokus2all = kwargs.get('fokus2all', False)
 
         dec = kwargs.get('dec', 3)
         att = kwargs.get('att', True)
@@ -3605,18 +3619,36 @@ class Graph_Draw_Mixin():
             show  = (v  in fokus2)  or fokus2all
             # print(f'{v=}, {show=}  {fokus2=}')
             if (kwargs.get('last', True) or kwargs.get('all', False) or 
-                kwargs.get('attshow', False) or kwargs.get('growthshow', False)) and show :
+                attshow or growthshow) and show :
                 # breakpoint()
                 try:
                     t = pt.udtryk_parse(v, funks=[])
                     var = t[0].var
                     lag = int(t[0].lag) if t[0].lag else 0
-                    bvalues = [float(get_a_value(self.basedf, per, var, lag))
-                               for per in self.current_per]
-                    lvalues = [float(get_a_value(self.lastdf, per, var, lag)) for per in self.current_per] 
-                    dvalues = [float(get_a_value(self.lastdf, per, var, lag)-get_a_value(self.basedf, per, var, lag))
-                               for per in self.current_per] 
-                    if kwargs.get('attshow', False) and show:
+                    try: 
+                        bvalues = [float(get_a_value(self.basedf, per, var, lag))for per in self.current_per]
+                        base = "<TR><TD ALIGN='LEFT' TOOLTIP='Baseline values' href='bogus'>Base</TD>"+''.join(["<TD ALIGN='RIGHT'  TOOLTIP='Baseline values' href='bogus' >"+(
+                            f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>'
+                    except:
+                        base= ''
+                    
+                    try:
+                        lvalues = [float(get_a_value(self.lastdf, per, var, lag)) for per in self.current_per] 
+                        last = "<TR><TD ALIGN='LEFT' TOOLTIP='Latest run values' href='bogus'>Last</TD>"+''.join(["<TD ALIGN='RIGHT' >"+(
+                            f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>'
+                    except: 
+                        last=''
+                    
+                    try:                     
+                        dvalues = [float(get_a_value(self.lastdf, per, var, lag)-get_a_value(self.basedf, per, var, lag))
+                                   for per in self.current_per] 
+                        dif = "<TR><TD ALIGN='LEFT' TOOLTIP='Difference between baseline and latest run' href='bogus'>Diff</TD>" + \
+                            ''.join(["<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip(
+                            ) for b in dvalues])+'</TR>' 
+                    except:
+                        dif = ''
+                    
+                    if attshow:
                        try:
                            # breakpoint()
                            attvalues = self.att_dic[v] 
@@ -3632,11 +3664,14 @@ class Graph_Draw_Mixin():
                     else:
                         latt = ''
                         
-                    if kwargs.get('growthshow', False) and show:
-                        growthdf = self.get_var_growth(v)
-                        dflen = len(growthdf.columns)
-                        lgrowth = f"<TR><TD COLSPAN = '{dflen+1}'> Growth rate</TD></TR>{dftotable(growthdf,dec)}" if len(
-                                self.att_dic[v]) else ''
+                    if growthshow:
+                        try: 
+                            growthdf = self.get_var_growth(v,diff=True)
+                            dflen = len(growthdf.columns)
+                            lgrowth = f"<TR><TD COLSPAN = '{dflen+1}'> Growth rate in %</TD></TR>{dftotable(growthdf,dec)}" if len(
+                                    self.att_dic[v]) else ''
+                        except: 
+                            lgrowth = '' 
                     else:
                         lgrowth = ''
                        
@@ -3644,13 +3679,6 @@ class Graph_Draw_Mixin():
                     per = "<TR><TD ALIGN='LEFT'>Per</TD>" + \
                         ''.join(['<TD>'+(f'{p}'.strip()+'</TD>').strip()
                                 for p in self.current_per])+'</TR>'
-                    base = "<TR><TD ALIGN='LEFT' TOOLTIP='Baseline values' href='bogus'>Base</TD>"+''.join(["<TD ALIGN='RIGHT'  TOOLTIP='Baseline values' href='bogus' >"+(
-                        f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>'
-                    last = "<TR><TD ALIGN='LEFT' TOOLTIP='Latest run values' href='bogus'>Last</TD>"+''.join(["<TD ALIGN='RIGHT' >"+(
-                        f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in lvalues])+'</TR>'
-                    dif = "<TR><TD ALIGN='LEFT' TOOLTIP='Difference between baseline and latest run' href='bogus'>Diff</TD>" + \
-                        ''.join(["<TD ALIGN='RIGHT'>"+(f'{b:{25},.{dec}f}'.strip()+'</TD>').strip(
-                        ) for b in dvalues])+'</TR>' 
 #                    tip= f' tooltip="{self.allvar[var]["frml"]}"' if self.allvar[var]['endo'] else f' tooltip = "{v}" '
                     # out = f'"{v}" [shape=box fillcolor= {color(v,navn)}  margin=0.025 fontcolor=blue {stylefunk(var,invisible=invisible)} ' + (
                     out = f'"{v}" [shape=box style=filled  fillcolor=None  margin=0.025 fontcolor=blue ' + (

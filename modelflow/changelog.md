@@ -105,6 +105,13 @@ reworked dekomp
 get_att will find attribution 
 errormessge when graph is empty 
 magic latexgrabmodel dont repeat lists for every cell, it was anoying 
+magic latexgrabmodel braces the latex in a pre- and postample so it works with a latex editor 
+in all uses of graph this is now changed: 
+   - now showdata|sd=string or True will show data in graphs if possible. 
+   - growthshow|gs will also show difference in gfrowth 
+   - attshow|ats woorks (as is a reserved word)
+when creating a graph with data some more try except for missing data 
+
 
 
 

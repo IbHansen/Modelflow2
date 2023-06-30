@@ -367,7 +367,23 @@ class varvis():
        self.model.draw(self.var,down=down,up=0,source=self.var,**kwargs)
        
      def tracepre(self,up=1,**kwargs):
-       '''Trace dependensies of name down to level down'''
+       '''Trace dependensies of name down to level down
+ - `showdata|sd=True` will include a table of values for each variable 
+ - `showdata|sd='pattern of variable names'` will include a table of values for each variable matching the pattern (including wildcharts
+ - `attshow|ats = True` will include a table of attributions for each variable
+ - `growthshow|gs = True` will include a table of growth for each variable
+ - `HR = True` will reorient the dependency graph 
+ - `up = <integer>` will determine how many levels of parents to include
+ - `pgn = True` will display as a png picture
+ - `svg = True` will display as a svg picture which can be zoomed
+ - `pdf = True` will display as a pdf picture
+ - `eps = True` will create a eps file
+ - `browser = True` will open a browser with the resulting dependency graph - useful for zooming on a big graph 
+ - `saveas = <a file name without extension>` will save the picture wit the filename with an added extension reflection the picture type 
+
+
+To allow the use of the display in presentations or publications The resulting file(s) are placed in the graph/subfolder 
+       '''
        self.model.draw(self.var,down=0,up=up,sink=self.var,**kwargs)
 
      @property
