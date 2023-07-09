@@ -226,6 +226,9 @@ class targets_instruments():
                         res = self.model(res,per_delayed ,per ,setlast=False,**self.solveopt)
                     else:
                         break
+                else: 
+                        print(f'No convergense in target instrument in {per}, maxiter={self.maxiter}')
+                        raise Exception('No convergence ')
                 pbar.update()
         self.model.lastdf = res
         self.model.oldkwargs = self.savesolvearg 
