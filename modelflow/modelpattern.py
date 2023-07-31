@@ -173,7 +173,29 @@ def list_extract(equations,silent=True):
                 this_dict = defaultdict(list)
                 for i in list_value.split('/'):
                     name, items = i.split(':')
-                    itemlist = [t.strip() for t in re.split(r'[\s,]\s*',items) if t != '']
+                    if '*' in i:
+                        start,end = items.split('*')
+                        startitems =  re.split(r'(^[A-Z0-9_]*[A-Z_])([0-9]+$)',start.strip())
+                        enditems   =  re.split(r'(^[A-Z0-9_]*[A-Z_])([0-9]+$)',end.strip())
+                        
+                        if len(startitems) != len(startitems):
+                           breakpoint() 
+                           raise Exception(f'Range of lists wrong {startitems=} {enditems=}')
+                        if len(startitems) == 4:   # we have a charactrer label 
+                            label = startitems[1]
+                            startint = int( startitems[2])
+                            endint  =  int(enditems[2])
+                        elif len(startitems) == 1 : 
+                            label ='' 
+                            startint = int( startitems[0])
+                            endint  =  int(enditems[0])
+                        else: 
+                            raise Exception(f'wrong range in list: {startitems=} {enditems=}')
+                            
+                        itemlist = [label+str(i) for i in range(startint,endint) ]
+                    else:
+                        
+                        itemlist = [t.strip() for t in re.split(r'[\s,]\s*',items) if t != '']
                     this_dict[name.strip()] = itemlist
                     
                 
@@ -185,6 +207,17 @@ def list_extract(equations,silent=True):
                 this_dict[first_sublist_name+'_START'] =['1'] +(['0']*(len(first_sublist)-1))   
                 this_dict[first_sublist_name+'_NOSTART'] =['0'] +(['1']*(len(first_sublist)-1))   
                 this_dict[first_sublist_name+'_MIDDLE'] =['0'] + (['1']*(len(first_sublist)-2))+['0']    
+                this_dict[first_sublist_name+'_BEFORE'] =['0'] + first_sublist[:-1] 
+                this_dict[first_sublist_name+'_AFTER'] =first_sublist[1:] + ['0']     
+
+                
+                list_len = len(first_sublist)
+                
+                
+                for sublist,values in this_dict.items(): 
+                    if len(values) !=  list_len:                        
+                        raise Exception(f'In {list_name} the length of sublist {sublist} is {len(values)} should be {list_len} ')
+
                 liste_dict[list_name] = this_dict
     #             print(f'\n{first_sublist_name=}\n{first_sublist=} ')            
     # print(f'\n{liste_dict=}')            
@@ -241,13 +274,18 @@ def f2():
 
 if __name__ == '__main__' and 1 :
     #%%  nterm = namedtuple('nterm', ['number', 'op', 'var', 'lag'])
-
-    model_parse('frml <> a= b+c(     + 0)+3.444 $')
-    xx = model_parse('frml <> a+b+b+b=x(-1)+y(-33) $ frml <> a= b+c(-0)+3.444 $')
-    for ((frml, fr, n, udtryk), nt) in xx: 
-        print(f'{udtryk=}')
-        for t in nt: 
-            print(f'{t=}   ')
-           
-    print(*udtryk_parse('frml <> a+b+b+b=x(+0)+y(-33) + b+c(-0)+3.444 $'),sep=' \n')        
-    print(kw_frml_name('<ib, yy>','ib'))       
+    if 0:
+        model_parse('frml <> a= b+c(     + 0)+3.444 $')
+        xx = model_parse('frml <> a+b+b+b=x(-1)+y(-33) $ frml <> a= b+c(-0)+3.444 $')
+        for ((frml, fr, n, udtryk), nt) in xx: 
+            print(f'{udtryk=}')
+            for t in nt: 
+                print(f'{t=}   ')
+               
+        print(*udtryk_parse('frml <> a+b+b+b=x(+0)+y(-33) + b+c(-0)+3.444 $'),sep=' \n')        
+       
+    list_extract('list bankdic = bank	:   Danske , Nordea / danske : yes , no $')
+    list_extract('list bankdic = bank	:   Danske , Nordea  $')
+    list_extract('list agedic = age  :     0 * 101 / lag : 0 *101  $')
+    list_extract('list yeardic = year  :     2023 * 2031 / lag1 : 2022 * 2030  $')
+    
