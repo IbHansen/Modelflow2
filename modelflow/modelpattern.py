@@ -286,6 +286,6 @@ if __name__ == '__main__' and 1 :
        
     list_extract('list bankdic = bank	:   Danske , Nordea / danske : yes , no $')
     list_extract('list bankdic = bank	:   Danske , Nordea  $')
-    list_extract('list agedic = age  :     0 * 101 / lag : 0 *101  $')
+    list_extract('list agedic = age  :     age0 * age101  $')
     list_extract('list yeardic = year  :     2023 * 2031 / lag1 : 2022 * 2030  $')
     
