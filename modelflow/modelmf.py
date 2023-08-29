@@ -156,7 +156,7 @@ if not hasattr(pd.DataFrame,'mf') or 1:
 
             '''
             
-    #        print({**kwargs,**{'start':start,'end':end}})
+            # print({**kwargs,**{'start':start,'end':end}})
             if (l0:=eq.strip()).startswith('<'):
                 timesplit = l0.split('>',1)
                 time_options = timesplit[0].replace('<','').replace(',',' ').replace(':',' ').replace('/',' ').split()
@@ -178,7 +178,7 @@ if not hasattr(pd.DataFrame,'mf') or 1:
             # print('jddd')
             if blanksmpl:  
                 if self._obj.mf.model.maxlag or self._obj.mf.model.maxlead: 
-                    print(f'* Take care. Lags or leads in the equations, mfcalc run for {self._obj.mf.model.current_per[0]} to {self._obj.mf.model.current_per[1]}')
+                    print(f'* Take care. Lags or leads in the equations, mfcalc run for {self._obj.mf.model.current_per[0]} to {self._obj.mf.model.current_per[-1]}')
             if showeq: 
                 print(self._obj.mf.equations)
             return res

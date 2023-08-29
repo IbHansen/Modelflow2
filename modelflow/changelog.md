@@ -111,7 +111,12 @@ in all uses of graph this is now changed:
    - growthshow|gs will also show difference in gfrowth 
    - attshow|ats woorks (as is a reserved word)
 when creating a graph with data some more try except for missing data 
-
-
+Stability_Mixin introduces direct call of
+get_df_eigen_dict()
+get_eigenvectors()
+  creates an object: .stability_newton which holds the newton_diff instance for the stability 
+ now get_eigen_vectors can be called from model
+compstyle will style a dataframe of complex numbers or floats 
+modelmf is importet in modelclass so a seperate import is not needed. 
 
 

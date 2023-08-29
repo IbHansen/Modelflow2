@@ -80,7 +80,6 @@ try:
 except:
     pass
 import os
-
 try:
     import xlwings as xw
 except:
@@ -4063,7 +4062,24 @@ class Display_Mixin():
         else: 
             return df
     
+    @staticmethod
+    def compstyle(df):
+        '''
+        returns a styled dataframe of complex numners 
 
+        Parameters
+        ----------
+        df : dataframe .
+
+        Returns
+        -------
+        None.
+
+        '''
+        out = df.style.format(lambda v: ' ' if abs(v) <= 0.00000000001 else 
+                    ( f'{v.real:.2f}' if v.imag == 0 else f'{abs(v):.2f} ~ {v:.2f}' ))   
+        return out 
+     
 
 
 ##xx = mpak.ibsstyle(mpak.get_att_pct('PAKNYGDPMKTPKN',lag=True,threshold=0),dec=0,percent=1)       
@@ -7354,11 +7370,24 @@ class Fix_Mixin():
             res = out.applymap(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  )
             display(self.ibsstyle(res) )         
         
-
+class Stability_Mixin():
+    
+    def get_eigenvectors(self,forcenum = False,  silent = True ):
+        self.stability_newton = newton_diff(self,forcenum = forcenum, silent = silent )
+        self.eigenvectors = self.stability_newton.get_eigenvectors()
+        
+        return self.eigenvectors
+     
+    
+    def get_df_eigen_dict(self,forcenum = False,  silent = True ):
+        self.eigenvectors = self.get_eigenvectors(forcenum = forcenum,  silent = silent )
+        return self.stability_newton.get_df_eigen_dict()
+        
         
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
-            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,Fix_Mixin):
+            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
+            Fix_Mixin,Stability_Mixin):
     '''This is the main model definition'''
 
     pass
@@ -7609,6 +7638,7 @@ def timer_old(input='test', show=True, short=False):
 
 
 
+import modelmf 
 
 if __name__ == '__main__':
 

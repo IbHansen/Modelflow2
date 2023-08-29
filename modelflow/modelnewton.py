@@ -397,7 +397,8 @@ class newton_diff():
         self.diff_model.current_per = _per     
         # breakpoint()
         with ttimer('calculate derivatives',self.timeit):
-            self.difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk).loc[_per,sorted(self.diff_model.endogene)]
+            self.difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,
+                                              chunk=self.nchunk).loc[_per,sorted(self.diff_model.endogene)].fillna(0.0)
         with ttimer('Prepare wide input to sparse matrix',self.timeit):
             # breakpoint()
             cname = namedtuple('cname','var,pvar,lag')
@@ -553,7 +554,8 @@ class newton_diff():
        
             self.diff_model.current_per = _per     
             # breakpoint()
-            difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk).loc[_per,sorted(self.diff_model.endogene)].astype('float')
+            difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk
+                                         ).loc[_per,sorted(self.diff_model.endogene)].fillna(0.0).astype('float')
                   
             cname = namedtuple('cname','var,pvar,lag')
             col_vars = [cname(i.rsplit('__P__',1)[0], 
@@ -623,6 +625,8 @@ class newton_diff():
                 # print(f'endo:{endo} ,date:{date}, lag:{lag}, \n df')
                 self.diffvalues[var][pvar_name]=res                         
         return self.diffvalues
+    
+    
 
     def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False):
         
@@ -663,7 +667,7 @@ class newton_diff():
         number=len(xlags)
         dim = len(self.endovar) 
         I=lib.eye(dim)
-        # breakpoint()
+        zeros = lib.zeros((dim,dim))
        
                                       # a idendity matrix
         AINV_dic = {date: np_to_df(lib.linalg.inv(I-A['lag=0']))
@@ -672,9 +676,9 @@ class newton_diff():
         # C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items()} 
                     for date,A in A_dic.items()}         # calculate A**-1*A(lag)
         top=lib.eye((number-1)*dim,(number)*dim,dim)
-        # top=lib.eye((number)*dim,(number+1)*dim,dim)
+        top=lib.eye((number)*dim,(number+1)*dim,dim)
         # breakpoint()
-        bottom_dic = {date: lib.hstack([values(thisC) for thisC in C.values()]) for 
+        bottom_dic = {date: lib.hstack([zeros]+[values(thisC) for thisC in C.values()]) for 
                       date,C in C_dic.items()}
         comp_dic = {}
         for date,bottom in bottom_dic.items():
@@ -693,8 +697,11 @@ class newton_diff():
         return eig_dic
 
     def get_df_eigen_dict(self):
+        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(self.mmodel.maxlag,1,1) 
+                       for c in self.declared_endo_list]   
+        
         values_and_vectors  = {per: [pd.DataFrame(vv[0],columns = ['Eigenvalues']).T, 
-                   pd.DataFrame(vv[1])]
+                   pd.DataFrame(vv[1],index = rownames) ]
                        for per,vv in self.eigen_values_and_vectors.items()}
 
         combined = {per : pd.concat(vandv) 
@@ -702,7 +709,14 @@ class newton_diff():
         
         return combined
 
-    
+    def get_df_comp_dict(self):
+        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(self.mmodel.maxlag,1,1) 
+                       for c in self.declared_endo_list]   
+        df_dict = {k : pd.DataFrame(v,columns=rownames,index=rownames) 
+                   for k,v in self.comp_dic.items()}
+        return df_dict 
+        
+
     def eigplot(self, eig_dic=None,per=None,size=(4,3),top=0.9):
         import matplotlib.pyplot as plt
         plt.close('all')
@@ -783,7 +797,6 @@ class newton_diff():
         spec = mpl.gridspec.GridSpec(ncols=ncols,nrows=nrows,figure=fig)
         # breakpoint()
         fig.suptitle('Eigenvalues',fontsize=20)
-        fig.tight_layout()
 
         for i,(key,w) in enumerate(eig_dic.items()):
             if i >= maxaxes:
@@ -817,18 +830,18 @@ if __name__ == '__main__':
     df = pd.DataFrame({'L':[100]*N,'K':[100]*N},index =[i+2000 for i in range(N)])
     df.loc[:,'ALFA'] = 0.5
     df.loc[:,'A'] = 1.
-    df.loc[:,'DEPRECIATES_RATE'] = 0.05
+    df.loc[:,'DEPRECIATES_RATE'] = 0.01
     df.loc[:,'LABOR_GROWTH'] = 0.01
-    df.loc[:,'SAVING_RATIO'] = 0.05
+    df.loc[:,'SAVING_RATIO'] = 0.03
     msolow(df,silent=1,ljit=0,transpile_reset=1)
     msolow.normalized = True
     
-    newton_all    = newton_diff(msolow,forcenum=0)
+    newton_all    = newton_diff(msolow,forcenum=0,per=2002)
     dif__model = newton_all.diff_model.equations
     melt = newton_all.get_diff_melted_var()
     tt = newton_all.get_diff_mat_all_1per(2002,asdf=True)
     #newton_all.show_diff()
-    cc = newton_all.get_eigenvectors(asdf=True)
+    cc = newton_all.get_eigenvectors(asdf=True,periode=2010)
     fig= newton_all.eigplot_all(cc,maxfig=3)
     #%% more testing 
     if 1:
