@@ -7372,15 +7372,15 @@ class Fix_Mixin():
         
 class Stability_Mixin():
     
-    def get_eigenvectors(self,forcenum = False,  silent = True ):
+    def get_eigenvectors(self,forcenum = False,  silent = True ,dropvar=None):
         self.stability_newton = newton_diff(self,forcenum = forcenum, silent = silent )
-        self.eigenvectors = self.stability_newton.get_eigenvectors()
+        self.eigenvectors = self.stability_newton.get_eigenvectors(dropvar=dropvar)
         
         return self.eigenvectors
      
     
-    def get_df_eigen_dict(self,forcenum = False,  silent = True ):
-        self.eigenvectors = self.get_eigenvectors(forcenum = forcenum,  silent = silent )
+    def get_df_eigen_dict(self,forcenum = False,  silent = True ,dropvar=None):
+        self.eigenvectors = self.get_eigenvectors(forcenum = forcenum,  silent = silent ,dropvar=dropvar)
         return self.stability_newton.get_df_eigen_dict()
         
         

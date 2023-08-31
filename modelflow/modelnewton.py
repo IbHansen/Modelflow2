@@ -628,22 +628,10 @@ class newton_diff():
     
     
 
-    def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False):
+    def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False,dropvar=None):
         
         first_element = lambda dic: dic[list(dic.keys())[0]]  # first element in a dict 
-        if asdf:
-            np_to_df      = lambda nparray: pd.DataFrame(nparray,
-                            index = self.declared_endo_list,columns=self.declared_endo_list) 
-            lib           = np
-            values        = lambda df: df.values
-            calc_eig      = lib.linalg.eig
-        else:
-            np_to_df      = lambda sparse_matrix : sparse_matrix           
-            lib           = sp.sparse
-            values        = lambda sparse_matrix : sparse_matrix
-            calc_eig      = lambda sparse_matrix : lib.linalg.eigs(sparse_matrix)
-            calc_eig_reserve  = lambda sparse_matrix : sp.linalg.eig(sparse_matrix.toarray())
-            
+                
         jacobiall = self.get_diff_mat_all_1per(periode,asdf=asdf)
         # breakpoint()
         if not silent: 
@@ -660,14 +648,39 @@ class newton_diff():
                             
                         
                     
-        self.A_dic = A_dic = {date : {lag : df.fillna(0) if filnan else df for lag,df in content['endo'].items()} 
+        A_dic_gross = {date : {lag : df.fillna(0) if filnan else df for lag,df in content['endo'].items()} 
                 for date,content in jacobiall.items()}
         
+        if type(dropvar)== type(None):
+            A_dic = {date: {lag: df for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
+        else:
+            A_dic = {date: {lag: df.drop(index=dropvar,columns=dropvar) for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
+
+            
         xlags = sorted([lag for lag in first_element(A_dic).keys() if lag !='lag=0'],key=lambda lag:int(lag.split('=')[1]),reverse=True)
         number=len(xlags)
-        dim = len(self.endovar) 
+        # dim = len(self.endovar) 
+        first_A_dict = first_element(A_dic) # The first dict of A's 
+        first_A = first_A_dict['lag=0'] 
+        self.varnames = first_A.columns 
+        dim = len(first_A)
+        
+        if asdf:
+            np_to_df      = lambda nparray: pd.DataFrame(nparray,
+                            index = self.varnames,columns=self.varnames) 
+            lib           = np
+            values        = lambda df: df.values
+            calc_eig      = lib.linalg.eig
+        else:
+            np_to_df      = lambda sparse_matrix : sparse_matrix           
+            lib           = sp.sparse
+            values        = lambda sparse_matrix : sparse_matrix
+            calc_eig      = lambda sparse_matrix : lib.linalg.eigs(sparse_matrix)
+            calc_eig_reserve  = lambda sparse_matrix : sp.linalg.eig(sparse_matrix.toarray())
+            
         I=lib.eye(dim)
-        zeros = lib.zeros((dim,dim))
+     
+     #   zeros = lib.zeros((dim,dim))
        
                                       # a idendity matrix
         AINV_dic = {date: np_to_df(lib.linalg.inv(I-A['lag=0']))
@@ -676,9 +689,9 @@ class newton_diff():
         # C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items()} 
                     for date,A in A_dic.items()}         # calculate A**-1*A(lag)
         top=lib.eye((number-1)*dim,(number)*dim,dim)
-        top=lib.eye((number)*dim,(number+1)*dim,dim)
+      #  top=lib.eye((number)*dim,(number+1)*dim,dim)
         # breakpoint()
-        bottom_dic = {date: lib.hstack([zeros]+[values(thisC) for thisC in C.values()]) for 
+        bottom_dic = {date: lib.hstack([values(thisC) for thisC in C.values()]) for 
                       date,C in C_dic.items()}
         comp_dic = {}
         for date,bottom in bottom_dic.items():
@@ -691,15 +704,32 @@ class newton_diff():
 
 
         eig_dic = {date : both[0] for date,both in eigen_values_and_vectors.items() } 
+        
+        
+        self.A_dic = A_dic 
         self.comp_dic = comp_dic  
         self.eigen_values_and_vectors = eigen_values_and_vectors
         self.eig_dic = eig_dic
         return eig_dic
 
+    def get_eigen_jackknife(self):
+        name_to_loop = self.declared_endo_list 
+        base_dict = {'ALL' : self.get_eigenvectors(dropvar=None )}
+        jackknife_dict = {f'{name}_excluded': self.get_eigenvectors(dropvar=name)  for name in name_to_loop}
+        return {**base_dict, **jackknife_dict} 
+
+    def get_eigen_jackknife_abs(self):
+        base = self.get_eigen_jackknife()
+        res = {name: {date: [length for length in abs(eigenvalues) if length > 0.000001 ]
+               for date,eigenvalues in alldates.items()} 
+               for name,alldates in base.items()}
+        return res
+    
+    
     def get_df_eigen_dict(self):
-        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(self.mmodel.maxlag,1,1) 
-                       for c in self.declared_endo_list]   
-        
+        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(self.mmodel.maxlag+1,1,1) 
+                       for c in self.varnames]   
+        # breakpoint()
         values_and_vectors  = {per: [pd.DataFrame(vv[0],columns = ['Eigenvalues']).T, 
                    pd.DataFrame(vv[1],index = rownames) ]
                        for per,vv in self.eigen_values_and_vectors.items()}
@@ -710,8 +740,8 @@ class newton_diff():
         return combined
 
     def get_df_comp_dict(self):
-        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(self.mmodel.maxlag,1,1) 
-                       for c in self.declared_endo_list]   
+        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(self.mmodel.maxlag+1,1,1) 
+                       for c in self.varnames]   
         df_dict = {k : pd.DataFrame(v,columns=rownames,index=rownames) 
                    for k,v in self.comp_dic.items()}
         return df_dict 
