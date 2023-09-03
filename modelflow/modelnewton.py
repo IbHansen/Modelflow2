@@ -31,6 +31,7 @@ from itertools import chain, zip_longest
 
 
 from dataclasses import dataclass, field, asdict
+from functools import lru_cache,cached_property
 
 import re
 
@@ -579,7 +580,7 @@ class newton_diff():
 
             
             return totalmelt
-
+        
     def get_diff_mat_all_1per(self,periode=None,df=None,asdf=False):
         dmelt = self.get_diff_melted_var(periode=periode,df=df)
         with ttimer('Prepare numpy input to sparse matrix',self.timeit):
@@ -628,7 +629,7 @@ class newton_diff():
     
     
 
-    def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False,dropvar=None):
+    def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False,dropvar=None,i=0):
         
         first_element = lambda dic: dic[list(dic.keys())[0]]  # first element in a dict 
                 
@@ -648,15 +649,23 @@ class newton_diff():
                             
                         
                     
-        A_dic_gross = {date : {lag : df.fillna(0) if filnan else df for lag,df in content['endo'].items()} 
+        A_dic_gross0 = {date : {lag : df.fillna(0) if filnan else df for lag,df in content['endo'].items()} 
                 for date,content in jacobiall.items()}
+        
+        # vnow to get lag=-1 leftmost and so om 
+        A_dic_gross = {date: {lag : content[lag] 
+                              for lag in sorted(content.keys())}
+                       
+                      for date,content in  A_dic_gross0.items()}
+        
         
         if type(dropvar)== type(None):
             A_dic = {date: {lag: df for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
+            
         else:
             A_dic = {date: {lag: df.drop(index=dropvar,columns=dropvar) for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
-
-            
+            print(f'{i} {dropvar}')
+        breakpoint()    
         xlags = sorted([lag for lag in first_element(A_dic).keys() if lag !='lag=0'],key=lambda lag:int(lag.split('=')[1]),reverse=True)
         number=len(xlags)
         # dim = len(self.endovar) 
@@ -680,54 +689,74 @@ class newton_diff():
             
         I=lib.eye(dim)
      
-     #   zeros = lib.zeros((dim,dim))
+        zeros = lib.zeros((dim,dim))
        
                                       # a idendity matrix
         AINV_dic = {date: np_to_df(lib.linalg.inv(I-A['lag=0']))
                     for date,A in A_dic.items()}  
-        C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items()if lag!='lag=0'} 
-        # C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items()} 
+        
+        C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items() if lag!='lag=0'} 
                     for date,A in A_dic.items()}         # calculate A**-1*A(lag)
-        top=lib.eye((number-1)*dim,(number)*dim,dim)
+        
+        # top=lib.eye((number-1)*dim,(number)*dim,dim)
+        newbottom  = lib.eye((number-1)*dim,(number)*dim)
       #  top=lib.eye((number)*dim,(number+1)*dim,dim)
         # breakpoint()
-        bottom_dic = {date: lib.hstack([values(thisC) for thisC in C.values()]) for 
+        top_dic = {date: lib.hstack([values(thisC) for thisC in C.values()]) for 
                       date,C in C_dic.items()}
+
         comp_dic = {}
-        for date,bottom in bottom_dic.items():
-            comp_dic[date] = lib.vstack([top,bottom]) 
+        for date,top in top_dic.items():
+            comp_dic[date] = lib.vstack([top,newbottom]) 
         
         try:
             eigen_values_and_vectors =  {date : calc_eig(comp) for date,comp in comp_dic.items()} 
-        except:            
+        except:     
+            print('using reserve calculatioon of eigenvalues')
             eigen_values_and_vectors =  {date : calc_eig_reserve(comp) for date,comp in comp_dic.items()} 
 
 
         eig_dic = {date : both[0] for date,both in eigen_values_and_vectors.items() } 
         
+        for i,date in enumerate(eig_dic.keys() ):
+            if i == 0: 
+                print( sum(abs(eig_dic[date])))
         
         self.A_dic = A_dic 
         self.comp_dic = comp_dic  
         self.eigen_values_and_vectors = eigen_values_and_vectors
         self.eig_dic = eig_dic
         return eig_dic
-
+    
+    
+    @cached_property
     def get_eigen_jackknife(self):
-        name_to_loop = self.declared_endo_list 
+        name_to_loop =self.varnames
         base_dict = {'ALL' : self.get_eigenvectors(dropvar=None )}
-        jackknife_dict = {f'{name}_excluded': self.get_eigenvectors(dropvar=name)  for name in name_to_loop}
+        jackknife_dict = {f'{name}_excluded': self.get_eigenvectors(dropvar=name,i=i)  for i,name in enumerate(name_to_loop)}
         return {**base_dict, **jackknife_dict} 
 
+     
     def get_eigen_jackknife_abs(self):
-        base = self.get_eigen_jackknife()
-        res = {name: {date: [length for length in abs(eigenvalues) if length > 0.000001 ]
+        base = self.get_eigen_jackknife
+        res = {name: {date: max([length for length in abs(eigenvalues)  ])
                for date,eigenvalues in alldates.items()} 
                for name,alldates in base.items()}
         return res
-    
+
+    def get_eigen_jackknife_abs_count(self):
+        base = self.get_eigen_jackknife
+        res = {name: {date: (abs(eigenvalues) > 1).sum() 
+               for date,eigenvalues in alldates.items()} 
+               for name,alldates in base.items()}
+        return res
+   
+    def get_eigen_jackknife_abs_select(self,year=2023):
+        
+        return {v: d[year] for v,d in self.get_eigen_jackknife_abs.items()}    
     
     def get_df_eigen_dict(self):
-        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(self.mmodel.maxlag+1,1,1) 
+        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(-1,self.mmodel.maxlag-1,-1) 
                        for c in self.varnames]   
         # breakpoint()
         values_and_vectors  = {per: [pd.DataFrame(vv[0],columns = ['Eigenvalues']).T, 
@@ -740,7 +769,7 @@ class newton_diff():
         return combined
 
     def get_df_comp_dict(self):
-        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(self.mmodel.maxlag+1,1,1) 
+        rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(-1,self.mmodel.maxlag-1,-1) 
                        for c in self.varnames]   
         df_dict = {k : pd.DataFrame(v,columns=rownames,index=rownames) 
                    for k,v in self.comp_dic.items()}
@@ -849,7 +878,7 @@ if __name__ == '__main__':
     from modelclass import model
     fsolow = '''\
     Y         = a * k**alfa * l **(1-alfa) 
-    C         = (1-SAVING_RATIO)  * Y  
+    C         = (1-SAVING_RATIO)  * Y(-1) 
     I         = Y - C 
     diff(K)   = I-depreciates_rate * K(-1)
     diff(l)   = labor_growth * (L(-1)+l(-2))/2 
@@ -859,10 +888,9 @@ if __name__ == '__main__':
     N = 32
     df = pd.DataFrame({'L':[100]*N,'K':[100]*N},index =[i+2000 for i in range(N)])
     df.loc[:,'ALFA'] = 0.5
-    df.loc[:,'A'] = 1.
     df.loc[:,'DEPRECIATES_RATE'] = 0.01
     df.loc[:,'LABOR_GROWTH'] = 0.01
-    df.loc[:,'SAVING_RATIO'] = 0.03
+    df.loc[:,'SAVING_RATIO'] = 0.10
     msolow(df,silent=1,ljit=0,transpile_reset=1)
     msolow.normalized = True
     
