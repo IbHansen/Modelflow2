@@ -7004,7 +7004,7 @@ class Solver_Mixin():
         return outdf
 
     def invert(self, databank, targets, instruments, silent=1,
-               DefaultImpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, delay=0,varimpulse=False,
+               DefaultImpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, delay=0,varimpulse=False,progressbar = True, 
                debug = False):
         ''' 
      Solves a target instrument problem 
@@ -7064,7 +7064,8 @@ class Solver_Mixin():
 '''
         from modelinvert import targets_instruments
         t_i = targets_instruments(databank, targets, instruments, self, silent=silent,delay=delay,varimpulse=varimpulse,
-                                  DefaultImpuls=DefaultImpuls, defaultconv=defaultconv, nonlin=nonlin, maxiter=maxiter)
+                                  DefaultImpuls=DefaultImpuls, defaultconv=defaultconv, nonlin=nonlin, maxiter=maxiter,
+                                  progressbar=progressbar )
         self.t_i = t_i
         self.t_i.debug = debug 
         res = t_i(delay=delay)

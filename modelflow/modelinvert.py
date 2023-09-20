@@ -49,7 +49,7 @@ class targets_instruments():
     '''
     
     def __init__(self,databank,targets,instruments,model,DefaultImpuls=0.01,defaultconv=0.01, delay=0, 
-                 nonlin=False,silent = True, maxiter=30,solveopt={},varimpulse=False):
+                 nonlin=False,silent = True, maxiter=30,solveopt={},varimpulse=False,progressbar= True):
         '''
         
 
@@ -98,6 +98,7 @@ class targets_instruments():
         self.nonlin=nonlin
         self.databank = databank.copy()
         self.varimpulse = varimpulse 
+        self.progressbar = progressbar
         self.savesolvearg = model.oldkwargs if hasattr(model,'oldkwargs') else {}
         for inumber,i in enumerate(instruments): 
             vars =  i if isinstance(i,list) else [i] # make it a list even if one variable
@@ -162,11 +163,12 @@ class targets_instruments():
             out= pd.DataFrame(np.linalg.inv(x),x.columns,x.index)
         return out
     
-    def targetseek(self,databank=None,shortfall=False,ti_damp=1.0,delay=0,progressbar = True,**kwargs):
+    def targetseek(self,databank=None,shortfall=False,ti_damp=1.0,delay=0,**kwargs):
         ''' Calculates the instruments as a function of targets '''
         silent =  kwargs.get('silent',self.silent)
         self.maxiter = kwargs.get('maxiter',self.maxiter)
         self.nonlin = kwargs.get('nonlin',self.nonlin)
+        progressbar = kwargs.get('progressbar',self.progressbar)
  
         tindex = self.model.current_per.copy()
         res    = self.databank 

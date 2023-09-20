@@ -574,7 +574,10 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=None,
              splitchar='__',savefig='',*args,**kwargs):
     '''
     
-
+Plots a subplot for each column in a datafra.
+    ppos determins which split by __ to use 
+    kind determins which kind of matplotlib chart to use 
+     
     Args:
         df (TYPE): Dataframe .
         name (TYPE, optional): title. Defaults to ''.
@@ -582,7 +585,6 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=None,
         kind (TYPE, optional): matplotlib kind . Defaults to 'line'.
         colrow (TYPE, optional): columns per row . Defaults to 6.
         sharey (TYPE, optional): Share y axis between plots. Defaults to True.
-        top (TYPE, optional): relative position of the title. Defaults to 0.90.
         splitchar (TYPE, optional): if the name should be split . Defaults to '__'.
         savefig (TYPE, optional): save figure. Defaults to ''.
         xsize  (TYPE, optional): x size default to 10 
@@ -593,12 +595,7 @@ def plotshow(df,name='',ppos=-1,kind='line',colrow=2,sharey=False,top=None,
 
     '''
     
-    ''' Plots a subplot for each column in a datafra.
-    ppos determins which split by __ to use 
-    kind determins which kind of matplotlib chart to use 
-     
-    
-    ''' 
+   
     plt.ioff()
     if splitchar:
         out=df.pipe(lambda df_: df_.rename(columns={v: v.split(splitchar)[ppos] for v in df_.columns}))
@@ -804,6 +801,9 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
 
 
     return fig
+
+vis.plot.__doc__ = plotshow.__doc__ 
+
 
 if __name__ == '__main__' and 1:
     basis = pd.DataFrame([[100,100.],[-10.0,-12], [12,-10],[-10,10]],index=['nii','cost','credit','fee'],columns=['ex','ex2'])
