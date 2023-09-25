@@ -110,7 +110,7 @@ class targets_instruments():
         # breakpoint()
 
         
-    def jacobi(self,per,delay=None):
+    def jacobi(self,per,delay=0):
         ''' Calculates a jecobi matrix of derivatives based on the instruments and targets 
         
         returns a dataframe '''

@@ -215,7 +215,7 @@ class totdif():
         '''
         if self.go:         
             self.impact = mk.GetLastImpact(self.res[use],pat=pat).T.rename(index=self.desdic)
-            ntitle = f'Attribution last period, {use}' if title == '' else title
+            ntitle = f'Decomposition last period, {use}' if title == '' else title
             fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title= ntitle,desdic=self.desdic,
                                threshold=threshold,ysize=ysize)
             return fig
@@ -239,7 +239,7 @@ class totdif():
         '''
         if self.go:          
            self.impact = mk.GetSumImpact(self.res[use],pat=pat).T.rename(index=self.desdic)
-           ntitle = f'Attribution, sum over all periods, {use}' if title == '' else title
+           ntitle = f'Decomposition, sum over all periods, {use}' if title == '' else title
            fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic,
                               threshold=threshold,ysize=ysize )
            return fig
@@ -265,7 +265,7 @@ class totdif():
            tper = self.res[use].columns.get_level_values(1)[0] if per == '' else per
            self.impact = mk.GetOneImpact(self.res[use],pat=pat,per=tper).T.rename(index=self.desdic) 
            t2per = str(tper.date()) if type(tper) == pd._libs.tslibs.timestamps.Timestamp else tper
-           ntitle = f'Attribution, {use}: {t2per}' if title == '' else title
+           ntitle = f'Decomposition, {use}: {t2per}' if title == '' else title
            fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic ,
                               threshold=threshold,ysize=ysize)
            return fig
@@ -282,7 +282,7 @@ class totdif():
             grouped = selected.stack().groupby(level=[0])
             fig, axis = plt.subplots(nrows=len(grouped),ncols=1,figsize=(10,5*len(grouped)),constrained_layout=False)
             width = 0.5  # the width of the barsser
-            ntitle = f'Attribution, {use}' if title == '' else title
+            ntitle = f'Decomposition, {use}' if title == '' else title
             laxis = axis if isinstance(axis,numpy.ndarray) else [axis]
             for j,((name,dfatt),ax) in enumerate(zip(grouped,laxis)):
                 dfatt.index = [i[1] for i in dfatt.index]
@@ -340,7 +340,7 @@ class totdif():
             grouped = selected.stack().groupby(level=[0])
             fig, axis = plt.subplots(nrows=len(grouped),ncols=1,figsize=(10,5*len(grouped)),constrained_layout=False)
             width = 0.5  # the width of the barsser
-            ntitle = f'Attribution, {use}' if title == '' else title
+            ntitle = f'Decomposition, {use}' if title == '' else title
             laxis = axis if isinstance(axis,numpy.ndarray) else [axis]
             for j,((name,dfatt),ax) in enumerate(zip(grouped,laxis)):
                 dfatt.index = [i[1] for i in dfatt.index]

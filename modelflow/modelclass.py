@@ -2026,7 +2026,7 @@ Returns:
         tempdf = ddf
         per_loc = tempdf.columns.get_loc(per)
         nthreshold = '' if threshold == 0.0 else f', threshold = {threshold}'
-        ntitle = f'Attribution in {per}, pct{nthreshold}:' if pct else f'Attribution in {per}, {nthreshold}'
+        ntitle = f'Decomposition in {per}, pct{nthreshold}:' if pct else f'Decomposition in {per}, {nthreshold}'
         plotdf = tempdf.loc[[c for c in tempdf.index.tolist(
         ) if c.strip() != 'Total'], :].iloc[:, [per_loc]]
         plotdf.columns =  [self.var_description.get(varnavn.upper(),varnavn.upper())] if rename else [varnavn.upper()]
@@ -2200,7 +2200,7 @@ Returns:
         ax.xaxis.set_major_locator(plt.MaxNLocator(10))
         nthreshold = '' if threshold == 0.0 else f', threshold = {threshold}'
 
-        ntitle = f'Attribution{nthreshold}' 
+        ntitle = f'Decomposition{nthreshold}' 
         fig.suptitle(ntitle, fontsize=20)
         # fig.subplots_adjust(top=top)
 

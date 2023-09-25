@@ -118,5 +118,5 @@ get_eigenvectors()
  now get_eigen_vectors can be called from model
 compstyle will style a dataframe of complex numbers or floats 
 modelmf is importet in modelclass so a seperate import is not needed. 
-
+attribution -> decomposition in modelclass 
 
