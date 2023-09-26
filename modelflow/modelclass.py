@@ -5393,6 +5393,7 @@ class Solver_Mixin():
 
 
         '''
+        
         if kwargs.get('antal', False):
             assert 1 == 2, 'Antal is not a valid simulation option, Use max_iterations'
         self.dumpdf = None
@@ -5410,6 +5411,8 @@ class Solver_Mixin():
         self.oldkwargs = newkwargs.copy()
 
         self.save = newkwargs.get('save', self.save)
+ 
+                
 
         if self.save:
             if self.previousbase and hasattr(self, 'lastdf'):
@@ -5493,7 +5496,7 @@ class Solver_Mixin():
         variabler = [x for x in sorted(self.allvar.keys())]
         return {v: self.allvar[v]['startnr'] for v in variabler}
 
-    def makelos(self, databank, ljit=0, stringjit=True,
+    def makelos(self, databank, ljit=0, stringjit=False,
                 solvename='sim', chunk=30, transpile_reset=False, newdata=False,
                 silent=True, **kwargs):
         jitname = f'{self.name}_{solvename}_jit'
@@ -5592,7 +5595,7 @@ class Solver_Mixin():
 
     def sim(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=5,
             max_iterations=200, conv='*', absconv=0.01, relconv=DEFAULT_relconv,
-            stringjit=True, transpile_reset=False,
+            stringjit=False, transpile_reset=False,
             dumpvar='*', init=False, ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, timeon=False,
             fairopt={'fair_max_iterations ': 1}, progressbar=False,**kwargs):
         '''
@@ -6245,7 +6248,7 @@ class Solver_Mixin():
 
     def newton(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False, newton_reset=1,
-               dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=True, transpile_reset=False, lnjit=False, init=False,
+               dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False, init=False,
                newtonalfa=1.0, newtonnodamp=0, forcenum=True,
                fairopt={'fair_max_iterations ': 1}, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
@@ -6416,7 +6419,7 @@ class Solver_Mixin():
 
     def newtonstack(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                     max_iterations=20, conv='*', absconv=1., relconv=DEFAULT_relconv,
-                    dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=30, ljit=False, stringjit=True, transpile_reset=False, nljit=0,
+                    dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=30, ljit=False, stringjit=False, transpile_reset=False, nljit=0,
                     fairopt={'fair_max_iterations ': 1}, debug=False, timeit=False, nonlin=False,
                     newtonalfa=1.0, newtonnodamp=0, forcenum=True, newton_reset=False, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
@@ -6591,7 +6594,7 @@ class Solver_Mixin():
 
     def newton_un_normalized(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                              max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False, newton_reset=1,
-                             dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=True, transpile_reset=False, lnjit=False,
+                             dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False,
                              fairopt={'fair_max_iterations ': 1},
                              newtonalfa=1.0, newtonnodamp=0, forcenum=True, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
@@ -6763,7 +6766,7 @@ class Solver_Mixin():
 
     def newtonstack_un_normalized(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                                   max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv,
-                                  dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=None, ljit=False, nljit=0, stringjit=True, transpile_reset=False,
+                                  dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=None, ljit=False, nljit=0, stringjit=False, transpile_reset=False,
                                   fairopt={'fair_max_iterations ': 1}, debug=False, timeit=False, nonlin=False,
                                   newtonalfa=1.0, newtonnodamp=0, forcenum=True, newton_reset=False, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
@@ -6947,7 +6950,7 @@ class Solver_Mixin():
         return outdf
 
     def res(self, databank, start='', end='', debug=False, timeit=False, silent=False,
-            chunk=None, ljit=0, stringjit=True, transpile_reset=False, alfa=1, stats=0, samedata=False, **kwargs):
+            chunk=None, ljit=0, stringjit=False, transpile_reset=False, alfa=1, stats=0, samedata=False, **kwargs):
         '''calculates the result of a model, no iteration or interaction 
         The text for the evaluater function is placed in the model property **make_res_text** 
         where it can be inspected 
