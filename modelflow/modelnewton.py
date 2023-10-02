@@ -665,7 +665,7 @@ class newton_diff():
         else:
             A_dic = {date: {lag: df.drop(index=dropvar,columns=dropvar) for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
             print(f'{i} {dropvar}')
-        breakpoint()    
+        # breakpoint()    
         xlags = sorted([lag for lag in first_element(A_dic).keys() if lag !='lag=0'],key=lambda lag:int(lag.split('=')[1]),reverse=True)
         number=len(xlags)
         # dim = len(self.endovar) 
@@ -719,8 +719,11 @@ class newton_diff():
         eig_dic = {date : both[0] for date,both in eigen_values_and_vectors.items() } 
         
         for i,date in enumerate(eig_dic.keys() ):
-            if i == 0: 
-                print( sum(abs(eig_dic[date])))
+            ...
+            if 0: 
+                if i == 0: 
+                    print('here')
+                    print( sum(abs(eig_dic[date])))
         
         self.A_dic = A_dic 
         self.comp_dic = comp_dic  
@@ -753,7 +756,7 @@ class newton_diff():
    
     def get_eigen_jackknife_abs_select(self,year=2023):
         
-        return {v: d[year] for v,d in self.get_eigen_jackknife_abs.items()}    
+        return {v: d[year] for v,d in self.get_eigen_jackknife_abs().items() }    
     
     def get_df_eigen_dict(self):
         rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(-1,self.mmodel.maxlag-1,-1) 

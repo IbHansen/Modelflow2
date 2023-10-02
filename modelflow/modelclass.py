@@ -5162,12 +5162,11 @@ class Json_Mixin():
              keep_json : save a dict (self.json_keep) in the model instance 
              default_url : TYPE, optional
                  Where to look if the file is not avaiable. The default is r'https://raw.githubusercontent.com/IbHansen/modelflow-manual/main/model_repo/'.
-             **kwargs : TYPE
-                 DESCRIPTION.
+             **kwargs : These options are used by the simulation if run=True
 
              Returns
              -------
-             None.
+             (<a model instance>,<a dataframe>) .
 
              '''
         '''Loads a model and an solution '''
@@ -5392,7 +5391,66 @@ class Solver_Mixin():
         if the modelproperty previousbase is true, the previous run is used as basedf. 
 
 
+       
+
+        Parameters
+        ----------
+        sim : bool, optional
+            If False, forces a model to be calculated (not solved); if True, forces simulation. 
+            The default behavior is determined by the model's properties.
+
+        setbase : bool, optional
+            If True, places the result in model.basedf. Default is determined by the model's state.
+
+        setlast : bool, optional
+            If False, doesn't place the results in model.lastdf. Default is True.
+
+        antal : not applicable, optional
+            This option is not valid. If provided, an assertion error is raised.
+
+        do_calc_add_factor : bool, optional
+            Determines whether to calculate the adjustment factor if the calc adjust model is present. 
+            Default is True.
+
+        reset_options : bool, optional
+            If True, the previous options will be reset. Default is False.
+
+        save : bool, optional
+            If True, saves the current state. The default behavior is determined by the model's properties.
+
+        solver : str, optional
+            Specifies the solver to be used. The default solver is chosen based on the model's properties.
+
+        silent : bool, optional
+            If True, the solver runs silently without printing output to the console. Default is True.
+
+        cache_clear : bool, optional
+            If True, clears the cache after solving. Default is True.
+
+        keep : str, optional
+            If provided, keeps the solutions. The exact behavior depends on the 'keep_variables' option.
+
+        keep_variables : str or list of str, optional
+            Specifies which variables to keep if the 'keep' option is provided. Default is to keep all variables.
+
+        *args
+            Variable length argument list.
+
+        **kwargs
+            Arbitrary keyword arguments.
+
+        Returns
+        -------
+        outdf : pandas.DataFrame
+            The DataFrame containing the results of the model run.
+
+        Raises
+        ------
+        AssertionError
+            If the 'antal' option is provided, as it is not a valid simulation option.
         '''
+
+        
         
         if kwargs.get('antal', False):
             assert 1 == 2, 'Antal is not a valid simulation option, Use max_iterations'
@@ -5660,6 +5718,7 @@ class Solver_Mixin():
         :type fairopt: TYPE, optional
         :param progressbar: Show progress bar , defaults to False
         :type progressbar: TYPE, optional
+        
         :return: A dataframe wilt the results 
         
         '''
