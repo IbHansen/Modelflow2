@@ -171,7 +171,7 @@ class targets_instruments():
         progressbar = kwargs.get('progressbar',self.progressbar)
  
         tindex = self.model.current_per.copy()
-        res    = self.databank 
+        res    = self.databank.copy()  
 #        self.inv  = inv  = self.invjacobi(self.targets.index[0])
         self.inv  = inv  = self.invjacobi(self.targets.index[0],diag=shortfall,delay=delay) 
 

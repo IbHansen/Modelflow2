@@ -147,7 +147,7 @@ class newton_diff():
         
                 # breakpoint()      
                 nt = model.allvar[v]['terms']
-                assignpos = nt.index(model.aequalterm)                       # find the position of = 
+                assignpos = nt.index(model.aequalterm)                        # find the position of = 
                 rhsterms = nt[assignpos+1:-1]
                 vterm = udtryk_parse(rhv)[0]
                 plusterm =  udtryk_parse(f'({rhv}+{delta/2})',funks=model.funks)
@@ -629,7 +629,7 @@ class newton_diff():
     
     
 
-    def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False,dropvar=None,i=0):
+    def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False,dropvar=None,dropvar_nr=0):
         
         first_element = lambda dic: dic[list(dic.keys())[0]]  # first element in a dict 
                 
@@ -664,7 +664,7 @@ class newton_diff():
             
         else:
             A_dic = {date: {lag: df.drop(index=dropvar,columns=dropvar) for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
-            print(f'{i} {dropvar}')
+            print(f'{dropvar_nr} {dropvar}')
         # breakpoint()    
         xlags = sorted([lag for lag in first_element(A_dic).keys() if lag !='lag=0'],key=lambda lag:int(lag.split('=')[1]),reverse=True)
         number=len(xlags)
@@ -731,32 +731,28 @@ class newton_diff():
         self.eig_dic = eig_dic
         return eig_dic
     
-    
-    @cached_property
-    def get_eigen_jackknife(self):
-        name_to_loop =self.varnames
+    @lru_cache(maxsize=None)   
+    def get_eigen_jackknife(self,maxnames = 20):
+        name_to_loop =[n for i,n in enumerate(self.varnames) if not n.endswith('_FITTED')]
         base_dict = {'ALL' : self.get_eigenvectors(dropvar=None )}
-        jackknife_dict = {f'{name}_excluded': self.get_eigenvectors(dropvar=name,i=i)  for i,name in enumerate(name_to_loop)}
+        jackknife_dict = {f'{name}_excluded': self.get_eigenvectors(dropvar=name,dropvar_nr=dropvar_nr)
+                    for dropvar_nr,name in enumerate(name_to_loop) if dropvar_nr  < maxnames}
         return {**base_dict, **jackknife_dict} 
 
      
-    def get_eigen_jackknife_abs(self):
-        base = self.get_eigen_jackknife
-        res = {name: {date: max([length for length in abs(eigenvalues)  ])
+    def get_eigen_jackknife_abs(self,largest=20,maxnames = 20):
+        base = self.get_eigen_jackknife(maxnames=maxnames)
+        res = {name: {date: np.sort(np.partition(np.abs(eigenvalues), -largest)[-largest:])[::-1]
+                    
                for date,eigenvalues in alldates.items()} 
                for name,alldates in base.items()}
         return res
 
-    def get_eigen_jackknife_abs_count(self):
-        base = self.get_eigen_jackknife
-        res = {name: {date: (abs(eigenvalues) > 1).sum() 
-               for date,eigenvalues in alldates.items()} 
-               for name,alldates in base.items()}
-        return res
    
-    def get_eigen_jackknife_abs_select(self,year=2023):
+    def get_eigen_jackknife_abs_select(self,year=2023,largest=20,maxnames = 20):
         
-        return {v: d[year] for v,d in self.get_eigen_jackknife_abs().items() }    
+        xx =  {v: sum(d[year]) for v,d in self.get_eigen_jackknife_abs(maxnames=maxnames,largest=largest).items() }    
+        return pd.Series(xx).sort_values() 
     
     def get_df_eigen_dict(self):
         rownames = [f'{c}{("("+str(l)+")") if l != 0 else ""}' for l in range(-1,self.mmodel.maxlag-1,-1) 

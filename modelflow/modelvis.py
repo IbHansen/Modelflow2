@@ -78,6 +78,7 @@ class vis():
          name = kwargs.pop('title',self.__pat__)
          a = heatshow(self.thisdf.loc[self.model.current_per,:].T,
                       name=name,*args, **kwargs)
+         display(a)
          return a 
  
      def plot(self,*args, **kwargs):
@@ -86,6 +87,7 @@ class vis():
          name = kwargs.get('title','Title')
          a = plotshow(self.thisdf.loc[self.model.current_per,:],
                       name=name,*args,**kwargs)
+         display(a)
          return a 
      
         
