@@ -67,7 +67,7 @@ from functools import partial,cached_property,lru_cache
 from tqdm.auto import tqdm
 import operator
 from urllib.request import urlopen
-from io import BytesIO
+from io import BytesIO,StringIO
 
 
 from matplotlib import rcParams
@@ -5364,15 +5364,16 @@ class Json_Mixin():
             return base, current_dates
 
         try:
-            with open(infile, 'rt') as f:
+            with open(pinfile:=Path(nname:=infile.replace('\\','/')), 'rt') as f:
                 input = json.load(f)
-                print(f'file read:  {Path(infile).resolve()}')  
-
+                print(f'file read:  {pinfile.resolve()}xxxxxxxxxx')  
+                print(f'file read:  {pinfile}yyy')
+                print(f'file read:  {nname}zzz')
         except: 
             if infile.startswith(r'https:'):
                 urlfile = infile
             else: 
-                urlfile = (Path(default_url) / Path(infile).name).as_posix().replace('https:/','https://')
+                urlfile = (Path(default_url) / pinfile.name).as_posix().replace('https:/','https://')
                 
             print(f'Open file from URL:  {urlfile}')  
             with urllib.request.urlopen(urlfile) as f:
@@ -5380,8 +5381,8 @@ class Json_Mixin():
 
         version = input['version']
         frml = input['frml']
-        lastdf = pd.read_json(input['lastdf'])
-        current_per = pd.read_json(input['current_per'], typ='series').values
+        lastdf = pd.read_json(StringIO(input['lastdf']))
+        current_per = pd.read_json(StringIO(input['current_per']), typ='series').values
         modelname = input['modelname']
         mmodel = cls(frml, modelname=modelname, funks=funks,**kwargs)
         mmodel.oldkwargs = input['oldkwargs']
@@ -5389,7 +5390,7 @@ class Json_Mixin():
         mmodel.set_var_description(input.get('var_description', {}))
         mmodel.equations_latex = input.get('equations_latex', '')
         if input.get('wb_MFMSAOPTIONS', None) : mmodel.wb_MFMSAOPTIONS = input.get('wb_MFMSAOPTIONS', None)
-        mmodel.keep_solutions = {k : pd.read_json(jdf) for k,jdf in input.get('keep_solutions',{}).items()}
+        mmodel.keep_solutions = {k : pd.read_json(StringIO(jdf)) for k,jdf in input.get('keep_solutions',{}).items()}
         mmodel.var_groups = input.get('var_groups', {})
         mmodel.model_description = input.get('model_description', '')
         mmodel.eviews_dict = input.get('eviews_dict', {})
