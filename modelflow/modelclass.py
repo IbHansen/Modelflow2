@@ -66,6 +66,9 @@ import zipfile
 from functools import partial,cached_property,lru_cache
 from tqdm.auto import tqdm
 import operator
+from urllib.request import urlopen
+from io import BytesIO
+
 
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -1828,6 +1831,174 @@ class Model_help_Mixin():
     @property
     def print_model_latex(self):
         mj.get_frml_latex(self)
+
+    
+    @staticmethod
+    def get_a_repo_yaml(owner: str = "IbHansen",
+                       repo_name: str = "modelflow-manual",
+                       branch: str = 'main', 
+                       file:  str = r'papers/mfbook/repo_def.yaml'): 
+        """
+    Retrieve and load a YAML file from a specified GitHub repository.
+
+    Parameters:
+    - owner (str): The owner of the GitHub repository. Default is "IbHansen".
+    - repo_name (str): The name of the GitHub repository. Default is "modelflow-manual".
+    - branch (str): The branch where the file is located. Default is "main".
+    - file (str): The path to the file within the GitHub repository. Default is "papers/mfbook/repo_def.yaml".
+
+    Returns:
+    - dict or list: A dictionary or list containing the loaded YAML data.
+
+    Exceptions:
+    - Raises an exception if there is an error retrieving or loading the file, 
+      with the exception message printed to the console.
+      """  
+       
+        from urllib.request import urlopen
+        import yaml 
+        
+        url = Path(rf"https://raw.githubusercontent.com/{owner}/{repo_name}/{branch}/{file}").as_posix().replace('https:/','https://')
+      #  print(f'Open file from URL:  {url}')  
+        try:
+            with urlopen(url) as f:            
+                    res = yaml.safe_load(f)
+        except Exception as e:
+            print(f'{e}')
+    
+        return res 
+        
+    
+    
+    @staticmethod
+    def download_github_repo(owner: str = "IbHansen",
+                             repo_name: str = "pak",
+                             branch: str = 'main', 
+                             destination  = '.',
+                             go = True, 
+                             silent=True,
+                             **kwargs,
+                            ):
+        """
+        Download an entire GitHub repository and extract it to a specified location.
+    
+        Parameters:
+        - owner: The owner of the GitHub repository.
+        - repo_name: The name of the repository.
+        - branch: The branch to download.
+        - destination: The local path where the repository should be extracted.
+        - go: display toc of notebooks 
+        - silent: keep silent 
+        - description:optional description which will be used as folder name 
+    
+        Returns:
+        - A message indicating whether the download was successful or not.
+        """
+        # Construct the URL to download the zip file of the entire repository
+        url = f'https://github.com/{owner}/{repo_name}/archive/refs/heads/{branch}.zip'
+    
+        try:  
+            extract_to = Path(destination)  # Using pathlib.Path here
+            extract_to.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
+        except Exception as e:
+            return f"An error occurred creating {destination}: {e}"
+    
+        try:
+            # breakpoint()
+            # urllib.request.urlopen(urlfile) as f
+            with urlopen(url) as f:
+                with zipfile.ZipFile(BytesIO(f.read())) as z:
+                    # Extract all contents of the zip file to the specified location
+                    location = extract_to / f'{repo_name}-{branch}'
+                    new_location = extract_to / f'{kwargs.get("description",repo_name)}'
+                    if new_location.exists():
+                        raise Exception( f"Can't download to the same location twice, consider deleting before retry") 
+
+                    z.extractall(extract_to)
+                    try:
+                        location.rename(new_location)
+                    except: 
+                        print(f"Can't rename {location} to {new_location} you are probably using the folder just now")
+                        
+                    if not silent: 
+                        print(f'Repo downloaded to {new_location.resolve()}' )
+                    if go:
+                        model.display_toc('**Avaiable notebooks**')
+                    return location
+        except Exception as e:
+            raise Exception( f'No download of {kwargs.get("description",repo_name)}: {e} ') 
+            return f"An error occurred: {e}"
+
+    @staticmethod
+    def load_repo_widget(loadspec= None):
+        """
+Create an interactive widget for selecting and downloading repositories from GitHub.
+
+This function displays a list of repositories in a SelectMultiple widget, allowing the user to select one or more 
+repositories. Upon clicking the "Submit" button, the selected repositories are downloaded, and a confirmation 
+message is displayed for each successful download.
+
+Finaly a clicable toc of all notebooks is displayed
+
+Parameters:
+- loadspec (list of dict, optional): A list of dictionaries containing repository information. Each dictionary 
+  should have keys like 'description' and 'repo_name'. If not provided, the function will call `model.get_a_repo_yaml()` 
+  which retrives the default list from github,to retrieve the repository data. Default is None.
+
+Returns:
+- None: The function displays widgets and handles user interactions but does not return a value.
+
+Raises:
+- Exception: Prints exception messages to the output widget if errors occur during the download process.
+
+"""
+
+        
+        
+        # Create a SelectMultiple widget with descriptions as options
+ 
+        if type(loadspec)  == type(None):
+            data = model.get_a_repo_yaml()
+        else:
+            data = loadspec
+        
+ 
+        label = ip.HTML(value="<strong>Select the repositories to download:</strong>")
+        
+        select_multiple = ip.SelectMultiple(
+            options=[this.get('description', this['repo_name']) for this in data],
+            value=(),  # default selected value
+            description='Select from:',
+            rows=5  # Adjust as needed to change the height of the list
+        )
+        
+        out = ip.Output()
+    
+        # Create a button
+        button = ip.Button(description="Submit")
+    
+        # Function to handle button click
+        def on_button_click(b):
+            with out:
+                out.clear_output()  # Clear the output
+                selected_options = [item for item in data if item.get("description", item['repo_name']) in select_multiple.value]
+                
+                for repo_ident in selected_options:
+                    try:
+                        _ = model.download_github_repo(**repo_ident,go=False)  # Assuming 'model' is defined elsewhere
+                        print(f"Successfully downloaded {repo_ident.get('description',repo_ident['repo_name'])}")
+                    except Exception as e:
+                        print(f'{e}')
+                model.display_toc('**Avaiable notebooks**')
+                
+        # Attach the function to the button's click event
+        button.on_click(on_button_click)
+    
+        # Display the widgets
+        display(label,select_multiple, button, out)
+
+
+
 
 
 class Dekomp_Mixin():
@@ -5012,6 +5183,8 @@ class Display_Mixin():
                 name = notebook.name.split('.')[0]
                 display(HTML(
                     f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
+
+
     @staticmethod
     def display_toc_this(pat='*',text='**Jupyter notebooks**',path='.',ext='ipynb',showext=False):
         
