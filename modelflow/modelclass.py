@@ -5366,9 +5366,9 @@ class Json_Mixin():
         try:
             with open(pinfile:=Path(nname:=infile.replace('\\','/')), 'rt') as f:
                 input = json.load(f)
-                print(f'file read:  {pinfile.resolve()}xxxxxxxxxx')  
-                print(f'file read:  {pinfile}yyy')
-                print(f'file read:  {nname}zzz')
+                print(f'file read:  {pinfile.resolve()}')  
+                # print(f'file read:  {pinfile}yyy')
+                # print(f'file read:  {nname}zzz')
         except: 
             if infile.startswith(r'https:'):
                 urlfile = infile
