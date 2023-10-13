@@ -34,8 +34,6 @@ from openpyxl.utils import cols_from_range,rows_from_range
 
 import matplotlib.pylab  as plt 
 import seaborn as sns
-import os 
-import sys
 from pathlib import Path
 
 import modelclass as mc
