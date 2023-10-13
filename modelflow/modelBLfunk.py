@@ -12,7 +12,33 @@ from numpy import transpose , array
 from scipy.stats import norm,lognorm
 from scipy.stats import gamma
 import inspect 
-from numba import jit
+
+try:
+    # raise ImportError("Simulating ImportError for numba.")
+
+    from numba import jit
+except ImportError:
+    print("Numba is not available. No worry")
+
+    def jit(*args, **kwargs):
+        def wrapper(func):
+            # print('jit called')
+            return func
+        return wrapper
+    
+@jit("f8(f8)",nopython=True)
+def logit_inverse(number):
+    ''' A function which returns the logit of a number 
+    
+    takes care of extreme values 
+    '''
+    if number > 100:
+        return 1.0
+    elif number < -100:
+        return 0.0
+    else: 
+        return 1/(1+exp(-number))    
+    
 classfunk = []
 try:
     from cvxopt import matrix
