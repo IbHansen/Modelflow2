@@ -6126,7 +6126,7 @@ class Solver_Mixin():
             if ljit:
                 # fib1.append((short+'print("'+f"Compiling chunk {chunknumber+1}/{totalchunk}     "+'",time.strftime("%H:%M:%S")) \n') if ljit else '')
                 fib1.append(
-                    short+'@jit("(f8[:,:],f8[:,:],i8,f8)",fastmath=True,cache=False)\n')
+                    short+'@jit("(f8[:,:],f8[:,:],i8,f8)",fastmath=True,cache=False,nopython=True)\n')
             fib1.append(short + 'def '+name +
                         '(values,outvalues,row,alfa=1.0):\n')
 #            fib1.append(long + 'outvalues = values \n')
@@ -6174,7 +6174,7 @@ class Solver_Mixin():
             if ljit:
                 # fib2.append((short+'print("'+f"Compiling a mastersolver     "+'",time.strftime("%H:%M:%S")) \n') if ljit else '')
                 fib2.append(
-                    short+'@jit("(f8[:,:],f8[:,:],i8,f8)",fastmath=True,cache=False)\n')
+                    short+'@jit("(f8[:,:],f8[:,:],i8,f8)",fastmath=True,cache=False,nopython=True)\n')
                 fib.append(short+f"pbar.close()\n")
 
             fib2.append(short + 'def '+name +
@@ -6385,7 +6385,7 @@ class Solver_Mixin():
             if ljit:
                 # fib1.append((short+'print("'+f"Compiling chunk {chunknumber+1}/{totalchunk}     "+'",time.strftime("%H:%M:%S")) \n') if ljit else '')
                 fib1.append(
-                    short+f'@jit("(f8[:],f8)",fastmath=True,cache={cache})\n')
+                    short+f'@jit("(f8[:],f8)",fastmath=True,cache={cache},nopython=True)\n')
             fib1.append(short + 'def '+name+'(a,alfa=1.0):\n')
 #            fib1.append(long + 'outvalues = values \n')
             if debug:
@@ -6433,7 +6433,7 @@ class Solver_Mixin():
             if ljit:
                 # fib2.append((short+'print("'+f"Compiling a mastersolver     "+'",time.strftime("%H:%M:%S")) \n') if ljit else '')
                 fib2.append(
-                    short+f'@jit("(f8[:],f8)",fastmath=True,cache={cache})\n')
+                    short+f'@jit("(f8[:],f8)",fastmath=True,cache={cache},nopython=True)\n')
                 fib.append(short+f"pbar.close()\n")
 
             fib2.append(short + 'def '+name+'(a,alfa=1.0):\n')
