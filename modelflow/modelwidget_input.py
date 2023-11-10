@@ -543,7 +543,7 @@ class updatewidget:
     keeppat   : str = '*'
     varpat    : str ='*'
     showvarpat  : bool = True    # Show varpaths to 
-    exodif   : any = pd.DataFrame()         # definition 
+    exodif   : any = field(default_factory=pd.DataFrame)          # definition 
     lwrun    : bool = True
     lwupdate : bool = False
     lwreset  :  bool = True

@@ -11,12 +11,12 @@ Created on Fri Mar  2 14:50:18 2018
 try:
     from numba import jit
     
-    @jit("f8(b1,f8,f8)")
+    @jit("f8(b1,f8,f8)",nopython=True)
     def recode(condition,yes,no):
         '''Function which recreates the functionality of @recode from eviews ''' 
         return yes if condition else no
-except:
-    print(' Import of numba failed ')
+except Exception as e:
+    print(f' Import of numba failed {e} ')
     def recode(condition,yes,no):
         '''Function which recreates the functionality of @recode from eviews ''' 
         return yes if condition else no

@@ -1837,7 +1837,8 @@ class Model_help_Mixin():
     def get_a_repo_yaml(owner: str = "IbHansen",
                        repo_name: str = "modelflow-manual",
                        branch: str = 'main', 
-                       file:  str = r'papers/mfbook/repo_def.yaml'): 
+                       file:  str = r'papers/mfbook/repo_def.yaml',
+                       **kwargs): 
         """
     Retrieve and load a YAML file from a specified GitHub repository.
 
@@ -1867,6 +1868,8 @@ class Model_help_Mixin():
             print(f'{e}')
     
         return res 
+    
+    
         
     
     
@@ -1876,7 +1879,7 @@ class Model_help_Mixin():
                              branch: str = 'main', 
                              destination  = '.',
                              go = True, 
-                             silent=True,
+                             silent=False,
                              **kwargs,
                             ):
         """
@@ -1912,7 +1915,7 @@ class Model_help_Mixin():
                     location = extract_to / f'{repo_name}-{branch}'
                     new_location = extract_to / f'{kwargs.get("description",repo_name)}'
                     if new_location.exists():
-                        raise Exception( f"Can't download to the same location twice, consider deleting before retry") 
+                        raise Exception( f"Can't download to the same location twice, consider deleting before retry:\n{new_location.resolve()}\n") 
 
                     z.extractall(extract_to)
                     try:
@@ -1926,11 +1929,11 @@ class Model_help_Mixin():
                         model.display_toc('**Avaiable notebooks**')
                     return location
         except Exception as e:
-            raise Exception( f'No download of {kwargs.get("description",repo_name)}: {e} ') 
+            raise Exception( f'No download of {kwargs.get("description",repo_name)}:\n{e} ') 
             return f"An error occurred: {e}"
 
     @staticmethod
-    def load_repo_widget(loadspec= None):
+    def load_repo_widget(loadspec= None,nocwd=True,silent=False,**kwargs):
         """
 Create an interactive widget for selecting and downloading repositories from GitHub.
 
@@ -1958,18 +1961,20 @@ Raises:
         # Create a SelectMultiple widget with descriptions as options
  
         if type(loadspec)  == type(None):
-            data = model.get_a_repo_yaml()
+            data = model.get_a_repo_yaml(**kwargs)
         else:
-            data = loadspec
+            data = loadspec[:]
         
- 
+
+    
         label = ip.HTML(value="<strong>Select the repositories to download:</strong>")
         
         select_multiple = ip.SelectMultiple(
             options=[this.get('description', this['repo_name']) for this in data],
             value=(),  # default selected value
             description='Select from:',
-            rows=5  # Adjust as needed to change the height of the list
+            layout={'width': '50%'},
+            rows=10  # Adjust as needed to change the height of the list
         )
         
         out = ip.Output()
@@ -1985,11 +1990,14 @@ Raises:
                 
                 for repo_ident in selected_options:
                     try:
-                        _ = model.download_github_repo(**repo_ident,go=False)  # Assuming 'model' is defined elsewhere
-                        print(f"Successfully downloaded {repo_ident.get('description',repo_ident['repo_name'])}")
+                        if repo_ident.get("description", repo_ident['repo_name']).startswith('-'):
+                            ...
+                        else:
+                            _ = model.download_github_repo(**repo_ident,go=False,silent=silent,**kwargs)  # Assuming 'model' is defined elsewhere
+                            print(f"Successfully downloaded {repo_ident.get('description',repo_ident['repo_name'])}")
                     except Exception as e:
                         print(f'{e}')
-                model.display_toc('**Avaiable notebooks**')
+                model.display_toc('**Avaiable notebooks**',nocwd=nocwd)
                 
         # Attach the function to the button's click event
         button.on_click(on_button_click)
@@ -4983,7 +4991,7 @@ class Display_Mixin():
             with self.set_smpl(*smpl):
                 self.keep_wiz_figs = self.keep_plot(vars, diff=ldiff, diffpct = diffpct, scale=scale, showtype=showtype,
                                                     legend=legend, dec=dec, vline=vline)
-            plt.show()    
+            # plt.show()    
         description_width = 'initial'
         description_width_long = 'initial'
         keep_keys = list(self.keep_solutions.keys())
@@ -5156,7 +5164,7 @@ class Display_Mixin():
     
     
     @staticmethod
-    def display_toc(text='**Jupyter notebooks in this and all subfolders**',all=False):
+    def display_toc(text='**Jupyter notebooks in this and all subfolders**',all=False,nocwd=False):
         '''In a jupyter notebook this function displays a clickable table of content of all 
         jupyter notebooks in this and sub folders'''
 
@@ -5165,8 +5173,13 @@ class Display_Mixin():
 
         display(Markdown(text))
         for dir in sorted(Path('.').glob('**')):
+            # print(f'{dir=} {nocwd=}')
             if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
                 continue
+            
+            if dir == Path('.') and nocwd :
+                continue
+
             for i, notebook in enumerate(sorted(dir.glob('*.ipynb'))):
                 # print(notebook)    
                 if (not all) and (notebook.name.startswith('test') or notebook.name.startswith('Overview')):
@@ -5183,6 +5196,45 @@ class Display_Mixin():
                 name = notebook.name.split('.')[0]
                 display(HTML(
                     f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
+
+    @staticmethod
+    def display_toc(text='**Jupyter notebooks in this and all subfolders**',all=False,nocwd=False):
+        '''In a jupyter notebook this function displays a clickable table of content of all 
+        jupyter notebooks in this and sub folders'''
+
+        from IPython.display import display, Markdown, HTML
+        from pathlib import Path
+
+        display(Markdown(text))
+        for dir in sorted(Path('.').glob('**')):
+            # print(f'{dir=} {nocwd=}')
+            if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
+                continue
+            
+            if dir == Path('.') and nocwd :
+                continue
+            
+            filelist = (list(dir.glob('readme.ipynb')) 
+                    + [f for f in sorted(dir.glob('*.ipynb')) 
+                       if not f.name.startswith('readme')])
+            
+            for i, notebook in enumerate(filelist):
+                # print(notebook)    
+                if (not all) and (notebook.name.startswith('test') or notebook.name.startswith('Overview')):
+                    continue
+                if i == 0:
+                    blanks = ''.join(
+                        ['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))
+                    if len(dir.parts):
+                        display(HTML(f'{blanks}<b>{str(dir)}</b>'))
+                    else:
+                        display(
+                            HTML(f'{blanks}<b>{str(Path.cwd().parts[-1])} (.)</b>'))
+
+                name = notebook.name.split('.')[0]
+                display(HTML(
+                    f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
+
 
 
     @staticmethod
@@ -5214,28 +5266,33 @@ class Display_Mixin():
         </style>
         """))
 
+           
     @staticmethod
     def scroll_off():
-        try:
-           from IPython.display import  display, Javascript
-           Javascript("""IPython.OutputArea.prototype._should_scroll = function(lines){
-               return false;
-              }
-                                   """)
-        except:
-           print('No scroll off')
+            try:
+                from IPython.display import display, Javascript
+                display(Javascript("""
+                    IPython.OutputArea.prototype._should_scroll = function(lines){
+                        return false;
+                    }
+                """))
+            except Exception as e:
+                print(f'Error: {e}. Unable to turn off scrolling.')
+        
            
            
     @staticmethod
     def scroll_on():
         try:
-           from IPython.display import  display, Javascript
-           Javascript("""IPython.OutputArea.prototype._should_scroll = function(lines){
-               return true;
-              }
-                                   """)
-        except:
-           print('no scroll on ')
+            from IPython.display import display, Javascript
+            display(Javascript("""
+                IPython.OutputArea.prototype._should_scroll = function(lines){
+                    return true;
+                }
+            """))
+        except Exception as e:
+            print(f'Error: {e}. Unable to turn on scrolling.')
+
 
 
     @staticmethod
@@ -5275,6 +5332,7 @@ class Display_Mixin():
 
         except:
             print('modelflow_auto not run')
+            
 import modelwidget_input
 
 Display_Mixin.keep_plot_widget.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
