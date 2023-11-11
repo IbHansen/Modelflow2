@@ -7763,6 +7763,44 @@ def create_model(navn, hist=0, name='', new=True, finished=False, xmodel=model, 
     else:
         return xmodel(udrullet, shortname, straight=straight, funks=funks)
 
+def get_minimum_feedback_nodes(nx_g):
+    """
+    Get the variable names of nodes in the minimum feedback arc set of a directed graph.
+
+    Parameters:
+    - nx_g (networkx.DiGraph): A directed graph represented using the networkx library.
+
+    Returns:
+    - list: A list containing the variable names of nodes in the minimum feedback arc set.
+    """
+    try:
+        import igraph as ig
+    except ImportError:
+        raise ImportError("The igraph library is required to get minimum feedback set.")
+
+    # Convert the networkx graph to igraph
+    g = ig.Graph.from_networkx(nx_g)
+    
+    # Compute the minimum feedback arc set
+    fb = g.feedback_arc_set()
+    
+    # Get the complete edge list
+    edgelist = g.get_edgelist()
+    
+    # Extract the minimum feedback edges
+    fb_edges = [edgelist[i] for i in fb]
+    
+    # Create a set of feedback nodes from the feedback edges (nodes are numbered)
+    fb_nodes_ig = {node for edge in fb_edges for node in edge}
+    
+    # Retrieve the variable names for the nodes
+    ig_nodes = g.vs['_nx_name']
+    
+    # Get the variable names of the feedback nodes
+    fb_nodes_named = list({ig_nodes[i] for i in fb_nodes_ig})
+    
+    return fb_nodes_named
+
 
 def get_a_value(df, per, var, lag=0):
     ''' returns a value for row=p+lag, column = var 
@@ -7963,3 +8001,8 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
     result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30') # simulates the model 
     diff_level, att_level, att_pct, diff_growth, att_growth = tup = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
+
+
+    fb_nodes = get_minimum_feedback_nodes(mpak.endograph)
+    print(f'Number of endogenous: {len(mpak.endogene)}, Number of variables in  simultaneuous block {len(mpak.coreorder)}')
+    print(f'Number of variables in "minimum" feedback set: {len(fb_nodes)}')
