@@ -3227,46 +3227,63 @@ class Graph_Mixin():
             delattr(self, '_totgrapH_nolag')
         return
 
-
     @staticmethod 
-    def get_minimum_feedback_nodes(nx_g):
+    def get_minimal_feedback_set(G):
         """
-        Get the variable names of nodes in the minimum feedback arc set of a directed graph.
+        Compute an approximate minimal feedback vertex set for a directed graph and perform
+        a topological sort on the resulting acyclic graph.
+    
+        This function attempts to make the input directed graph acyclic by removing a minimal
+        set of vertices (feedback vertex set). It does so by iteratively finding and removing
+        vertices from cycles, preferring those with the highest degree (number of edges). After
+        removing sufficient vertices to break all cycles, it performs a topological sort on the
+        modified graph.
     
         Parameters:
-        - nx_g (networkx.DiGraph): A directed graph represented using the networkx library.
+        G (nx.DiGraph): A directed graph represented as a NetworkX DiGraph.
     
         Returns:
-        - list: A list containing the variable names of nodes in the minimum feedback arc set.
-        """
-        try:
-            import igraph as ig
-        except ImportError:
-            raise ImportError("The igraph library is required to get minimum feedback set.")
+        tuple: A tuple containing two elements:
+               - A set of vertices constituting the approximate minimal feedback vertex set.
+               - A list representing the topological sort order of the modified graph.
+               If the input graph G is already acyclic, the feedback vertex set will be empty,
+               and the topological sort order will be of the original graph G.
     
-        # Convert the networkx graph to igraph
-        g = ig.Graph.from_networkx(nx_g)
-        
-        # Compute the minimum feedback arc set
-        fb = g.feedback_arc_set()
-        
-        # Get the complete edge list
-        edgelist = g.get_edgelist()
-        
-        # Extract the minimum feedback edges
-        fb_edges = [edgelist[i] for i in fb]
-        
-        # Create a set of feedback nodes from the feedback edges (nodes are numbered)
-        fb_nodes_ig = {node for edge in fb_edges for node in edge}
-        
-        # Retrieve the variable names for the nodes
-        ig_nodes = g.vs['_nx_name']
-        
-        # Get the variable names of the feedback nodes
-        fb_nodes_named = list({ig_nodes[i] for i in fb_nodes_ig})
-        
-        return fb_nodes_named
+        Note:
+        This function does not guarantee the absolute minimal feedback vertex set due to the
+        NP-hard nature of the problem. The topological sort is only valid if the resulting graph
+        is acyclic.
+        """
+    
+        # Create a copy of the graph to avoid modifying the original graph
+        H = G.copy()
+        fvs = set()
+    
+        # Function to calculate the degree of a vertex in the cycle
+        def vertex_degree(vertex):
+            return H.degree(vertex)
+    
+        # Iterate until the graph becomes acyclic
+        while True:
+            try:
+                # Find a cycle in the graph
+                cycle = nx.find_cycle(H, orientation='original')
+                # Find the vertex in the cycle with the highest degree
+                vertex_to_remove = max(cycle, key=lambda x: vertex_degree(x[0]))[0]
+                # Add the vertex to the feedback vertex set
+                fvs.add(vertex_to_remove)
+                # Remove the vertex from the graph
+                H.remove_node(vertex_to_remove)
+            except nx.NetworkXNoCycle:
+                # If no cycle is found, the graph is now acyclic, and we break the loop
+                break
+    
+        # Perform a topological sort on the modified graph
+        topological_sorted_order = list(nx.topological_sort(H))
+    
+        return fvs, topological_sorted_order
 
+   
 
 class Graph_Draw_Mixin():
     """This class defines methods and properties which draws and vizualize using different
@@ -8006,6 +8023,7 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     diff_level, att_level, att_pct, diff_growth, att_growth = tup = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
 
 
-    fb_nodes = mpak.get_minimum_feedback_nodes(mpak.endograph)
+    fb_nodes,dag_nodes = mpak.get_minimal_feedback_set(mpak.endograph)
     print(f'Number of endogenous: {len(mpak.endogene)}, Number of variables in  simultaneuous block {len(mpak.coreorder)}')
     print(f'Number of variables in "minimum" feedback set: {len(fb_nodes)}')
+    print(f'Number of variables in "DAG" graph           : {len(dag_nodes)}')
