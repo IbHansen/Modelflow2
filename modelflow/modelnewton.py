@@ -738,7 +738,7 @@ class newton_diff():
     def get_eigen_jackknife(self,maxnames = 20):
         name_to_loop =[n for i,n in enumerate(self.varnames) if not n.endswith('_FITTED')]
         base_dict = {'ALL' : self.get_eigenvectors(dropvar=None )}
-        print('Time for a cup of coffee and a nap')
+        print(f'Calculating eigenvalues of {len(name_to_loop)} different matrices takes time, so make cup of coffee and a take a short nap')
         jackknife_dict = {f'{name}_excluded': self.get_eigenvectors(dropvar=name,dropvar_nr=dropvar_nr)
                     for dropvar_nr,name in enumerate(name_to_loop) if dropvar_nr  < maxnames}
         return {**base_dict, **jackknife_dict} 
