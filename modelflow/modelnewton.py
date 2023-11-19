@@ -664,7 +664,7 @@ class newton_diff():
             
         else:
             A_dic = {date: {lag: df.drop(index=dropvar,columns=dropvar) for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
-            print(f'{dropvar_nr} {dropvar}')
+            # print(f'{dropvar_nr} {dropvar}')
         # breakpoint()    
         xlags = sorted([lag for lag in first_element(A_dic).keys() if lag !='lag=0'],key=lambda lag:int(lag.split('=')[1]),reverse=True)
         number=len(xlags)
@@ -680,6 +680,8 @@ class newton_diff():
             lib           = np
             values        = lambda df: df.values
             calc_eig      = lib.linalg.eig
+            calc_eig_reserve  = lambda sparse_matrix : sp.linalg.eig(sparse_matrix.toarray())
+
         else:
             np_to_df      = lambda sparse_matrix : sparse_matrix           
             lib           = sp.sparse
@@ -712,7 +714,8 @@ class newton_diff():
         try:
             eigen_values_and_vectors =  {date : calc_eig(comp) for date,comp in comp_dic.items()} 
         except:     
-            print('using reserve calculatioon of eigenvalues')
+            print(f'Using reserve calculatioon of eigenvalues {dropvar_nr=} {dropvar=}')
+            
             eigen_values_and_vectors =  {date : calc_eig_reserve(comp) for date,comp in comp_dic.items()} 
 
 
@@ -735,6 +738,7 @@ class newton_diff():
     def get_eigen_jackknife(self,maxnames = 20):
         name_to_loop =[n for i,n in enumerate(self.varnames) if not n.endswith('_FITTED')]
         base_dict = {'ALL' : self.get_eigenvectors(dropvar=None )}
+        print('Time for a cup of coffee and a nap')
         jackknife_dict = {f'{name}_excluded': self.get_eigenvectors(dropvar=name,dropvar_nr=dropvar_nr)
                     for dropvar_nr,name in enumerate(name_to_loop) if dropvar_nr  < maxnames}
         return {**base_dict, **jackknife_dict} 

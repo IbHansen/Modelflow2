@@ -447,7 +447,6 @@ def sumunroll(in_equations,listin=False):
     equations = '\n'.join(nymodel)
     return equations
 
-#%% funkunroll
 
 def funkunroll(in_equations,funk='MAX',listin=False,replacefunk=''):
     """
@@ -510,8 +509,7 @@ def funkunroll(in_equations,funk='MAX',listin=False,replacefunk=''):
 # frml x {bank}_income = {bank}_a +{bank}_b $
 # enddo $ 
 # frml x ialt=max(bankdic,{bank}_income) $''')))  
-
-#%% 
+ 
 
 def argunroll(in_equations,listin=False):
     ''' expands all ARGEXPAND(list,'expression') in a model
