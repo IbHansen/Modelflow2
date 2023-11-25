@@ -121,7 +121,7 @@ class targets_instruments():
         per_delayed = self.df.index[iper_delayed]
         
         
-        self.jac = jac=pd.DataFrame(0,index=self.targetvars, columns=[v['name'] for v in self.instruments.values()])
+        self.jac = jac=pd.DataFrame(0.000,index=self.targetvars, columns=[v['name'] for v in self.instruments.values()])
         with self.model.set_smpl(per_delayed,per):
             mul = self.model(self.df,setlast=False, **self.solveopt)           # start point for this quarter 
         basis = mul.copy(deep=True)  # make a reference point for the calculation the derivatives. 
