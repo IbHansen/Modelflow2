@@ -686,7 +686,7 @@ def fig_to_image(fig,format='svg'):
 class keep_plot_widget:
     
     """
-      Plots the keept dataframes
+      Returns an interactive widget to plots the keept dataframes
 
       Args:
           mmodel : a modelflow model instance 
@@ -883,7 +883,7 @@ class keep_plot_widget:
                               value='linear', style={'description_width': description_width})
         # 
         legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=self.legend, style={
-                              'description_width': description_width})
+                              'description_width': description_width},layout=Layout(width='auto',margin="0% 0% 0% 5%"))
         
         self.widget_dict = {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
                                             'scale': scale, 'legend': legend}
