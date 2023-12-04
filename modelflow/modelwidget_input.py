@@ -691,17 +691,18 @@ class keep_plot_widget:
       Args:
           mmodel : a modelflow model instance 
           smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
+          use_smpl (bool): show a smpl selection slider
           selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
           legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
           dec (string, optional): decimals on the y-axis. Defaults to '0'.
           use_descriptions : Use the variable descriptions from the model 
-          vline: List of vertical lines (position,text)
+          vline : List of vertical lines (position,text)
           add_var_name: Add the variable name to description  
           short: Short, 1 2 cut down on the inpout fields 
           select_scenario: If True, select the scenarios which has to be displayed
           switch : if True use the scenarios in mmodel.basedf and mmodel.lastdf 
           var_groups: a dictionary of variable pattern  to select for instance countries (if not present var_groups from model is used)
-          use_var_groups: use the var:groupos 
+          use_var_groups: use the var_groups 
           
           displaytype : string type one of ['tab','accordion','anything']
           save_location: Default save location 
@@ -865,6 +866,8 @@ class keep_plot_widget:
             elif hasattr(self.mmodel,'var_groups') and len(self.mmodel.var_groups):
                 self.prefix_dict = self.mmodel.var_groups
             else: 
+                self.prefix_dict = {}
+        else: 
                 self.prefix_dict = {}
                 
         
