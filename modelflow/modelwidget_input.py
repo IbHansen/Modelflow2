@@ -742,7 +742,7 @@ class keep_plot_widget:
     add_var_name : bool = False
     short :any  = 0 
     multi :any = False 
-    select_scenario : bool = False
+    select_scenario : bool = True
     displaytype : str = 'tab' # or '' or accordion
     save_location :str = './graph'
     switch :bool = False
