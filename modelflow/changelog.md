@@ -120,3 +120,4 @@ compstyle will style a dataframe of complex numbers or floats
 modelmf is importet in modelclass so a seperate import is not needed. 
 attribution -> decomposition in modelclass 
 modeinvert jac set to 0.0 instead of 0 for future pandas 
+model_widget_input spacing between diff and legend widget

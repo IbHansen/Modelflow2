@@ -1261,7 +1261,6 @@ class Org_model_Mixin():
         Uses the :any:`modelvis.vis` operator        
 
         '''
-        
         a = self.vis(name)
 
         return a
@@ -5218,7 +5217,11 @@ class Display_Mixin():
        widget = modelwidget_input.keep_plot_widget(self,*args,**kwargs)
        return widget
        
-    
+    def df_show(self):
+       import modelwidget_input
+       widget = modelwidget_input.keep_plot_widget(self,switch=True)
+       return widget
+        
     
     @staticmethod
     def display_toc(text='**Jupyter notebooks in this and all subfolders**',all=False,nocwd=False):
