@@ -121,3 +121,7 @@ modelmf is importet in modelclass so a seperate import is not needed.
 attribution -> decomposition in modelclass 
 modeinvert jac set to 0.0 instead of 0 for future pandas 
 model_widget_input spacing between diff and legend widget
+modeldump number of digits increased from 10 to 15, increase stability in some models 
+df_show shows .basedf and lastdf in interactive plot
+use fb_min (default = true) will use a minimum feedback vertex aproximation to order core into a fblist and daglist variables , improves gauss solving for difficult models. 
+the .fblist set is orders using networkx hits algoritme to find the most important variables. 

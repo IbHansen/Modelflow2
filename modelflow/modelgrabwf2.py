@@ -141,6 +141,7 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
     # Now extract the  model
     thismodel_dict = object_dict['model'][0]
     thismodel_raw = thismodel_dict['data'][0]
+    breakpoint()
     thismodel_raw_list = [l for l in thismodel_raw.split('\n') if len(l) > 1]
     
     this_clean = [l for l in thismodel_raw_list if l[:4] not in {'@INN','@ADD'}] # The original frmls
@@ -202,7 +203,7 @@ class GrabWfModel():
     
     args:
         filename           : any = ''  #wf1 name 
-        modelname          : any = ''
+        modelname          : any = ''  
         eviews_run_lines   : list =field(default_factory=list)
         model_all_about    : dict = field(default_factory=dict)
         start              : any = None    # start of testing if not overruled by mfmsa

@@ -38,6 +38,56 @@ def meltdim(df,dims=['dima','dimb'],source='Latest'):
     return vardf
 
 
+class DummyVisold:
+    def __init__(self, *args, **kwargs):
+         ...
+
+    
+    def __getattr__(self, name):
+        def dummy_method(*args, **kwargs):
+            print(f"UPS !! {name=}")
+            return 
+        return dummy_method()
+    
+class DummyVis2:
+    def __init__(self, *args, **kwargs):
+        pass
+    
+    def __getattr__(self, name):
+        # Special methods for Jupyter's display system
+        if name.startswith('_repr_'):
+            return lambda *args, **kwargs: None
+
+        def dummy_method(*args, **kwargs):
+            print(f"Attempt to call '{name}' on an uninitialized vis instance.")
+            return self   # Return self to allow chained calls
+
+        return dummy_method()
+    
+class DummyVis:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __getattr__(self, name):
+        # Ignore special methods for Jupyter's display system and other internal methods
+        ignored_methods = [
+            '_ipython_canary_method_should_not_exist_',
+            '_repr_',  # covers all _repr_*_ methods
+            '__',     # covers all special __*__ methods
+        ]
+        if any(name.startswith(prefix) for prefix in ignored_methods):
+            return lambda *args, **kwargs: None
+
+        # Return a callable that prints a message and returns another DummyVis instance
+        def dummy_method(*args, **kwargs):
+           # print(f"Attempt to call '{name}' on an uninitialized vis instance.")
+            return DummyVis()
+
+        return dummy_method()
+
+    def __repr__(self):
+        return "<Try again>"
+
 class vis():
      ''' Visualization class. used as a method on a model instance. 
         
@@ -50,6 +100,12 @@ class vis():
              self.names = self.model.vlist(self.__pat__)
          else: 
              self.names = names 
+         
+         if not len(self.names):
+             raise ValueError("No variables provided. The variable list is empty.")
+
+             
+
              
          if isinstance(df,pd.DataFrame):
              self.thisdf = df 

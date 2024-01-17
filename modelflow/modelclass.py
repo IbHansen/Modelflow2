@@ -134,7 +134,7 @@ class BaseModel():
     def __init__(self, i_eq='', modelname='testmodel', silent=False, straight=False, funks=[],
                  tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= False,
                  var_description={}, model_description = '', 
-                 var_groups = {}, equations_latex='', eviews_dict = {},
+                 var_groups = {}, equations_latex='', eviews_dict = {},use_fbmin= True,
                  **kwargs):
         ''' initialize a model'''
         if i_eq != '':
@@ -146,6 +146,7 @@ class BaseModel():
             self.safeorder= safeorder 
 
             self.save = True    # saves the dataframe in self.basedf, self.lastdf
+            self.use_fbmin = use_fbmin
             self.analyzemodelnew(silent)  # on board the model equations
             self.maxstart = 0
             self.genrcolumns = []
@@ -1261,9 +1262,14 @@ class Org_model_Mixin():
         Uses the :any:`modelvis.vis` operator        
 
         '''
-        a = self.vis(name)
-
-        return a
+        try: 
+            a = self.vis(name)
+            return a
+        except Exception as e:
+    # This will catch any exception
+           print(f"An error occurred: {e}")
+           a = mv.DummyVis() 
+           return a
 
     def __getattr__(self, name):
         '''To execute the . operator
@@ -3032,8 +3038,37 @@ class Graph_Mixin():
                                      (self._corestrongtype if len(
                                          self._corestrongtype) else [[]])
                                      + ['Recursiv'])
-            self._corevar = list(chain.from_iterable((v for v in self.nrorder if v in block) for block in self._corestrongblock)
-                                 )
+            
+            self.coregraph = this                   
+            
+            self.fblist,self.daglist = self.get_minimal_feedback_set(this)
+            # Find the feedback graph
+            if 1:
+                self.FVS_graph = nx.DiGraph()
+    
+                # Add only the feedback vertices to the new graph
+                self.FVS_graph.add_nodes_from(self.fblist)
+                
+                # Optionally, add edges between these vertices if they exist in the original graph
+                for u in self.fblist:
+                    for v in self.fblist:
+                        if self.coregraph.has_edge(u, v):
+                            self.FVS_graph.add_edge(u, v)
+                
+                h,a = nx.hits(self.FVS_graph)
+                self.fbhubs =  {k:v for k,v in sorted( h.items(), key=lambda x: x[1], reverse=True)}
+                self.fbaut    =  {k:v for k,v in sorted( a.items(), key=lambda x: x[1], reverse=True)}
+                
+                self.fblist = [v for v in self.fbhubs.keys()]
+            
+            if  self.use_fbmin:
+                
+                self._corevar =   self.daglist +  self.fblist 
+            else:                     
+                self._corevar = list(chain.from_iterable((v for v in self.nrorder if v in block) for block in self._corestrongblock))
+                                 
+
+
 
     @property
     def prevar(self):
@@ -3280,7 +3315,7 @@ class Graph_Mixin():
         # Perform a topological sort on the modified graph
         topological_sorted_order = list(nx.topological_sort(H))
     
-        return fvs, topological_sorted_order
+        return list(fvs) , topological_sorted_order
 
    
 
@@ -5416,7 +5451,7 @@ class Json_Mixin():
         dumpjson = {
             'version': '1.00',
             'frml': self.equations,
-            'lastdf': self.lastdf.to_json(),
+            'lastdf': self.lastdf.to_json(double_precision=15),
             'current_per': pd.Series(self.current_per).to_json(),
             'modelname': self.name,
             'oldkwargs': self.oldkwargs,
@@ -5502,6 +5537,7 @@ class Json_Mixin():
         lastdf = pd.read_json(StringIO(input['lastdf']))
         current_per = pd.read_json(StringIO(input['current_per']), typ='series').values
         modelname = input['modelname']
+        # breakpoint()
         mmodel = cls(frml, modelname=modelname, funks=funks,**kwargs)
         mmodel.oldkwargs = input['oldkwargs']
         mmodel.json_current_per = current_per
@@ -6080,13 +6116,12 @@ class Solver_Mixin():
                         with self.timer(f'Evaluate {self.periode}/{iteration} ', timeon) as t:
                             self.solve2d(values, values, row,  alfa)
                         ittotal += 1
-    
+
                         if ldumpvar:
                             self.dumplist.append([fairiteration, self.periode, int(iteration+1)]+[values[row, p]
                                                                                                   for p in dumpplac])
                         if iteration > first_test:
                             itafter = values[row, convplace]
-                            # breakpoint()
                             select = absconv <= np.abs(itbefore)
                             convergence = (
                                 np.abs((itafter-itbefore)[select])/np.abs(itbefore[select]) <= relconv).all()
@@ -8020,9 +8055,9 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     yy = mmodel(df2)
     
     # zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
-    mpak,baseline = model.modelload(r'pak.pcim',run=1)
+    mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True)
     alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
-    result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30') # simulates the model 
+    result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=0) # simulates the model 
     diff_level, att_level, att_pct, diff_growth, att_growth = tup = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
 
 
