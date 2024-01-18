@@ -1267,7 +1267,7 @@ class Org_model_Mixin():
             return a
         except Exception as e:
     # This will catch any exception
-           print(f"An error occurred: {e}")
+           print(f"Error: {e}")
            a = mv.DummyVis() 
            return a
 

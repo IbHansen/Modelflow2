@@ -102,7 +102,7 @@ class vis():
              self.names = names 
          
          if not len(self.names):
-             raise ValueError("No variables provided. The variable list is empty.")
+             raise ValueError(f'The variable specification:"{pat}" did not generate any matches')
 
              
 
