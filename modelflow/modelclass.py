@@ -308,6 +308,9 @@ class BaseModel():
             x for x in self.allvar.keys() if self.allvar[x]['endo']}
         self.exogene = {
             x for x in self.allvar.keys() if not self.allvar[x]['endo']}
+        
+        self.allvar_set = self.endogene | self.exogene 
+        
         self.exogene_true = {
             v for v in self.exogene if not v+'___RES' in self.endogene}
         # breakpoint()
@@ -1287,12 +1290,10 @@ class Org_model_Mixin():
 
 
         else: 
-            try:
+            if name.upper()  in self.allvar_set: 
                 return mv.varvis(model=self, var=name.upper())
-            except:
-                #            print(name)
-                raise AttributeError
-                pass
+            else: 
+                raise AttributeError(f'The specification:"{name}" did not match a method, property or variable name')
 
     def __dir__(self):
         if self.tabcomplete:

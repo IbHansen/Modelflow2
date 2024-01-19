@@ -456,7 +456,7 @@ class GrabWfModel():
  'Balance of Payments Financial Account': '???BF*',
  'General government fiscal accounts': '???GG*',
  'World all': 'WLD*',
- f'{self.modelname} all' : f'{self.modelname}*'}
+ f'{self.modelname} all' : '*'}
     
     
     @functools.cached_property

@@ -38,31 +38,6 @@ def meltdim(df,dims=['dima','dimb'],source='Latest'):
     return vardf
 
 
-class DummyVisold:
-    def __init__(self, *args, **kwargs):
-         ...
-
-    
-    def __getattr__(self, name):
-        def dummy_method(*args, **kwargs):
-            print(f"UPS !! {name=}")
-            return 
-        return dummy_method()
-    
-class DummyVis2:
-    def __init__(self, *args, **kwargs):
-        pass
-    
-    def __getattr__(self, name):
-        # Special methods for Jupyter's display system
-        if name.startswith('_repr_'):
-            return lambda *args, **kwargs: None
-
-        def dummy_method(*args, **kwargs):
-            print(f"Attempt to call '{name}' on an uninitialized vis instance.")
-            return self   # Return self to allow chained calls
-
-        return dummy_method()
     
 class DummyVis:
     def __init__(self, *args, **kwargs):
@@ -409,10 +384,12 @@ class varvis():
         The purpose is to select variables acording to a pattern, potential with wildcards
      '''
      def __init__(self, model=None, var=''):
+         # print(f' varvis called {var=}')
          self.model = model
          self.var = var
-         self.endo = self.model.allvar[var]['endo']
-
+         if var not in model.allvar:
+            raise ValueError(f'The specification:"{var}" did not match a method, property or variable name')
+         self.endo = model.allvar[var]['endo']
      def explain(self,**kwargs):
          x = self.model.explain(self.var,**kwargs)
          return x
