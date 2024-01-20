@@ -28,6 +28,7 @@ from itertools import chain, zip_longest
 import fnmatch 
 from IPython.display import  display,Latex, Markdown, HTML
 from itertools import chain, zip_longest
+from tqdm.notebook  import tqdm 
 
 
 from dataclasses import dataclass, field, asdict
@@ -629,8 +630,35 @@ class newton_diff():
     
     
 
-    def get_eigenvectors(self,periode=None,asdf=True,filnan = False,silent=False,dropvar=None,dropvar_nr=0):
-        
+    def get_eigenvectors(self, periode=None, asdf=True, filnan=False, silent=False, dropvar=None, dropvar_nr=0):
+        """
+        Calculate and return the eigenvectors based on the companion matrix for a dynamic system.
+    
+        This method computes the eigenvectors of a dynamic system represented by a companion matrix derived from Jacobian matrices for different periods. The computation involves handling missing values, optionally filling NaN values with zero, and the ability to drop specific variables from the calculation.
+    
+        Parameters:
+        - periode (optional): The period for which the eigenvectors are to be calculated. If None, defaults to the entire range.
+        - asdf (bool, optional): Determines the format of the matrices (DataFrame or sparse matrix). Defaults to True (DataFrame).
+        - filnan (bool, optional): If True, fills NaN values in the Jacobian matrices with zero. Defaults to False.
+        - silent (bool, optional): If False, prints detailed information about NaN values and other relevant details during the computation. Defaults to False.
+        - dropvar (optional): Specifies variables to be dropped from the calculation. If None, no variables are dropped. Defaults to None.
+        - dropvar_nr (int, optional): The number of variables to drop. Defaults to 0.
+    
+        Returns:
+        dict: A dictionary with keys as dates and values as eigenvectors for each period, derived from the companion matrix of the system.
+    
+        The function performs several steps:
+        - Computes the Jacobian matrices for the given period.
+        - Handles NaN values based on the 'filnan' parameter.
+        - Optionally drops specified variables from the calculation.
+        - Constructs the companion matrix from the modified Jacobian matrices.
+        - Calculates the eigenvectors from the companion matrix.
+    
+        Note:
+        The companion matrix is crucial in analyzing the stability and dynamics of the system. The eigenvectors provide insights into the system's behavior over time.
+        """
+        ...
+         
         first_element = lambda dic: dic[list(dic.keys())[0]]  # first element in a dict 
                 
         jacobiall = self.get_diff_mat_all_1per(periode,asdf=asdf)
@@ -734,17 +762,84 @@ class newton_diff():
         self.eig_dic = eig_dic
         return eig_dic
     
-    @lru_cache(maxsize=None)   
-    def get_eigen_jackknife(self,maxnames = 20):
-        name_to_loop =[n for i,n in enumerate(self.varnames) if not n.endswith('_FITTED')]
-        base_dict = {'ALL' : self.get_eigenvectors(dropvar=None )}
-        print(f'Calculating eigenvalues of {len(name_to_loop)} different matrices takes time, so make cup of coffee and a take a short nap')
-        jackknife_dict = {f'{name}_excluded': self.get_eigenvectors(dropvar=name,dropvar_nr=dropvar_nr)
-                    for dropvar_nr,name in enumerate(name_to_loop) if dropvar_nr  < maxnames}
+    def get_eigen_jackknife(self,maxnames = 200_000,progressbar=True):
+        """
+Compute and cache eigenvalues for matrices with each variable excluded one at a time, up to a maximum number.
+
+This function uses the jackknife technique to evaluate the impact of each variable on the system's stability by excluding each variable one by one from the eigenvector calculation. It caches the results for efficient repeated access.
+
+Parameters:
+- maxnames (int, optional): The maximum number of variables to consider for exclusion in the jackknife process. Defaults to 20.
+
+Returns:
+dict: A dictionary where keys are the names of variables excluded (or 'ALL' for no exclusion) and values are the corresponding eigenvectors.
+
+Note:
+The function is computationally intensive and can take significant time for larger systems.
+        """
+        name_to_loop =[n for i,n in enumerate(self.varnames) if i <= maxnames and not n.endswith('_FITTED') ]
+        base_dict = {'NONE' : self.get_eigenvectors(dropvar=None )}
+        print(f'Calculating eigenvalues of {len(name_to_loop)}  different matrices takes time, so make cup of coffee and a take a short nap')
+        jackknife_dict = {f'{name}': self.get_eigenvectors(dropvar=name)
+                    for name in (tqdm(name_to_loop) if progressbar else name_to_loop)}
         return {**base_dict, **jackknife_dict} 
 
+    @lru_cache(maxsize=None)   
+    def get_eigen_jackknife_df(self,maxnames = 200_000,progressbar=True):
+        """
+    Convert the eigenvalue data obtained from a jackknife analysis into a pandas DataFrame, including additional columns for the absolute length, real, and imaginary parts of the eigenvalues.
+
+    The jackknife analysis is performed by computing and caching eigenvalues for matrices with each variable excluded one at a time, up to a specified maximum number. This method uses the jackknife technique to evaluate the impact of each variable on the system's stability by excluding each variable one by one from the eigenvector calculation. The results are then flattened and transformed into a DataFrame for further analysis.
+
+    Parameters:
+    - maxnames (int, optional): The maximum number of variables to consider for exclusion in the jackknife process. Defaults to 200,000.
+    - progressbar (bool, optional): If True, displays a progress bar during the computation of eigenvalues. Defaults to True.
+
+    Returns:
+    pandas.DataFrame: A DataFrame containing the eigenvalues with additional columns for length, real, and imaginary parts. Each row represents an eigenvalue for a specific variable exclusion, year, and index.
+
+    Note:
+    - The function is computationally intensive and can take significant time for larger systems.
+    - A progress bar can be displayed for monitoring the computation progress.
+    - The function is especially useful for detailed analysis and visualization of the eigenvalues obtained from the jackknife analysis.
+    """
+        
+        jackdict = self.get_eigen_jackknife(maxnames = maxnames,progressbar=progressbar)
+        
+        flattened_data = [{'excluded': scenario, 'year': year, 'index': i, 'value': value}
+                  for scenario, years in jackdict.items()
+                  for year, values in years.items()
+                  for i, value in enumerate(values)]
+
+        # Creating the DataFrame
+        df = pd.DataFrame.from_dict(flattened_data)
+        
+        # Applying transformations
+        df['length'] = df['value'].apply(lambda x: abs(x))
+        df['realvalue'] = df['value'].apply(lambda x: x.real)
+        df['imagvalue'] = df['value'].apply(lambda x: x.imag)
+        
+        return df 
+        
      
-    def get_eigen_jackknife_abs(self,largest=20,maxnames = 20):
+    def get_eigen_jackknife_abs(self,largest=20,maxnames = 200_000):
+        """
+    Compute the absolute values of the largest eigenvalues from the jackknife eigenvalue analysis.
+
+    This function calculates the absolute values of the largest eigenvalues for each set of eigenvalues obtained from the `get_eigen_jackknife` method. It focuses on the largest eigenvalues to understand the most significant influences on the system's stability.
+
+    Parameters:
+    - largest (int, optional): The number of largest eigenvalues to consider. Defaults to 20.
+    - maxnames (int, optional): The maximum number of variables to exclude in the jackknife process. Defaults to 20.
+
+    Returns:
+    dict: A dictionary with the absolute values of the largest eigenvalues for each variable exclusion scenario.
+
+    Note:
+    This method helps in identifying the most impactful variables on the system's stability by focusing on the largest eigenvalues.
+        """
+
+
         base = self.get_eigen_jackknife(maxnames=maxnames)
         res = {name: {date: np.sort(np.partition(np.abs(eigenvalues), -largest)[-largest:])[::-1]
                     
@@ -753,8 +848,24 @@ class newton_diff():
         return res
 
    
-    def get_eigen_jackknife_abs_select(self,year=2023,largest=20,maxnames = 20):
-        
+    def get_eigen_jackknife_abs_select(self,year=2023,largest=20,maxnames = 200_000):
+        """
+Select and summarize the absolute largest eigenvalues for a specific year from the jackknife analysis.
+
+This function focuses on a specific year and extracts the sum of the absolute largest eigenvalues obtained from the `get_eigen_jackknife_abs` method. It helps in understanding the aggregate impact of variable exclusions on the system's stability for a particular year.
+
+Parameters:
+- year (int, optional): The specific year to focus on. Defaults to 2023.
+- largest (int, optional): The number of largest eigenvalues to consider. Defaults to 20.
+- maxnames (int, optional): The maximum number of variables to exclude in the jackknife process. Defaults to 20.
+
+Returns:
+pandas.Series: A series sorted by the sum of the absolute largest eigenvalues for each variable exclusion scenario in the specified year.
+
+Note:
+This method is useful for temporal analysis of the system's stability, focusing on the contributions of each variable in a specific year.
+"""
+
         xx =  {v: sum(d[year]) for v,d in self.get_eigen_jackknife_abs(maxnames=maxnames,largest=largest).items() }    
         return pd.Series(xx).sort_values() 
     

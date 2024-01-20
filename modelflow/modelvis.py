@@ -55,13 +55,19 @@ class DummyVis:
 
         # Return a callable that prints a message and returns another DummyVis instance
         def dummy_method(*args, **kwargs):
-           # print(f"Attempt to call '{name}' on an uninitialized vis instance.")
+            # print(f"Attempt to call '{name}' on an uninitialized vis instance.")
             return DummyVis()
 
-        return dummy_method()
+        return dummy_method
+
+    def __call__(self, *args, **kwargs):
+        # Define behavior when the instance is called as a function
+        # print("DummyVis instance called as a function.")
+        return DummyVis
 
     def __repr__(self):
         return "<Try again>"
+
 
 class vis():
      ''' Visualization class. used as a method on a model instance. 
