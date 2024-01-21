@@ -762,6 +762,7 @@ class newton_diff():
         self.eig_dic = eig_dic
         return eig_dic
     
+    @lru_cache(maxsize=None)   
     def get_eigen_jackknife(self,maxnames = 200_000,progressbar=True):
         """
 Compute and cache eigenvalues for matrices with each variable excluded one at a time, up to a maximum number.
@@ -777,7 +778,7 @@ dict: A dictionary where keys are the names of variables excluded (or 'ALL' for 
 Note:
 The function is computationally intensive and can take significant time for larger systems.
         """
-        name_to_loop =[n for i,n in enumerate(self.varnames) if i <= maxnames and not n.endswith('_FITTED') ]
+        name_to_loop =[n for i,n in enumerate(self.varnames) if i < maxnames and not n.endswith('_FITTED') ]
         base_dict = {'NONE' : self.get_eigenvectors(dropvar=None )}
         print(f'Calculating eigenvalues of {len(name_to_loop)}  different matrices takes time, so make cup of coffee and a take a short nap')
         jackknife_dict = {f'{name}': self.get_eigenvectors(dropvar=name)
@@ -819,6 +820,9 @@ The function is computationally intensive and can take significant time for larg
         df['realvalue'] = df['value'].apply(lambda x: x.real)
         df['imagvalue'] = df['value'].apply(lambda x: x.imag)
         
+        vardict = {**{'NONE':'whole model'}, **{k : f'{k} {v}' for k,v in self.mmodel.var_description.items() }}
+        df = df.assign(excluded_description=df['excluded'].map(lambda x: vardict.get(x, x)))
+
         return df 
         
      
