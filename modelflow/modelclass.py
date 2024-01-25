@@ -1135,6 +1135,14 @@ class Org_model_Mixin():
                 ]
         return out
     
+    
+    def vlist_names(self,input, pat):
+        '''returns a list of variable in input  matching the pattern'''
+        gross_list = self.vlist(pat)
+        out = [v for v in gross_list if v in input]
+        return out
+
+
 
     @staticmethod
     def list_names(input, pat, sort=True):
@@ -4530,7 +4538,7 @@ class Display_Mixin():
             return
         allvars = list({c for k, df in self.keep_solutions.items()
                        for c in df.columns})
-        vars = self.list_names(allvars, pat)
+        vars = self.vlist_names(allvars, pat)
         res = {}
         with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):
             # print(f'{self.current_per[-1]=}')
@@ -4563,7 +4571,7 @@ class Display_Mixin():
             return
         allvars = list({c for k, df in self.keep_solutions.items()
                        for c in df.columns})
-        vars = self.list_names(allvars, pat)
+        vars = self.vlist_names(allvars, pat)
         res = {}
         with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):
             for v in vars:
@@ -4878,6 +4886,13 @@ class Display_Mixin():
             
         return ('The charts wil be saved here:',f'{folder.absolute()}') 
            
+    def df_plot(self,*args,**kwargs):
+        with self.keepswitch(switch=True):
+            out = self.keep_plot(*args,**kwargs)
+        return out 
+
+        
+    
  
     def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
                   diff=False, diffpct = False, mul=1.0,
@@ -5559,7 +5574,14 @@ class Json_Mixin():
             pass
 
         if run:
-            res = mmodel(lastdf, current_per[0], current_per[-1], **kwargs)
+            if (start:= kwargs.get('start',False)) and (end:=kwargs.get('end',False)): 
+                current_per = mmodel.smpl(start,end,lastdf)
+                # to avoid dublicate start and end 
+                newkwargs =  {k:v for k,v in kwargs.items() if not k in {'start','end'}}
+            else: 
+                newkwargs = kwargs  
+                
+            res = mmodel(lastdf, current_per[0], current_per[-1], **newkwargs)
             return mmodel, res
         else:
             mmodel.basedf = lastdf.copy()  

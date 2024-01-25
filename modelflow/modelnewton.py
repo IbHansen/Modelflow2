@@ -5,7 +5,7 @@ Created on Fri Jun 19 19:49:50 2020
 @author: IBH
 
 Module which handles model differentiation, construction of jacobi matrizex, 
-and creates dense and sparse solving functions. 
+companion matrices, eigenvalues and creates dense and sparse solving functions. 
 
 """
 import matplotlib.pyplot  as plt 
@@ -778,6 +778,9 @@ dict: A dictionary where keys are the names of variables excluded (or 'ALL' for 
 Note:
 The function is computationally intensive and can take significant time for larger systems.
         """
+        if not hasattr(self, 'eig_dic'):
+            _ = self.get_eigenvectors(filnan = True,silent=False,asdf=1)
+        
         name_to_loop =[n for i,n in enumerate(self.varnames) if i < maxnames and not n.endswith('_FITTED') ]
         base_dict = {'NONE' : self.get_eigenvectors(dropvar=None )}
         print(f'Calculating eigenvalues of {len(name_to_loop)}  different matrices takes time, so make cup of coffee and a take a short nap')

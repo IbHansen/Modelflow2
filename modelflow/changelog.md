@@ -125,3 +125,9 @@ modeldump number of digits increased from 10 to 15, increase stability in some m
 df_show shows .basedf and lastdf in interactive plot
 use fb_min (default = true) will use a minimum feedback vertex aproximation to order core into a fblist and daglist variables , improves gauss solving for difficult models. 
 the .fblist set is orders using networkx hits algoritme to find the most important variables. 
+better errormessages with __getattr__ and __getitem__ when no match
+eigenvalues jackknive now returnde as tall dataframe. 
+2.13 released 
+.vlist_names same as .list_names but allows match # (FOR  vargroups) and ! for .vardiscriptions for use in keep_plot 
+df_plot works like keep_plot but for basedf and lastdf. to match the interactive wrappers show_keep and show_df 
+.modelload now accept start and end when ruun=True, before it trow an error (problem if the dumped model was simulated for a short period.)
