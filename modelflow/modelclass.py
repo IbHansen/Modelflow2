@@ -4775,7 +4775,7 @@ class Display_Mixin():
 
     
     def plot_basis(self,var, df, title='', suptitle='', legend=True, scale='linear', trans={}, dec='',
-                   ylabel='', yunit='', xlabel=''):
+                   ylabel='', yunit='', xlabel='',kind='line'):
         ibs = {k:v for k,v in locals().items() if k not in {'self'}}
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -4866,7 +4866,6 @@ class Display_Mixin():
         return ax
     
     @staticmethod
-
     def savefigs(figs,location='./graph',experimentname='experiment1',addname = '', extensions=['svg'],xopen=True):
         '''
         figs: A dictionary of matplotlib figures
@@ -4874,7 +4873,7 @@ class Display_Mixin():
         experimentname: A subfolder where these charts are saved defalt: 'experiment1'
         extensions: list of types of output from ['svg', 'pdf', 'png', 'eps'] default: ['svg']
         addname: A name added to the variable name default: ''
-        open: If True open the location in a brswser
+        xopen: If True open the location in a brswser
         
         '''
         import webbrowser as wb
@@ -4913,7 +4912,7 @@ class Display_Mixin():
                   diff=False, diffpct = False, mul=1.0,
                   title='Show variables', legend=False, scale='linear', yunit='', ylabel='', dec='',
                   trans={},
-                  showfig=True,
+                  showfig=True, kind='line',
                   vline=[], savefig='', keep_dim= True,dataonly=False):
         """
 
@@ -5003,7 +5002,8 @@ class Display_Mixin():
                                        yunit=yunit,
                                        ylabel='Percent' if showtype == 'growth' else ylabel,
                                        xlabel='',
-                                       dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec)
+                                       dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec,
+                                       kind=kind)
                     for v, df in dfsres.items()}
 
             if type(vline) == type(None):  # to delete vline
@@ -5283,9 +5283,9 @@ class Display_Mixin():
        widget = modelwidget_input.keep_plot_widget(self,*args,**kwargs)
        return widget
        
-    def df_show(self):
+    def df_show(self,*args,**kwargs):
        import modelwidget_input
-       widget = modelwidget_input.keep_plot_widget(self,switch=True)
+       widget = modelwidget_input.keep_plot_widget(self,*args,switch=True,**kwargs)
        return widget
         
     
