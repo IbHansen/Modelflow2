@@ -131,3 +131,5 @@ eigenvalues jackknive now returnde as tall dataframe.
 .vlist_names same as .list_names but allows match # (FOR  vargroups) and ! for .vardiscriptions for use in keep_plot 
 df_plot works like keep_plot but for basedf and lastdf. to match the interactive wrappers show_keep and show_df 
 .modelload now accept start and end when ruun=True, before it trow an error (problem if the dumped model was simulated for a short period.)
+kind = in keep_plot 
+2.15  released

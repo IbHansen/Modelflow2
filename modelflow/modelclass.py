@@ -4712,8 +4712,9 @@ class Display_Mixin():
              number =  len(dfsres)
              xcol = ncol 
              xrow=-((-number )//ncol)
-             fig,axes = plt.subplots(xrow,xcol)
-             axes = trim_axs(axes,number)
+             fig,axes = plt.subplots(xrow,xcol,constrained_layout=True)
+             axes = trim_axs(axes,number+1)
+             
              fig.set_size_inches(*size)
     
              xtrans = trans if trans else self.var_description
@@ -4739,8 +4740,22 @@ class Display_Mixin():
                          self.vline = vline
                      for xtime, text in self.vline:
                          model.keep_add_vline(fig, xtime, text)
-             plt.tight_layout()    
-             
+                         
+             # fig.set_constrained_layout(True)
+             fig.suptitle('Scenarios' ,fontsize=20)   
+             legend_ax = axes[-1]  # The last ax is used for the legend
+             handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
+             legend_ax.legend(handles, labels, loc='center', ncol=len(labels))
+             legend_ax.axis('off')  # Turn off the axis lines and labels
+
+            # handles, labels = axes.flat[0].get_legend_handles_labels() 
+             # for ax in axes.flat:
+             #         if ax.get_legend():
+             #             ax.get_legend().remove()
+
+             #fig.legend(handles, labels, loc='lower center', ncol=len(labels))
+             # plt.subplots_adjust(bottom=0.2)
+
              if savefig:
                  figpath = Path(savefig)
                  suffix = figpath.suffix if figpath.suffix else '.png'
@@ -4844,7 +4859,7 @@ class Display_Mixin():
             0/0
             
             
-        if legend:
+        if legend and 0:
             ax.legend()
         # ax.xaxis.set_minor_locator(ticker.MultipleLocator(years))
         # breakpoint()
