@@ -4653,7 +4653,7 @@ class Display_Mixin():
                    diff=False, diffpct = False, mul=1.0,
                    title='', legend=False, scale='linear', yunit='', ylabel='', dec='',
                    trans={},
-                   showfig=False,
+                   showfig=True,
                    vline=[], savefig='', keep_dim= True,dataonly=False,nrow=None,ncol=2,
                    kind='line',size=(10,10)):
          """
@@ -4693,6 +4693,11 @@ class Display_Mixin():
             for ax in axs[N:]:
                 ax.remove()
             return axs[:N]
+        
+        
+         plt.close('all')
+         plt.ioff() 
+
          try:
             
                     
@@ -4701,6 +4706,9 @@ class Display_Mixin():
                             diff=diff, diffpct = diffpct, keep_dim=keep_dim)
              
              # if we are looking 
+             if dataonly: 
+                 return dfsres
+
              number =  len(dfsres)
              xcol = ncol 
              xrow=-((-number )//ncol)
@@ -4731,7 +4739,8 @@ class Display_Mixin():
                          self.vline = vline
                      for xtime, text in self.vline:
                          model.keep_add_vline(fig, xtime, text)
-             plt.tight_layout()            
+             plt.tight_layout()    
+             
              if savefig:
                  figpath = Path(savefig)
                  suffix = figpath.suffix if figpath.suffix else '.png'
@@ -4740,8 +4749,14 @@ class Display_Mixin():
                  parent.mkdir(parents=True, exist_ok=True)
                  location = parent / f'{stem}{suffix}'
                  fig.savefig(location)
+                 
+             if showfig:
+                ...
+                display(fig)
+             plt.ion() 
     
-             return fig
+    
+             return {'multifig':fig} 
          except ZeroDivisionError:
              print('no keept solution')
     
@@ -4879,12 +4894,12 @@ class Display_Mixin():
                     try: 
                         wb.open(folder / filename,new=2)
                     except: 
-                        return ("!!!Can't open:",f'{folder / filename}')
+                        return f"!!!Can't open:{folder / filename}"
         if xopen:      
             # print('open ')
             wb.open(folder.absolute(),new=1)
             
-        return ('The charts wil be saved here:',f'{folder.absolute()}') 
+        return f'The charts wil be saved here:{folder.absolute()}' 
            
     def df_plot(self,*args,**kwargs):
         with self.keepswitch(switch=True):
