@@ -4647,7 +4647,11 @@ class Display_Mixin():
      
             return dfsres
     
-             
+    def df_plot_multi(self,*args,**kwargs):
+        with self.keepswitch(switch=True):
+            out = self.keep_plot_multi(*args,**kwargs)
+        return out 
+            
     
     def keep_plot_multi(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
                    diff=False, diffpct = False, mul=1.0,
@@ -4685,6 +4689,8 @@ class Display_Mixin():
         Returns:
             figs : a matplotlib figure . 
         """
+         import matplotlib.gridspec as gridspec
+
          def trim_axs(axs, N):
             """
             Reduce *axs* to *N* Axes. All further Axes are removed from the figure.
@@ -4712,17 +4718,27 @@ class Display_Mixin():
              number =  len(dfsres)
              xcol = ncol 
              xrow=-((-number )//ncol)
-             fig,axes = plt.subplots(xrow,xcol,constrained_layout=True)
-             axes = trim_axs(axes,number+1)
-             
-             fig.set_size_inches(*size)
+             fig = plt.figure(figsize=size)
+             #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
+             row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
+             gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig, height_ratios=row_heights)
+
+             fig.set_constrained_layout(True)
+
+# Create axes for the plots
+             axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
+             legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
+
+# Trim any excess axes
+            # axes = trim_axs(axes, number) 
+             #fig.set_size_inches(*size)
     
              xtrans = trans if trans else self.var_description
              aspct = ' as pct ' if diffpct else ' '
              dftype = showtype.capitalize()
              
              for i,(v, df) in enumerate(dfsres.items()):
-                 self.plot_basis_ax(axes.flat[i], v , df*mul, legend=legend,
+                 self.plot_basis_ax(axes[i], v , df*mul, legend=legend,
                                         scale=scale, trans=xtrans,
                                         title=title if title else (f'Difference{aspct}to "{df.columns[0] if keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:'),
                                         yunit=yunit,
@@ -4742,11 +4758,14 @@ class Display_Mixin():
                          model.keep_add_vline(fig, xtime, text)
                          
              # fig.set_constrained_layout(True)
-             fig.suptitle('Scenarios' ,fontsize=20)   
-             legend_ax = axes[-1]  # The last ax is used for the legend
+             fig.suptitle('Scenarios' ,fontsize=20) 
+
+             for ax in axes[number:]:
+                 ax.set_visible(False)
+
              handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
-             legend_ax.legend(handles, labels, loc='center', ncol=len(labels))
-             legend_ax.axis('off')  # Turn off the axis lines and labels
+             legend_ax.legend(handles, labels, loc='center', ncol=len(labels), fontsize='large')
+             legend_ax.axis('off')  # Hide the axis
 
             # handles, labels = axes.flat[0].get_legend_handles_labels() 
              # for ax in axes.flat:
