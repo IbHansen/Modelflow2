@@ -5034,145 +5034,153 @@ class Display_Mixin():
             print('no keept solution')
 
     def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
-                  diff=False, diffpct = False, mul=1.0,
-                  title='Scenarios', legend=False, scale='linear', yunit='', ylabel='', dec='',
-                  trans={},
-                  showfig=True, kind='line', size=(10,6),
-                  vline=[], savefig='', keep_dim= True,dataonly=False,samefig= False,ncol = 2 ):
+                  diff=False, diffpct=False, mul=1.0, title='Scenarios', legend=False, scale='linear',
+                  yunit='', ylabel='', dec='', trans={}, showfig=True, kind='line', size=(10, 6),
+                  vline=[], savefig='', keep_dim=True, dataonly=False, samefig=False, ncol=2):
         """
+        Generate and display plots for specified scenarios and variables.
+    
+        Args:
+            pat (str, optional): Pattern to select variables for plotting. Defaults to '*'.
+            start (str, optional): Start period for the plot. Defaults to ''.
+            end (str, optional): End period for the plot. Defaults to ''.
+            start_ofset (int, optional): Offset to shift the start period. Defaults to 0.
+            end_ofset (int, optional): Offset to shift the end period. Defaults to 0.
+            showtype (str, optional): Type of data transformation for plotting ('level', 'growth', 'change'). Defaults to 'level'.
+            diff (bool, optional): If True, shows the difference relative to the first experiment. Defaults to False.
+            diffpct (bool, optional): If True, shows the percentage difference relative to the first experiment. Defaults to False.
+            mul (float, optional): Multiplier to scale the data. Defaults to 1.0.
+            title (str, optional): Title of the plot. Defaults to 'Scenarios'.
+            legend (bool, optional): If True, displays a legend. Defaults to False.
+            scale (str, optional): Y-axis scale ('linear' or 'log'). Defaults to 'linear'.
+            yunit (str, optional): Units for the Y-axis. Defaults to ''.
+            ylabel (str, optional): Label for the Y-axis. Defaults to ''.
+            dec (str, optional): String format for decimal places. If '' then automatically determined. Defaults to ''.
+            trans (dict, optional): Dictionary for translating variable names. Defaults to {}.
+            showfig (bool, optional): If True, displays the figure. Defaults to True.
+            kind (str, optional): Type of plot ('line', 'bar', etc.). Defaults to 'line'.
+            size (tuple, optional): Figure size as (width, height). Defaults to (10, 6).
+            vline (list, optional): List of tuples (time, text) for vertical lines in the plot.
+            savefig (str, optional): Path to save the figure(s). Defaults to ''.
+            keep_dim (bool, optional): If True, each line represents a scenario, else each line represents a variable. Defaults to True.
+            dataonly (bool, optional): If True, only the dataframes are returned, no plot is generated. Defaults to False.
+            samefig (bool, optional): If True, all plots are displayed in the same figure. Defaults to False.
+            ncol (int, optional): Number of columns for subplots when using samefig. Defaults to 2.
+    
+        Returns:
+            dict: A dictionary of Matplotlib figures, with keys being the variable names and values being the figure objects.
+    
+        Raises:
+            Exception: If no kept solution is available for plotting.
+        """
+    # Function implementation...
 
-
-       Args:
-           pat (string, optional): Variable selection. Defaults to '*'.
-           start (TYPE, optional): start periode. Defaults to ''.
-           end (TYPE, optional): end periode. Defaults to ''.
-           start_ofset (int, optional): start periode relativ ofset to current. Defaults to 0.
-           end_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
-           showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
-           diff (Logical, optional): if True shows the difference to the first experiment. Defaults to False.
-           diffpct (logical,optional) : if True shows the difference in percent to tirst experiment. defalut to false
-           mul (float, optional): multiplier of data. Defaults to 1.0.
-           title (TYPE, optional): DESCRIPTION. Defaults to 'Show variables'.
-           legend (TYPE, optional): if False, expanations on the right of curve. Defaults to True.
-           scale (TYPE, optional): 'log' og 'linear'. Defaults to 'linear'.
-           yunit (TYPE, optional): DESCRIPTION. Defaults to ''.
-           ylabel (TYPE, optional): DESCRIPTION. Defaults to ''.
-           dec (TYPE, optional): decimals if '' automated. Defaults to ''.
-           trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
-           showfig (TYPE, optional): Time will come . Defaults to True.
-           vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
-           savefig (string,optional): folder to save figures in. Can include folder name, if needed the folder will be created 
-           keep_dim (bool,True): if True each line is a scenario else each line is a variable 
-           dataonly = False: If True only the resulting dataframes are returned 
-       Returns:
-           figs (dict): dict of the generated Matplotlib figures. 
-       """
         plt.close('all')
         plt.ioff() 
 
         # print(f'{self.current_per[-1]=}')
-        try:
-            dfsres = self.keep_get_plotdict(pat=pat, start=start, end=end, 
-                                 start_ofset = start_ofset, end_ofset = end_ofset, 
-                                   showtype=showtype,
-                            diff=diff, diffpct = diffpct, keep_dim=keep_dim)
-       
+        if not len(self.keep_solutions):
+            raise Exception('No keept solution')
             
-            if dataonly: 
-                return dfsres
-            
-            aspct = ' as pct ' if diffpct else ' '
-            dftype = showtype.capitalize()
+         dfsres = self.keep_get_plotdict(pat=pat, start=start, end=end, 
+                              start_ofset = start_ofset, end_ofset = end_ofset, 
+                                showtype=showtype,
+                         diff=diff, diffpct = diffpct, keep_dim=keep_dim)
+    
+         
+         if dataonly: 
+             return dfsres
+         
+         aspct = ' as pct ' if diffpct else ' '
+         dftype = showtype.capitalize()
 
-            xtrans = trans if trans else self.var_description
-            number =  len(dfsres)
-           
-            if samefig:
-                ...
-                xcol = ncol 
-                xrow=-((-number )//ncol)
-                figsize =  (xcol*size[0],xrow*size[1])
-                # print(f'{size=}  {figsize=}')
-                fig = plt.figure(figsize=figsize)
-                #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
-                row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
-                if legend: 
-                    row_heights = row_heights+ [0.5]
-                    extra_row = 1 
-                    row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
+         xtrans = trans if trans else self.var_description
+         number =  len(dfsres)
+        
+         if samefig:
+             ...
+             xcol = ncol 
+             xrow=-((-number )//ncol)
+             figsize =  (xcol*size[0],xrow*size[1])
+             # print(f'{size=}  {figsize=}')
+             fig = plt.figure(figsize=figsize)
+             #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
+             row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
+             if legend: 
+                 row_heights = row_heights+ [0.5]
+                 extra_row = 1 
+                 row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
 
-                else: 
-                    extra_row = 0 
-                    row_heights = [1] * xrow  # Assuming equal height for all plot rows,
+             else: 
+                 extra_row = 0 
+                 row_heights = [1] * xrow  # Assuming equal height for all plot rows,
 
-                    
-                gs = gridspec.GridSpec(xrow + extra_row , xcol, figure=fig, height_ratios=row_heights)
+                 
+             gs = gridspec.GridSpec(xrow + extra_row , xcol, figure=fig, height_ratios=row_heights)
 
-                fig.set_constrained_layout(True)
+             fig.set_constrained_layout(True)
 
-   # Create axes for the plots
-                axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
-                if legend: 
-                    legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
-                
-                figs = {'onefig' : fig}
+# Create axes for the plots
+             axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
+             if legend: 
+                 legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
+             
+             figs = {'onefig' : fig}
 
-            else:
-                ... 
-                figs_and_ax  = {v :  plt.subplots(figsize=size) for v  in dfsres.keys()}
-                figs = {v : fig for v,(fig,ax)   in figs_and_ax.items() } 
-                axes = [    ax  for fig,ax    in figs_and_ax.values() ] 
-            
-            
-            for i,(v, df) in enumerate(dfsres.items()):
-                 self.plot_basis_ax(axes[i], v , df*mul, legend=legend,
-                                        scale=scale, trans=xtrans,
-                                        title=f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
-                                        yunit=yunit,
-                                        ylabel='Percent' if (showtype == 'growth' or diffpct == True )else ylabel,
-                                        xlabel='',kind = kind,samefig=samefig,
-                                        dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec)
+         else:
+             ... 
+             figs_and_ax  = {v :  plt.subplots(figsize=size) for v  in dfsres.keys()}
+             figs = {v : fig for v,(fig,ax)   in figs_and_ax.items() } 
+             axes = [    ax  for fig,ax    in figs_and_ax.values() ] 
+         
+         
+         for i,(v, df) in enumerate(dfsres.items()):
+              self.plot_basis_ax(axes[i], v , df*mul, legend=legend,
+                                     scale=scale, trans=xtrans,
+                                     title=f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
+                                     yunit=yunit,
+                                     ylabel='Percent' if (showtype == 'growth' or diffpct == True )else ylabel,
+                                     xlabel='',kind = kind,samefig=samefig,
+                                     dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec)
 
-            for ax in axes[number:]:
-                ax.set_visible(False)
+         for ax in axes[number:]:
+             ax.set_visible(False)
 
-            
-            if samefig: 
-                fig.suptitle(title ,fontsize=20) 
+         
+         if samefig: 
+             fig.suptitle(title ,fontsize=20) 
 
-                if legend: 
-                    handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
-                    legend_ax.legend(handles, labels, loc='center', ncol=len(labels), fontsize='large')
-                    legend_ax.axis('off')  # Hide the axis
+             if legend: 
+                 handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
+                 legend_ax.legend(handles, labels, loc='center', ncol=len(labels), fontsize='large')
+                 legend_ax.axis('off')  # Hide the axis
 
-            if type(vline) == type(None):  # to delete vline
-                if hasattr(self, 'vline'):
-                    del self.vline
-            else:
-                if vline or hasattr(self, 'vline'):
-                    if vline:
-                        self.vline = vline
-                    for xtime, text in self.vline:
-                        model.keep_add_vline(figs, xtime, text)
-            if savefig:
-                figpath = Path(savefig)
-                suffix = figpath.suffix if figpath.suffix else '.png'
-                stem = figpath.stem
-                parent = figpath.parent
-                parent.mkdir(parents=True, exist_ok=True)
-                for v, f in figs.items():
-                    # breakpoint()
-                    location = parent / f'{stem}_{v}{suffix}'
-                    f.savefig(location)
-            if showfig:
-                ...
-                for f in figs.values(): 
-                    display(f)
-            plt.ion() 
+         if type(vline) == type(None):  # to delete vline
+             if hasattr(self, 'vline'):
+                 del self.vline
+         else:
+             if vline or hasattr(self, 'vline'):
+                 if vline:
+                     self.vline = vline
+                 for xtime, text in self.vline:
+                     model.keep_add_vline(figs, xtime, text)
+         if savefig:
+             figpath = Path(savefig)
+             suffix = figpath.suffix if figpath.suffix else '.png'
+             stem = figpath.stem
+             parent = figpath.parent
+             parent.mkdir(parents=True, exist_ok=True)
+             for v, f in figs.items():
+                 # breakpoint()
+                 location = parent / f'{stem}_{v}{suffix}'
+                 f.savefig(location)
+         if showfig:
+             ...
+             for f in figs.values(): 
+                 display(f)
+         plt.ion() 
 
-            return figs
-        except ZeroDivisionError:
-            print('no keept solution')
+         return figs
 
 
     @staticmethod
