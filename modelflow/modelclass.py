@@ -4661,7 +4661,7 @@ class Display_Mixin():
     def keep_plot_multi(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
                    diff=False, diffpct = False, mul=1.0,
                    title='Scenario', legend=False, scale='linear', yunit='', ylabel='', dec='',
-                   trans={},
+                   trans=None,
                    showfig=True,
                    vline=[], savefig='', keep_dim= True,dataonly=False,nrow=None,ncol=2,
                    kind='line',size=(10,10)):
@@ -4739,7 +4739,7 @@ class Display_Mixin():
             # axes = trim_axs(axes, number) 
              #fig.set_size_inches(*size)
     
-             xtrans = trans if trans else self.var_description
+             xtrans = self.var_description if type(trans) == type(None) else trans 
              aspct = ' as pct ' if diffpct else ' '
              dftype = showtype.capitalize()
              
@@ -5033,53 +5033,56 @@ class Display_Mixin():
         except ZeroDivisionError:
             print('no keept solution')
 
+        
     def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
-                  diff=False, diffpct=False, mul=1.0, title='Scenarios', legend=False, scale='linear',
-                  yunit='', ylabel='', dec='', trans={}, showfig=True, kind='line', size=(10, 6),
-                  vline=[], savefig='', keep_dim=True, dataonly=False, samefig=False, ncol=2):
-        """
-        Generate and display plots for specified scenarios and variables.
-    
-        Args:
-            pat (str, optional): Pattern to select variables for plotting. Defaults to '*'.
-            start (str, optional): Start period for the plot. Defaults to ''.
-            end (str, optional): End period for the plot. Defaults to ''.
-            start_ofset (int, optional): Offset to shift the start period. Defaults to 0.
-            end_ofset (int, optional): Offset to shift the end period. Defaults to 0.
-            showtype (str, optional): Type of data transformation for plotting ('level', 'growth', 'change'). Defaults to 'level'.
-            diff (bool, optional): If True, shows the difference relative to the first experiment. Defaults to False.
-            diffpct (bool, optional): If True, shows the percentage difference relative to the first experiment. Defaults to False.
-            mul (float, optional): Multiplier to scale the data. Defaults to 1.0.
-            title (str, optional): Title of the plot. Defaults to 'Scenarios'.
-            legend (bool, optional): If True, displays a legend. Defaults to False.
-            scale (str, optional): Y-axis scale ('linear' or 'log'). Defaults to 'linear'.
-            yunit (str, optional): Units for the Y-axis. Defaults to ''.
-            ylabel (str, optional): Label for the Y-axis. Defaults to ''.
-            dec (str, optional): String format for decimal places. If '' then automatically determined. Defaults to ''.
-            trans (dict, optional): Dictionary for translating variable names. Defaults to {}.
-            showfig (bool, optional): If True, displays the figure. Defaults to True.
-            kind (str, optional): Type of plot ('line', 'bar', etc.). Defaults to 'line'.
-            size (tuple, optional): Figure size as (width, height). Defaults to (10, 6).
-            vline (list, optional): List of tuples (time, text) for vertical lines in the plot.
-            savefig (str, optional): Path to save the figure(s). Defaults to ''.
-            keep_dim (bool, optional): If True, each line represents a scenario, else each line represents a variable. Defaults to True.
-            dataonly (bool, optional): If True, only the dataframes are returned, no plot is generated. Defaults to False.
-            samefig (bool, optional): If True, all plots are displayed in the same figure. Defaults to False.
-            ncol (int, optional): Number of columns for subplots when using samefig. Defaults to 2.
-    
-        Returns:
-            dict: A dictionary of Matplotlib figures, with keys being the variable names and values being the figure objects.
-    
-        Raises:
-            Exception: If no kept solution is available for plotting.
-        """
+          diff=False, diffpct=False, mul=1.0, title='Scenarios', legend=False, scale='linear',
+          yunit='', ylabel='', dec='', trans=None, showfig=True, kind='line', size=(10, 6),
+          vline=[], savefig='', keep_dim=True, dataonly=False, samefig=False, ncol=2):
+         """
+    Generate and display plots for specified scenarios and variables.
+
+    Args:
+        pat (str, optional): Pattern to select variables for plotting. Defaults to '*'.
+        start (str, optional): Start period for the plot. Defaults to '' .
+        end (str, optional): End period for the plot. Defaults to '' .
+        start_ofset (int, optional): Offset to shift the start period, relative to current. Defaults to 0.
+        end_ofset (int, optional): Offset to shift the end period, relative to current. Defaults to 0.
+        showtype (str, optional): Type of data transformation for plotting ('level', 'growth', 'change'). Defaults to 'level'.
+        diff (bool, optional): If True, shows the difference relative to the first experiment. Defaults to False.
+        diffpct (bool, optional): If True, shows the percentage difference relative to the first experiment. Defaults to False.
+        mul (float, optional): Multiplier to scale the data. Defaults to 1.0.
+        title (str, optional): Title of the plot. Defaults to 'Scenarios'.
+        legend (bool, optional): If True, displays a legend. Defaults to False.
+        scale (str, optional): Y-axis scale ('linear' or 'log'). Defaults to 'linear'.
+        yunit (str, optional): Units for the Y-axis. Defaults to ''.
+        ylabel (str, optional): Label for the Y-axis. Defaults to ''.
+        dec (str, optional): String format for decimal places. If '' then automatically determined. Defaults to ''.
+        trans (dict, optional): Alternative dictionary for translating variable names to desciptions. Defaults to None.
+        showfig (bool, optional): If True, displays the figure. Defaults to True.
+        kind (str, optional): Type of plot ('line', 'bar', etc.). Defaults to 'line'.
+        size (tuple, optional): Figure size as (width, height). Defaults to (10, 6).
+        vline (list, optional): List of tuples (time, text) for vertical lines in the plot. Defaults to an empty list.
+        savefig (str, optional): Path to save the figure(s). Defaults to '' (no saving).
+        keep_dim (bool, optional): If True, each line represents a scenario, else each line represents a variable. Defaults to True.
+        dataonly (bool, optional): If True, only the dataframes are returned, no plot is generated. Defaults to False.
+        samefig (bool, optional): If True, all plots are displayed in the same figure. Defaults to False.
+        ncol (int, optional): Number of columns for subplots when using samefig. Defaults to 2.
+
+    Returns:
+        dict: A dictionary of Matplotlib figures, with keys being the variable names and values being the figure objects.
+
+    Raises:
+        ZeroDivisionError: If no kept solution is available for plotting.
+    """
     # Function implementation...
 
-        plt.close('all')
-        plt.ioff() 
+    # Function implementation...
+
+         plt.close('all')
+         plt.ioff() 
 
         # print(f'{self.current_per[-1]=}')
-        if not len(self.keep_solutions):
+         if not len(self.keep_solutions):
             raise Exception('No keept solution')
             
          dfsres = self.keep_get_plotdict(pat=pat, start=start, end=end, 
@@ -5094,7 +5097,7 @@ class Display_Mixin():
          aspct = ' as pct ' if diffpct else ' '
          dftype = showtype.capitalize()
 
-         xtrans = trans if trans else self.var_description
+         xtrans = self.var_description if type(trans) == type(None) else trans 
          number =  len(dfsres)
         
          if samefig:
