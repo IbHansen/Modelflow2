@@ -4820,7 +4820,7 @@ class Display_Mixin():
     
     @staticmethod
     def plot_basis_ax(ax,var, df, title='', suptitle='', legend=True, scale='linear', trans={}, dec='',
-                   ylabel='', yunit='', xlabel='',kind='line',multi=False):
+                   ylabel='', yunit='', xlabel='',kind='line',samefig=False):
         import matplotlib.pyplot as plt
         import matplotlib as mpl
         import matplotlib.ticker as ticker
@@ -4867,7 +4867,6 @@ class Display_Mixin():
                 yval = df[col]
                 ax.plot(xval, yval, label=col, linewidth=3.0)
                 if not legend:
-                    if not multi: 
                         x_pos = xval[-1]
                         ax.text(x_pos, yval.iloc[-1], f' {col}', fontsize=14)
         elif kind == 'bar_stacked':   
@@ -4875,11 +4874,11 @@ class Display_Mixin():
         elif kind == 'bar':   
             df.plot(ax=ax, stacked=False, kind='bar')
         else:
-            print(f'Error illegal kind:{kind}')
-            0/0
+            raise Exception(f'Error illegal kind:{kind}')
             
             
-        if legend and not multi: 
+            
+        if legend and not samefig: 
             ax.legend()
         # ax.xaxis.set_minor_locator(ticker.MultipleLocator(years))
         # breakpoint()
@@ -4943,7 +4942,7 @@ class Display_Mixin():
         
     
  
-    def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
+    def keep_plot_old(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
                   diff=False, diffpct = False, mul=1.0,
                   title='Show variables', legend=False, scale='linear', yunit='', ylabel='', dec='',
                   trans={},
@@ -5034,12 +5033,12 @@ class Display_Mixin():
         except ZeroDivisionError:
             print('no keept solution')
 
-    def keep_plot_new(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
+    def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
                   diff=False, diffpct = False, mul=1.0,
                   title='Scenarios', legend=False, scale='linear', yunit='', ylabel='', dec='',
                   trans={},
-                  showfig=True, kind='line', size=(12,6),
-                  vline=[], savefig='', keep_dim= True,dataonly=False,multi= False,ncol = 2 ):
+                  showfig=True, kind='line', size=(10,6),
+                  vline=[], savefig='', keep_dim= True,dataonly=False,samefig= False,ncol = 2 ):
         """
 
 
@@ -5086,26 +5085,37 @@ class Display_Mixin():
             dftype = showtype.capitalize()
 
             xtrans = trans if trans else self.var_description
-            
-            if multi:
+            number =  len(dfsres)
+           
+            if samefig:
                 ...
-                number =  len(dfsres)
                 xcol = ncol 
                 xrow=-((-number )//ncol)
                 figsize =  (xcol*size[0],xrow*size[1])
-                print(f'{size=}  {figsize=}')
+                # print(f'{size=}  {figsize=}')
                 fig = plt.figure(figsize=figsize)
                 #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
                 row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
-                gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig, height_ratios=row_heights)
+                if legend: 
+                    row_heights = row_heights+ [0.5]
+                    extra_row = 1 
+                    row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
+
+                else: 
+                    extra_row = 0 
+                    row_heights = [1] * xrow  # Assuming equal height for all plot rows,
+
+                    
+                gs = gridspec.GridSpec(xrow + extra_row , xcol, figure=fig, height_ratios=row_heights)
 
                 fig.set_constrained_layout(True)
 
    # Create axes for the plots
                 axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
-                legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
+                if legend: 
+                    legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
                 
-                figs = {'multi' : fig}
+                figs = {'onefig' : fig}
 
             else:
                 ... 
@@ -5120,19 +5130,20 @@ class Display_Mixin():
                                         title=f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
                                         yunit=yunit,
                                         ylabel='Percent' if (showtype == 'growth' or diffpct == True )else ylabel,
-                                        xlabel='',kind = kind,multi=multi,
+                                        xlabel='',kind = kind,samefig=samefig,
                                         dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec)
 
+            for ax in axes[number:]:
+                ax.set_visible(False)
+
             
-            if multi: 
+            if samefig: 
                 fig.suptitle(title ,fontsize=20) 
 
-                for ax in axes[number:]:
-                    ax.set_visible(False)
-
-                handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
-                legend_ax.legend(handles, labels, loc='center', ncol=len(labels), fontsize='large')
-                legend_ax.axis('off')  # Hide the axis
+                if legend: 
+                    handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
+                    legend_ax.legend(handles, labels, loc='center', ncol=len(labels), fontsize='large')
+                    legend_ax.axis('off')  # Hide the axis
 
             if type(vline) == type(None):  # to delete vline
                 if hasattr(self, 'vline'):
