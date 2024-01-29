@@ -4658,143 +4658,7 @@ class Display_Mixin():
         return out 
             
     
-    def keep_plot_multi(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
-                   diff=False, diffpct = False, mul=1.0,
-                   title='Scenario', legend=False, scale='linear', yunit='', ylabel='', dec='',
-                   trans=None,
-                   showfig=True,
-                   vline=[], savefig='', keep_dim= True,dataonly=False,nrow=None,ncol=2,
-                   kind='line',size=(10,10)):
-         """
-    
-    
-        Args:
-            pat (string, optional): Variable selection. Defaults to '*'.
-            start (TYPE, optional): start periode. Defaults to ''.
-            end (TYPE, optional): end periode. Defaults to ''.
-            start_ofset (int, optional): start periode relativ ofset to current. Defaults to 0.
-            end_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
-            showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
-            diff (Logical, optional): if True shows the difference to the first experiment. Defaults to False.
-            diffpct (logical,optional) : if True shows the difference in percent to tirst experiment. defalut to false
-            mul (float, optional): multiplier of data. Defaults to 1.0.
-            title (TYPE, optional): DESCRIPTION. Defaults to 'Show variables'.
-            legend (TYPE, optional): if False, expanations on the right of curve. Defaults to True.
-            scale (TYPE, optional): 'log' og 'linear'. Defaults to 'linear'.
-            yunit (TYPE, optional): DESCRIPTION. Defaults to ''.
-            ylabel (TYPE, optional): DESCRIPTION. Defaults to ''.
-            dec (TYPE, optional): decimals if '' automated. Defaults to ''.
-            trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
-            showfig (TYPE, optional): Time will come . Defaults to False.
-            vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
-            savefig (string,optional): folder to save figures in. Can include folder name, if needed the folder will be created 
-            keep_dim (bool,True): if True each line is a scenario else each line is a variable 
-            dataonly = False: If True only the resulting dataframes are returned 
-            kind: kind of  plot line|bar|bar_stacked
-        Returns:
-            figs : a matplotlib figure . 
-        """
-         import matplotlib.gridspec as gridspec
-
-         def trim_axs(axs, N):
-            """
-            Reduce *axs* to *N* Axes. All further Axes are removed from the figure.
-            """
-            axs = axs.flat
-            for ax in axs[N:]:
-                ax.remove()
-            return axs[:N]
-        
-        
-         plt.close('all')
-         plt.ioff() 
-
-         try:
-            
-                    
-             dfsres = self.keep_get_plotdict(pat=pat, start=start, end=end, 
-                                 start_ofset = start_ofset, end_ofset = end_ofset, 
-                                   showtype=showtype,
-                            diff=diff, diffpct = diffpct, keep_dim=keep_dim)
-             
-             # if we are looking 
-             if dataonly: 
-                 return dfsres
-
-             number =  len(dfsres)
-             xcol = ncol 
-             xrow=-((-number )//ncol)
-             fig = plt.figure(figsize=size)
-             #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
-             row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
-             gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig, height_ratios=row_heights)
-
-             fig.set_constrained_layout(True)
-
-# Create axes for the plots
-             axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
-             legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
-
-# Trim any excess axes
-            # axes = trim_axs(axes, number) 
-             #fig.set_size_inches(*size)
-    
-             xtrans = self.var_description if type(trans) == type(None) else trans 
-             aspct = ' as pct ' if diffpct else ' '
-             dftype = showtype.capitalize()
-             
-             for i,(v, df) in enumerate(dfsres.items()):
-                 self.plot_basis_ax(axes[i], v , df*mul, legend=legend,
-                                        scale=scale, trans=xtrans,
-                                        title=f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
-                                        yunit=yunit,
-                                        ylabel='Percent' if (showtype == 'growth' or diffpct == True )else ylabel,
-                                        xlabel='',kind = kind,
-                                        dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec)
-                     
-    
-             if type(vline) == type(None):  # to delete vline
-                 if hasattr(self, 'vline'):
-                     del self.vline
-             else:
-                 if vline or hasattr(self, 'vline'):
-                     if vline:
-                         self.vline = vline
-                     for xtime, text in self.vline:
-                         model.keep_add_vline(fig, xtime, text)
-                         
-             # fig.set_constrained_layout(True)
-             fig.suptitle(title ,fontsize=20) 
-
-             for ax in axes[number:]:
-                 ax.set_visible(False)
-
-             handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
-             legend_ax.legend(handles, labels, loc='center', ncol=len(labels), fontsize='large')
-             legend_ax.axis('off')  # Hide the axis
-
-
-             if savefig:
-                 figpath = Path(savefig)
-                 suffix = figpath.suffix if figpath.suffix else '.png'
-                 stem = figpath.stem
-                 
-                 parent = figpath.parent
-                 parent.mkdir(parents=True, exist_ok=True)
-                 location = parent / f'{stem}{suffix}'
-                 fig.savefig(location)
-                 
-             if showfig:
-                ...
-                display(fig)
-             plt.ion() 
-    
-    
-             return {'multifig':fig} 
-         except ZeroDivisionError:
-             print('no keept solution')
-    
-    
+   
 
     def inputwidget(self, start='', end='', basedf=None, **kwargs):
         ''' calls modeljupyter input widget, and keeps the period scope '''
@@ -4942,96 +4806,6 @@ class Display_Mixin():
         
     
  
-    def keep_plot_old(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
-                  diff=False, diffpct = False, mul=1.0,
-                  title='Show variables', legend=False, scale='linear', yunit='', ylabel='', dec='',
-                  trans={},
-                  showfig=True, kind='line',
-                  vline=[], savefig='', keep_dim= True,dataonly=False):
-        """
-
-
-       Args:
-           pat (string, optional): Variable selection. Defaults to '*'.
-           start (TYPE, optional): start periode. Defaults to ''.
-           end (TYPE, optional): end periode. Defaults to ''.
-           start_ofset (int, optional): start periode relativ ofset to current. Defaults to 0.
-           end_ofset (int, optional): end period, relativ ofset to current. Defaults to 0.
-           showtype (str, optional): 'level','growth' or change' transformation of data. Defaults to 'level'.
-           diff (Logical, optional): if True shows the difference to the first experiment. Defaults to False.
-           diffpct (logical,optional) : if True shows the difference in percent to tirst experiment. defalut to false
-           mul (float, optional): multiplier of data. Defaults to 1.0.
-           title (TYPE, optional): DESCRIPTION. Defaults to 'Show variables'.
-           legend (TYPE, optional): if False, expanations on the right of curve. Defaults to True.
-           scale (TYPE, optional): 'log' og 'linear'. Defaults to 'linear'.
-           yunit (TYPE, optional): DESCRIPTION. Defaults to ''.
-           ylabel (TYPE, optional): DESCRIPTION. Defaults to ''.
-           dec (TYPE, optional): decimals if '' automated. Defaults to ''.
-           trans (TYPE, optional): . Translation dict for variable names. Defaults to {}.
-           showfig (TYPE, optional): Time will come . Defaults to True.
-           vline (list of tupels, optional): list of (time,text) for vertical lines. Will be keept, to erase del model.vline
-           savefig (string,optional): folder to save figures in. Can include folder name, if needed the folder will be created 
-           keep_dim (bool,True): if True each line is a scenario else each line is a variable 
-           dataonly = False: If True only the resulting dataframes are returned 
-       Returns:
-           figs (dict): dict of the generated Matplotlib figures. 
-       """
-        plt.close('all')
-        plt.ioff() 
-
-        # print(f'{self.current_per[-1]=}')
-        try:
-            dfsres = self.keep_get_plotdict(pat=pat, start=start, end=end, 
-                                 start_ofset = start_ofset, end_ofset = end_ofset, 
-                                   showtype=showtype,
-                            diff=diff, diffpct = diffpct, keep_dim=keep_dim)
-       
-            
-            if dataonly: 
-                return dfsres
-            
-            aspct = ' as pct ' if diffpct else ' '
-            dftype = showtype.capitalize()
-
-            xtrans = trans if trans else self.var_description
-            figs = {v: self.plot_basis(v,  df*mul, legend=legend,
-                                       scale=scale, trans=xtrans,
-                                       title=f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
-                                       yunit=yunit,
-                                       ylabel='Percent' if (showtype == 'growth'   or diffpct) else ylabel,
-                                       xlabel='',
-                                       dec=2 if (showtype == 'growth'   or diffpct) and not dec else dec,
-                                       kind=kind)
-                    for v, df in dfsres.items()}
-
-            if type(vline) == type(None):  # to delete vline
-                if hasattr(self, 'vline'):
-                    del self.vline
-            else:
-                if vline or hasattr(self, 'vline'):
-                    if vline:
-                        self.vline = vline
-                    for xtime, text in self.vline:
-                        model.keep_add_vline(figs, xtime, text)
-            if savefig:
-                figpath = Path(savefig)
-                suffix = figpath.suffix if figpath.suffix else '.png'
-                stem = figpath.stem
-                parent = figpath.parent
-                parent.mkdir(parents=True, exist_ok=True)
-                for v, f in figs.items():
-                    # breakpoint()
-                    location = parent / f'{stem}_{v}{suffix}'
-                    f.savefig(location)
-            if showfig:
-                ...
-                for f in figs.values(): 
-                    display(f)
-            plt.ion() 
-
-            return figs
-        except ZeroDivisionError:
-            print('no keept solution')
 
         
     def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
@@ -5061,7 +4835,7 @@ class Display_Mixin():
         showfig (bool, optional): If True, displays the figure. Defaults to True.
         kind (str, optional): Type of plot ('line', 'bar', etc.). Defaults to 'line'.
         size (tuple, optional): Figure size as (width, height). Defaults to (10, 6).
-        vline (list, optional): List of tuples (time, text) for vertical lines in the plot. Defaults to an empty list.
+        vline (list, optional): List of tuples (time, text) for vertical lines in the plot. vline is persistent, to reset vline=None. Defaults to an empty list.
         savefig (str, optional): Path to save the figure(s). Defaults to '' (no saving).
         keep_dim (bool, optional): If True, each line represents a scenario, else each line represents a variable. Defaults to True.
         dataonly (bool, optional): If True, only the dataframes are returned, no plot is generated. Defaults to False.
@@ -5155,7 +4929,7 @@ class Display_Mixin():
 
              if legend: 
                  handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
-                 legend_ax.legend(handles, labels, loc='center', ncol=len(labels), fontsize='large')
+                 legend_ax.legend(handles, labels, loc='center', ncol=3 if True else len(labels), fontsize='large')
                  legend_ax.axis('off')  # Hide the axis
 
          if type(vline) == type(None):  # to delete vline
@@ -5187,7 +4961,7 @@ class Display_Mixin():
 
 
     @staticmethod
-    def keep_add_vline(figs, time, text='  Calibration time'):
+    def keep_add_vline_old(figs, time, text='  Calibration time'):
         ''' adds a vertical line with text to figs a dict with matplotlib figures) from keep_plot'''
         # breakpoint()
         for keep, fig in figs.items():
@@ -5201,6 +4975,23 @@ class Display_Mixin():
                     time), linewidth=3, color='r', ls='dashed')
                 fig.axes[0].annotate(
                     text, xy=(pd.to_datetime(time), ymax), fontsize=13, va='top')
+
+    @staticmethod
+    def keep_add_vline(figs, time, text='  Calibration time'):
+        ''' adds a vertical line with text to figs a dict with matplotlib figures) from keep_plot'''
+        # breakpoint()
+        for keep, fig in figs.items():
+            for ax in fig.axes: 
+                ymax =ax.get_ylim()[1]
+                try:
+                    ax.axvline(time, linewidth=3, color='r', ls='dashed')
+                    ax.annotate(text, xy=(time, ymax),
+                                         fontsize=13, va='top')
+                except:
+                    ax.axvline(pd.to_datetime(
+                        time), linewidth=3, color='r', ls='dashed')
+                    ax.annotate(
+                        text, xy=(pd.to_datetime(time), ymax), fontsize=13, va='top')
 
 
     def keep_viz(self, pat='*', smpl=('', ''), selectfrom={}, legend=1, dec='', use_descriptions=True,
