@@ -4832,7 +4832,6 @@ class Display_Mixin():
         kind (str, optional): Type of plot ('line', 'bar', etc.). Defaults to 'line'.
         size (tuple, optional): Figure size as (width, height). Defaults to (10, 6).
         vline (list, optional): List of tuples (time, text) for vertical lines in the plot. vline is persistent, to reset vline=None. Defaults to an empty list.
-        savefig (str, optional): Path to save the figure(s). Defaults to '' (no saving).
         keep_dim (bool, optional): If True, each line represents a scenario, else each line represents a variable. Defaults to True.
         dataonly (bool, optional): If True, only the dataframes are returned, no plot is generated. Defaults to False.
         samefig (bool, optional): If True, all plots are displayed in the same figure. Defaults to False.
@@ -4937,16 +4936,8 @@ class Display_Mixin():
                      self.vline = vline
                  for xtime, text in self.vline:
                      model.keep_add_vline(figs, xtime, text)
-         if savefig:
-             figpath = Path(savefig)
-             suffix = figpath.suffix if figpath.suffix else '.png'
-             stem = figpath.stem
-             parent = figpath.parent
-             parent.mkdir(parents=True, exist_ok=True)
-             for v, f in figs.items():
-                 # breakpoint()
-                 location = parent / f'{stem}_{v}{suffix}'
-                 f.savefig(location)
+         
+         
          if showfig:
              ...
              for f in figs.values(): 

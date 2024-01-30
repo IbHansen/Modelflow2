@@ -684,70 +684,78 @@ def fig_to_image(fig,format='svg'):
 
 @dataclass
 class keep_plot_widget:
-    
     """
-      Returns an interactive widget to plots the keept dataframes
+    Provides an interactive widget to plot data from ModelFlow model instances. 
+    It allows for selection of variables, scenarios, and display types, and can show 
+    differences between scenarios in various formats.
 
-      Args:
-          mmodel : a modelflow model instance 
-          smpl (tuple with 2 elements, optional): the selected smpl, has to match the dataframe index used. Defaults to ('','').
-          use_smpl (bool): show a smpl selection slider
-          selectfrom (list, optional): the variables to select from, Defaults to [] -> all keept  variables .
-          legend (bool, optional): DESCRIPTION. legends or to the right of the curve. Defaults to 1.
-          dec (string, optional): decimals on the y-axis. Defaults to '0'.
-          use_descriptions : Use the variable descriptions from the model 
-          vline : List of vertical lines (position,text)
-          add_var_name: Add the variable name to description  
-          short: Short, 1 2 cut down on the inpout fields 
-          select_scenario: If True, select the scenarios which has to be displayed
-          switch : if True use the scenarios in mmodel.basedf and mmodel.lastdf 
-          var_groups: a dictionary of variable pattern  to select for instance countries (if not present var_groups from model is used)
-          use_var_groups: use the var_groups 
-          
-          displaytype : string type one of ['tab','accordion','anything']
-          save_location: Default save location 
-          
-      property: 
-          show: Display the widget
-          datawidget: the actual widget 
+    Args:
+        mmodel: A ModelFlow model instance.
+        smpl (Tuple[str, str], optional): Sample period for plotting (start, end). 
+            Defaults to ('', '').
+        use_smpl (bool, optional): If True, enables a sample period selection slider. 
+            Defaults to False.
+        selectfrom (str, optional): Space-separated string of variable names to select 
+            from. If empty, all kept variables are available. Defaults to '*'.
+        legend (bool, optional): If True, displays legends next to the plots. 
+            Defaults to False.
+        dec (str, optional): Format string for decimal places on the y-axis. 
+            Defaults to ''.
+        use_descriptions (bool, optional): If True, uses variable descriptions from 
+            the model. Defaults to True.
+        vline (any, optional): List of vertical lines for the plot (position, text). 
+            Defaults to None.
+        add_var_name (bool, optional): If True, adds variable names to descriptions. 
+            Defaults to False.
+        short (any, optional): If set, reduces the number of input fields. 
+            Defaults to 0.
+        select_scenario (bool, optional): If True, allows selecting scenarios to display. 
+            Defaults to True.
+        switch (bool, optional): If True, uses scenarios from mmodel.basedf and 
+            mmodel.lastdf. Defaults to False.
+        var_groups (dict, optional): Dictionary of variable patterns for selection, 
+            like country groups. If empty use mmodel.var_groups. Defaults to an empty dict.
+        use_var_groups (bool, optional): If True, enables selection using var_groups. 
+            Defaults to True.
+        displaytype (str, optional): Type of display ('tab', 'accordion', or other). 
+            Defaults to 'tab'.
+        save_location (str, optional): Default location for saving plots. 
+            Defaults to './graph'.
+        use_smpl (bool, optional): If True, enables a sample selection slider. 
+            Defaults to False.
 
-      Returns:
-          keep_plot_widget instance .
+    Properties:
+        show: Displays the widget.
+        datawidget: The actual interactive widget.
 
-      self.keep_wiz_figs is set to a dictionary containing the figures. Can be used to produce publication
-      quality files. 
-
+    Returns:
+        An instance of keep_plot_widget. This instance's 'keep_wiz_figs' property is 
+        set to a dictionary containing the figures, which can be used for creating 
+        publication-quality files.
     """
 
-    
-    mmodel : any     # a model 
-    # pat : str ='*'
-    # showvarpat : bool = True 
-    smpl : Tuple[int, int] = ('', '')
-    relativ_start : int = 0 
-    selected  : str =''
-    
-    selectfrom  : str ='*'
-    showselectfrom : bool = True 
-
-    legend : bool = False 
-    dec=''
+    mmodel : any  # a model
+    smpl : Tuple[str, str] = ('', '')
+    relativ_start : int = 0
+    selected : str = ''
+    selectfrom : str = '*'
+    showselectfrom : bool = True
+    legend : bool = False
+    dec : str = ''
     use_descriptions : bool = True
-    select_width=''
-    select_height='200px'
+    select_width : str = ''
+    select_height : str = '200px'
     vline : any = None
-
     var_groups : dict = field(default_factory=dict)
-    use_var_groups : bool = True 
+    use_var_groups : bool = True
     add_var_name : bool = False
-    short :any  = 0 
-    multi :any = False 
+    short : any = 0
     select_scenario : bool = True
-    displaytype : str = 'tab' # or '' or accordion
-    save_location :str = './graph'
-    switch :bool = False
-    use_smpl : bool = False 
-    
+    displaytype : str = 'tab'
+    save_location : str = './graph'
+    switch : bool = False
+    use_smpl : bool = False
+
   
     
     def __post_init__(self):
