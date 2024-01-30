@@ -4652,11 +4652,7 @@ class Display_Mixin():
      
             return dfsres
     
-    def df_plot_multi(self,*args,**kwargs):
-        with self.keepswitch(switch=True):
-            out = self.keep_plot_multi(*args,**kwargs)
-        return out 
-            
+          
     
    
 
@@ -4960,21 +4956,6 @@ class Display_Mixin():
          return figs
 
 
-    @staticmethod
-    def keep_add_vline_old(figs, time, text='  Calibration time'):
-        ''' adds a vertical line with text to figs a dict with matplotlib figures) from keep_plot'''
-        # breakpoint()
-        for keep, fig in figs.items():
-            ymax = fig.axes[0].get_ylim()[1]
-            try:
-                fig.axes[0].axvline(time, linewidth=3, color='r', ls='dashed')
-                fig.axes[0].annotate(text, xy=(time, ymax),
-                                     fontsize=13, va='top')
-            except:
-                fig.axes[0].axvline(pd.to_datetime(
-                    time), linewidth=3, color='r', ls='dashed')
-                fig.axes[0].annotate(
-                    text, xy=(pd.to_datetime(time), ymax), fontsize=13, va='top')
 
     @staticmethod
     def keep_add_vline(figs, time, text='  Calibration time'):
