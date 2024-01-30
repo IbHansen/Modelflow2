@@ -792,7 +792,7 @@ class keep_plot_widget:
         wselectfrom.layout.visibility = 'visible' if self.showselectfrom else 'hidden'
         
         self.wxopen = widgets.Checkbox(value=False,description = 'Allow save figures',disabled=False,
-                                     layout={'width':'25%'}    ,style={'description_width':'5%'})
+                                     layout={'width':'25%'}    ,style={'description_width':'10%'})
         
         gross_selectfrom = []        
         def changeselectfrom(g):
@@ -1076,60 +1076,67 @@ class keep_plot_widget:
         else: 
             self.out_widget.layout.visibility = 'hidden'
 
+from dataclasses import dataclass, field
+from ipywidgets import widgets, HBox
+
 @dataclass
 class savefigs_widget:
-    '''
-    A widget ó save figs from a dictionary of matplotlib figures
-    
+    """
+    Provides a widget for saving matplotlib figures from a dictionary to files.
 
-    '''
-    figs : dict =  field(default_factory=dict)
-    location : str = './graph'
-    addname : str  =  ''
-        
+    The widget allows the user to specify the save location, file format(s), and 
+    additional naming details for the saved figures. It also includes an option to 
+    open the save location in the file explorer after saving.
+
+    Attributes:
+        figs (dict, optional): A dictionary containing matplotlib figures. 
+            Defaults to an empty dict.
+        location (str, optional): The default directory where figures will be saved. 
+            Defaults to './graph'.
+        addname (str, optional): An additional suffix to append to the figure filenames. 
+            Defaults to an empty string.
+
+    The widget layout includes:
+        - A button to initiate the save process.
+        - Input fields to specify the experiment name, save location, and filename suffix.
+        - A multiple-selection dropdown to choose the file formats (e.g., svg, pdf, png, eps).
+        - A checkbox to optionally open the save location after saving.
+        - An output field displaying the final save location.
+    """
+
+    figs: dict = field(default_factory=dict)
+    location: str = './graph'
+    addname: str = ''
+
     def __post_init__(self):
-        
-        wgo     = widgets.Button(description = 'Save charts to file',colour='green')
-        
-        wlocation =  widgets.Text(value = self.location,description='Save location:',
-                            layout={'width':'55%'},style={'description_width':'35%'})
-        wexperimentname = widgets.Text(value='Experiment_1',description='Name of these experiments:',
-                            layout={'width':'55%'},style={'description_width':'35%'})
-        self.waddname  = widgets.Text(value=self.addname,placeholder='If needed type a suffix',description='suffix for these charts:',
-                                    layout={'width':'55%'},style={'description_width':'35%'})
-
-        wextensions = widgets.SelectMultiple(value = ('svg',),
-                                             options =  ['svg', 'pdf', 'png', 'eps'],
+        wgo = widgets.Button(description='Save charts to file', style={'button_color': 'lightgreen'})
+        wlocation = widgets.Text(value=self.location, description='Save location:',
+                                 layout={'width': '350px'}, style={'description_width': '200px'})
+        wexperimentname = widgets.Text(value='Experiment_1', description='Name of these experiments:',
+                                       layout={'width': '350px'}, style={'description_width': '200px'})
+        self.waddname = widgets.Text(value=self.addname, placeholder='If needed, type a suffix', 
+                                     description='Suffix for these charts:',
+                                     layout={'width': '350px'}, style={'description_width': '200px'})
+        wextensions = widgets.SelectMultiple(value=('svg',), options=['svg', 'pdf', 'png', 'eps'],
                                              description='Output type:',
-                                    layout={'width':'55%'},style={'description_width':'35%'},rows=4)
-        wxopen = widgets.Checkbox(value=True,description = 'Open location',disabled=False,
-                                     layout={'width':'25%'}    ,style={'description_width':'5%'})
-        wsavelocation =  widgets.Text(value = self.location,description='Saved at:',
-                            layout={'width':'55%'},style={'description_width':'35%'})
+                                             layout={'width': '250px'}, style={'description_width': '200px'}, rows=4)
+        wxopen = widgets.Checkbox(value=True, description='Open location', disabled=False,
+                                  layout={'width': '300px'}, style={'description_width': '5%'})
+        wsavelocation = widgets.Text(value='', description='Saved at:',
+                                     layout={'width': '90%'}, style={'description_width': '100px'},
+                                     disabled=True)
         wsavelocation.layout.visibility = 'hidden'
-        
+
         def go(g):
-            from modelclass import model 
-            # print(f'{self.figs.keys()}')
-            result = model.savefigs(self.figs,
-                           location       = wlocation.value,
-                           experimentname = wexperimentname.value,
-                           addname        = self.waddname.value,
-                           extensions    =  wextensions.value,
-                           xopen           = wxopen.value)
-            wsavelocation.description,wsavelocation.value = result
+            from modelclass import model
+            result = model.savefigs(self.figs, location=wlocation.value, experimentname=wexperimentname.value,
+                                    addname=self.waddname.value, extensions=wextensions.value, xopen=wxopen.value)
+            wsavelocation.value  = result
             wsavelocation.layout.visibility = 'visible'
-            
-                           
-                           
+
         wgo.on_click(go)
-        
-        self.datawidget = widgets.VBox([HBox([wgo,wxopen]),
-                        wexperimentname,wlocation,self.waddname,wextensions,wsavelocation])
-        
-        
-        
-        
+        self.datawidget = widgets.VBox([HBox([wgo, wxopen]), wexperimentname, wlocation, self.waddname, 
+                                        wextensions, wsavelocation])
    
         
 @dataclass

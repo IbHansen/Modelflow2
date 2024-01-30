@@ -4792,7 +4792,7 @@ class Display_Mixin():
             # print('open ')
             wb.open(folder.absolute(),new=1)
             
-        return f'The charts wil be saved here:{folder.absolute()}' 
+        return f'{folder.absolute()}' 
            
     def df_plot(self,*args,**kwargs):
         with self.keepswitch(switch=True):
