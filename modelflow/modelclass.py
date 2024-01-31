@@ -4760,44 +4760,46 @@ class Display_Mixin():
         return ax
     
     @staticmethod
-    def savefigs(figs,location='./graph',experimentname='experiment1',addname = '', extensions=['svg'],xopen=True):
-        '''
-        figs: A dictionary of matplotlib figures
-        location: The folder in which to save the charts defaults: './graph'
-        experimentname: A subfolder where these charts are saved defalt: 'experiment1'
-        extensions: list of types of output from ['svg', 'pdf', 'png', 'eps'] default: ['svg']
-        addname: A name added to the variable name default: ''
-        xopen: If True open the location in a brswser
-        
-        '''
-        import webbrowser as wb
-    
+    def savefigs(figs, location='./graph', experimentname='experiment1', addname='', extensions=['svg'], xopen=True):
+        """
+        Saves a collection of matplotlib figures to a specified directory.
+
+        Parameters:
+        - figs (dict): A dictionary of matplotlib figures where the key is the figure name.
+        - location (str): The base folder in which to save the charts. Defaults to './graph'.
+        - experimentname (str): A subfolder under 'location' where charts are saved. Defaults to 'experiment1'.
+        - addname (str): An additional name added to each figure filename. Defaults to an empty string.
+        - extensions (list): A list of string file extensions for saving the figures. Defaults to ['svg'].
+        - xopen (bool): If True, open the saved figure locations in a web browser.
+
+        Returns:
+        str: The absolute path to the folder where figures are saved.
+
+        Raises:
+        Exception: If the folder cannot be created or a figure cannot be saved/opened.
+        """
         folder = Path(location) / experimentname
-        # print(figs.keys())
+
         try:
-            folder.mkdir(parents=True,exist_ok=True)
-        except: 
-            return ("!!!Can't open:",f'{folder}')
-        for variable,fig in figs.items():
-            for extension in extensions: 
+            folder.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            raise Exception(f"!!!Can't create folder: {folder}. Error: {e}")
+
+        for variable, fig in figs.items():
+            for extension in extensions:
                 filename = f'{variable}{addname}.{extension}'
-                # print(f'{folder / filename = }')
-                fig.savefig(folder / filename)
-                if xopen and 1: 
-                    try: 
-                        wb.open(folder / filename,new=2)
-                    except: 
-                        return f"!!!Can't open:{folder / filename}"
-        if xopen:      
-            # print('open ')
-            wb.open(folder.absolute(),new=1)
-            
-        return f'{folder.absolute()}' 
-           
-    def df_plot(self,*args,**kwargs):
-        with self.keepswitch(switch=True):
-            out = self.keep_plot(*args,**kwargs)
-        return out 
+                file_path = folder / filename
+                try:
+                    fig.savefig(file_path)
+                    if xopen:
+                        wb.open(file_path, new=2)
+                except Exception as e:
+                    raise Exception(f"!!!Can't save/open file: {file_path}. Error: {e}")
+
+        if xopen:
+            wb.open(folder.absolute(), new=1)
+
+        return str(folder.absolute())
 
         
     
@@ -5462,7 +5464,11 @@ class Json_Mixin():
             return base, current_dates
 
         try:
-            with open(pinfile:=Path(nname:=infile.replace('\\','/')), 'rt') as f:
+            pinfile = Path(nname:=infile.replace('\\','/'))
+            if not pinfile.suffix:
+                pinfile = pinfile.with_suffix('.pcim')
+
+            with open(pinfile, 'rt') as f:
                 input = json.load(f)
                 print(f'file read:  {pinfile.resolve()}')  
                 # print(f'file read:  {pinfile}yyy')
@@ -5515,6 +5521,25 @@ class Json_Mixin():
         else:
             mmodel.basedf = lastdf.copy()  
             return mmodel, lastdf
+
+class Zip_Mixin():
+    '''This experimental class zips a dumped file '''
+    def modeldump2(self, file_path='',keep=False,zip_file=True):
+        import gzip
+        pathname = Path(file_path)
+        if not pathname.suffix:
+            pathname = pathname.with_suffix('.pcim')
+
+        pathname.parent.mkdir(parents=True, exist_ok=True)
+
+        json_string = self.modeldump(keep=keep)
+        
+        if zip_file:
+            with gzip.open(pathname , 'wt') as zipped_file:
+                zipped_file.write(json_string)
+        else:
+            with open(pathname, 'w') as file:
+                file.write(json_string)
 
 
 
@@ -5632,27 +5657,6 @@ class Excel_Mixin():
             return mmodel, res, wb
 
 
-class Zip_Mixin():
-    '''This experimental class zips a dumped file '''
-    def modeldump2(self, outfile=''):
-        outname = self.name if outfile == '' else outfile
-
-        cache_dir = Path('__pycache__')
-        self.modeldump(f'{outname}.mf')
-        with zipfile.ZipFile(f'{outname}_dump.zip', 'w', zipfile.ZIP_DEFLATED) as f:
-            f.write(f'{outname}.mf')
-            for c in Path().glob(f'{self.name}_*_jitsolver.*'):
-                f.write(c)
-            for c in cache_dir.glob(f'{self.name}_*.*'):
-                f.write(c)
-
-    @classmethod
-    def modelload2(cls, name):
-        with zipfile.ZipFile(f'{name}_dump.zip', 'r') as f:
-            f.extractall()
-
-        mmodel, df = cls.modelload(f'{name}.mf')
-        return mmodel, df
 
 
 class Solver_Mixin():
