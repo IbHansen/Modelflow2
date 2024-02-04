@@ -107,6 +107,7 @@ from modeldekom import totdif
 from scipy.stats import norm
 from math import isclose, sqrt, erf
 from scipy.special import erfinv, ndtri
+import gzip
 
 
 np.seterr(all='ignore')
@@ -4799,7 +4800,7 @@ class Display_Mixin():
         if xopen:
             wb.open(folder.absolute(), new=1)
 
-        return str(folder.absolute())
+        return f'Saved at: {folder.absolute()}'
 
         
     
@@ -5389,7 +5390,7 @@ class Json_Mixin():
     a session. 
     '''
 
-    def modeldump(self, outfile='',keep=False):
+    def modeldump_base(self, outfile='',keep=False):
         '''Dumps a model and its lastdf to a json file
         
         if keep=True the model.keep_solutions will alse be dumped'''
@@ -5404,7 +5405,7 @@ class Json_Mixin():
             'oldkwargs': self.oldkwargs,
             'var_description': self.var_description,
             'equations_latex': self.equations_latex ,
-            'keep_solutions': {k:v.to_json() for k,v in self.keep_solutions.items()} if keep else {},
+            'keep_solutions': {k:v.to_json(double_precision=15) for k,v in self.keep_solutions.items()} if keep else {},
             'wb_MFMSAOPTIONS': self.wb_MFMSAOPTIONS if hasattr(self, 'wb_MFMSAOPTIONS') else '',
             'var_groups'     : self.var_groups,
             'model_description'     : self.model_description,
@@ -5443,7 +5444,7 @@ class Json_Mixin():
 
              '''
         '''Loads a model and an solution '''
-        
+        import io
         import urllib.request
 
         def make_current_from_quarters(base, json_current_per):
@@ -5463,26 +5464,54 @@ class Json_Mixin():
             base.index = base_dates
             return base, current_dates
 
-        try:
-            pinfile = Path(nname:=infile.replace('\\','/'))
-            if not pinfile.suffix:
-                pinfile = pinfile.with_suffix('.pcim')
+        pinfile = Path(nname:=infile.replace('\\','/'))
+        if not pinfile.suffix:
+            pinfile = pinfile.with_suffix('.pcim')
 
-            with open(pinfile, 'rt') as f:
-                input = json.load(f)
-                print(f'file read:  {pinfile.resolve()}')  
-                # print(f'file read:  {pinfile}yyy')
-                # print(f'file read:  {nname}zzz')
-        except: 
+        def read_file(pinfile):
+            try:
+                # First, try reading the file as a regular text file
+                with open(pinfile, 'rt', encoding='utf-8') as f:
+                    out=  f.read()
+                print(f'file read:  {pinfile.resolve()}')    
+                return out
+            except UnicodeDecodeError:
+                # print(f'An UnicodeDecodeError occurs, it might be a gzip file')
+                pass
+        
+            try:
+                # Try reading the file as a gzip file
+                with gzip.open(pinfile, 'rt', encoding='utf-8') as f:
+                    out = f.read()
+                print(f'Zipped file read:  {pinfile.resolve()}')    
+                return out
+            except (OSError, IOError):
+                # Handle the case where the file is neither plain text nor gzip
+                raise Exception( f"Error reading the file {nname}")
+        def read_from_url(url):
+            with urllib.request.urlopen(url) as response:
+                content = response.read()  # Read the content once
+
+                try:
+                    # Try to read as a gzip file first
+                    with gzip.open(io.BytesIO(content), 'rt', encoding='utf-8') as f:
+                        return f.read()
+                except (OSError, IOError):
+                    # If not gzip, then read as regular file
+                    return content.decode('utf-8')
+
+        if pinfile.exists():
+            json_string = read_file(pinfile)
+        else: 
             if infile.startswith(r'https:'):
                 urlfile = infile
             else: 
                 urlfile = (Path(default_url) / pinfile.name).as_posix().replace('https:/','https://')
                 
-            print(f'Open file from URL:  {urlfile}')  
-            with urllib.request.urlopen(urlfile) as f:
-                input = json.load(f)
+                print(f'Open file from URL:  {urlfile}')  
+            json_string = read_from_url(urlfile)
 
+        input = json.loads(json_string)
         version = input['version']
         frml = input['frml']
         lastdf = pd.read_json(StringIO(input['lastdf']))
@@ -5524,15 +5553,14 @@ class Json_Mixin():
 
 class Zip_Mixin():
     '''This experimental class zips a dumped file '''
-    def modeldump2(self, file_path='',keep=False,zip_file=True):
-        import gzip
+    def modeldump(self, file_path='',keep=False,zip_file=True):
         pathname = Path(file_path)
         if not pathname.suffix:
             pathname = pathname.with_suffix('.pcim')
 
         pathname.parent.mkdir(parents=True, exist_ok=True)
 
-        json_string = self.modeldump(keep=keep)
+        json_string = self.modeldump_base(keep=keep)
         
         if zip_file:
             with gzip.open(pathname , 'wt') as zipped_file:
@@ -8021,3 +8049,4 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     print(f'Number of endogenous: {len(mpak.endogene)}, Number of variables in  simultaneuous block {len(mpak.coreorder)}')
     print(f'Number of variables in "minimum" feedback set: {len(fb_nodes)}')
     print(f'Number of variables in "DAG" graph           : {len(dag_nodes)}')
+    # mtest,bk = model.modelload(r'ibstestnozip')

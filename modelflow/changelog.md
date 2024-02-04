@@ -133,3 +133,9 @@ df_plot works like keep_plot but for basedf and lastdf. to match the interactive
 .modelload now accept start and end when ruun=True, before it trow an error (problem if the dumped model was simulated for a short period.)
 kind = in keep_plot 
 2.15  released
+keep_plot_multi decaptiated, use samefig=True in keep_plot
+keep_plot revised 
+figsave revised 
+.pcim is default extension of dumped files 
+dumped file are default to zipped content
+

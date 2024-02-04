@@ -137,7 +137,7 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
     types_set   = {o['_type'] for o in object_all}
     object_dict = {_type : [o for o in object_all if o['_type'] == _type ] for _type in types_set}
     object_namecounts = {_type: [o['_name'] for o in this_object] for _type,this_object in object_dict.items() }
-    assert 1==1
+    breakpoint()
     # Now extract the  model
     thismodel_dict = object_dict['model'][0]
     thismodel_raw = thismodel_dict['data'][0]
@@ -577,51 +577,54 @@ class GrabWfModel():
         
 
 if __name__ == '__main__':
+    
+    
     #%% Testing 
-    pak_trans = lambda input : input.replace('- 01*D(','-1*D(')                
-     
-
-    ago_trans = lambda  input : input.replace('@MEAN(AGOBNCABFUNDCD/AGONYGDPMKTPCD,"2000 2020")','MEAN_AGOBNCABFUNDCD_DIV_AGONYGDPMKTPCD') 
-    ago_eviews_run_lines = ['smpl @ALL','series MEAN_AGOBNCABFUNDCD_DIV_AGONYGDPMKTPCD = @MEAN(AGOBNCABFUNDCD/AGONYGDPMKTPCD,"2000 2020")']
-    
-    mda_trans = lambda input: input.replace('_MDAsbbrev.@coef(2)','_MDASBBREV_at_COEF_2')         
-    mda_eviews_run_lines = ['Scalar _MDASBBREV_at_COEF_2 = _MDASBBREV.@COEF(+2)']
-    
-
-    filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-    modelname = 'pak'
-    filename = filedict[modelname]
-    
-    
-    eviews_run_lines= globals().get(f'{modelname}_eviews_run_lines',[])
-    country_trans    =  globals().get(f'{modelname}_trans'   ,lambda x : x[:])
-    country_df_trans =  globals().get(f'{modelname}_df_trans',lambda x : x)
-    
-    
-    cmodel = GrabWfModel(filename, 
-                        # eviews_run_lines= eviews_run_lines,
-                        country_trans    =  country_trans,
-                        country_df_trans =  country_df_trans,
-                        make_fitted = True,
-                        do_add_factor_calc=True,
-                        start = 2020,
-                        end = 2100, 
-                        fit_start = 2000,          # Start of calculation of fittet model in baseline 
-                        fit_end   = 2030           # end of calc for fittted model, if None taken from mdmfsa options  
-                        ) 
-    # assert 1==2
     if 0:
-        cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
-
-        
-    grab_lookat = cmodel           
-    mlookat   = grab_lookat.mmodel    
-    lookat_des  = mlookat.var_description
-    lookat_equations  = mlookat.equations   
-    lookat_all_frml_dict = grab_lookat.all_frml_dict
-    base_input = cmodel.base_input
-    mlookat(base_input,2020,2022)
+        pak_trans = lambda input : input.replace('- 01*D(','-1*D(')                
+         
     
-    #%%
-    # mlookat.var_with_frmlname('fit')
-    # mlookat.equations
+        ago_trans = lambda  input : input.replace('@MEAN(AGOBNCABFUNDCD/AGONYGDPMKTPCD,"2000 2020")','MEAN_AGOBNCABFUNDCD_DIV_AGONYGDPMKTPCD') 
+        ago_eviews_run_lines = ['smpl @ALL','series MEAN_AGOBNCABFUNDCD_DIV_AGONYGDPMKTPCD = @MEAN(AGOBNCABFUNDCD/AGONYGDPMKTPCD,"2000 2020")']
+        
+        mda_trans = lambda input: input.replace('_MDAsbbrev.@coef(2)','_MDASBBREV_at_COEF_2')         
+        mda_eviews_run_lines = ['Scalar _MDASBBREV_at_COEF_2 = _MDASBBREV.@COEF(+2)']
+        
+    
+        filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
+        modelname = 'pak'
+        filename = filedict[modelname]
+        
+        
+        eviews_run_lines= globals().get(f'{modelname}_eviews_run_lines',[])
+        country_trans    =  globals().get(f'{modelname}_trans'   ,lambda x : x[:])
+        country_df_trans =  globals().get(f'{modelname}_df_trans',lambda x : x)
+        
+        
+        cmodel = GrabWfModel(filename, 
+                            # eviews_run_lines= eviews_run_lines,
+                            country_trans    =  country_trans,
+                            country_df_trans =  country_df_trans,
+                            make_fitted = True,
+                            do_add_factor_calc=True,
+                            start = 2020,
+                            end = 2100, 
+                            fit_start = 2000,          # Start of calculation of fittet model in baseline 
+                            fit_end   = 2030           # end of calc for fittted model, if None taken from mdmfsa options  
+                            ) 
+        # assert 1==2
+        if 0:
+            cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
+    
+            
+        grab_lookat = cmodel           
+        mlookat   = grab_lookat.mmodel    
+        lookat_des  = mlookat.var_description
+        lookat_equations  = mlookat.equations   
+        lookat_all_frml_dict = grab_lookat.all_frml_dict
+        base_input = cmodel.base_input
+        mlookat(base_input,2020,2022)
+        
+        #%%
+        # mlookat.var_with_frmlname('fit')
+        # mlookat.equations
