@@ -104,7 +104,7 @@ def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
     evp.Cleanup()
     return wf2,modelname
 
-def wf2_to_clean(wf2name,modelname='',save_file = False):
+def wf2_to_clean(wf2name,modelname='',save_file = False,freq='A'):
     '''
     Takes a eviews .wf2 file - which is in JSON format - and place a
     dictionary
@@ -132,26 +132,41 @@ def wf2_to_clean(wf2name,modelname='',save_file = False):
     # gen0 = gen0.decode("ISO-8859-1") 
     all_dict     = json.loads(gen0)
     pages       = all_dict['_pages']
-    first_page  = pages[0]
+    matched_page = [page for page in pages 
+                    if page["frequency"]["value"]== freq]
+    
+    if (len_matched_page := len(matched_page)) != 1:
+        raise Exception(f'{len_matched_page} pages in the workfile with frequence {freq}. Precise one is allowed')
+        
+
+    first_page  = matched_page[0]
     object_all  = [o for o in first_page['_objects']]
     types_set   = {o['_type'] for o in object_all}
     object_dict = {_type : [o for o in object_all if o['_type'] == _type ] for _type in types_set}
     object_namecounts = {_type: [o['_name'] for o in this_object] for _type,this_object in object_dict.items() }
-    breakpoint()
+    # breakpoint()
     # Now extract the  model
     thismodel_dict = object_dict['model'][0]
     thismodel_raw = thismodel_dict['data'][0]
-    breakpoint()
+    # breakpoint()
     thismodel_raw_list = [l for l in thismodel_raw.split('\n') if len(l) > 1]
     
     this_clean = [l for l in thismodel_raw_list if l[:4] not in {'@INN','@ADD'}] # The original frmls
     this_add_vars =  [l.split()[1] for l in thismodel_raw_list if l[:4]  in {'@ADD'}] # variable with add factors
     this_frml = '\n'.join(this_clean)
     # Take all series and make a dataframe 
-    index = [int(d[:4]) for d in object_dict['index'][0]['data']]
     series_list = object_dict['series_double']
+
+    if freq == 'A':
+        index = [int(d[:4]) for d in object_dict['index'][0]['data']]
+    elif freq == 'Q':
+        datetime_index = pd.to_datetime( object_dict['index'][0]['data'])  
+        index = datetime_index.to_period('Q')
+        
     series_data = [pd.Series(s['data'],name=s['_name'],index=index) for s in series_list]
+
     wf_df = pd.concat(series_data,axis=1)
+    
     
     var_description = {s['_name']: lab2 for s in series_list 
                   if (lab2  := s.get('_labels',{}).get('description','')) 
@@ -204,6 +219,7 @@ class GrabWfModel():
     args:
         filename           : any = ''  #wf1 name 
         modelname          : any = ''  
+        freq               : str = 'A'
         eviews_run_lines   : list =field(default_factory=list)
         model_all_about    : dict = field(default_factory=dict)
         start              : any = None    # start of testing if not overruled by mfmsa
@@ -222,6 +238,7 @@ class GrabWfModel():
     
     filename           : any = ''  #wf1 name 
     modelname          : any = ''
+    freq               : str = 'A'
     eviews_run_lines   : list =field(default_factory=list)
     model_all_about    : dict = field(default_factory=dict,init=False)
     start              : any = None    # start of testing if not overruled by mfmsa
@@ -243,7 +260,7 @@ class GrabWfModel():
         else:     
         # breakpoint()
             wf2name,self.modelname  = wf1_to_wf2(self.filename ,modelname=self.modelname,eviews_run_lines= self.eviews_run_lines) 
-            self.model_all_about = wf2_to_clean(wf2name,modelname=self.modelname,save_file= self.save_file)
+            self.model_all_about = wf2_to_clean(wf2name,modelname=self.modelname,save_file= self.save_file,freq=self.freq)
             
             print(f'\nProcessing the model:{self.modelname}',flush=True)
             self.rawmodel_org = self.model_all_about['frml']
@@ -351,8 +368,8 @@ class GrabWfModel():
         # @ELEM and @DURING 
         # @ELEM and @DURING 
         rawmodel3 = nz.elem_trans(rawmodel2) 
-        rawmodel4 = re.sub(r'@DURING\( *([0-9]+) *\)', r'during_\1',rawmodel3) 
-        rawmodel5 = re.sub(r'@DURING\( *([0-9]+) *([0-9]+) *\)', r'during_\1_\2',rawmodel4) 
+        rawmodel4 = re.sub(r'@DURING\( *([0-9Q]+) *\)', r'during_\1',rawmodel3) 
+        rawmodel5 = re.sub(r'@DURING\( *([0-9Q]+) *([0-9Q]+) *\)', r'during_\1_\2',rawmodel4) 
         
         # during check 
         ldur = '\n'.join(l for l in rawmodel5.split('\n') if '@DURING' in l)
@@ -463,6 +480,9 @@ class GrabWfModel():
     def dfmodel(self):
         '''The original input data enriched with during variablees, variables containing 
         values for specific historic years and model specific transformation '''
+        per_transform  = lambda p: int(p) if self.freq== 'A' else p
+
+
         # Now the data 
         df =  self.model_all_about['data']
         # breakpoint()
@@ -475,9 +495,9 @@ class GrabWfModel():
 
             value_vars = self.mmodel.vlist('*_value_*')
             # print(f'{value_vars=}')
-            for var,val,year in (v.rsplit('_',2) for v in value_vars) : 
-                # print(f' {var=} {val=} {year=} {int(year)=}  var=  {var}_{val}_{year}')
-                df.loc[:,f'{var}_{val}_{year}'] = df.loc[int(year),var]
+            for var,val,per in (v.rsplit('_',2) for v in value_vars) : 
+                # print(f' {var=} {val=} {per=} {int(per)=}  var=  {var}_{val}_{per}')
+                df.loc[:,f'{var}_{val}_{per}'] = df.loc[int(per) if self.freq== 'A' else per ,var]
             
         
         self.showvaluevars = df[value_vars] 
@@ -492,9 +512,9 @@ class GrabWfModel():
             # print(varname,dur,per)
             pers = per.split('_')
             if len(pers) == 1:
-                df.loc[int(pers[0]),varname] = 1
+                df.loc[per_transform(pers[0]),varname] = 1
             else:
-                df.loc[int(pers[0]):int(pers[1]),varname]=1.
+                df.loc[per_transform(pers[0]):per_transform(pers[1]),varname]=1.
         self.showduringvars = df[during_vars] 
         
         if self.make_fitted:
@@ -580,7 +600,7 @@ if __name__ == '__main__':
     
     
     #%% Testing 
-    if 0:
+    if 1:
         pak_trans = lambda input : input.replace('- 01*D(','-1*D(')                
          
     
@@ -603,6 +623,7 @@ if __name__ == '__main__':
         
         cmodel = GrabWfModel(filename, 
                             # eviews_run_lines= eviews_run_lines,
+                            freq='A',
                             country_trans    =  country_trans,
                             country_df_trans =  country_df_trans,
                             make_fitted = True,
@@ -626,5 +647,4 @@ if __name__ == '__main__':
         mlookat(base_input,2020,2022)
         
         #%%
-        # mlookat.var_with_frmlname('fit')
-        # mlookat.equations
+        re.sub(r'@DURING\( *([0-9q]+) *\)', r'during_\1','0.755095546689654*@DURING("2020q4")'.replace('"',' ')) 
