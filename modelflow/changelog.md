@@ -138,4 +138,5 @@ keep_plot revised
 figsave revised 
 .pcim is default extension of dumped files 
 dumped file are default to zipped content
+get_eigenvectors to get_eigenvalues
 

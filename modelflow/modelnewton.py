@@ -630,7 +630,7 @@ class newton_diff():
     
     
 
-    def get_eigenvectors(self, periode=None, asdf=True, filnan=False, silent=False, dropvar=None, dropvar_nr=0):
+    def get_eigenvalues (self, periode=None, asdf=True, filnan=False, silent=False, dropvar=None, dropvar_nr=0):
         """
         Calculate and return the eigenvectors based on the companion matrix for a dynamic system.
     
@@ -692,7 +692,7 @@ class newton_diff():
             
         else:
             A_dic = {date: {lag: df.drop(index=dropvar,columns=dropvar) for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
-            # print(f'{dropvar_nr} {dropvar}')
+            print(f'{dropvar_nr} {dropvar}')
         # breakpoint()    
         xlags = sorted([lag for lag in first_element(A_dic).keys() if lag !='lag=0'],key=lambda lag:int(lag.split('=')[1]),reverse=True)
         number=len(xlags)
@@ -779,12 +779,12 @@ Note:
 The function is computationally intensive and can take significant time for larger systems.
         """
         if not hasattr(self, 'eig_dic'):
-            _ = self.get_eigenvectors(filnan = True,silent=False,asdf=1)
+            _ = self.get_eigenvalues (filnan = True,silent=False,asdf=1)
         
         name_to_loop =[n for i,n in enumerate(self.varnames) if i < maxnames and not n.endswith('_FITTED') ]
-        base_dict = {'NONE' : self.get_eigenvectors(dropvar=None )}
+        base_dict = {'NONE' : self.get_eigenvalues (dropvar=None )}
         print(f'Calculating eigenvalues of {len(name_to_loop)}  different matrices takes time, so make cup of coffee and a take a short nap')
-        jackknife_dict = {f'{name}': self.get_eigenvectors(dropvar=name)
+        jackknife_dict = {f'{name}': self.get_eigenvalues (dropvar=name)
                     for name in (tqdm(name_to_loop) if progressbar else name_to_loop)}
         return {**base_dict, **jackknife_dict} 
 
@@ -967,8 +967,19 @@ This method is useful for temporal analysis of the system's stability, focusing 
     
         return fig
     
-    def eigplot_all(self,eig_dic,size=(4,3),maxfig=6):
-        maxaxes = min(maxfig,len(eig_dic))
+    def eigplot_all(self,eig_dic,periode=None,size=(4,3),maxfig=6):
+        
+        _per_first = periode if type(periode) != type(None) else self.mmodel.current_per  
+        
+        if hasattr(_per_first,'__iter__'):
+            _per  = _per_first
+        else:
+            _per = [_per_first]
+
+        plot_dic = {p : v for p,v in eig_dic.items() if p in _per }
+        
+        
+        maxaxes = min(maxfig,len(plot_dic))
         colrow = 2
         ncols = min(colrow,maxaxes)
         nrows=-((-maxaxes)//ncols)
@@ -977,8 +988,8 @@ This method is useful for temporal analysis of the system's stability, focusing 
         spec = mpl.gridspec.GridSpec(ncols=ncols,nrows=nrows,figure=fig)
         # breakpoint()
         fig.suptitle('Eigenvalues',fontsize=20)
-
-        for i,(key,w) in enumerate(eig_dic.items()):
+        
+        for i,(key,w) in enumerate(plot_dic.items()):
             if i >= maxaxes:
                 break
             col = i%colrow
@@ -1020,7 +1031,7 @@ if __name__ == '__main__':
     melt = newton_all.get_diff_melted_var()
     tt = newton_all.get_diff_mat_all_1per(2002,asdf=True)
     #newton_all.show_diff()
-    cc = newton_all.get_eigenvectors(asdf=True,periode=2010)
+    cc = newton_all.get_eigenvalues (asdf=True,periode=2010)
     fig= newton_all.eigplot_all(cc,maxfig=3)
     #%% more testing 
     if 1:
