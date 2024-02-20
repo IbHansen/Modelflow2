@@ -74,13 +74,53 @@ class diff_value(diff_value_base):
                
 
 class newton_diff():
-    ''' Class to handle newron solving 
-    this is for un-nomalized or normalized models ie models of the forrm 
+    ''' 
+    Class to handle Newton solving for un-normalized or normalized models, i.e., models of the form:
     
     0 = G(y,x)
     y = F(y,x)
     
-    ''' 
+    This class provides functionalities to differentiate model equations, analyze eigenvalues and eigenvectors, 
+    and provide utilities for solving dynamic systems through various approaches.
+    
+    Provided Functions:
+    - eigenvector_plot: Plot eigenvectors for a specified period.
+    - eigplot: Plot eigenvalues for a specific period in polar coordinates.
+    - eigplot_all: Plot all eigenvalues for specified periods in polar coordinates.
+    - eigplot_all0: Alternative method to plot all eigenvalues in polar coordinates.
+    - get_df_comp_dict: Get a dictionary of DataFrames representing companion matrices.
+    - get_df_eigen_dict: Get a dictionary of DataFrames containing eigenvalues and eigenvectors.
+    - get_diff_df_1per: Get a DataFrame of derivatives for one period.
+    - get_diff_df_tot: Get a DataFrame of stacked Jacobian matrices for the entire period range.
+    - get_diff_mat_1per: Get a dictionary of sparse matrices representing the Jacobian for one period.
+    - get_diff_mat_all_1per: Get a dictionary of all derivative matrices for one period, including all lags.
+    - get_diff_mat_tot: Get a sparse matrix representing the stacked Jacobian for the entire period range.
+    - get_diff_melted: Get a "melted" DataFrame of derivatives suitable for creating sparse matrices.
+    - get_diff_melted_var: Get a melted DataFrame of derivatives including variable information.
+    - get_diff_values_all: Get all derivative values in a structured format.
+    - get_diffmodel: Generate a model which calculates the partial derivatives of the original model.
+    - get_eigen_jackknife: Perform a jackknife analysis by computing eigenvalues with each variable excluded one at a time.
+    - get_eigen_jackknife_abs: Compute the absolute values of the largest eigenvalues from the jackknife analysis.
+    - get_eigen_jackknife_abs_select: Summarize the absolute largest eigenvalues for a specific year from the jackknife analysis.
+    - get_eigen_jackknife_df: Convert jackknife eigenvalue data into a DataFrame.
+    - get_eigenvalues: Calculate and return the eigenvectors based on the companion matrix for a dynamic system.
+    - get_feedback: Static method to return feedback on the max absolute eigenvector and its sign.
+    - get_solve1per: Get a solving function for one period using precomputed Jacobian matrices.
+    - get_solve1perlu: Get a LU decomposition-based solving function for one period.
+    - get_solvestacked: Get a solving function for the stacked system of equations.
+    - get_solvestacked_it: Get an iterative solving function for the stacked system using a specified solver.
+    - modeldiff: Differentiate model equations with respect to endogenous variables.
+    - show_diff: Display expressions for differential coefficients for specified variables.
+    - show_diff_latex: Display LaTeX-formatted differential expressions and possibly their values.
+    - show_stacked_diff: Show selected rows and columns of the stacked Jacobian as a DataFrame.
+    '''
+    
+    
+    def __init__(self, mmodel, df=None, endovar=None, onlyendocur=False, 
+                 timeit=False, silent=True, forcenum=False, per='', ljit=0, nchunk=None, endoandexo=False):
+        pass
+    # [Methods implementations]
+
     def __init__(self, mmodel, df = None , endovar = None,onlyendocur=False, 
                  timeit=False, silent = True, forcenum=False,per='',ljit=0,nchunk=None,endoandexo=False):
         """
@@ -571,8 +611,8 @@ class newton_diff():
             pvar_exo_plac = self.exoplacdic.get(i.pvar, 0) ) for i in col_vars]
             
             difres.columns = col_ident
+            difres = difres.copy() 
             difres.loc[:,'dates'] = difres.index
-
             dmelt = difres.melt(id_vars='dates')
             unfolded = pd.DataFrame( [asdict(i) for i in dmelt.variable.values])
             totalmelt = pd.concat([dmelt[['dates','value']],unfolded],axis=1)
@@ -692,7 +732,7 @@ class newton_diff():
             
         else:
             A_dic = {date: {lag: df.drop(index=dropvar,columns=dropvar) for lag,df in a_year.items() } for date,a_year in A_dic_gross.items() }
-            print(f'{dropvar_nr} {dropvar}')
+            # print(f'{dropvar_nr} {dropvar}')
         # breakpoint()    
         xlags = sorted([lag for lag in first_element(A_dic).keys() if lag !='lag=0'],key=lambda lag:int(lag.split('=')[1]),reverse=True)
         number=len(xlags)
@@ -717,10 +757,11 @@ class newton_diff():
             calc_eig      = lambda sparse_matrix : lib.linalg.eigs(sparse_matrix)
             calc_eig_reserve  = lambda sparse_matrix : sp.linalg.eig(sparse_matrix.toarray())
             
-        I=lib.eye(dim)
+        I=lib.eye(dim)*1.0000
      
         zeros = lib.zeros((dim,dim))
-       
+        self.A_dic = A_dic 
+
                                       # a idendity matrix
         AINV_dic = {date: np_to_df(lib.linalg.inv(I-A['lag=0']))
                     for date,A in A_dic.items()}  
@@ -763,7 +804,7 @@ class newton_diff():
         return eig_dic
     
     @lru_cache(maxsize=None)   
-    def get_eigen_jackknife(self,maxnames = 200_000,progressbar=True):
+    def get_eigen_jackknife(self,maxnames = 200_000,periode=None,progressbar=True):
         """
 Compute and cache eigenvalues for matrices with each variable excluded one at a time, up to a maximum number.
 
@@ -782,14 +823,17 @@ The function is computationally intensive and can take significant time for larg
             _ = self.get_eigenvalues (filnan = True,silent=False,asdf=1)
         
         name_to_loop =[n for i,n in enumerate(self.varnames) if i < maxnames and not n.endswith('_FITTED') ]
-        base_dict = {'NONE' : self.get_eigenvalues (dropvar=None )}
         print(f'Calculating eigenvalues of {len(name_to_loop)}  different matrices takes time, so make cup of coffee and a take a short nap')
-        jackknife_dict = {f'{name}': self.get_eigenvalues (dropvar=name)
+        jackknife_dict = {f'{name}': self.get_eigenvalues (dropvar=name,periode=periode)
                     for name in (tqdm(name_to_loop) if progressbar else name_to_loop)}
+        
+        base_dict = {'NONE' : self.get_eigenvalues (dropvar=None,periode=periode  )} # we læeave the properties clean 
+
+        
         return {**base_dict, **jackknife_dict} 
 
     @lru_cache(maxsize=None)   
-    def get_eigen_jackknife_df(self,maxnames = 200_000,progressbar=True):
+    def get_eigen_jackknife_df(self,maxnames = 200_000,progressbar=True,periode=None):
         """
     Convert the eigenvalue data obtained from a jackknife analysis into a pandas DataFrame, including additional columns for the absolute length, real, and imaginary parts of the eigenvalues.
 
@@ -808,7 +852,7 @@ The function is computationally intensive and can take significant time for larg
     - The function is especially useful for detailed analysis and visualization of the eigenvalues obtained from the jackknife analysis.
     """
         
-        jackdict = self.get_eigen_jackknife(maxnames = maxnames,progressbar=progressbar)
+        jackdict = self.get_eigen_jackknife(maxnames = maxnames,progressbar=progressbar,periode=periode)
         
         flattened_data = [{'excluded': scenario, 'year': year, 'index': i, 'value': value}
                   for scenario, years in jackdict.items()
@@ -853,6 +897,106 @@ The function is computationally intensive and can take significant time for larg
                for date,eigenvalues in alldates.items()} 
                for name,alldates in base.items()}
         return res
+
+
+    @staticmethod
+    def jack_largest_reduction(jackdf, eigenvalue_row=0, periode=None):
+        """
+        Identifies the largest reduction in eigenvalue magnitude for a specified period
+        and optionally focuses on the whole model's eigenvalue reduction.
+        
+        This function sorts and filters the input DataFrame to find the nth largest
+        reduction in eigenvalue magnitude for a given period. It can also be restricted
+        to only consider the "whole" model scenario (where no variables are excluded).
+    
+        Parameters:
+        - jackdf (DataFrame): A DataFrame containing jackknife analysis results,
+          including eigenvalues, their real and imaginary parts, and descriptions of
+          exclusions.
+        - eigenvalue_row (int, optional): The row index of the eigenvalue to analyze.
+          Defaults to 0, which typically represents the largest magnitude eigenvalue.
+        - periode (int/str, optional): The specific period (year) to analyze. If None,
+          the function uses the first year found in the DataFrame. Defaults to None.
+        
+        Returns:
+        DataFrame: A sorted DataFrame with the nth largest length (eigenvalue magnitude)
+        for each excluded variable or condition, including the year, exclusion identifier,
+        length (magnitude of the eigenvalue), description of the exclusion, and the real
+        and imaginary parts of the eigenvalue. The row for 'excluded == "NONE"' is moved to the front.
+    
+        Raises:
+        Exception: If the specified period is not found in the DataFrame's years.
+        
+        The function is useful for analyzing the stability of a model by examining
+        how the exclusion of variables affects the largest (or specified nth largest)
+        eigenvalue's magnitude, which is indicative of the system's dynamic properties.
+        """
+        years = jackdf.year.unique()
+    
+        # Determine the year to analyze based on the input
+        if years[0] == periode or type(periode) == type(None): 
+            year = years[0]
+        elif periode in years: 
+            year = periode
+        else: 
+            raise Exception('No such year')
+    
+        # Filter DataFrame based on the specified year and condition
+        df = jackdf.query('year == @year')
+    
+        df_sorted = df.sort_values(by=['year', 'excluded', 'length'], ascending=[True, True, False])
+        nth_largest_length = df_sorted.groupby(['year', 'excluded']).nth(eigenvalue_row).reset_index()
+    
+        # Further refine and sort the resulting DataFrame
+        nth_largest_length = nth_largest_length[['year', 'excluded', 'length', 'excluded_description', 'realvalue', 'imagvalue']].sort_values('length')
+    
+        # Move the row where 'excluded == "NONE"' to the front
+        none_row = nth_largest_length.query('excluded  == "NONE" ')
+        others = nth_largest_length.query('excluded  != "NONE" ')
+        new_nth_largest_length = pd.concat([none_row, others]).reset_index(drop=True)
+    
+        return new_nth_largest_length
+
+
+    @staticmethod
+    def jack_largest_reduction_plot(jackdf, eigenvalue_row=0, periode=None):
+        """
+        Creates a Plotly Express strip plot visualizing the largest reduction in eigenvalue magnitude,
+        highlighting the 'NONE' category with a different color.
+    
+        Parameters:
+        - jackdf (DataFrame): A DataFrame containing jackknife analysis results, including eigenvalues,
+          their real and imaginary parts, and descriptions of exclusions.
+        - eigenvalue_row (int, optional): The row index of the eigenvalue to analyze. Defaults to 0,
+          which typically represents the largest magnitude eigenvalue.
+        - periode (int/str, optional): The specific period (year) to analyze. If None, the function
+          uses the first year found in the DataFrame. Defaults to None.
+        - only_whole (bool, optional): If True, the analysis is restricted to the "whole" model scenario
+          (exclusion labeled as "NONE"). Defaults to False.
+    
+        The function creates an interactive strip plot with points colored differently to highlight the
+        'NONE' exclusion category, enhancing the visualization of eigenvalue lengths by exclusion.
+        """
+        # Process the data using jack_largest_reduction logic (or call the function if already defined)
+        import plotly.express as px
+        result_df = __class__.jack_largest_reduction(jackdf, eigenvalue_row, periode)
+        
+        # Create a new column for coloring
+        result_df['Highlight'] = result_df['excluded'].apply(lambda x: 'NONE' if x == 'NONE' else 'Other')
+        
+        # Create the strip plot
+        fig = px.strip(result_df, x='length', y='excluded', orientation='h', color='Highlight',
+                       title='Impact on eigenvalue by equation Exclusion',
+                       color_discrete_map={'NONE': 'red', 'Other': 'blue'})  # Customize colors
+        
+        # Update layout
+        fig.update_layout(xaxis_title='Length of Eigenvalue',
+                          yaxis_title='',
+                          xaxis_tickangle=-45,
+                          yaxis_showticklabels=False)
+        
+        # Show the plot
+        fig.show()
 
    
     def get_eigen_jackknife_abs_select(self,year=2023,largest=20,maxnames = 200_000):

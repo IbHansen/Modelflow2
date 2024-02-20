@@ -2730,7 +2730,7 @@ class Modify_Mixin():
             
             
         newfrmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene and not k in vars_todelete} # frml's in the existing model 
-        neweviewsdict  = {k: v for k,v in self.eviews_dict if not  k in vars_todelete}    
+        neweviewsdict  = {k: v for k,v in self.eviews_dict.items()  if not  k in vars_todelete}    
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
         newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}'
                                       ,funks=self.funks,
@@ -7747,11 +7747,15 @@ class Fix_Mixin():
 class Stability_Mixin():
     
     
+    def get_newton(self,**kwargs):
+        res = newton_diff(self,**kwargs)
+        return res
+    
     def get_eigenvalues(self,forcenum = False,  silent = True ,dropvar=None):
         self.stability_newton = newton_diff(self,forcenum = forcenum, silent = silent )
         self.eigenvalues = self.stability_newton.get_eigenvalues(dropvar=dropvar)
         
-        return self.eigenvectors
+        return self.eigenvalues
      
     
     def get_df_eigen_dict(self,forcenum = False,  silent = True ,dropvar=None):
