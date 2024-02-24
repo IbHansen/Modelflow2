@@ -140,4 +140,5 @@ figsave revised
 dumped file are default to zipped content
 get_eigenvectors to get_eigenvalues
 eqdelete fixed a problem when deleting in eviews frml 
+.jack_largest_reduction_plot and .jack_largest_reduction
 

@@ -3056,23 +3056,25 @@ class Graph_Mixin():
             self.fblist,self.daglist = self.get_minimal_feedback_set(this)
             # Find the feedback graph
             if 1:
-                self.FVS_graph = nx.DiGraph()
-    
-                # Add only the feedback vertices to the new graph
-                self.FVS_graph.add_nodes_from(self.fblist)
-                
-                # Optionally, add edges between these vertices if they exist in the original graph
-                for u in self.fblist:
-                    for v in self.fblist:
-                        if self.coregraph.has_edge(u, v):
-                            self.FVS_graph.add_edge(u, v)
-                
-                h,a = nx.hits(self.FVS_graph)
-                self.fbhubs =  {k:v for k,v in sorted( h.items(), key=lambda x: x[1], reverse=True)}
-                self.fbaut    =  {k:v for k,v in sorted( a.items(), key=lambda x: x[1], reverse=True)}
-                
-                self.fblist = [v for v in self.fbhubs.keys()]
-            
+                try:
+                    self.FVS_graph = nx.DiGraph()
+        
+                    # Add only the feedback vertices to the new graph
+                    self.FVS_graph.add_nodes_from(self.fblist)
+                    
+                    # Optionally, add edges between these vertices if they exist in the original graph
+                    for u in self.fblist:
+                        for v in self.fblist:
+                            if self.coregraph.has_edge(u, v):
+                                self.FVS_graph.add_edge(u, v)
+                    
+                    h,a = nx.hits(self.FVS_graph)
+                    self.fbhubs =  {k:v for k,v in sorted( h.items(), key=lambda x: x[1], reverse=True)}
+                    self.fbaut    =  {k:v for k,v in sorted( a.items(), key=lambda x: x[1], reverse=True)}
+                    
+                    self.fblist = [v for v in self.fbhubs.keys()]
+                except:    
+                    ...
             if  self.use_fbmin:
                 
                 self._corevar =   self.daglist +  self.fblist 
@@ -5198,6 +5200,7 @@ class Display_Mixin():
     def keep_show(self,*args,**kwargs):
        import modelwidget_input
        widget = modelwidget_input.keep_plot_widget(self,*args,**kwargs)
+       # print(f'widget called {kwargs=}')
        return widget
        
     def df_show(self,*args,**kwargs):

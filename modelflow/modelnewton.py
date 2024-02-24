@@ -900,15 +900,11 @@ The function is computationally intensive and can take significant time for larg
 
 
     @staticmethod
-    def jack_largest_reduction(jackdf, eigenvalue_row=0, periode=None):
+    def jack_largest_reduction(jackdf, eigenvalue_row=0, periode=None,imag_only=False):
         """
         Identifies the largest reduction in eigenvalue magnitude for a specified period
-        and optionally focuses on the whole model's eigenvalue reduction.
+        and optionally focuses on eigenvalues with imaginary parts if imag_only is True.
         
-        This function sorts and filters the input DataFrame to find the nth largest
-        reduction in eigenvalue magnitude for a given period. It can also be restricted
-        to only consider the "whole" model scenario (where no variables are excluded).
-    
         Parameters:
         - jackdf (DataFrame): A DataFrame containing jackknife analysis results,
           including eigenvalues, their real and imaginary parts, and descriptions of
@@ -916,21 +912,19 @@ The function is computationally intensive and can take significant time for larg
         - eigenvalue_row (int, optional): The row index of the eigenvalue to analyze.
           Defaults to 0, which typically represents the largest magnitude eigenvalue.
         - periode (int/str, optional): The specific period (year) to analyze. If None,
-          the function uses the first year found in the DataFrame. Defaults to None.
+          the function processes the first year found in the DataFrame. Defaults to None.
+        - imag_only (bool, optional): If True, only considers eigenvalues with non-zero
+          imaginary parts for analysis. Defaults to False.
         
         Returns:
         DataFrame: A sorted DataFrame with the nth largest length (eigenvalue magnitude)
         for each excluded variable or condition, including the year, exclusion identifier,
         length (magnitude of the eigenvalue), description of the exclusion, and the real
         and imaginary parts of the eigenvalue. The row for 'excluded == "NONE"' is moved to the front.
-    
+        
         Raises:
         Exception: If the specified period is not found in the DataFrame's years.
-        
-        The function is useful for analyzing the stability of a model by examining
-        how the exclusion of variables affects the largest (or specified nth largest)
-        eigenvalue's magnitude, which is indicative of the system's dynamic properties.
-        """
+        """        
         years = jackdf.year.unique()
     
         # Determine the year to analyze based on the input
@@ -942,7 +936,7 @@ The function is computationally intensive and can take significant time for larg
             raise Exception('No such year')
     
         # Filter DataFrame based on the specified year and condition
-        df = jackdf.query('year == @year')
+        df = jackdf.query('year == @year & imagvalue != 0.0 ') if imag_only else jackdf.query('year == @year')
     
         df_sorted = df.sort_values(by=['year', 'excluded', 'length'], ascending=[True, True, False])
         nth_largest_length = df_sorted.groupby(['year', 'excluded']).nth(eigenvalue_row).reset_index()
@@ -958,47 +952,136 @@ The function is computationally intensive and can take significant time for larg
         return new_nth_largest_length
 
 
-    @staticmethod
-    def jack_largest_reduction_plot(jackdf, eigenvalue_row=0, periode=None):
+
+    def jack_largest_reduction_plot(self,jackdf, eigenvalue_row=0, periode=None,imag_only=False):
         """
-        Creates a Plotly Express strip plot visualizing the largest reduction in eigenvalue magnitude,
-        highlighting the 'NONE' category with a different color.
-    
+        Creates an interactive Plotly plot to visualize the reduction in eigenvalue magnitude across different exclusions,
+        highlighting the 'NONE' exclusion category with a distinct color and displaying detailed information on hover.
+        Optionally focuses on eigenvalues with imaginary parts if imag_only is True.
+        
         Parameters:
-        - jackdf (DataFrame): A DataFrame containing jackknife analysis results, including eigenvalues,
-          their real and imaginary parts, and descriptions of exclusions.
-        - eigenvalue_row (int, optional): The row index of the eigenvalue to analyze. Defaults to 0,
-          which typically represents the largest magnitude eigenvalue.
-        - periode (int/str, optional): The specific period (year) to analyze. If None, the function
-          uses the first year found in the DataFrame. Defaults to None.
-        - only_whole (bool, optional): If True, the analysis is restricted to the "whole" model scenario
-          (exclusion labeled as "NONE"). Defaults to False.
-    
-        The function creates an interactive strip plot with points colored differently to highlight the
-        'NONE' exclusion category, enhancing the visualization of eigenvalue lengths by exclusion.
+        - jackdf (DataFrame): A DataFrame containing the results of a jackknife analysis, including eigenvalues and their
+          descriptions. The DataFrame is expected to have at least the columns 'excluded', 'length', 'excluded_description',
+          'realvalue', and 'imagvalue'.
+        - eigenvalue_row (int, optional): Specifies the row index of the eigenvalue to analyze. Defaults to 0, which typically
+          corresponds to the largest magnitude eigenvalue.
+        - periode (int/str, optional): The specific period (year) to analyze. If None, the function processes data without
+          filtering by period. Defaults to None.
+        - imag_only (bool, optional): If True, only considers eigenvalues with non-zero imaginary parts for analysis.
+          Defaults to False.
+        
+        The function processes the input DataFrame to highlight the 'NONE' category in red and all other categories in blue.
+        It then creates a Plotly FigureWidget to plot these data points as markers on a scatter plot. The y-axis tick labels are
+        hidden to emphasize the data points rather than the categorical labels.
+        
+        An HTML widget is used to display detailed information about a data point (exclusion description, length, and imaginary
+        part of the eigenvalue) when the user hovers over it. This interactive feature provides a deeper insight into the impact
+        of each exclusion on the eigenvalue magnitude.
+        
+        Displays:
+        - An interactive Plotly scatter plot within the Jupyter notebook.
+        - A dynamic HTML widget that updates with detailed information about the hovered data point.
         """
-        # Process the data using jack_largest_reduction logic (or call the function if already defined)
-        import plotly.express as px
-        result_df = __class__.jack_largest_reduction(jackdf, eigenvalue_row, periode)
+        import plotly.graph_objs as go
+        from ipywidgets import VBox, HTML, Textarea, Layout 
         
-        # Create a new column for coloring
+        result_df = __class__.jack_largest_reduction(jackdf, eigenvalue_row=eigenvalue_row, periode=periode,imag_only=imag_only)
+        #print(result_df)
+        
+        # Assign highlight colors based on the 'excluded' category
         result_df['Highlight'] = result_df['excluded'].apply(lambda x: 'NONE' if x == 'NONE' else 'Other')
+        # Create a combined highlight column based on 'excluded' and 'imagvalue'
+        def get_highlight(row):
+            if row['excluded'] == 'NONE' and row['imagvalue'] != 0.0:
+                return 'NONE (Non-zero Imag)'
+            elif row['excluded'] == 'NONE' and row['imagvalue'] == 0.0:
+                return 'NONE (Zero Imag)'
+            elif row['imagvalue'] != 0.0:
+                return 'Other (Non-zero Imag)'
+            else:
+                return 'Other (Zero Imag)'
         
-        # Create the strip plot
-        fig = px.strip(result_df, x='length', y='excluded', orientation='h', color='Highlight',
-                       title='Impact on eigenvalue by equation Exclusion',
-                       color_discrete_map={'NONE': 'red', 'Other': 'blue'})  # Customize colors
+        result_df['CombinedHighlight'] = result_df.apply(get_highlight, axis=1)
         
-        # Update layout
-        fig.update_layout(xaxis_title='Length of Eigenvalue',
-                          yaxis_title='',
-                          xaxis_tickangle=-45,
-                          yaxis_showticklabels=False)
+        # Define color map for the combined highlight
+        color_map = {
+            'NONE (Non-zero Imag)': 'pink',
+            'NONE (Zero Imag)': 'red',
+            'Other (Non-zero Imag)': 'green',
+            'Other (Zero Imag)': 'blue'
+        }
         
-        # Show the plot
-        fig.show()
+        # Create the Plotly FigureWidget using the combined highlight for color mapping
+        fig = go.FigureWidget(data=[
+            go.Scatter(
+                x=result_df['length'],
+                y=result_df['excluded'],
+                mode='markers',
+                marker=dict(color=result_df['CombinedHighlight'].map(color_map))
+            )
+        ])
+
+
+        # Create the Plotly FigureWidget with customized marker colors
+        # fig = go.FigureWidget(data=[
+        #     go.Scatter(x=result_df['length'], y=result_df['excluded'], mode='markers',
+        #                marker=dict(color=result_df['Highlight'].map({'NONE': 'red', 'Other': 'blue'})))
+        # ])
+        
+        # Update layout to hide y-axis tick labels for a cleaner presentation
+        fig.update_layout(
+            title={
+                'text': f"Eigenvalue Lengths by excluded equation. {eigenvalue_row}'th largest eigenvalues, {'Only eigenvalues with imaginary values' if imag_only else''}",
+                'y':0.9,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            yaxis=dict(showticklabels=False)
+        )
+        
+        # Initialize the HTML widget for displaying hover information
+        textarea = Textarea(
+                value="",
+                placeholder='',
+                description='Info:',
+                disabled=False,
+                layout = {'width': '95%', 'height': '100px'} ,
+                style = {'description_width': '5%'},
+                # layout={'width': '100%', 'height': '100px'}  # Adjust the size as needed
+        )
+        info2 = f"Length: {result_df.iloc[0]['length']:.2f}   Imag: {result_df.iloc[0]['imagvalue']:.2f}"+'\n'
+
+        textarea.value = 'The whole model, no equation excluded\n' + info2 
+
+
+        
+        # Define the function to update the info widget upon hovering over a data point
+        def update_info(trace, points, state):
+            if points.point_inds:
+                ind = points.point_inds[0]  # Index of the hovered point
+                # Format the information to display
+                
+                info1 = f"Excluded equation: {result_df.iloc[ind]['excluded_description']}"+'\n'
+                info2 = f"Length: {result_df.iloc[ind]['length']:.2f}   Imag: {result_df.iloc[ind]['imagvalue']:.2f}"+'\n'
+
+                if result_df.iloc[ind]['excluded'] == 'NONE':
+                    textarea.value = 'The whole model, no equation excluded\n' + info2 
+                else:
+                    textarea.value = info1 + info2 + self.mmodel.allvar[result_df.iloc[ind]['excluded']]['frml']
+        
+        # Bind the on_hover event to the update_info function for each trace
+        
+        for trace in fig.data:
+            trace.on_hover(update_info)
+        
+        # Combine the plot and info widget in a vertical layout and display them
+        display(VBox([fig,textarea]))
 
    
+
+
+
     def get_eigen_jackknife_abs_select(self,year=2023,largest=20,maxnames = 200_000):
         """
 Select and summarize the absolute largest eigenvalues for a specific year from the jackknife analysis.
@@ -1147,6 +1230,239 @@ This method is useful for temporal analysis of the system's stability, focusing 
 
     
         return fig
+    
+    
+    def plot_eigenvalues_polar(self,eig_dic):
+        import plotly.graph_objects as go
+        import numpy as np
+        from ipywidgets import  Dropdown, Output, VBox, HTML
+        from IPython.display import display
+        
+        
+        year_dropdown = Dropdown(options=list(eig_dic.keys()), description='Time:')
+        info_box = HTML(value="Hover over a point to see details.")
+        plot_output = Output()
+    
+        def plot_eigenvalues_polar_vectors(year):
+            eigenvalues = eig_dic[year]
+    
+            with plot_output:
+                plot_output.clear_output(wait=True)
+                r_values = [np.abs(ev) for ev in eigenvalues]  # Magnitudes for the polar plot
+                theta_values = [np.angle(ev, deg=True) for ev in eigenvalues]  # Angles for the polar plot
+                
+                # Prepare data for the plot, repeating magnitude and angle for each eigenvalue, and adding breaks (None)
+                r_plot_values = [val for pair in zip([0]*len(r_values), r_values, [None]*len(r_values)) for val in pair]
+                theta_plot_values = [val for pair in zip(theta_values, theta_values, [None]*len(theta_values)) for val in pair]
+    
+                fig = go.FigureWidget(go.Scatterpolar(
+                    r=r_plot_values,
+                    theta=theta_plot_values,
+                    mode='lines+markers',
+                    marker=dict(color='blue', size=5),
+                    line=dict(color='blue')
+                ))
+    
+                fig.update_layout(
+                    title=f'Polar Plot of Eigenvalue Vectors for Year {year}',
+                    polar=dict(
+                        radialaxis=dict(visible=True, range=[0, max(r_values) * 1.1]),
+                        angularaxis=dict(direction='clockwise', thetaunit='degrees', rotation=0)
+                    ),
+                    showlegend=False
+                )
+    
+                def update_info(trace, points, _):
+                    if points.point_inds:
+                        # Each eigenvalue is represented by 3 points in the plot data (start, end, None), calculate the index accordingly
+                        ind = points.point_inds[0] // 3
+                        ev = eigenvalues[ind]  # Get the eigenvalue
+                        info_box.value = f"Index: {ind}, Real: {ev.real:.2f}, Imag: {ev.imag:.2f}"
+    
+                for trace in fig.data:
+                    trace.on_hover(update_info)
+    
+                display(fig)
+    
+        def on_year_change(change):
+            plot_eigenvalues_polar_vectors(change.new)
+    
+        year_dropdown.observe(on_year_change, names='value')
+        display(VBox([year_dropdown, info_box, plot_output]))
+        plot_eigenvalues_polar_vectors(year_dropdown.value)
+
+    def plot_eigenvalues_polar_both(self,eig_dic):
+        import plotly.graph_objects as go
+        import numpy as np
+        from ipywidgets import  Dropdown, Output, VBox, HTML, HBox, IntSlider,Select,Textarea,Checkbox
+        from IPython.display import display
+        
+        
+        year_dropdown = Dropdown(options=list(eig_dic.keys()), description='Time:')
+        info_box = HTML(value="Hover over a point to see details.")
+        plot_output = Output()
+        
+        def get_a_eigenvalue_vector(eigenvalues_vectors,year):
+            
+            compabs = lambda complex: [abs(value) for index,value in complex.items()]
+            
+            eig_gt = (eigenvalues_vectors[2023].   
+                        T.        # Transpose as we query and eval on columns 
+                        eval('absolute_value=@compabs(Eigenvalues)'). # calculate the absolute value of the eigenvalue 
+                        query('absolute_value > 0.01').
+                        sort_values(by='absolute_value',ascending=False).reset_index(drop=True).    # Transpose again. 
+                        drop('absolute_value',axis=1)                # We dont need the absolute value anymore, so the column is dropped. 
+             )
+    
+            return eig_gt.iloc[:,0],eig_gt.iloc[:,1:].abs() 
+
+        
+    
+        def plot_eigenvalues_polar_vectors(year):
+            eigenvalues,eigenvectors = get_a_eigenvalue_vector(eig_dic,year)
+            valueslider = IntSlider(
+                    value=0,
+                    min=0,
+                    max=len(eigenvalues)-1,
+                    step=1,
+                    description='Number:',
+                    disabled=False,
+                    continuous_update=False,
+                    orientation='vertical',
+                    readout=True,
+                    readout_format='d'
+                )
+            
+            var_info = Textarea(
+                    value="",
+                    placeholder='',
+                    description='Info:',
+                    disabled=False,
+                    layout = {'width': '95%', 'height': '100px'} ,
+                    style = {'description_width': '5%'},
+                    # layout={'width': '100%', 'height': '100px'}  # Adjust the size as needed
+            )
+
+            wxopen = Checkbox(value=False,description = 'Open plot widget',disabled=False,
+                                         layout={'width':'70%'}    ,style={'description_width':'40%'})
+            
+            with plot_output:
+                plot_output.clear_output(wait=True)
+                r_values = [np.abs(ev) for ev in eigenvalues]  # Magnitudes for the polar plot
+                theta_values = [np.angle(ev, deg=True) for ev in eigenvalues]  # Angles for the polar plot
+                
+                # Prepare data for the plot, repeating magnitude and angle for each eigenvalue, and adding breaks (None)
+                r_plot_values = [val for pair in zip([0]*len(r_values), r_values, [None]*len(r_values)) for val in pair]
+                theta_plot_values = [val for pair in zip(theta_values, theta_values, [None]*len(theta_values)) for val in pair]
+    
+                fig = go.FigureWidget(go.Scatterpolar(
+                    r=r_plot_values,
+                    theta=theta_plot_values,
+                    mode='lines+markers',
+                    marker=dict(color='blue', size=15),
+                    line=dict(color='blue')
+                ))
+                fig.update_layout(
+                title_text='',  # Ensure no title is set
+                margin=dict(l=20, r=20, t=20, b=20)  # Adjust margins around the plot
+                  )
+
+                fig.update_layout(
+                   # title=f'Polar Plot of Eigenvalue Vectors for Year {year}',
+                    polar=dict(
+                        radialaxis=dict(visible=True, range=[0, max(r_values) * 1.1]),
+                        angularaxis=dict(direction='clockwise', thetaunit='degrees', rotation=0)
+                    ),
+                    showlegend=False
+                )
+                keepbox = None
+                v_dropdown_description = HTML(value="<strong>Eigenvectors:</strong>", placeholder='',description='',)
+                v_dropdown = Select(description='',rows=14)
+                box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wxopen])]),var_info])
+                
+                
+                
+                def vector_info(selected_index):
+                    nonlocal keepbox, box
+                    this_vector = eigenvectors.iloc[selected_index,:].sort_values(ascending=False)
+                    select_options = [(f"{index} - {value:.2f}", f"{index}") for index, value in this_vector.items()  if value >= 0.01]
+                    v_dropdown.options = select_options
+                    
+                    gross_varnames = [v.split('(')[0] for t,v in select_options]
+                    varnames = ' '.join(list(dict.fromkeys(gross_varnames)))  
+                    keepbox = self.mmodel.keep_show(use_var_groups=False,selectfrom = varnames,use_smpl=True )
+                    plot_output.clear_output(wait=True)
+
+                    box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wxopen])]),var_info,keepbox.datawidget])
+                    display(box)
+
+                
+                vector_info(0)
+                
+
+                def info_show(ind):
+                        ev = eigenvalues[ind]  # Get the eigenvalue
+                        info_box.value = f"Index: {ind}, Real: {ev.real:.2f}, Imag: {ev.imag:.2f}"
+                        vector_info(ind)
+    
+                def update_info(trace, points, _):
+                    if points.point_inds:
+                        # Each eigenvalue is represented by 3 points in the plot data (start, end, None), calculate the index accordingly
+                        ind = points.point_inds[0] // 3
+                        valueslider.value = ind 
+                        info_show(ind)
+                    
+                        
+                def on_v_dropdown_change(change): 
+                    # print(f'{change=}')
+                    # print(f'{change.owner=}')
+                    # print(f'{change.owner.options=}')
+                    # print(f'{change.new=}' + '\n')
+                    if type(change.new) == dict and len(change.new ): 
+                        index=change.new['index']
+                        name = change.owner.options[index][1]
+                        varname = name.split('(')[0]
+                        info1 = f'{varname}: {self.mmodel.var_description[varname]}' +'\n'
+                        info2 = self.mmodel.allvar[varname]['frml']
+                        var_info.value=   info1  +  info2   
+                    
+                    
+                for trace in fig.data:
+                    trace.on_hover(update_info)
+                
+                
+                
+                
+                def on_slide_change(change): 
+                    # print(f'{change.new=} ')
+                    if type(change.new) == int: 
+                        selected_index = change.new
+                    else: 
+                        if len(change.new):
+                            selected_index = change.new['value']
+                        else: 
+                            return 
+                    # print(f'{change.new=} {selected_index=}')
+                    colors = ['red' if i == selected_index else 'green' for i in range(len(eigenvalues))]
+                    fig.data[0].marker.color = [color for pair in zip(colors, colors, colors) for color in pair]
+
+                    info_show(selected_index)
+                
+                valueslider.observe(on_slide_change)
+                
+                v_dropdown.observe(on_v_dropdown_change)
+                
+    
+                display(box)
+
+        def on_year_change(change):
+            plot_eigenvalues_polar_vectors(change.new)
+    
+        year_dropdown.observe(on_year_change, names='value')
+        display(VBox([year_dropdown, info_box, plot_output]))
+        plot_eigenvalues_polar_vectors(year_dropdown.value)
+
+    
 #%%    
 if __name__ == '__main__':
     #%% testing
