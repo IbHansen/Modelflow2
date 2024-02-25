@@ -700,7 +700,7 @@ class newton_diff():
         ...
          
         first_element = lambda dic: dic[list(dic.keys())[0]]  # first element in a dict 
-                
+        print('Calculate derivatives')        
         jacobiall = self.get_diff_mat_all_1per(periode,asdf=asdf)
         # breakpoint()
         if not silent: 
@@ -764,7 +764,7 @@ class newton_diff():
 
                                       # a idendity matrix
         AINV_dic = {date: np_to_df(lib.linalg.inv(I-A['lag=0']))
-                    for date,A in A_dic.items()}  
+                    for date,A in tqdm(A_dic.items(),'Invert (I-A)')}  
         
         C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items() if lag!='lag=0'} 
                     for date,A in A_dic.items()}         # calculate A**-1*A(lag)
@@ -781,11 +781,11 @@ class newton_diff():
             comp_dic[date] = lib.vstack([top,newbottom]) 
         
         try:
-            eigen_values_and_vectors =  {date : calc_eig(comp) for date,comp in comp_dic.items()} 
+            eigen_values_and_vectors =  {date : calc_eig(comp) for date,comp in tqdm(comp_dic.items(),'Calculate  Eigenvalues')} 
         except:     
             print(f'Using reserve calculatioon of eigenvalues {dropvar_nr=} {dropvar=}')
             
-            eigen_values_and_vectors =  {date : calc_eig_reserve(comp) for date,comp in comp_dic.items()} 
+            eigen_values_and_vectors =  {date : calc_eig_reserve(comp) for date,comp in tqdm(comp_dic.items())} 
 
 
         eig_dic = {date : both[0] for date,both in eigen_values_and_vectors.items() } 
@@ -1294,7 +1294,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
     def plot_eigenvalues_polar_both(self,eig_dic):
         import plotly.graph_objects as go
         import numpy as np
-        from ipywidgets import  Dropdown, Output, VBox, HTML, HBox, IntSlider,Select,Textarea,Checkbox
+        from ipywidgets import  Dropdown, Output, VBox, HTML, HBox, IntSlider,Select,Textarea,Checkbox,Button
         from IPython.display import display
         
         
@@ -1343,7 +1343,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     # layout={'width': '100%', 'height': '100px'}  # Adjust the size as needed
             )
 
-            wxopen = Checkbox(value=False,description = 'Open plot widget',disabled=False,
+            wopenplot  = Button(value=True,description = 'Open plot widget',disabled=False,icon='check',
                                          layout={'width':'70%'}    ,style={'description_width':'40%'})
             
             with plot_output:
@@ -1378,27 +1378,40 @@ This method is useful for temporal analysis of the system's stability, focusing 
                 keepbox = None
                 v_dropdown_description = HTML(value="<strong>Eigenvectors:</strong>", placeholder='',description='',)
                 v_dropdown = Select(description='',rows=14)
-                box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wxopen])]),var_info])
+                box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
                 
-                
+                lopenplot = False 
                 
                 def vector_info(selected_index):
-                    nonlocal keepbox, box
+                    nonlocal lopenplot
                     this_vector = eigenvectors.iloc[selected_index,:].sort_values(ascending=False)
                     select_options = [(f"{index} - {value:.2f}", f"{index}") for index, value in this_vector.items()  if value >= 0.01]
                     v_dropdown.options = select_options
                     
-                    gross_varnames = [v.split('(')[0] for t,v in select_options]
-                    varnames = ' '.join(list(dict.fromkeys(gross_varnames)))  
-                    keepbox = self.mmodel.keep_show(use_var_groups=False,selectfrom = varnames,use_smpl=True )
-                    plot_output.clear_output(wait=True)
+                    # gross_varnames = [v.split('(')[0] for t,v in select_options]
+                    # varnames = ' '.join(list(dict.fromkeys(gross_varnames)))  
+                    # keepbox = self.mmodel.keep_show(use_var_groups=False,selectfrom = varnames,use_smpl= True)
+                    if lopenplot : 
+                        plot_output.clear_output(wait=True)
+                    # box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
+                        box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
+                        display(box)
+                        lopenplot = False
 
-                    box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wxopen])]),var_info,keepbox.datawidget])
-                    display(box)
 
                 
                 vector_info(0)
                 
+                def on_openplot(change):
+                    nonlocal lopenplot
+                    lopenplot = True
+                    gross_varnames = [v.split('(')[0] for t,v in  v_dropdown.options]
+                    varnames = ' '.join(list(dict.fromkeys(gross_varnames)))  
+                    keepbox = self.mmodel.keep_show(use_var_groups=False,selectfrom = varnames,use_smpl= True)
+                    box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
+                    plot_output.clear_output(wait=True)
+
+                    display(box)
 
                 def info_show(ind):
                         ev = eigenvalues[ind]  # Get the eigenvalue
@@ -1406,13 +1419,23 @@ This method is useful for temporal analysis of the system's stability, focusing 
                         vector_info(ind)
     
                 def update_info(trace, points, _):
+                    nonlocal lopenplot
                     if points.point_inds:
+                        if lopenplot : 
+                            plot_output.clear_output(wait=True)
+                        # box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
+                            box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
+                            display(box)
+                            lopenplot = False
+
                         # Each eigenvalue is represented by 3 points in the plot data (start, end, None), calculate the index accordingly
                         ind = points.point_inds[0] // 3
                         valueslider.value = ind 
                         info_show(ind)
                     
-                        
+                
+                    
+                
                 def on_v_dropdown_change(change): 
                     # print(f'{change=}')
                     # print(f'{change.owner=}')
@@ -1425,6 +1448,9 @@ This method is useful for temporal analysis of the system's stability, focusing 
                         info1 = f'{varname}: {self.mmodel.var_description[varname]}' +'\n'
                         info2 = self.mmodel.allvar[varname]['frml']
                         var_info.value=   info1  +  info2   
+                
+
+
                     
                     
                 for trace in fig.data:
@@ -1447,6 +1473,8 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     fig.data[0].marker.color = [color for pair in zip(colors, colors, colors) for color in pair]
 
                     info_show(selected_index)
+                
+                wopenplot.on_click(on_openplot) 
                 
                 valueslider.observe(on_slide_change)
                 
