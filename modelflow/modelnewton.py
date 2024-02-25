@@ -1238,6 +1238,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
         from ipywidgets import  Dropdown, Output, VBox, HTML
         from IPython.display import display
         
+
         
         year_dropdown = Dropdown(options=list(eig_dic.keys()), description='Time:')
         info_box = HTML(value="Hover over a point to see details.")
@@ -1277,7 +1278,6 @@ This method is useful for temporal analysis of the system's stability, focusing 
                         # Each eigenvalue is represented by 3 points in the plot data (start, end, None), calculate the index accordingly
                         ind = points.point_inds[0] // 3
                         ev = eigenvalues[ind]  # Get the eigenvalue
-                        info_box.value = f"Index: {ind}, Real: {ev.real:.2f}, Imag: {ev.imag:.2f}"
     
                 for trace in fig.data:
                     trace.on_hover(update_info)
@@ -1288,7 +1288,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
             plot_eigenvalues_polar_vectors(change.new)
     
         year_dropdown.observe(on_year_change, names='value')
-        display(VBox([year_dropdown, info_box, plot_output]))
+        display(VBox([year_dropdown, plot_output]))
         plot_eigenvalues_polar_vectors(year_dropdown.value)
 
     def plot_eigenvalues_polar_both(self,eig_dic):
@@ -1297,16 +1297,23 @@ This method is useful for temporal analysis of the system's stability, focusing 
         from ipywidgets import  Dropdown, Output, VBox, HTML, HBox, IntSlider,Select,Textarea,Checkbox,Button
         from IPython.display import display
         
+        class SimulatedPoints:
+            def __init__(self, ind):
+                self.point_inds = [ind * 3]  # Assuming ind needs to be multiplied by 3 as per your original logic
+
+
+
+        
+        
         
         year_dropdown = Dropdown(options=list(eig_dic.keys()), description='Time:')
-        info_box = HTML(value="Hover over a point to see details.")
         plot_output = Output()
         
         def get_a_eigenvalue_vector(eigenvalues_vectors,year):
             
             compabs = lambda complex: [abs(value) for index,value in complex.items()]
             
-            eig_gt = (eigenvalues_vectors[2023].   
+            eig_gt = (eigenvalues_vectors[year].   
                         T.        # Transpose as we query and eval on columns 
                         eval('absolute_value=@compabs(Eigenvalues)'). # calculate the absolute value of the eigenvalue 
                         query('absolute_value > 0.01').
@@ -1321,7 +1328,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
         def plot_eigenvalues_polar_vectors(year):
             eigenvalues,eigenvectors = get_a_eigenvalue_vector(eig_dic,year)
             valueslider = IntSlider(
-                    value=0,
+                    value=1,
                     min=0,
                     max=len(eigenvalues)-1,
                     step=1,
@@ -1359,7 +1366,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     r=r_plot_values,
                     theta=theta_plot_values,
                     mode='lines+markers',
-                    marker=dict(color='blue', size=15),
+                    marker=dict(color='blue', size=5),
                     line=dict(color='blue')
                 ))
                 fig.update_layout(
@@ -1375,8 +1382,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     ),
                     showlegend=False
                 )
-                keepbox = None
-                v_dropdown_description = HTML(value="<strong>Eigenvectors:</strong>", placeholder='',description='',)
+                v_dropdown_description = HTML(value="<strong>Eigenvalue :</strong> <br><strong>Eigenvectors:</strong>", placeholder='',description='',)
                 v_dropdown = Select(description='',rows=14)
                 box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
                 
@@ -1385,9 +1391,12 @@ This method is useful for temporal analysis of the system's stability, focusing 
                 def vector_info(selected_index):
                     nonlocal lopenplot
                     this_vector = eigenvectors.iloc[selected_index,:].sort_values(ascending=False)
+                    eigenvalue = eigenvalues[selected_index]
+                    
                     select_options = [(f"{index} - {value:.2f}", f"{index}") for index, value in this_vector.items()  if value >= 0.01]
                     v_dropdown.options = select_options
                     
+                    v_dropdown_description.value=f"<strong>Eigenvalue #: {selected_index}</strong> <br>Length: {abs(eigenvalue):.2f}<br>Real: {eigenvalue.real:.2f}<br>Imag: {eigenvalue.imag:.2f} <br><strong>Eigenvectors:</strong>"
                     # gross_varnames = [v.split('(')[0] for t,v in select_options]
                     # varnames = ' '.join(list(dict.fromkeys(gross_varnames)))  
                     # keepbox = self.mmodel.keep_show(use_var_groups=False,selectfrom = varnames,use_smpl= True)
@@ -1415,7 +1424,6 @@ This method is useful for temporal analysis of the system's stability, focusing 
 
                 def info_show(ind):
                         ev = eigenvalues[ind]  # Get the eigenvalue
-                        info_box.value = f"Index: {ind}, Real: {ev.real:.2f}, Imag: {ev.imag:.2f}"
                         vector_info(ind)
     
                 def update_info(trace, points, _):
@@ -1471,8 +1479,13 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     # print(f'{change.new=} {selected_index=}')
                     colors = ['red' if i == selected_index else 'green' for i in range(len(eigenvalues))]
                     fig.data[0].marker.color = [color for pair in zip(colors, colors, colors) for color in pair]
+                    sizes = [15 if i == selected_index else 5 for i in range(len(eigenvalues))]
+                    fig.data[0].marker.size = [size for pair in zip(sizes,sizes,sizes) for size in pair]
 
                     info_show(selected_index)
+                
+                # update_info(None,SimulatedPoints(0),None) 
+                
                 
                 wopenplot.on_click(on_openplot) 
                 
@@ -1480,14 +1493,15 @@ This method is useful for temporal analysis of the system's stability, focusing 
                 
                 v_dropdown.observe(on_v_dropdown_change)
                 
-    
+                valueslider.value= 0 
+     
                 display(box)
 
         def on_year_change(change):
             plot_eigenvalues_polar_vectors(change.new)
     
         year_dropdown.observe(on_year_change, names='value')
-        display(VBox([year_dropdown, info_box, plot_output]))
+        display(VBox([year_dropdown, plot_output]))
         plot_eigenvalues_polar_vectors(year_dropdown.value)
 
     
