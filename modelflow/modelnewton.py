@@ -1292,6 +1292,41 @@ This method is useful for temporal analysis of the system's stability, focusing 
         plot_eigenvalues_polar_vectors(year_dropdown.value)
 
     def plot_eigenvalues(self,eig_dic):
+        """
+        Generates and displays a polar plot of eigenvalues and their corresponding eigenvectors
+        for a selected year from a dictionary of DataFrames. Each DataFrame contains eigenvalues
+        and eigenvectors of the companion matrix for that year. The first row of the DataFrame
+        consists of eigenvalues, and the subsequent rows contain the corresponding eigenvectors.
+        The user can interact with the plot via a dropdown for year selection, a slider for eigenvalue
+        selection, and a button to toggle additional plot details. The polar plot dynamically updates
+        to reflect the selected eigenvalue, displaying its magnitude and phase. Additional information
+        about the selected eigenvector is also displayed, facilitating a detailed temporal analysis
+        of the eigenvalues.
+    
+        Parameters:
+        - eig_dic (dict): A dictionary where keys are years (or time periods) and values are DataFrames
+                          containing the first row as eigenvalues and the subsequent rows as the corresponding
+                          eigenvectors of the companion matrix for each year.
+    
+        Side Effects:
+        - Displays interactive widgets including a dropdown for year selection, a plot output area,
+          and a slider for selecting specific eigenvalues. Additionally, displays textual information
+          about the selected eigenvalue and its eigenvectors.
+        - Utilizes Plotly for generating the polar plot and ipywidgets for interactive controls.
+        - The method defines and uses several inner functions to handle events like year change,
+          eigenvalue selection, and other interactions.
+    
+        Returns:
+        - None. The method's primary function is to display interactive widgets and plots within a Jupyter
+          notebook environment.
+    
+        Note:
+        - This method is designed for use within a Jupyter notebook as it relies on IPython.display
+          for rendering and ipywidgets for interactivity.
+        - The actual plotting and widget setup are accomplished through several nested functions within
+          this method, making use of closures and nonlocal variables for state management.
+        """
+
         import plotly.graph_objects as go
         import numpy as np
         from ipywidgets import  Dropdown, Output, VBox, HTML, HBox, IntSlider,Select,Textarea,Checkbox,Button
@@ -1306,6 +1341,21 @@ This method is useful for temporal analysis of the system's stability, focusing 
         plot_output = Output()
         
         def get_a_eigenvalue_vector(eigenvalues_vectors,year):
+            """
+            Extracts and processes eigenvalues and their corresponding eigenvectors for a given year.
+            Filters and sorts eigenvalues by their magnitude, returning the significant eigenvalues and
+            their associated eigenvectors.
+    
+            Parameters:
+            - eigenvalues_vectors (dict): Dictionary containing DataFrames of eigenvalues and eigenvectors
+                                          indexed by year.
+            - year (str/int): The year for which to extract and process the eigenvalue vector.
+    
+            Returns:
+            - tuple: A tuple containing the significant eigenvalue and a DataFrame of the corresponding
+                     eigenvectors after processing.
+            """
+
             
             compabs = lambda complex: [abs(value) for index,value in complex.items()]
             
@@ -1385,6 +1435,15 @@ This method is useful for temporal analysis of the system's stability, focusing 
                 lopenplot = False 
                 
                 def vector_info(selected_index):
+                    """
+                    Updates the displayed information for a selected eigenvector, including its magnitude,
+                    phase, and detailed component values. Dynamically updates dropdown options to reflect
+                    the components of the selected eigenvector.
+    
+                    Parameters:
+                    - selected_index (int): Index of the selected eigenvalue/eigenvector.
+                    """
+
                     nonlocal lopenplot
                     this_vector = eigenvectors.iloc[selected_index,:].sort_values(ascending=False)
                     eigenvalue = eigenvalues[selected_index]
@@ -1408,6 +1467,15 @@ This method is useful for temporal analysis of the system's stability, focusing 
                 vector_info(0)
                 
                 def on_openplot(change):
+                    """
+                    Handles the event triggered by clicking the 'Open plot widget' button. It refreshes the plot
+                    and optionally includes additional widgets for further data exploration.
+    
+                    Parameters:
+                    - change (dict): Contains details of the button click event. Not used in the function body
+                                     but necessary for event handler signature.
+                    """
+
                     nonlocal lopenplot
                     lopenplot = True
                     gross_varnames = [v.split('(')[0] for t,v in  v_dropdown.options]
@@ -1419,10 +1487,28 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     display(box)
 
                 def info_show(ind):
-                        ev = eigenvalues[ind]  # Get the eigenvalue
-                        vector_info(ind)
+                    """
+                    Displays information about the eigenvalue and its corresponding eigenvectors for a given index.
+                    This function is designed to update the displayed information based on user selection or interaction.
+    
+                    Parameters:
+                    - ind (int): The index of the selected eigenvalue to display information for.
+                    """
+
+                    ev = eigenvalues[ind]  # Get the eigenvalue
+                    vector_info(ind)
     
                 def update_info(trace, points, _):
+                    """
+                    Callback function to handle hover events on the plot. It identifies the eigenvalue
+                    corresponding to the hovered point and updates the information displayed to the user.
+    
+                    Parameters:
+                    - trace: The trace object associated with the hover event. Not used in the function body.
+                    - points: The points object containing information about the hovered point.
+                    - _: Placeholder for additional arguments. Not used in the function body.
+                    """
+
                     nonlocal lopenplot
                     if points.point_inds:
                         if lopenplot : 
@@ -1441,6 +1527,14 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     
                 
                 def on_v_dropdown_change(change): 
+                    """
+                    Handles changes in the eigenvector selection dropdown. Updates the displayed information
+                    related to the selected eigenvector, including its description and formula.
+    
+                    Parameters:
+                    - change (dict): Contains details of the selection change in the dropdown widget.
+                    """
+
                     # print(f'{change=}')
                     # print(f'{change.owner=}')
                     # print(f'{change.owner.options=}')
@@ -1464,6 +1558,14 @@ This method is useful for temporal analysis of the system's stability, focusing 
                 
                 
                 def on_slide_change(change): 
+                    """
+                    Responds to changes in the eigenvalue selection slider. Updates the plot to highlight
+                    the selected eigenvalue and its corresponding eigenvectors, and updates displayed information.
+    
+                    Parameters:
+                    - change (dict): Contains details of the slider value change.
+                    """
+
                     # print(f'{change.new=} ')
                     if type(change.new) == int: 
                         selected_index = change.new
@@ -1494,13 +1596,21 @@ This method is useful for temporal analysis of the system's stability, focusing 
                 display(box)
 
         def on_year_change(change):
+            """
+            Callback function for handling changes in the year selection dropdown. Updates the polar plot
+            to display the eigenvalues and eigenvectors for the newly selected year.
+    
+            Parameters:
+            - change (dict): Contains details about the change event in the year dropdown.
+            """
+
             plot_eigenvalues_polar_vectors(change.new)
     
         year_dropdown.observe(on_year_change, names='value')
         display(VBox([year_dropdown, plot_output]))
         plot_eigenvalues_polar_vectors(year_dropdown.value)
 
-    
+
 #%%    
 if __name__ == '__main__':
     #%% testing
