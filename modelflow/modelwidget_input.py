@@ -755,6 +755,7 @@ class keep_plot_widget:
     save_location : str = './graph'
     switch : bool = False
     use_smpl : bool = False
+    init_dif : bool = False
 
   
     
@@ -887,7 +888,7 @@ class keep_plot_widget:
                                         description='Select one or more', style={'description_width': description_width})
         
         diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
-                            value=False, style={'description_width': 'auto'}, layout=Layout(width='auto'))
+                            value=self.init_dif, style={'description_width': 'auto'}, layout=Layout(width='auto'))
         showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
                                 description='Data type', value='level', style={'description_width': description_width})
         scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',

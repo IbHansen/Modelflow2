@@ -670,7 +670,7 @@ class newton_diff():
     
     
 
-    def get_eigenvalues (self, periode=None, asdf=True, filnan=False, silent=False, dropvar=None, dropvar_nr=0):
+    def get_eigenvalues (self, periode=None, asdf=True, filnan=False, silent=False, dropvar=None, dropvar_nr=0,progressbar=False):
         """
         Calculate and return the eigenvectors based on the companion matrix for a dynamic system.
     
@@ -700,7 +700,7 @@ class newton_diff():
         ...
          
         first_element = lambda dic: dic[list(dic.keys())[0]]  # first element in a dict 
-        print('Calculate derivatives')        
+        # print('Calculate derivatives')        
         jacobiall = self.get_diff_mat_all_1per(periode,asdf=asdf)
         # breakpoint()
         if not silent: 
@@ -764,7 +764,7 @@ class newton_diff():
 
                                       # a idendity matrix
         AINV_dic = {date: np_to_df(lib.linalg.inv(I-A['lag=0']))
-                    for date,A in tqdm(A_dic.items(),'Invert (I-A)')}  
+                    for date,A in (tqdm(A_dic.items(),'Invert (I-A)') if progressbar else A_dic.items()) }  
         
         C_dic = {date: {lag : AINV_dic[date] @ A[lag] for lag,Alag in A.items() if lag!='lag=0'} 
                     for date,A in A_dic.items()}         # calculate A**-1*A(lag)
@@ -781,7 +781,7 @@ class newton_diff():
             comp_dic[date] = lib.vstack([top,newbottom]) 
         
         try:
-            eigen_values_and_vectors =  {date : calc_eig(comp) for date,comp in tqdm(comp_dic.items(),'Calculate  Eigenvalues')} 
+            eigen_values_and_vectors =  {date : calc_eig(comp) for date,comp in ( tqdm(comp_dic.items(),'Calculate  Eigenvalues') if progressbar else comp_dic.items()) } 
         except:     
             print(f'Using reserve calculatioon of eigenvalues {dropvar_nr=} {dropvar=}')
             
@@ -1232,7 +1232,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
         return fig
     
     
-    def plot_eigenvalues_polar(self,eig_dic):
+    def plot_eigenvalues_polar_old(self,eig_dic):
         import plotly.graph_objects as go
         import numpy as np
         from ipywidgets import  Dropdown, Output, VBox, HTML
@@ -1291,16 +1291,12 @@ This method is useful for temporal analysis of the system's stability, focusing 
         display(VBox([year_dropdown, plot_output]))
         plot_eigenvalues_polar_vectors(year_dropdown.value)
 
-    def plot_eigenvalues_polar_both(self,eig_dic):
+    def plot_eigenvalues(self,eig_dic):
         import plotly.graph_objects as go
         import numpy as np
         from ipywidgets import  Dropdown, Output, VBox, HTML, HBox, IntSlider,Select,Textarea,Checkbox,Button
         from IPython.display import display
         
-        class SimulatedPoints:
-            def __init__(self, ind):
-                self.point_inds = [ind * 3]  # Assuming ind needs to be multiplied by 3 as per your original logic
-
 
 
         
@@ -1326,7 +1322,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
         
     
         def plot_eigenvalues_polar_vectors(year):
-            eigenvalues,eigenvectors = get_a_eigenvalue_vector(eig_dic,year)
+            eigenvalues,eigenvectors = get_a_eigenvalue_vector(eig_dic,year )
             valueslider = IntSlider(
                     value=1,
                     min=0,
@@ -1383,8 +1379,8 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     showlegend=False
                 )
                 v_dropdown_description = HTML(value="<strong>Eigenvalue :</strong> <br><strong>Eigenvectors:</strong>", placeholder='',description='',)
-                v_dropdown = Select(description='',rows=14)
-                box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
+                v_dropdown = Select(description='',rows=14,layout = {'width': '100%'})
+                box =  VBox([HBox([fig,valueslider,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
                 
                 lopenplot = False 
                 
@@ -1402,8 +1398,8 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     # keepbox = self.mmodel.keep_show(use_var_groups=False,selectfrom = varnames,use_smpl= True)
                     if lopenplot : 
                         plot_output.clear_output(wait=True)
-                    # box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
-                        box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
+                    # box =  VBox([HBox([fig,valueslider,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
+                        box =  VBox([HBox([fig,valueslider,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
                         display(box)
                         lopenplot = False
 
@@ -1416,8 +1412,8 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     lopenplot = True
                     gross_varnames = [v.split('(')[0] for t,v in  v_dropdown.options]
                     varnames = ' '.join(list(dict.fromkeys(gross_varnames)))  
-                    keepbox = self.mmodel.keep_show(use_var_groups=False,selectfrom = varnames,use_smpl= True)
-                    box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
+                    keepbox = self.mmodel.keep_show(use_var_groups=False,selectfrom = varnames,use_smpl= True,init_dif=True)
+                    box =  VBox([HBox([fig,valueslider,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
                     plot_output.clear_output(wait=True)
 
                     display(box)
@@ -1431,8 +1427,8 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     if points.point_inds:
                         if lopenplot : 
                             plot_output.clear_output(wait=True)
-                        # box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
-                            box =  VBox([HBox([valueslider,fig,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
+                        # box =  VBox([HBox([fig,valueslider,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info,keepbox.datawidget])
+                            box =  VBox([HBox([fig,valueslider,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
                             display(box)
                             lopenplot = False
 

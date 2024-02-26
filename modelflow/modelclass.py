@@ -7754,18 +7754,26 @@ class Stability_Mixin():
         res = newton_diff(self,**kwargs)
         return res
     
-    def get_eigenvalues(self,forcenum = False,  silent = True ,dropvar=None):
+    def get_eigenvalues(self,forcenum = False,  silent = True ,dropvar=None,progressbar = False):
         self.stability_newton = newton_diff(self,forcenum = forcenum, silent = silent )
-        self.eigenvalues = self.stability_newton.get_eigenvalues(dropvar=dropvar)
+        self.eigenvalues = self.stability_newton.get_eigenvalues(dropvar=dropvar,progressbar = progressbar)
         
         return self.eigenvalues
      
     
-    def get_df_eigen_dict(self,forcenum = False,  silent = True ,dropvar=None):
-        self.eigenvalues = self.get_eigenvalues(forcenum = forcenum,  silent = silent ,dropvar=dropvar)
+    def get_df_eigen_dict(self,forcenum = False,  silent = True ,dropvar=None,progressbar = True):
+        self.eigenvalues = self.get_eigenvalues(forcenum = forcenum,  silent = silent ,dropvar=dropvar,progressbar = progressbar)
         return self.stability_newton.get_df_eigen_dict()
         
+    def plot_eigenvalues(self,*args,**kwargs):
+        if not hasattr(self,'stability_newton') or not hasattr(self.stability_newton,'eigen_values_and_vectors'):
+            print('Finding eigenvalues and vectors')            
+            df_eigen_dict = self.get_df_eigen_dict(*args,**kwargs)
+        else: 
+            print('Eigenvalues and vectors already avaiable')     
+            df_eigen_dict = self.stability_newton.get_df_eigen_dict()  
         
+        self.stability_newton.plot_eigenvalues(df_eigen_dict)
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
