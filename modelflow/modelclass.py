@@ -7755,25 +7755,41 @@ class Stability_Mixin():
         return res
     
     def get_eigenvalues(self,forcenum = False,  silent = True ,dropvar=None,progressbar = False):
-        self.stability_newton = newton_diff(self,forcenum = forcenum, silent = silent )
-        self.eigenvalues = self.stability_newton.get_eigenvalues(dropvar=dropvar,progressbar = progressbar)
+        if not hasattr(self,'stability_newton') or not hasattr(self.stability_newton,'eigen_values_and_vectors'):
+            print('Finding eigenvalues and vectors')            
+            self.stability_newton = newton_diff(self,forcenum = forcenum, silent = silent )
+            self.eigenvalues  =self.stability_newton.get_eigenvalues(silent = silent,progressbar=progressbar)
+        else: 
+            # print('Eigenvalues and vectors already avaiable')
+
+            self.eigenvalues = self.stability_newton.eig_dic  
         
         return self.eigenvalues
      
     
-    def get_df_eigen_dict(self,forcenum = False,  silent = True ,dropvar=None,progressbar = True):
-        self.eigenvalues = self.get_eigenvalues(forcenum = forcenum,  silent = silent ,dropvar=dropvar,progressbar = progressbar)
-        return self.stability_newton.get_df_eigen_dict()
+    def get_eigenvectors(self,forcenum = False,  silent = True ,dropvar=None,progressbar = True):
+        _ = self.get_eigenvalues(forcenum = forcenum,  silent =silent ,dropvar=dropvar, progressbar = progressbar)           
+        return self.stability_newton.get_df_eigen_dict()  
+
         
-    def plot_eigenvalues(self,*args,**kwargs):
-        if not hasattr(self,'stability_newton') or not hasattr(self.stability_newton,'eigen_values_and_vectors'):
-            print('Finding eigenvalues and vectors')            
-            df_eigen_dict = self.get_df_eigen_dict(*args,**kwargs)
-        else: 
-            print('Eigenvalues and vectors already avaiable')     
-            df_eigen_dict = self.stability_newton.get_df_eigen_dict()  
+    def eigenvalues_show(self,*args,**kwargs): 
+        vectors = self.get_eigenvectors(*args,**kwargs)
+        self.stability_newton.eigenvalues_show(vectors)
         
-        self.stability_newton.plot_eigenvalues(df_eigen_dict)
+     
+    def eigenvalues_plot(self,periode=None,size=(4,3),maxfig=6):
+         values = self.get_eigenvalues(progressbar=True)   
+         self.stability_newton.eigplot_all(values,periode=periode,size=(4,3),maxfig=6)
+        
+    def get_eigen_jackknife_df(self,periode=None,maxnames=200_000):
+        _ = self.get_eigenvalues()
+        jackdf = self.stability_newton.get_eigen_jackknife_df(periode=periode,maxnames=maxnames)
+        return jackdf 
+        
+    def jack_largest_reduction_plot(self,jackdf,eigenvalue_row=0,periode=None,imag_only=False):
+        self.stability_newton.jack_largest_reduction_plot(jackdf, eigenvalue_row=eigenvalue_row, periode=periode,imag_only=imag_only )   
+ 
+Stability_Mixin.eigenvalues_show.__doc__ = newton_diff.eigenvalues_show.__doc__
         
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,

@@ -1002,7 +1002,10 @@ The function is computationally intensive and can take significant time for larg
                 return 'Other (Zero Imag)'
         
         result_df['CombinedHighlight'] = result_df.apply(get_highlight, axis=1)
-        
+        # Add a column for marker size based on the 'CombinedHighlight' or any condition
+        result_df['marker_size'] = result_df['CombinedHighlight'].apply(lambda x: 20 if 'NONE' in x else 10)
+
+
         # Define color map for the combined highlight
         color_map = {
             'NONE (Non-zero Imag)': 'pink',
@@ -1017,7 +1020,11 @@ The function is computationally intensive and can take significant time for larg
                 x=result_df['length'],
                 y=result_df['excluded'],
                 mode='markers',
-                marker=dict(color=result_df['CombinedHighlight'].map(color_map))
+                marker=dict(
+                    color=result_df['CombinedHighlight'].map(color_map),
+                    size=result_df['marker_size']  # Use the marker_size column here
+
+                    )
             )
         ])
 
@@ -1228,7 +1235,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
             ax.set_rticks([0.5, 1, 1.5])
             ax.set_title(f'{key}',loc='right')
 
-    
+        plt.show() 
         return fig
     
     
@@ -1291,7 +1298,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
         display(VBox([year_dropdown, plot_output]))
         plot_eigenvalues_polar_vectors(year_dropdown.value)
 
-    def plot_eigenvalues(self,eig_dic):
+    def eigenvalues_show(self,eig_dic):
         """
         Generates and displays a polar plot of eigenvalues and their corresponding eigenvectors
         for a selected year from a dictionary of DataFrames. Each DataFrame contains eigenvalues
