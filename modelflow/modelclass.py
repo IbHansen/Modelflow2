@@ -1120,7 +1120,7 @@ class Org_model_Mixin():
 
         ipat = upat
         # breakpoint() 
-        patlist = [apat.upper()  for p in ipat for apat in p.split()]
+        patlist = [apat.upper()  for p in ipat for apat in p.split('|' if p.startswith('!') else ' ' )] 
         # patlist = [self.var_groups[apat[1:]] if apat.startswith('#') else apat for apat in patlist0]
         # print(f'{patlist=}') 
         try:
@@ -2612,7 +2612,7 @@ class Description_Mixin():
         ipat = upat
 
         
-        out = [v for p in ipat for up in p.split() for v in sorted(
+        out = [v for p in ipat for up in p.split('|') for v in sorted(
                 [self.var_description_reverse[v] for v in 
                  fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
 

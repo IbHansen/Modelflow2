@@ -1202,7 +1202,9 @@ This method is useful for temporal analysis of the system's stability, focusing 
         return fig
     
     def eigplot_all(self,eig_dic,periode=None,size=(4,3),maxfig=6):
-        
+        plt.close('all')
+        plt.ioff() 
+
         _per_first = periode if type(periode) != type(None) else self.mmodel.current_per  
         
         if hasattr(_per_first,'__iter__'):
@@ -1404,7 +1406,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
             )
 
             wopenplot  = Button(value=True,description = 'Open plot widget',disabled=False,icon='check',
-                                         layout={'width':'70%'}    ,style={'description_width':'40%'})
+                                         layout={'width':'95%'}    ,style={'description_width':'70%'})
             
             with plot_output:
                 plot_output.clear_output(wait=True)
@@ -1436,7 +1438,7 @@ This method is useful for temporal analysis of the system's stability, focusing 
                     showlegend=False
                 )
                 v_dropdown_description = HTML(value="<strong>Eigenvalue :</strong> <br><strong>Eigenvectors:</strong>", placeholder='',description='',)
-                v_dropdown = Select(description='',rows=14,layout = {'width': '100%'})
+                v_dropdown = Select(description='',rows=14,layout = {'width': '95%'})
                 box =  VBox([HBox([fig,valueslider,VBox([v_dropdown_description,v_dropdown,wopenplot])]),var_info])
                 
                 lopenplot = False 
