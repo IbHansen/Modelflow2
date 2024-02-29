@@ -29,6 +29,7 @@ import fnmatch
 from IPython.display import  display,Latex, Markdown, HTML
 from itertools import chain, zip_longest
 from tqdm.notebook  import tqdm 
+from pathlib import Path
 
 
 from dataclasses import dataclass, field, asdict
@@ -833,7 +834,7 @@ The function is computationally intensive and can take significant time for larg
         return {**base_dict, **jackknife_dict} 
 
     @lru_cache(maxsize=None)   
-    def get_eigen_jackknife_df(self,maxnames = 200_000,progressbar=True,periode=None):
+    def get_eigen_jackknife_df(self,maxnames = 200_000,progressbar=True,periode=None,filecache=True,refresh=False):
         """
     Convert the eigenvalue data obtained from a jackknife analysis into a pandas DataFrame, including additional columns for the absolute length, real, and imaginary parts of the eigenvalues.
 
@@ -851,6 +852,11 @@ The function is computationally intensive and can take significant time for larg
     - A progress bar can be displayed for monitoring the computation progress.
     - The function is especially useful for detailed analysis and visualization of the eigenvalues obtained from the jackknife analysis.
     """
+        jackfile = Path('jackdf.csv')
+        if (not refresh)  and jackfile.exists() and filecache:
+            df = pd.read_csv('jackdf.csv',index_col=0)
+            print('Jackdf read from file')
+            return df 
         
         jackdict = self.get_eigen_jackknife(maxnames = maxnames,progressbar=progressbar,periode=periode)
         
@@ -869,7 +875,13 @@ The function is computationally intensive and can take significant time for larg
         
         vardict = {**{'NONE':'whole model'}, **{k : f'{k} {v}' for k,v in self.mmodel.var_description.items() }}
         df = df.assign(excluded_description=df['excluded'].map(lambda x: vardict.get(x, x)))
+        
+        if filecache: 
+            df.to_csv('jackdf.csv')
+            print('Jackdf written to file')
 
+            
+            
         return df 
         
      

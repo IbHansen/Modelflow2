@@ -7779,18 +7779,26 @@ class Stability_Mixin():
      
     def eigenvalues_plot(self,periode=None,size=(4,3),maxfig=6):
          values = self.get_eigenvalues(progressbar=True)   
-         self.stability_newton.eigplot_all(values,periode=periode,size=(4,3),maxfig=6)
+         return self.stability_newton.eigplot_all(values,periode=periode,size=(4,3),maxfig=6)
         
     def get_eigen_jackknife_df(self,periode=None,maxnames=200_000):
         _ = self.get_eigenvalues()
         jackdf = self.stability_newton.get_eigen_jackknife_df(periode=periode,maxnames=maxnames)
         return jackdf 
-        
+    
+    def jack_largest_reduction(self,jackdf, eigenvalue_row=0, periode=None,imag_only=False):
+        return self.stability_newton.jack_largest_reduction(jackdf, eigenvalue_row=eigenvalue_row, periode=periode,imag_only=imag_only )  
+    
     def jack_largest_reduction_plot(self,jackdf,eigenvalue_row=0,periode=None,imag_only=False):
         self.stability_newton.jack_largest_reduction_plot(jackdf, eigenvalue_row=eigenvalue_row, periode=periode,imag_only=imag_only )   
  
-Stability_Mixin.eigenvalues_show.__doc__ = newton_diff.eigenvalues_show.__doc__
-        
+Stability_Mixin.eigenvalues_show.__doc__       = newton_diff.eigenvalues_show.__doc__
+Stability_Mixin.jack_largest_reduction.__doc__ = newton_diff.jack_largest_reduction.__doc__ 
+Stability_Mixin.jack_largest_reduction_plot.__doc__ = newton_diff.jack_largest_reduction_plot.__doc__ 
+
+
+
+
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
             Fix_Mixin,Stability_Mixin):
