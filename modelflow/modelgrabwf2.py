@@ -51,6 +51,11 @@ import modelmanipulation as mp
 import modelnormalize as nz
 
 
+def remove_url_and_replace_nbsp(s):
+    # Regular expression for matching URLs
+    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    # Replace the URL with an empty string and \xa0 with a space
+    return re.sub(url_pattern, '', s).replace('\xa0', ' ').strip()
 
 
 def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
@@ -171,6 +176,8 @@ def wf2_to_clean(wf2name,modelname='',save_file = False,freq='A'):
     var_description = {s['_name']: lab2 for s in series_list 
                   if (lab2  := s.get('_labels',{}).get('description','')) 
                  }
+    
+    var_description =  {k: remove_url_and_replace_nbsp(v) for k,v in var_description.items() }
 
     
     scalar_list = object_dict['scalar']
@@ -233,6 +240,7 @@ class GrabWfModel():
         test_frml          : str =''    # a testmodel as string if used no wf processing 
         disable_progress   : bool = False # Disable progress bar
         save_file          : bool = False # save information to file 
+        model_description  :  str = '' # model description 
   
     '''
     
@@ -252,6 +260,8 @@ class GrabWfModel():
     test_frml          : str =''    # a testmodel as string if used no wf processing 
     disable_progress   : bool = False # Disable progress bar
     save_file          : bool = False # save information to file 
+    model_description  :  str = '' # model description 
+
     def __post_init__(self):
         '''Process the model'''
         
@@ -323,7 +333,9 @@ class GrabWfModel():
                       var_groups = self.var_groups, 
                       )
         self.mmodel.eviews_dict =  {v: f.eviews for v,f in  self.all_frml_dict.items()}        
-        self.mmodel.var_description = self.var_description      
+        self.mmodel.var_description = self.var_description   
+        self.mmodel.model_description  = self.model_description 
+
         self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options'] 
        
         # self.mmodel.set_var_description(self.model_all_about['var_description'])

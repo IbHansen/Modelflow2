@@ -145,4 +145,5 @@ eqdelete fixed a problem when deleting in eviews frml
 vlist for descriptions handels blanks 
 reg ex expressions to capture scientivif format corrected 
 eviews including abs 
-bool to switch off checking fittet value  win grapwbmodel 
+bool to switch off checking fittet value  in grapwbmodel 
+model_description in grapwbmodel
