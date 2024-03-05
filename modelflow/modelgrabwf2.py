@@ -364,7 +364,7 @@ class GrabWfModel():
         rawmodel2 = rawmodel1.replace('^','**').replace('""',' ').replace('"',' ').\
             replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg').replace('@LOGIT','logit_inverse') \
             .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PCY','PCT_GROWTH').replace('@PC','PCT_GROWTH')\
-            .replace('@PMAX','MAX').replace('@TREND','EVIEWS_TREND')      
+            .replace('@PMAX','MAX').replace('@TREND','EVIEWS_TREND').replace('@ABS','ABS')       
         # @ELEM and @DURING 
         # @ELEM and @DURING 
         rawmodel3 = nz.elem_trans(rawmodel2) 
@@ -540,7 +540,7 @@ class GrabWfModel():
         '''returns the model and the base input''' 
         return self.mmodel,self.base_input
     
-    def test_model(self,start=None,end=None,maxvar=1_000_000, maxerr=100,tol=0.0001,showall=False,showinput=False):
+    def test_model(self,start=None,end=None,maxvar=1_000_000, maxerr=100,tol=0.0001,showall=False,showinput=False,nofit=True):
         '''
         Compares a straight calculation with the input dataframe. 
         
@@ -555,6 +555,7 @@ class GrabWfModel():
             tol (TYPE, optional): check for absolute value of difference. Defaults to 0.0001.
             showall (TYPE, optional): show more . Defaults to False.
             showinput (TYPE, optional): show the input values Defaults to False.
+            nofit : if True dont show the fitted values.default True 
 
         Returns:
             None.
@@ -575,6 +576,8 @@ class GrabWfModel():
             # if v.endswith('_FITTED'): continue
             if i > maxvar : break
             if err > maxerr : break
+            # print(f'{v=} {nofit=}   {nofit and v.endswith("_FITTED")=}' )
+            if  nofit and v.endswith('_FITTED'): continue  
             check = self.mmodel.get_values(v,pct=True).T 
             check.columns = ['Before check','After calculation','Difference','Pct']
             # breakpoint()

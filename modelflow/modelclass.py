@@ -7792,6 +7792,7 @@ class Stability_Mixin():
     def jack_largest_reduction_plot(self,jackdf,eigenvalue_row=0,periode=None,imag_only=False):
         self.stability_newton.jack_largest_reduction_plot(jackdf, eigenvalue_row=eigenvalue_row, periode=periode,imag_only=imag_only )   
  
+Stability_Mixin.eigenvalues_plot.__doc__       = newton_diff.eigplot_all.__doc__
 Stability_Mixin.eigenvalues_show.__doc__       = newton_diff.eigenvalues_show.__doc__
 Stability_Mixin.jack_largest_reduction.__doc__ = newton_diff.jack_largest_reduction.__doc__ 
 Stability_Mixin.jack_largest_reduction_plot.__doc__ = newton_diff.jack_largest_reduction_plot.__doc__ 

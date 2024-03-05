@@ -1020,7 +1020,7 @@ The function is computationally intensive and can take significant time for larg
 
         # Define color map for the combined highlight
         color_map = {
-            'NONE (Non-zero Imag)': 'pink',
+            'NONE (Non-zero Imag)': 'red',
             'NONE (Zero Imag)': 'red',
             'Other (Non-zero Imag)': 'green',
             'Other (Zero Imag)': 'blue'
@@ -1214,6 +1214,36 @@ This method is useful for temporal analysis of the system's stability, focusing 
         return fig
     
     def eigplot_all(self,eig_dic,periode=None,size=(4,3),maxfig=6):
+        """
+Plots the eigenvalues for specified periods in polar coordinates.
+
+This method takes a dictionary of eigenvalues, optionally filters them by specified periods, 
+and plots each eigenvalue on polar plots. The number of plots can be limited by `maxfig`. 
+If `periode` is not specified, it defaults to the current period defined in the model object. 
+The plots are arranged in a grid, with a maximum of two columns.
+
+Parameters
+----------
+eig_dic : dict
+    A dictionary where keys are period identifiers and values are iterables of complex numbers 
+    representing eigenvalues.
+periode : iterable, optional
+    An iterable of period identifiers to plot. If `None` (default), eigenvalues for the current 
+    period in the model are plotted.
+size : tuple of int, optional
+    The size of each subplot in inches. Default is (4, 3).
+maxfig : int, optional
+    The maximum number of figures to display. Default is 6.
+
+Returns
+-------
+matplotlib.figure.Figure
+    A matplotlib Figure object containing the generated plots.
+
+
+
+"""
+
         plt.close('all')
         plt.ioff() 
 

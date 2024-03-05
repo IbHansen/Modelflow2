@@ -44,6 +44,8 @@ oppat       = '('+'|'.join(['(?:' + i + ')' for i in funkname2+opname])+')'
 
 # Numbers 
 numpat      = r'((?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]\d+)?)'
+numpat      = r'((?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)'
+
 
 # Formulars 
 dollarpat   = r'([$]'
@@ -282,7 +284,7 @@ if __name__ == '__main__' and 1 :
             for t in nt: 
                 print(f'{t=}   ')
                
-        print(*udtryk_parse('frml <> a+b+b+b=x(+0)+y(-33) + b+c(-0)+3.444 $'),sep=' \n')        
+        print(*udtryk_parse('frml <> a+b+b+b=x(+0)+y(-33) + b+c(-0)/ 1e4 +3.444 $'),sep=' \n')        
        
     list_extract('list bankdic = bank	:   Danske , Nordea / danske : yes , no $')
     list_extract('list bankdic = bank	:   Danske , Nordea  $')

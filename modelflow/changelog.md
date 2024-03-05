@@ -141,4 +141,8 @@ dumped file are default to zipped content
 get_eigenvectors to get_eigenvalues
 eqdelete fixed a problem when deleting in eviews frml 
 .jack_largest_reduction_plot and .jack_largest_reduction
-
+.several eigenvalue and vector routines 
+vlist for descriptions handels blanks 
+reg ex expressions to capture scientivif format corrected 
+eviews including abs 
+bool to switch off checking fittet value  win grapwbmodel 
