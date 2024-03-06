@@ -7777,9 +7777,9 @@ class Stability_Mixin():
         self.stability_newton.eigenvalues_show(vectors)
         
      
-    def eigenvalues_plot(self,periode=None,size=(4,3),maxfig=6):
-         values = self.get_eigenvalues(progressbar=True)   
-         return self.stability_newton.eigplot_all(values,periode=periode,size=(4,3),maxfig=6)
+    def eigenvalues_plot(self,periode=None,size=(4,3),maxfig=6,progressbar=False):
+         values = self.get_eigenvalues(progressbar=progressbar)   
+         return self.stability_newton.eigplot_all(values,periode=periode,size=size,maxfig=6)
         
     def get_eigen_jackknife_df(self,periode=None,maxnames=200_000):
         _ = self.get_eigenvalues()

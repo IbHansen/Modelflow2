@@ -1282,6 +1282,46 @@ matplotlib.figure.Figure
         plt.show() 
         return fig
     
+    def eigplot_all(self, eig_dic, periode=None, size=(4, 3), maxfig=6):
+        plt.close('all')
+        plt.ioff()
+    
+        _per_first = periode if periode is not None else self.model.current_per
+    
+        if hasattr(_per_first, '__iter__'):
+            _per = _per_first
+        else:
+            _per = [_per_first]
+    
+        plot_dic = {p: v for p, v in eig_dic.items() if p in _per}
+    
+        maxaxes = min(maxfig, len(plot_dic))
+        colrow = 2
+        ncols = min(colrow, maxaxes)
+        nrows = -((-maxaxes) // ncols)
+        
+        # Dynamically calculate figure size based on subplot size and layout
+        fig_width = size[0] * ncols  # Adjusted to consider 'size' parameter for width
+        fig_height = size[1] * nrows  # Adjusted to consider 'size' parameter for height
+        
+        fig = plt.figure(figsize=(fig_width, fig_height), constrained_layout=True)
+        spec = mpl.gridspec.GridSpec(ncols=ncols, nrows=nrows, figure=fig)
+        
+        fig.suptitle('Eigenvalues', fontsize=20)
+    
+        for i, (key, w) in enumerate(plot_dic.items()):
+            if i >= maxaxes:
+                break
+            col = i % colrow
+            row = i // colrow
+            ax = fig.add_subplot(spec[row, col], projection='polar')
+            for x in w:
+                ax.plot([0, np.angle(x)], [0, np.abs(x)], marker='o')
+            ax.set_rticks([0.5, 1, 1.5])
+            ax.set_title(f'{key}', loc='right')
+    
+        plt.show()
+        return fig
     
     def plot_eigenvalues_polar_old(self,eig_dic):
         import plotly.graph_objects as go
