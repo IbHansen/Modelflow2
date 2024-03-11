@@ -1892,11 +1892,12 @@ class Model_help_Mixin():
     
     @staticmethod
     def download_github_repo(owner: str = "IbHansen",
-                             repo_name: str = "pak",
+                             repo_name: str = 'wb-repos',
                              branch: str = 'main', 
                              destination  = '.',
                              go = True, 
                              silent=False,
+                             reset = False ,
                              **kwargs,
                             ):
         """
@@ -1915,6 +1916,8 @@ class Model_help_Mixin():
         - A message indicating whether the download was successful or not.
         """
         # Construct the URL to download the zip file of the entire repository
+        import shutil
+        
         url = f'https://github.com/{owner}/{repo_name}/archive/refs/heads/{branch}.zip'
     
         try:  
@@ -1926,28 +1929,86 @@ class Model_help_Mixin():
         try:
             # breakpoint()
             # urllib.request.urlopen(urlfile) as f
+            
+            
             with urlopen(url) as f:
                 with zipfile.ZipFile(BytesIO(f.read())) as z:
                     # Extract all contents of the zip file to the specified location
                     location = extract_to / f'{repo_name}-{branch}'
                     new_location = extract_to / f'{kwargs.get("description",repo_name)}'
+                    
+                    if reset: 
+                        if new_location.exists() and new_location.is_dir():
+                            shutil.rmtree(new_location)
+                            print( f'"{new_location}" is reset, that is deletet ' )
+                    
+                    
                     if new_location.exists():
-                        raise Exception( f"Can't download to the same location twice, consider deleting before retry:\n{new_location.resolve()}\n") 
+                        if go: 
+                            print(f"'{new_location}' already exist. Can't download to the same location twice. ")
+                            print("Consider reset=1. ")
+                            print(f"** Warning reset=1 deletes all file in '{new_location}' ")
+                            model.display_toc('**Avaiable notebooks**',folder=new_location)
+                            return  
+                        else:
+                        
+                            raise Exception( f"Can't download to the same location twice, consider reset=1  when retrying :\n{new_location}\n") 
 
                     z.extractall(extract_to)
                     try:
                         location.rename(new_location)
                     except: 
-                        print(f"Can't rename {location} to {new_location} you are probably using the folder just now")
+                        print(f"Can't rename {location} to '{new_location}' you are probably using the folder just now")
                         
                     if not silent: 
-                        print(f'Repo downloaded to {new_location.resolve()}' )
+                        print(f'Repo downloaded to "{new_location}"' )
                     if go:
-                        model.display_toc('**Avaiable notebooks**')
-                    return location
+                        model.display_toc('**Avaiable notebooks**',folder=new_location)
+                    return 
         except Exception as e:
             raise Exception( f'No download of {kwargs.get("description",repo_name)}:\n{e} ') 
             return f"An error occurred: {e}"
+
+    @staticmethod
+    def Worldbank_Models(owner: str = "worldbank",
+                             repo_name: str = 'MFMod-ModelFlow',
+                             branch: str = 'main', 
+                             destination  = '.',
+                             go = True, 
+                             silent=False,
+                             reset = False ,
+                             description = 'Worldbank models',
+                             **kwargs,
+                            ):
+        """
+        Download an entire GitHub repository and extract it to a specified location.
+    
+        Parameters:
+        - owner: The owner of the GitHub repository.
+        - repo_name: The name of the repository.
+        - branch: The branch to download.
+        - destination: The local path where the repository should be extracted.
+        - go: display toc of notebooks 
+        - silent: keep silent 
+        - description:optional description which will be used as folder name 
+    
+        Returns:
+        - A message indicating whether the download was successful or not.
+        """
+        
+        return  model.download_github_repo(owner = owner,
+                                     repo_name = repo_name,
+                                     branch  = branch, 
+                                     destination  = destination ,
+                                     go = go , 
+                                     silent=silent,
+                                     reset = reset  ,
+                                     description = description,
+                                     **kwargs,
+                                    )
+
+
+
 
     @staticmethod
     def load_repo_widget(loadspec= None,nocwd=True,silent=False,**kwargs):
@@ -4947,6 +5008,7 @@ class Display_Mixin():
              ...
              for f in figs.values(): 
                  display(f)
+                 plt.close(f)
          plt.ion() 
 
          return figs
@@ -5207,52 +5269,22 @@ class Display_Mixin():
        import modelwidget_input
        widget = modelwidget_input.keep_plot_widget(self,*args,switch=True,**kwargs)
        return widget
-        
+  
+    def df_plot(self,*args,**kwargs):
+        with self.keepswitch(switch=True): 
+            figs = self.keep_plot(*args,**kwargs)
+        return figs    
     
+
     @staticmethod
-    def display_toc(text='**Jupyter notebooks in this and all subfolders**',all=False,nocwd=False):
+    def display_toc(text='**Jupyter notebooks**',folder='.',all=False,nocwd=False):
         '''In a jupyter notebook this function displays a clickable table of content of all 
         jupyter notebooks in this and sub folders'''
 
         from IPython.display import display, Markdown, HTML
         from pathlib import Path
-
         display(Markdown(text))
-        for dir in sorted(Path('.').glob('**')):
-            # print(f'{dir=} {nocwd=}')
-            if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
-                continue
-            
-            if dir == Path('.') and nocwd :
-                continue
-
-            for i, notebook in enumerate(sorted(dir.glob('*.ipynb'))):
-                # print(notebook)    
-                if (not all) and (notebook.name.startswith('test') or notebook.name.startswith('Overview')):
-                    continue
-                if i == 0:
-                    blanks = ''.join(
-                        ['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))
-                    if len(dir.parts):
-                        display(HTML(f'{blanks}<b>{str(dir)}</b>'))
-                    else:
-                        display(
-                            HTML(f'{blanks}<b>{str(Path.cwd().parts[-1])} (.)</b>'))
-
-                name = notebook.name.split('.')[0]
-                display(HTML(
-                    f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
-
-    @staticmethod
-    def display_toc(text='**Jupyter notebooks in this and all subfolders**',all=False,nocwd=False):
-        '''In a jupyter notebook this function displays a clickable table of content of all 
-        jupyter notebooks in this and sub folders'''
-
-        from IPython.display import display, Markdown, HTML
-        from pathlib import Path
-
-        display(Markdown(text))
-        for dir in sorted(Path('.').glob('**')):
+        for dir in sorted(Path(folder).glob('**')):
             # print(f'{dir=} {nocwd=}')
             if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
                 continue
@@ -5260,9 +5292,9 @@ class Display_Mixin():
             if dir == Path('.') and nocwd :
                 continue
             
-            filelist = (list(dir.glob('readme.ipynb')) 
+            filelist = (list(dir.glob('*readme.ipynb')) 
                     + [f for f in sorted(dir.glob('*.ipynb')) 
-                       if not f.name.startswith('readme')])
+                       if not f.stem.endswith('readme')])
             
             for i, notebook in enumerate(filelist):
                 # print(notebook)    
@@ -5278,6 +5310,7 @@ class Display_Mixin():
                             HTML(f'{blanks}<b>{str(Path.cwd().parts[-1])} (.)</b>'))
 
                 name = notebook.name.split('.')[0]
+                # print(notebook)
                 display(HTML(
                     f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
 
@@ -5293,7 +5326,7 @@ class Display_Mixin():
 
         display(Markdown(text))
         dir = Path(path)
-        print(dir,':')
+       # print(dir,':')
         for fname in sorted(dir.glob(pat+'.'+ext)):
             name = fname.name if showext else fname.name.split('.')[0]
             display(HTML(
@@ -5383,6 +5416,8 @@ import modelwidget_input
 
 Display_Mixin.keep_plot_widget.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
 Display_Mixin.keep_show.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
+Display_Mixin.df_plot.__doc__ =  Display_Mixin.keep_plot.__doc__
+
 
 class Json_Mixin():
     '''This mixin class can dump a model and solution
@@ -5476,7 +5511,7 @@ class Json_Mixin():
                 # First, try reading the file as a regular text file
                 with open(pinfile, 'rt', encoding='utf-8') as f:
                     out=  f.read()
-                print(f'file read:  {pinfile.resolve()}')    
+                print(f'file read:  {pinfile}')    
                 return out
             except UnicodeDecodeError:
                 # print(f'An UnicodeDecodeError occurs, it might be a gzip file')
@@ -5486,7 +5521,7 @@ class Json_Mixin():
                 # Try reading the file as a gzip file
                 with gzip.open(pinfile, 'rt', encoding='utf-8') as f:
                     out = f.read()
-                print(f'Zipped file read:  {pinfile.resolve()}')    
+                print(f'Zipped file read:  {pinfile}')    
                 return out
             except (OSError, IOError):
                 # Handle the case where the file is neither plain text nor gzip

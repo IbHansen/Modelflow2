@@ -147,3 +147,7 @@ reg ex expressions to capture scientivif format corrected
 eviews including abs 
 bool to switch off checking fittet value  in grapwbmodel 
 model_description in grapwbmodel
+Don' show full file name (.resolve) when loading and getting from github 
+.Worldbank_Models will downlaod world bank models 
+df_plot matching keep_plot, 
+fix two displays of fig in notebook at first use of keep_plot
