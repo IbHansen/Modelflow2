@@ -1891,7 +1891,7 @@ class Model_help_Mixin():
     
     
     @staticmethod
-    def download_github_repo(owner: str = "IbHansen",
+    def download_github_repo_old(owner: str = "IbHansen",
                              repo_name: str = 'wb-repos',
                              branch: str = 'main', 
                              destination  = '.',
@@ -1968,17 +1968,16 @@ class Model_help_Mixin():
         except Exception as e:
             raise Exception( f'No download of {kwargs.get("description",repo_name)}:\n{e} ') 
             return f"An error occurred: {e}"
-
+        
     @staticmethod
-    def Worldbank_Models(owner: str = "worldbank",
-                             repo_name: str = 'MFMod-ModelFlow',
+    def download_github_repo(owner: str = "IbHansen",
+                             repo_name: str = 'wb-repos',
                              branch: str = 'main', 
-                             destination  = '.',
+                             destination  = './wb-repos',
                              go = True, 
                              silent=False,
                              reset = False ,
-                             description = 'Worldbank models',
-                             **kwargs,
+                             replace = False,
                             ):
         """
         Download an entire GitHub repository and extract it to a specified location.
@@ -1990,7 +1989,107 @@ class Model_help_Mixin():
         - destination: The local path where the repository should be extracted.
         - go: display toc of notebooks 
         - silent: keep silent 
+        - reset: if True delete the destination folder before downlkoading to it 
+        - replace: if True replace existing files with the files from repo 
         - description:optional description which will be used as folder name 
+    
+        Returns:
+        - A message indicating whether the download was successful or not.
+        """
+        # Construct the URL to download the zip file of the entire repository
+        import shutil
+        import tempfile
+
+        
+
+        def copy_new_files_only(src, dst):
+            """
+            Copy files from src to dst if they do not already exist in dst.
+            src and dst are Path objects or strings representing the source and destination directories.
+            """
+            src_path = Path(src)
+            dst_path = Path(dst)
+            
+            for item in src_path.glob('**/*'):  # **/* means all files and directories recursively
+                if item.is_file():  # Only proceed if it's a file
+                    relative_path = item.relative_to(src_path)
+                    relative_path_parts_except_first = relative_path.parts[1:]
+                    relative_path_except_first = Path(*relative_path_parts_except_first)
+                    destination_file = dst_path / relative_path_except_first
+                    # print(' ')
+                    # print(f"{item=} to \n{destination_file=}")
+                    # print(f"{relative_path=}\n{relative_path_except_first=}")
+
+                    if not destination_file.exists():
+                        destination_file.parent.mkdir(parents=True, exist_ok=True)  # Ensure the destination directory exists
+                        shutil.copy2(item, destination_file)
+                        if not silent: print(f"Copied                      : {relative_path_except_first}")
+                    else:
+                        if replace: 
+                            shutil.copy2(item, destination_file)
+                            if not silent: print(f"Copied file overwritten: {relative_path_except_first}")
+                        else: 
+                            if not silent: print(f"Already exists, skipped: {relative_path_except_first}")
+
+
+        
+        url = f'https://github.com/{owner}/{repo_name}/archive/refs/heads/{branch}.zip'
+    
+        try:  
+            extract_to =Path(tempfile.mkdtemp())  # Using pathlib.Path here
+            if not silent: print(f'Temporary directory created at: {extract_to}')
+        except Exception as e:
+            return f"An error occurred creating temporary download location: {e}"
+    
+        try:
+            with urlopen(url) as f:
+                with zipfile.ZipFile(BytesIO(f.read())) as z:
+                    # Extract all contents of the zip file to the specified location
+                    
+                    z.extractall(extract_to)
+                    if not silent:  print(f'Repo downloaded to "{extract_to}"' )
+                    
+        except Exception as e:
+                raise Exception( f'No download of {kwargs.get("description",repo_name)}:\n{e} ') 
+                return f"An error occurred: {e}"
+                   
+                    
+        new_location =Path(destination) 
+        
+        if reset: 
+            if new_location.exists() and new_location.is_dir():
+                shutil.rmtree(new_location)
+                print( f'"{new_location}" is reset, that is deletet ' )
+        
+        
+        copy_new_files_only(extract_to,new_location)
+        shutil.rmtree(extract_to)
+        if go:
+            model.display_toc('**Avaiable notebooks**',folder=new_location)
+        return 
+        
+        
+
+    @staticmethod
+    def Worldbank_Models(owner: str = "worldbank",
+                             repo_name: str = 'MFMod-ModelFlow',
+                             branch: str = 'main', 
+                             destination  = './Worldbank models',
+                             go = True, 
+                             silent=True,
+                             reset = False ,
+                             replace = False ,
+                            ):
+        """
+        Download an entire GitHub repository and extract it to a specified location.
+    
+        Parameters:
+        - owner: The owner of the GitHub repository.
+        - repo_name: The name of the repository.
+        - branch: The branch to download.
+        - destination: The local path where the repository should be extracted.
+        - go: display toc of notebooks 
+        - silent: keep silent 
     
         Returns:
         - A message indicating whether the download was successful or not.
@@ -2003,8 +2102,7 @@ class Model_help_Mixin():
                                      go = go , 
                                      silent=silent,
                                      reset = reset  ,
-                                     description = description,
-                                     **kwargs,
+                                     replace = replace  
                                     )
 
 
