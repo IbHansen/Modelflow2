@@ -1976,7 +1976,6 @@ class Model_help_Mixin():
                              destination  = './wb-repos',
                              go = True, 
                              silent=False,
-                             reset = False ,
                              replace = False,
                             ):
         """
@@ -1989,7 +1988,6 @@ class Model_help_Mixin():
         - destination: The local path where the repository should be extracted.
         - go: display toc of notebooks 
         - silent: keep silent 
-        - reset: if True delete the destination folder before downlkoading to it 
         - replace: if True replace existing files with the files from repo 
         - description:optional description which will be used as folder name 
     
@@ -2056,10 +2054,10 @@ class Model_help_Mixin():
                     
         new_location =Path(destination) 
         
-        if reset: 
-            if new_location.exists() and new_location.is_dir():
-                shutil.rmtree(new_location)
-                print( f'"{new_location}" is reset, that is deletet ' )
+        # if reset: 
+        #     if new_location.exists() and new_location.is_dir():
+        #         shutil.rmtree(new_location)
+        #         print( f'"{new_location}" is reset, that is deletet ' )
         
         
         copy_new_files_only(extract_to,new_location)
@@ -2074,10 +2072,9 @@ class Model_help_Mixin():
     def Worldbank_Models(owner: str = "worldbank",
                              repo_name: str = 'MFMod-ModelFlow',
                              branch: str = 'main', 
-                             destination  = './Worldbank models',
+                             destination  = './Worldbank_models',
                              go = True, 
                              silent=True,
-                             reset = False ,
                              replace = False ,
                             ):
         """
@@ -2101,7 +2098,6 @@ class Model_help_Mixin():
                                      destination  = destination ,
                                      go = go , 
                                      silent=silent,
-                                     reset = reset  ,
                                      replace = replace  
                                     )
 

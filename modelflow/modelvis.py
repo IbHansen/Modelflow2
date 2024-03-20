@@ -18,6 +18,8 @@ import fnmatch
 from matplotlib import dates
 import matplotlib.ticker as ticker
 from IPython.display import display
+from dataclasses import dataclass, field
+from typing import Any, List, Dict
 
 import numpy 
 
@@ -165,11 +167,27 @@ class vis():
      def pct(self):
          '''Returns the pct change'''
          return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(),pat=self.__pat__)
+     @property
+     def growth(self):
+         '''Returns the pct growth'''
+         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(),pat=self.__pat__)
 
      @property
      def year_pct(self):
          '''Returns the pct change over 4 periods (used for quarterly data) ''' 
          return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(periods=4).loc[:,self.names],pat=self.__pat__)
+     
+     @property
+     def yoy_growth(self):
+         '''Returns the pct change over 4 periods (used for quarterly data) ''' 
+         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(periods=4).loc[:,self.names],pat=self.__pat__)
+
+     @property
+     def qoq_annualized_growth(self):
+         '''Returns the pct change over 4 periods (used for quarterly data) ''' 
+         df = (1.+self.thisdf.loc[:,self.names].pct_change().loc[:,self.names])**4-1.
+         return vis(model=self.model,df=df,pat=self.__pat__)
+
 
      @property
      def frml(self):
@@ -217,11 +235,17 @@ class vis():
      
      @property
      def difpctlevel(self):
-         ''' Returns the differens between the basedf and lastdf'''
+         ''' Returns the differens between the basedf and lastdf in percent '''
          difdf = (self.thisdf-self.model.basedf.loc[:,self.names])/ self.model.basedf.loc[:,self.names]
          return vis(model=self.model,df=difdf,pat=self.__pat__)
+     
      @property
      def difpct(self):
+         ''' Returns the differens between the pct changes in basedf and lastdf'''
+         difdf = self.thisdf.pct_change()-self.model.basedf.loc[:,self.names].pct_change()
+         return vis(model=self.model,df=difdf,pat=self.__pat__)
+     @property
+     def difgrowth(self):
          ''' Returns the differens between the pct changes in basedf and lastdf'''
          difdf = self.thisdf.pct_change()-self.model.basedf.loc[:,self.names].pct_change()
          return vis(model=self.model,df=difdf,pat=self.__pat__)
@@ -583,6 +607,132 @@ Note:
             out = self._showall(all=0,last=1)
             return out
             
+
+@dataclass
+class tabledef:
+    mmodel: Any = None
+    options: Dict = field(default_factory=dict)
+    lines: List = field(default_factory=list)
+    dflast: pd.DataFrame = None  # New field with default value None
+    dfbase: pd.DataFrame = None  # New field with default value None
+    timeslice : List = field(default_factory=list)
+    
+    
+    def __post_init__(self):
+        self.timeslice = self.timeslice if self.timeslice else self.mmodel.current_per
+        self.outdfs = [self.makedf(self.dflast,line) for line in self.lines ] 
+        self.outdf     = pd.concat( self.outdfs ) 
+        self.displaydf = pd.concat( self.outdfs ) 
+        
+        
+        
+        # self.outstyled = [self.makestyle(linedf,line) for linedf,line in zip(self.outdfs,self.lines)] 
+            
+        # self.datawidget = self.make_one_style(self.displaydf.loc[:,self.timeslice],self.lines )
+       
+        return 
+    
+    @property
+    def datawidget(self): 
+        return self.make_one_style(self.displaydf.loc[:,self.timeslice],self.lines )
+        
+    def makedf(self, data, line):   
+        linetype = line.get('type', 'growth')
+    
+        # Pre-process for cases that use linevars and linedes
+        if linetype in ['growth', 'gdppct']:
+            linevars = self.mmodel.vlist(line['pat'])
+            linedes = [self.mmodel.var_description[v] for v in linevars]
+    
+        match linetype:
+            case 'growth':
+                linedf = self.mmodel[linevars].pct\
+                    .rename().mul(100).df.pipe(lambda df: df.rename(columns={c: f'{c} %' for c in df.columns})).T
+    
+            case 'gdppct':
+                gdpvars = [self.findgdpvar(v) for v in linevars]
+                pct_des = [f'{self.mmodel.var_description[v].split(",")[0].split("mill")[0]} % ' for v in linevars]
+                linedf = pd.DataFrame((govdf := self.mmodel[linevars].df).values / self.mmodel[gdpvars].df.values * 100,
+                                      index=govdf.index, columns=pct_des).T
+    
+            case 'line':
+                linetext = line.get('text', 'A line ')
+                linedf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[linetext]).T
+    
+            case _:
+                raise Exception(f'No such line type: {linetype}')
+    
+        return linedf
+   
+    
+    
+    # def make_one_style_old(self,df,lines)  :
+    #     format_decimal = [ line.get('dec',2) for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
+
+    #     for i, dec in enumerate(format_decimal):
+    #          df.iloc[i] = df.iloc[i].apply(lambda x: f"{x:,.{dec}f}")
+             
+             
+
+    def make_one_style(self,df,lines)  :
+        format_decimal = [  line.get('dec',2)  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
+
+        for i, dec in enumerate(format_decimal):
+              df.iloc[i] = df.iloc[i].apply(lambda x:  " " if pd.isna(x) else f"{x:,.{dec}f}")
+        
+        
+        out = df.style.set_table_styles([           
+    {
+        'selector': '.row_heading, .corner',
+        'props': [
+            ('position', 'sticky'),
+            ('left', '0'),
+            ('background-color', 'salmon'),
+            ('width', '300px'),  # Set the width of the row headings
+            ('min-width', '200px'),  # Ensure the minimum width is respected
+            ('max-width', '400px')  # Ensure the maximum width is respected
+        ]
+    },
+    {
+        'selector': '.col_heading',
+        'props': [
+            ('position', 'sticky'),
+            ('top', '0'),
+            ('background-color', 'white')
+        ]
+    },
+    {
+        'selector': 'th',
+        'props': [
+            ('text-align', 'left')  # Align text to the left
+        ]
+    },
+    {
+        'selector': 'caption',
+        'props': [
+            ('font-size', '16px'),  # Make the font larger
+            ('font-weight', 'bold')  # Make the font bold
+        ]
+    }
+],overwrite=False)
+        out= out.set_caption(self.options.get('caption' , 'Summary'))
+        
+        return out 
+        
+        
+    def findgdpvar(self,varname):
+            gdpname = varname[:3]+'NYGDPMKTP'+varname[-2:]
+            if gdpname in self.mmodel.endogene: 
+                return gdpname
+            else: 
+                raise Exception(f"{varname} don't have a matching GDP variable ")
+                
+    def _repr_html_(self):  
+        return self.datawidget._repr_html_()
+                
+                
+                    
+
 
         
 def vis_alt(grund,mul,title='Show variables',ttop=None):

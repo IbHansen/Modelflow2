@@ -151,3 +151,8 @@ Don' show full file name (.resolve) when loading and getting from github
 .Worldbank_Models will downlaod world bank models 
 df_plot matching keep_plot, 
 fix two displays of fig in notebook at first use of keep_plot
+get_github_repo and worldbankmodels overwrite of existing models is optional, 
+2.23 release
+get_github_repo and worldbankmodels overwrite of existing models is the feature is deletet for security reasons 
+tabledef is made, 
+vis now have pct dublicate growth, difpct dublicate difgrowth,year_pct and year_growth
