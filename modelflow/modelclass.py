@@ -1693,6 +1693,8 @@ class Model_help_Mixin():
                 
             istart, iend = df.index.slice_locs(arg1, arg2)
             current = df.index[istart:iend]
+            # print(f'{current=}')    
+
             time1,time2 = current[0],current[-1] 
             varstring,opstring,valuestring =re.split(operatorpat,l)
                  
@@ -2072,7 +2074,7 @@ class Model_help_Mixin():
     def Worldbank_Models(owner: str = "worldbank",
                              repo_name: str = 'MFMod-ModelFlow',
                              branch: str = 'main', 
-                             destination  = './Worldbank_models',
+                             destination  = './WorldbankModels',
                              go = True, 
                              silent=True,
                              replace = False ,
@@ -4967,7 +4969,7 @@ class Display_Mixin():
     def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
           diff=False, diffpct=False, mul=1.0, title='Scenarios', legend=False, scale='linear',
           yunit='', ylabel='', dec='', trans=None, showfig=True, kind='line', size=(10, 6),
-          vline=[], savefig='', keep_dim=True, dataonly=False, samefig=False, ncol=2):
+          vline=None, savefig='', keep_dim=True, dataonly=False, samefig=False, ncol=2):
          """
     Generate and display plots for specified scenarios and variables.
 
@@ -5668,6 +5670,9 @@ class Json_Mixin():
                 lastdf, current_per)
         except:
             pass
+        
+        if mmodel.model_description:
+            print(f'Model:{mmodel.model_description}')    
 
         if run:
             if (start:= kwargs.get('start',False)) and (end:=kwargs.get('end',False)): 

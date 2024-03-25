@@ -183,7 +183,7 @@ class vis():
          return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(periods=4).loc[:,self.names],pat=self.__pat__)
 
      @property
-     def qoq_annualized_growth(self):
+     def qoq_ar(self):
          '''Returns the pct change over 4 periods (used for quarterly data) ''' 
          df = (1.+self.thisdf.loc[:,self.names].pct_change().loc[:,self.names])**4-1.
          return vis(model=self.model,df=df,pat=self.__pat__)
@@ -774,7 +774,7 @@ Plots a subplot for each column in a datafra.
         name (TYPE, optional): title. Defaults to ''.
         ppos (TYPE, optional): # of position to use if split. Defaults to -1.
         kind (TYPE, optional): matplotlib kind . Defaults to 'line'.
-        colrow (TYPE, optional): columns per row . Defaults to 6.
+        colrow/ncol (TYPE, optional): columns per row . Defaults to 2.
         sharey (TYPE, optional): Share y axis between plots. Defaults to True.
         splitchar (TYPE, optional): if the name should be split . Defaults to '__'.
         savefig (TYPE, optional): save figure. Defaults to ''.
@@ -783,20 +783,22 @@ Plots a subplot for each column in a datafra.
 
     Returns:
         a matplotlib fig.
+        
+    note: ncol can be used instead of colrow to compatible with keep_plot     
 
     '''
     
-   
+    xcolrow = kwargs.get('ncol',colrow)
     plt.ioff()
     if splitchar:
         out=df.pipe(lambda df_: df_.rename(columns={v: v.split(splitchar)[ppos] for v in df_.columns}))
     else:
         out=df
     number = out.shape[1] 
-    row=-((-number)//colrow)
+    row=-((-number)//xcolrow)
     # breakpoint()
     
-    axes=out.plot(kind=kind,subplots=True,layout=(row,colrow),figsize = (kwargs.get('xsize',10), row*kwargs.get('ysize',2)),
+    axes=out.plot(kind=kind,subplots=True,layout=(row,xcolrow),figsize = (kwargs.get('xsize',10), row*kwargs.get('ysize',2)),
                  use_index=True,title=name,sharey=sharey)
     for ax in axes.flatten():
         pass

@@ -656,6 +656,13 @@ def check_syntax_frml(frml):
         return True
     except:
         return False
+def check_syntax_udtryk(udtryk):
+    ''' check syntax of frml ''' 
+    try:
+        ast.parse(re.sub(r'\n','',re.sub(' ','',udtryk)))
+        return True
+    except:
+        return False
 
 def normalize_a_frml(frml,show=False): 
     ''' Normalize and show a frml'''     

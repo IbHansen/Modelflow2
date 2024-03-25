@@ -305,7 +305,15 @@ class GrabWfModel():
         self.all_frml = [nz.normal(l,add_add_factor=(typ=='stoc'),make_fitted=(typ=='stoc'),make_fixable =(typ=='stoc'),eviews=e) 
                          for l,typ,e in tqdm(zip(line,line_type,eviewsline),
                     desc='Normalizing model',total=len(line),bar_format=bars,disable=self.disable_progress)]
-
+   
+        syntaxlines = [f for f in tqdm(self.all_frml, 
+                         desc='Syntax check',total=len(self.all_frml),bar_format=bars,disable=self.disable_progress)
+                       if not mp.check_syntax_udtryk(f.normalized)]
+        if len(syntaxlines):
+            print(f'{len(syntaxlines)} Errors')
+            for l in syntaxlines: 
+                l.fprint()
+            raise Exception('Syntax error in frml  ')    
         # print(' ',flush=True)
 
         # print([ f.normalized for f in self.all_frml ])
@@ -341,7 +349,7 @@ class GrabWfModel():
         # self.mmodel.set_var_description(self.model_all_about['var_description'])
        
         self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')
-        # breakpoint()
+        breakpoint()
         
         try:
             temp_start,temp_end  = self.mfmsa_start_end
@@ -352,10 +360,18 @@ class GrabWfModel():
         
         self.start = temp_start if type(self.start) == type(None) else self.start
         self.end   = temp_end   if type(self.end)   == type(None) else self.end 
-        if self.do_add_factor_calc:
-            self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
-        else: 
-            self.base_input = self.dfmodel
+        try: 
+            if self.do_add_factor_calc:
+                self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
+            else: 
+                self.base_input = self.dfmodel
+        except Exception as e:
+            import traceback
+            ...
+            print(f'We have a problem {e}')
+            traceback.print_exc()
+
+            
         
     @staticmethod
     def trans_eviews(rawmodel):
@@ -626,6 +642,7 @@ if __name__ == '__main__':
         mda_eviews_run_lines = ['Scalar _MDASBBREV_at_COEF_2 = _MDASBBREV.@COEF(+2)']
         
     
+        filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
         filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
         modelname = 'pak'
         filename = filedict[modelname]

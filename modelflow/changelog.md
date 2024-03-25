@@ -156,3 +156,6 @@ get_github_repo and worldbankmodels overwrite of existing models is optional,
 get_github_repo and worldbankmodels overwrite of existing models is the feature is deletet for security reasons 
 tabledef is made, 
 vis now have pct dublicate growth, difpct dublicate difgrowth,year_pct and year_growth
+vis now have qoq_ar quarter on quarter anualized rate 
+modelload also reports model_description 
+ncol same as colrow in vis.plot to be compabiteble with keep_plot 
