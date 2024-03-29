@@ -620,7 +620,9 @@ class tabledef:
     
     def __post_init__(self):
         self.timeslice = self.timeslice if self.timeslice else self.mmodel.current_per
-        self.outdfs = [self.makedf(self.dflast,line) for line in self.lines ] 
+        with self.mmodel.keepswitch(switch=True): 
+            self.outdfs = [self.makedf(self.dflast,line) for line in self.lines ] 
+            
         self.outdf     = pd.concat( self.outdfs ) 
         self.displaydf = pd.concat( self.outdfs ) 
         
@@ -637,23 +639,40 @@ class tabledef:
         return self.make_one_style(self.displaydf.loc[:,self.timeslice],self.lines )
         
     def makedf(self, data, line):   
-        linetype = line.get('type', 'growth')
+        showtype = line.get('showtype', 'growth')
+        diftype = line.get('diftype', 'nodif')
+        
     
         # Pre-process for cases that use linevars and linedes
-        if linetype in ['growth', 'gdppct']:
+        if showtype not in ['line']:
             linevars = self.mmodel.vlist(line['pat'])
             linedes = [self.mmodel.var_description[v] for v in linevars]
+            
+            def getline(start_ofset= 0,**kvargs):
+                locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line['pat'],showtype=showtype,
+                                diftype = diftype,keep_dim=False,start_ofset=start_ofset)
+                if diftype == 'basedf':
+                    locallinedf = next(iter((locallinedfdict.values()))).T
+                else: 
+                    locallinedf = next(iter(reversed(locallinedfdict.values()))).T
+                    
+                return locallinedf 
+                
     
-        match linetype:
+        match showtype:
             case 'growth':
-                linedf = self.mmodel[linevars].pct\
-                    .rename().mul(100).df.pipe(lambda df: df.rename(columns={c: f'{c} %' for c in df.columns})).T
+                linedf = getline(start_ofset=-1)
+                linedf.index = linedes
     
             case 'gdppct':
-                gdpvars = [self.findgdpvar(v) for v in linevars]
-                pct_des = [f'{self.mmodel.var_description[v].split(",")[0].split("mill")[0]} % ' for v in linevars]
-                linedf = pd.DataFrame((govdf := self.mmodel[linevars].df).values / self.mmodel[gdpvars].df.values * 100,
-                                      index=govdf.index, columns=pct_des).T
+                linedf = getline(start_ofset=-1)
+                pct_des = [f'{des.split(",")[0].split("mill")[0]} % of GDP' for des in    linedes]
+                linedf.index = pct_des 
+                
+            case 'level' | 'lastdf' | 'basedf':
+                linedf = getline(start_ofset=-1)
+                pct_des = [f'{des.split(",")[0].split("mill")[0]} % of GDP' for des in    linedes]
+                linedf.index = pct_des 
     
             case 'line':
                 linetext = line.get('text', 'A line ')
@@ -675,12 +694,17 @@ class tabledef:
              
 
     def make_one_style(self,df,lines)  :
+        width = self.options.get('width',20) 
         format_decimal = [  line.get('dec',2)  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
-
+        # format_decimal = [  f",.{width}{line.get('dec',2)}f"  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
         for i, dec in enumerate(format_decimal):
-              df.iloc[i] = df.iloc[i].apply(lambda x:  " " if pd.isna(x) else f"{x:,.{dec}f}")
+              # df.iloc[i] = df.iloc[i].apply(lambda x:  " " if pd.isna(x) else f"{x:,.{dec}f}")
+              
+              df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}")
+              # print(dec) 
+              # df.iloc[i] = df.iloc[i].apply(lambda x:  " " if pd.isna(x) else f"{x:{dec} }")
         
-        
+        # print(df )
         out = df.style.set_table_styles([           
     {
         'selector': '.row_heading, .corner',

@@ -4845,7 +4845,7 @@ class Display_Mixin():
             elif showtype == 'change':
                 dfs = {v: vdf.diff() for v, vdf in dfs.items()}
 
-            elif showtype == 'level':
+            elif showtype in  ['level']  :
                 dfs = dfs 
         
             elif showtype ==  'gdppct':
@@ -4884,7 +4884,7 @@ class Display_Mixin():
                     dfsres = {v:  (vdf.subtract(
                         vdf.iloc[:, 0], axis=0).divide(
                         vdf.iloc[:, 0], axis=0)*100).iloc[:, 1:]  for v, vdf in dfs.items()}
-                elif diftype == 'nodif': 
+                elif diftype in  ['nodif', 'basedf', 'lastdf']:  # for use in tabledf
                      dfsres = dfs
  
                 else:
@@ -4898,7 +4898,7 @@ class Display_Mixin():
                elif diftype == 'difpct': 
                    dfsres = {v:  (vdf/first_scenario-1.)*100
                         for i,(v, vdf)  in enumerate(dfs.items()) if i >= 1}
-               elif diftype == 'nodif': 
+               elif diftype == diftype in  ['nodif', 'basedf', 'lastdf']:  # for use in tabledf
                      dfsres = dfs
  
                else:
