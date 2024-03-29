@@ -4678,7 +4678,7 @@ class Display_Mixin():
     #         res['lastdf'] = self.lastdf.loc[self.current_per,varlist]
     #     return out
 
-    def keep_var_dict(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, diff=False):
+    def keep_var_dict(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, diff=False,trans=True):
         """
        Returns a dict of the keept experiments. Key is the scrnario names, values are a dataframe with  values for each variable
 
@@ -4706,7 +4706,8 @@ class Display_Mixin():
             # print(f'{self.current_per[-1]=}')
             for solver, solution in self.keep_solutions.items():
                 outv = pd.concat([solution.loc[self.current_per, v] for v in vars ], axis=1)
-                outv.columns = [self.var_description[v] for v  in vars]
+                if trans: 
+                    outv.columns = [self.var_description[v] for v  in vars]
                 outv.columns.names = ['Variable']
                 res[solver] = outv
         return res
@@ -4813,8 +4814,109 @@ class Display_Mixin():
             return dfsres
     
           
+    def keep_get_plotdict_new(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, 
+                          showtype='level',diftype='nodif', keep_dim = True):
+            """
+            returns 
+            - a dict of {variable in pat :dfs scenarios as columnns } if keep_dim = 1
+            - a dict of {scenarios       :dfs with variables in pat as columnns } if keep_dim = 1
+            
+            Args:
+                pat (string, optional): Variable selection. Defaults to '*'.
+                start (TYPE, optional): start periode. Defaults to ''.
+                end (TYPE, optional): end periode. Defaults to ''.
+                start_ofset (integer,optional ): relativ start ofset 
+                end_ofset (integer,optional ): relativ end ofset                 
+                showtype (str, optional): 'level','growth', 'gdppct' or change' transformation of data. Defaults to 'level'.
+                diftype (str, optional): 'nodif','dif' or 'difpct' transformation of data. 
+                
+    """
+            # breakpoint()
+
+            if keep_dim:
+                dfs = self.keep_get_dict(pat, start, end, start_ofset, end_ofset)
+            else: 
+                dfs = self.keep_var_dict(pat, start, end, start_ofset, end_ofset,trans=False)
+                
+                
+            if showtype == 'growth':
+                dfs = {v: vdf.pct_change()*100. for v, vdf in dfs.items()}
+        
+            elif showtype == 'change':
+                dfs = {v: vdf.diff() for v, vdf in dfs.items()}
+
+            elif showtype == 'level':
+                dfs = dfs 
+        
+            elif showtype ==  'gdppct':
+                if keep_dim: 
+                    linevars = list(dfs.keys())
+                    gdpvars = [self.findgdpvar(v) for v in linevars]
+                    dfgdp = self.keep_get_dict(gdpvars, start, end, start_ofset, end_ofset,trans=False)
+                    denominvalues    = [dfgdp[v]  for v in gdpvars ]
+
+                else: 
+                    firstdf = next(iter(dfs.values()))
+                    linevars = list(firstdf.columns)
+                    gdpvars = [self.findgdpvar(v) for v in linevars]
+                    dfgdp = self.keep_var_dict(gdpvars, start, end, start_ofset, end_ofset,trans=False)
+                    denominvalues    = [df  for df in dfgdp.values() ]
+
+                nummeratorvalues = [df for df in dfs.values() ]
+                in_percent       = [n.values/ d.values * 100 for 
+                                    n,d in zip(nummeratorvalues,denominvalues)] 
+                indexnames       = [df.index for df in dfs.values() ]
+                colnames         = [df.columns for df in dfs.values() ]
+                dfs = { v:  pd.DataFrame(ip,index=i, columns=c)
+                        for ip,i,c,v in zip(in_percent,indexnames,colnames,dfs.keys() )}
+                    
+
+        
+        
+            else: 
+                raise Exception('Wrong showtype in keep_get') 
+            
+            if keep_dim: 
+                if diftype == 'dif':
+                    dfsres = {v: (vdf.subtract(
+                        vdf.iloc[:, 0], axis=0)).iloc[:, 1:]  for v, vdf in dfs.items()}
+                elif diftype == 'difpct': 
+                    dfsres = {v:  (vdf.subtract(
+                        vdf.iloc[:, 0], axis=0).divide(
+                        vdf.iloc[:, 0], axis=0)*100).iloc[:, 1:]  for v, vdf in dfs.items()}
+                elif diftype == 'nodif': 
+                     dfsres = dfs
+ 
+                else:
+                    raise Exception('Wrong diftype in keep_get-') 
+
+            else:          
+               first_scenario = dfs[list(dfs.keys())[0]]
+               if diftype == 'dif':
+                   dfsres = {v: vdf - first_scenario 
+                        for i,(v, vdf)  in enumerate(dfs.items())  if i >= 1}
+               elif diftype == 'difpct': 
+                   dfsres = {v:  (vdf/first_scenario-1.)*100
+                        for i,(v, vdf)  in enumerate(dfs.items()) if i >= 1}
+               elif diftype == 'nodif': 
+                     dfsres = dfs
+ 
+               else:
+                    raise Exception('Wrong diftype in keep_get-') 
+                   
+     
+            return dfsres
     
-   
+    def findgdpvar(self,varname):
+        '''Find matching  GDP variable - for worldbank models 
+        '''
+        gdpname = varname[:3]+'NYGDPMKTP'+varname[-2:]
+        if gdpname in self.endogene : 
+            return gdpname
+        else: 
+            raise Exception(f"{varname} don't have a matching GDP variable ")
+    
+    
 
     def inputwidget(self, start='', end='', basedf=None, **kwargs):
         ''' calls modeljupyter input widget, and keeps the period scope '''
