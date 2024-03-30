@@ -613,32 +613,49 @@ class tabledef:
     mmodel: Any = None
     options: Dict = field(default_factory=dict)
     lines: List = field(default_factory=list)
-    dflast: pd.DataFrame = None  # New field with default value None
-    dfbase: pd.DataFrame = None  # New field with default value None
     timeslice : List = field(default_factory=list)
     
     
     def __post_init__(self):
         self.timeslice = self.timeslice if self.timeslice else self.mmodel.current_per
         with self.mmodel.keepswitch(switch=True): 
-            self.outdfs = [self.makedf(self.dflast,line) for line in self.lines ] 
+            self.outdfs = [self.makedf(line) for line in self.lines ] 
             
         self.outdf     = pd.concat( self.outdfs ) 
         self.displaydf = pd.concat( self.outdfs ) 
         
-        
-        
-        # self.outstyled = [self.makestyle(linedf,line) for linedf,line in zip(self.outdfs,self.lines)] 
-            
-        # self.datawidget = self.make_one_style(self.displaydf.loc[:,self.timeslice],self.lines )
-       
+      
         return 
     
     @property
     def datawidget(self): 
-        return self.make_one_style(self.displaydf.loc[:,self.timeslice],self.lines )
+        return self.make_html_style(self.displaydf.loc[:,self.timeslice],self.lines )
+
+    @property
+    def latexwidget(self): 
+        return self.make_latex_style(self.displaydf.loc[:,self.timeslice],self.lines )
+    
+    @property
+    def fulllatexwidget(self): 
+         
+        latex_pre = r'''\documentclass{article}
+\usepackage{booktabs}
+\usepackage{caption} % Include the caption package
+\captionsetup{justification=raggedright,singlelinecheck=false}
+
+\begin{document}
+
+'''
         
-    def makedf(self, data, line):   
+        latex_post = r'''
+\end{document}
+        '''   
+        startlatex = self.latexwidget.to_latex(hrules=True).replace('%',r'\%')
+        breadlatex = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in startlatex.split('\n'))
+        out = latex_pre + breadlatex + latex_post 
+        return out 
+        
+    def makedf(self, line):   
         showtype = line.get('showtype', 'growth')
         diftype = line.get('diftype', 'nodif')
         
@@ -662,49 +679,39 @@ class tabledef:
         match showtype:
             case 'growth':
                 linedf = getline(start_ofset=-1)
-                linedf.index = linedes
+                pct_des = [f'{des}, % growth' for des in    linedes]
+                linedf.index = pct_des
     
             case 'gdppct':
-                linedf = getline(start_ofset=-1)
-                pct_des = [f'{des.split(",")[0].split("mill")[0]} % of GDP' for des in    linedes]
+                linedf = getline()
+                pct_des = [f'{des.split(",")[0].split("mill")[0]}, % of GDP' for des in    linedes]
                 linedf.index = pct_des 
                 
-            case 'level' | 'lastdf' | 'basedf':
-                linedf = getline(start_ofset=-1)
-                pct_des = [f'{des.split(",")[0].split("mill")[0]} % of GDP' for des in    linedes]
-                linedf.index = pct_des 
+            case 'level':
+                linedf = getline()
+                linedf.index = linedes
+    
+            case 'change':
+                linedf = getline()
+                linedf.index = linedes
     
             case 'line':
                 linetext = line.get('text', 'A line ')
                 linedf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[linetext]).T
     
             case _:
-                raise Exception(f'No such line type: {linetype}')
+                raise Exception(f'No such line type: {showtype}')
     
         return linedf
-   
-    
-    
-    # def make_one_style_old(self,df,lines)  :
-    #     format_decimal = [ line.get('dec',2) for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
-
-    #     for i, dec in enumerate(format_decimal):
-    #          df.iloc[i] = df.iloc[i].apply(lambda x: f"{x:,.{dec}f}")
-             
              
 
-    def make_one_style(self,df,lines)  :
+
+    def make_html_style(self,df,lines)  :
         width = self.options.get('width',20) 
         format_decimal = [  line.get('dec',2)  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
-        # format_decimal = [  f",.{width}{line.get('dec',2)}f"  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
         for i, dec in enumerate(format_decimal):
-              # df.iloc[i] = df.iloc[i].apply(lambda x:  " " if pd.isna(x) else f"{x:,.{dec}f}")
-              
               df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}")
-              # print(dec) 
-              # df.iloc[i] = df.iloc[i].apply(lambda x:  " " if pd.isna(x) else f"{x:{dec} }")
-        
-        # print(df )
+
         out = df.style.set_table_styles([           
     {
         'selector': '.row_heading, .corner',
@@ -739,10 +746,35 @@ class tabledef:
         ]
     }
 ],overwrite=False)
+        
         out= out.set_caption(self.options.get('caption' , 'Summary'))
         
         return out 
-        
+ 
+    def make_latex_style(self,df,lines)  :
+            width = self.options.get('width',20) 
+            rowlines  = [ line for  line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
+            newindex = []
+            for i, line  in enumerate(rowlines):
+                if line.get('showtype', 'growth') == 'line':
+                    xx = fr'&\multicolumn{{{len(df.columns)}}}'+'{c}{'+df.index[i]+'}' 
+                else:
+                    xx = df.index[i]
+                # print(xx) 
+                newindex.append(xx) 
+            # print(newindex)   
+            df.index = newindex
+            def custom_formatter(x):
+                if pd.isna(x):
+                    return ""  # Return blank for NaN values
+                elif isinstance(x, float):
+                    return f"{x:.2f}"  # Format float numbers with 2 decimal places
+                return x  # Return the original value for other data types
+    
+            out = df.style.format(custom_formatter)
+            out= out.set_caption(self.options.get('caption' , 'Summary'))
+            
+            return out        
         
     def findgdpvar(self,varname):
             gdpname = varname[:3]+'NYGDPMKTP'+varname[-2:]
