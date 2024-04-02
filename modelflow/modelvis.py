@@ -20,6 +20,11 @@ import matplotlib.ticker as ticker
 from IPython.display import display
 from dataclasses import dataclass, field
 from typing import Any, List, Dict
+from subprocess import run
+from pathlib import Path
+import webbrowser as wb
+
+
 
 import numpy 
 
@@ -610,10 +615,12 @@ Note:
 
 @dataclass
 class tabledef:
-    mmodel: Any = None
-    options: Dict = field(default_factory=dict)
-    lines: List = field(default_factory=list)
-    timeslice : List = field(default_factory=list)
+    mmodel      : Any = None
+    options     : Dict = field(default_factory=dict)
+    lines       : List = field(default_factory=list)
+    timeslice   : List = field(default_factory=list)
+    chunk_size  : int = 5
+    tabname     : str = 'table'
     
     
     def __post_init__(self):
@@ -631,9 +638,6 @@ class tabledef:
     def datawidget(self): 
         return self.make_html_style(self.displaydf.loc[:,self.timeslice],self.lines )
 
-    @property
-    def latexwidget(self): 
-        return self.make_latex_style(self.displaydf.loc[:,self.timeslice],self.lines )
     
     @property
     def fulllatexwidget(self): 
@@ -650,11 +654,29 @@ class tabledef:
         latex_post = r'''
 \end{document}
         '''   
-        startlatex = self.latexwidget.to_latex(hrules=True).replace('%',r'\%')
+        startlatex = self.latexwidget
         breadlatex = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in startlatex.split('\n'))
         out = latex_pre + breadlatex + latex_post 
         return out 
+  
+    def makepdf(self,xopen=False):
+        latex_dir = Path('latex')
+        latex_dir.mkdir(parents=True, exist_ok=True)
         
+        latex_file = latex_dir / f'{self.tabname}.tex'
+        pdf_file = latex_dir / f'{self.tabname}.tex'
+
+
+        # Now open the file for writing within the newly created directory
+        with open(latex_file, 'wt') as f:
+            f.write(self.fulllatexwidget)  # Assuming tab.fulllatexwidget is the content you want to write
+        xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.tabname}.tex'      ,cwd = 'latex/')
+        if xx0.returncode: 
+            raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
+        if xopen:
+            wb.open(pdf_file, new=2)
+            
+            
     def makedf(self, line):   
         showtype = line.get('showtype', 'growth')
         diftype = line.get('diftype', 'nodif')
@@ -673,7 +695,7 @@ class tabledef:
                 else: 
                     locallinedf = next(iter(reversed(locallinedfdict.values()))).T
                     
-                return locallinedf 
+                return locallinedf.loc[:,self.mmodel.current_per] 
                 
     
         match showtype:
@@ -703,16 +725,19 @@ class tabledef:
                 raise Exception(f'No such line type: {showtype}')
     
         return linedf
-             
 
-
-    def make_html_style(self,df,lines)  :
+    @property    
+    def outdf_str(self):
         width = self.options.get('width',20) 
+        df = self.outdf.copy( )
         format_decimal = [  line.get('dec',2)  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
         for i, dec in enumerate(format_decimal):
               df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}")
+        return df      
 
-        out = df.style.set_table_styles([           
+
+    def make_html_style(self,df,lines)  :
+        out = self.outdf_str.style.set_table_styles([           
     {
         'selector': '.row_heading, .corner',
         'props': [
@@ -751,30 +776,27 @@ class tabledef:
         
         return out 
  
-    def make_latex_style(self,df,lines)  :
-            width = self.options.get('width',20) 
+    @property
+    def latexwidget(self): 
             rowlines  = [ line for  line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
-            newindex = []
-            for i, line  in enumerate(rowlines):
-                if line.get('showtype', 'growth') == 'line':
-                    xx = fr'&\multicolumn{{{len(df.columns)}}}'+'{c}{'+df.index[i]+'}' 
-                else:
-                    xx = df.index[i]
-                # print(xx) 
-                newindex.append(xx) 
-            # print(newindex)   
-            df.index = newindex
-            def custom_formatter(x):
-                if pd.isna(x):
-                    return ""  # Return blank for NaN values
-                elif isinstance(x, float):
-                    return f"{x:.2f}"  # Format float numbers with 2 decimal places
-                return x  # Return the original value for other data types
+            dfs = [self.outdf_str.iloc[:, i:i+self.chunk_size] for i in range(0, self.outdf_str.shape[1], self.chunk_size)]
+            outlist = [] 
+            for df in dfs: 
+                    
+                newindex = [fr'&\multicolumn{{{len(df.columns)}}}'+'{c}{'+df.index[i]+'}'  
+                            if line.get('showtype', 'growth') == 'line'
+                            else df.index[i]
+                    for i, line  in enumerate(rowlines)]    
     
-            out = df.style.format(custom_formatter)
-            out= out.set_caption(self.options.get('caption' , 'Summary'))
-            
-            return out        
+                df.index = newindex
+
+                outlist = outlist + [df.style.format(lambda x:x) \
+                 .set_caption(self.options.get('caption' , 'Summary')) \
+                 .to_latex(hrules=True).replace('%',r'\%') ] 
+                   
+            # print(outlist)
+            out = ' '.join(outlist) 
+            return out       
         
     def findgdpvar(self,varname):
             gdpname = varname[:3]+'NYGDPMKTP'+varname[-2:]
