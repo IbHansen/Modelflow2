@@ -659,12 +659,14 @@ class tabledef:
         out = latex_pre + breadlatex + latex_post 
         return out 
   
-    def makepdf(self,xopen=False):
+    def makepdf(self,xopen=False,show=True,width=800,height=600):
+        from IPython.display import IFrame,display
+
         latex_dir = Path('latex')
         latex_dir.mkdir(parents=True, exist_ok=True)
         
         latex_file = latex_dir / f'{self.tabname}.tex'
-        pdf_file = latex_dir / f'{self.tabname}.tex'
+        pdf_file = latex_dir / f'{self.tabname}.pdf'
 
 
         # Now open the file for writing within the newly created directory
@@ -674,8 +676,11 @@ class tabledef:
         if xx0.returncode: 
             raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
         if xopen:
-            wb.open(pdf_file, new=2)
-            
+            wb.open(pdf_file , new=2)
+        if show:
+            return IFrame(pdf_file, width=width, height=height)
+   
+        
             
     def makedf(self, line):   
         showtype = line.get('showtype', 'growth')
@@ -685,7 +690,10 @@ class tabledef:
         # Pre-process for cases that use linevars and linedes
         if showtype not in ['line']:
             linevars = self.mmodel.vlist(line['pat'])
-            linedes = [self.mmodel.var_description[v] for v in linevars]
+            if self.options.get('trans',line.get('trans',True)):
+                linedes = [self.mmodel.var_description[v] for v in linevars]
+            else: 
+                linedes = [v for v in linevars]
             
             def getline(start_ofset= 0,**kvargs):
                 locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line['pat'],showtype=showtype,
