@@ -611,36 +611,58 @@ Note:
              
             out = self._showall(all=0,last=1)
             return out
-            
 
 @dataclass
-class tabledef:
+class displaydef:
     mmodel      : Any = None
     options     : Dict = field(default_factory=dict)
     lines       : List = field(default_factory=list)
-    timeslice   : List = field(default_factory=list)
-    chunk_size  : int = 5
-    tabname     : str = 'table'
-    
+    name        : str = 'table'
+    supl_description :  Dict = field(default_factory=dict)
     
     def __post_init__(self):
+        self.var_description = self.mmodel.defsub(self.mmodel.var_description | self.supl_description )
         self.timeslice = self.timeslice if self.timeslice else self.mmodel.current_per
-        with self.mmodel.keepswitch(switch=True): 
-            self.outdfs = [self.makedf(line) for line in self.lines ] 
-            
-        self.outdf     = pd.concat( self.outdfs ) 
-        self.displaydf = pd.concat( self.outdfs ) 
-        
-      
-        return 
+
     
+
+    def get_rowdes(self,df,showtype,line):
+        if self.options.get('trans',line.get('trans',True)):
+            rowdes = [self.var_description[v] for v in df.index]
+        else: 
+            rowdes = [v for v in df.index]
+            
+        if self.options.get('decorate',True):
+            match showtype:
+                case 'growth':
+                    rowdes = [f'{des}, % growth' for des in    rowdes]
+        
+                case 'gdppct':
+                    rowdes = [f'{des.split(",")[0].split("mill")[0]}, % of GDP' for des in    rowdes]
+                    
+        
+                case _:
+                    rowdes = rowdes
+                    
+        df.index = rowdes 
+        return df 
+
+    @property    
+    def outdf_str(self):
+        width = self.options.get('width',20) 
+        df = self.outdf.copy( )
+        format_decimal = [  line.get('dec',2)  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
+        for i, dec in enumerate(format_decimal):
+              df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+        return df      
+
     @property
     def datawidget(self): 
         return self.make_html_style(self.displaydf.loc[:,self.timeslice],self.lines )
 
     
-    @property
-    def fulllatexwidget(self): 
+    @staticmethod
+    def latexwrap(breadlatex): 
          
         latex_pre = r'''\documentclass{article}
 \usepackage{booktabs}
@@ -654,25 +676,25 @@ class tabledef:
         latex_post = r'''
 \end{document}
         '''   
-        startlatex = self.latexwidget
-        breadlatex = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in startlatex.split('\n'))
         out = latex_pre + breadlatex + latex_post 
         return out 
+    
+ 
   
-    def makepdf(self,xopen=False,show=True,width=800,height=600):
+    def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
         from IPython.display import IFrame,display
 
         latex_dir = Path('latex')
         latex_dir.mkdir(parents=True, exist_ok=True)
         
-        latex_file = latex_dir / f'{self.tabname}.tex'
-        pdf_file = latex_dir / f'{self.tabname}.pdf'
+        latex_file = latex_dir / f'{self.name}.tex'
+        pdf_file = latex_dir / f'{self.name}.pdf'
 
-
+        outlatex = self.latexwidget + '\n'.join(morelatex)
         # Now open the file for writing within the newly created directory
         with open(latex_file, 'wt') as f:
-            f.write(self.fulllatexwidget)  # Assuming tab.fulllatexwidget is the content you want to write
-        xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.tabname}.tex'      ,cwd = 'latex/')
+            f.write(self.__class__.latexwrap(outlatex))  # Assuming tab.fulllatexwidget is the content you want to write
+        xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = 'latex/')
         if xx0.returncode: 
             raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
         if xopen:
@@ -681,67 +703,6 @@ class tabledef:
             return IFrame(pdf_file, width=width, height=height)
    
         
-            
-    def makedf(self, line):   
-        showtype = line.get('showtype', 'growth')
-        diftype = line.get('diftype', 'nodif')
-        
-    
-        # Pre-process for cases that use linevars and linedes
-        if showtype not in ['line']:
-            linevars = self.mmodel.vlist(line['pat'])
-            if self.options.get('trans',line.get('trans',True)):
-                linedes = [self.mmodel.var_description[v] for v in linevars]
-            else: 
-                linedes = [v for v in linevars]
-            
-            def getline(start_ofset= 0,**kvargs):
-                locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line['pat'],showtype=showtype,
-                                diftype = diftype,keep_dim=False,start_ofset=start_ofset)
-                if diftype == 'basedf':
-                    locallinedf = next(iter((locallinedfdict.values()))).T
-                else: 
-                    locallinedf = next(iter(reversed(locallinedfdict.values()))).T
-                    
-                return locallinedf.loc[:,self.mmodel.current_per] 
-                
-    
-        match showtype:
-            case 'growth':
-                linedf = getline(start_ofset=-1)
-                pct_des = [f'{des}, % growth' for des in    linedes]
-                linedf.index = pct_des
-    
-            case 'gdppct':
-                linedf = getline()
-                pct_des = [f'{des.split(",")[0].split("mill")[0]}, % of GDP' for des in    linedes]
-                linedf.index = pct_des 
-                
-            case 'level':
-                linedf = getline()
-                linedf.index = linedes
-    
-            case 'change':
-                linedf = getline()
-                linedf.index = linedes
-    
-            case 'line':
-                linetext = line.get('text', 'A line ')
-                linedf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[linetext]).T
-    
-            case _:
-                raise Exception(f'No such line type: {showtype}')
-    
-        return linedf
-
-    @property    
-    def outdf_str(self):
-        width = self.options.get('width',20) 
-        df = self.outdf.copy( )
-        format_decimal = [  line.get('dec',2)  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
-        for i, dec in enumerate(format_decimal):
-              df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}")
-        return df      
 
 
     def make_html_style(self,df,lines)  :
@@ -790,32 +751,138 @@ class tabledef:
             dfs = [self.outdf_str.iloc[:, i:i+self.chunk_size] for i in range(0, self.outdf_str.shape[1], self.chunk_size)]
             outlist = [] 
             for df in dfs: 
-                    
-                newindex = [fr'&\multicolumn{{{len(df.columns)}}}'+'{c}{'+df.index[i]+'}'  
+                ncol=len(df.columns)
+                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{'+df.index[i]+'}'  
                             if line.get('showtype', 'growth') == 'line'
                             else df.index[i]
                     for i, line  in enumerate(rowlines)]    
     
                 df.index = newindex
-
+                tabformat = 'l'+'r'*ncol
                 outlist = outlist + [df.style.format(lambda x:x) \
                  .set_caption(self.options.get('caption' , 'Summary')) \
-                 .to_latex(hrules=True).replace('%',r'\%') ] 
+                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('$',r'\$') ] 
                    
             # print(outlist)
             out = ' '.join(outlist) 
+            
+            out = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in out.split('\n'))
             return out       
         
-    def findgdpvar(self,varname):
-            gdpname = varname[:3]+'NYGDPMKTP'+varname[-2:]
-            if gdpname in self.mmodel.endogene: 
-                return gdpname
-            else: 
-                raise Exception(f"{varname} don't have a matching GDP variable ")
                 
     def _repr_html_(self):  
         return self.datawidget._repr_html_()
                 
+                
+
+@dataclass
+class latexrepo:
+    latex: str = ""
+    name : str ='latex_test'
+    
+    def latexwrap(self): 
+         
+        latex_pre = r'''\documentclass{article}
+\usepackage{booktabs}
+\usepackage{caption} % Include the caption package
+\captionsetup{justification=raggedright,singlelinecheck=false}
+
+\begin{document}
+
+'''
+        
+        latex_post = r'''
+\end{document}
+        '''   
+        out = latex_pre + self.latex + latex_post 
+        return out 
+    
+ 
+  
+    def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
+        from IPython.display import IFrame,display
+
+        latex_dir = Path('latex')
+        latex_dir.mkdir(parents=True, exist_ok=True)
+        
+        latex_file = latex_dir / f'{self.name}.tex'
+        pdf_file = latex_dir / f'{self.name}.pdf'
+
+        
+        # Now open the file for writing within the newly created directory
+        with open(latex_file, 'wt') as f:
+            f.write(self.latexwrap())  # Assuming tab.fulllatexwidget is the content you want to write
+        xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = 'latex/')
+        if xx0.returncode: 
+            raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
+        if xopen:
+            wb.open(pdf_file , new=2)
+        if show:
+            return IFrame(pdf_file, width=width, height=height)
+   
+
+
+
+    def __floordiv__(self, other):
+        if isinstance(other, latexrepo):
+            # If the other object is an instance of LaTeXHolder, concatenate their LaTeX strings
+            return latexrepo(self.latex + '\n' + other.latex)
+        elif isinstance(other, str):
+            # If the other object is a string, assume it's a raw LaTeX string and concatenate
+            return latexrepo(self.latex + '\n' + other)
+        elif isinstance(other, displaydef):
+            # If the other object is a string, assume it's a raw LaTeX string and concatenate
+            return latexrepo(self.latex + '\n' + other.latexwidget)
+        else:
+            # If the other object is neither a LaTeXHolder instance nor a string, raise an error
+            raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
+          
+
+@dataclass
+class tabledef(displaydef):
+    chunk_size :int = 5 
+    timeslice   : List = field(default_factory=list)
+    
+    
+    def __post_init__(self):
+        super().__post_init__()  # Call the parent class's __post_init__
+
+        
+        
+        self.outdfs = [self.make_var_df(line) for line in self.lines ] 
+        self.outdf     = pd.concat( self.outdfs ) 
+        self.displaydf = pd.concat( self.outdfs ) 
+        
+      
+        return 
+    
+            
+    def make_var_df(self, line):   
+        showtype = line.get('showtype', 'growth')
+        diftype = line.get('diftype', 'nodif')
+        
+        with self.mmodel.keepswitch(switch=True): 
+
+            # Pre-process for cases that use linevars and linedes
+            if showtype  in ['line']:                
+                linetext = line.get('text', 'A line ')
+                linedf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[linetext]).T
+                
+            else:                    
+                def getline(start_ofset= 0,**kvargs):
+                    locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line['pat'],showtype=showtype,
+                                    diftype = diftype,keep_dim=False)
+                    if diftype == 'basedf':
+                        locallinedf = next(iter((locallinedfdict.values()))).T
+                    else: 
+                        locallinedf = next(iter(reversed(locallinedfdict.values()))).T
+                        
+                    return locallinedf.loc[:,self.mmodel.current_per] 
+                
+                linedf = getline() 
+            linedf = self.get_rowdes(linedf,showtype,line)    
+            
+        return(linedf)
                 
                     
 

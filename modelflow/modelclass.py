@@ -4814,7 +4814,7 @@ class Display_Mixin():
             return dfsres
     
           
-    def keep_get_plotdict_new(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, 
+    def keep_get_plotdict_new(self, pat='*', start='', end='', 
                           showtype='level',diftype='nodif', keep_dim = True):
             """
             returns 
@@ -4832,11 +4832,15 @@ class Display_Mixin():
                 
     """
             # breakpoint()
-
+            if showtype == 'growth':
+                start_ofset = -1
+            else:
+                start_ofset = 0 
+                
             if keep_dim:
-                dfs = self.keep_get_dict(pat, start, end, start_ofset, end_ofset)
+                dfs = self.keep_get_dict(pat, start, end, start_ofset )
             else: 
-                dfs = self.keep_var_dict(pat, start, end, start_ofset, end_ofset,trans=False)
+                dfs = self.keep_var_dict(pat, start, end, start_ofset, trans=False)
                 
                 
             if showtype == 'growth':
@@ -4852,14 +4856,14 @@ class Display_Mixin():
                 if keep_dim: 
                     linevars = list(dfs.keys())
                     gdpvars = [self.findgdpvar(v) for v in linevars]
-                    dfgdp = self.keep_get_dict(gdpvars, start, end, start_ofset, end_ofset,trans=False)
+                    dfgdp = self.keep_get_dict(gdpvars, start, end, start_ofset,trans=False)
                     denominvalues    = [dfgdp[v]  for v in gdpvars ]
 
                 else: 
                     firstdf = next(iter(dfs.values()))
                     linevars = list(firstdf.columns)
                     gdpvars = [self.findgdpvar(v) for v in linevars]
-                    dfgdp = self.keep_var_dict(gdpvars, start, end, start_ofset, end_ofset,trans=False)
+                    dfgdp = self.keep_var_dict(gdpvars, start, end, start_ofset,trans=False)
                     denominvalues    = [df  for df in dfgdp.values() ]
 
                 nummeratorvalues = [df for df in dfs.values() ]
