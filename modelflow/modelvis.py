@@ -19,7 +19,8 @@ from matplotlib import dates
 import matplotlib.ticker as ticker
 from IPython.display import display
 from dataclasses import dataclass, field
-from typing import Any, List, Dict
+from typing import Any, List, Dict,  Optional
+
 from subprocess import run
 from pathlib import Path
 import webbrowser as wb
@@ -613,27 +614,90 @@ Note:
             return out
 
 @dataclass
+class Options:
+    """
+    Represents configuration options for data display definitions.
+
+    Attributes:
+        rename (bool): If True, allows renaming of data columns. Default is True.
+        decorate (bool): If True, decorates row descriptions based on the showtype. Default is True.
+        width (int): Specifies the width for formatting output in characters. Default is 20.
+        supl_description (Dict): Supplementary description to augment or override default descriptions. Empty by default.
+        caption (str): Text for the table caption. Default is an empty string.
+        chunk_size (int): Specifies the number of columns per chunk in the display output. Default is 5.
+        timeslice (List): Specifies the time slice for data display. Empty by default.
+    """
+    rename: bool = True
+    decorate: bool = True
+    width: int = 20
+    supl_description: Dict = field(default_factory=dict)
+    caption: str = ''
+    chunk_size  : int = 5 
+    timeslice   : List = field(default_factory=list)
+
+    
+    
+    def __post_init__(self):
+        ...
+    
+    
+    
+@dataclass
+class Line:
+    """
+    A dataclass for representing and validating line configurations for data display.
+
+    Attributes:
+        showtype (str): Specifies the type of data representation. Valid options are 'level', 'growth', 
+                        'change', 'basedf', 'textline', and 'gdppct'. Default is 'level'.
+        diftype (str): Specifies the type of difference calculation to apply. Valid options are 'nodif', 'dif', 
+                       'difpct', 'basedf', and 'lastdf'. Default is 'nodif'.
+        centertext (str): Center text used when showtype is 'textline'. Default is a space.
+        rename (bool): If True, allows renaming of data columns. Default is True.
+        dec (int): Specifies the number of decimal places to use for numerical output. Default is 2.
+        pat (str): Pattern or identifier used to select data for the line. Default is '#Headline'.
+    """
+    
+    showtype: str = 'level'
+    diftype: str = 'nodif'
+    centertext : str = ' '
+    rename: bool = True
+    dec: int = 2
+    pat : str = '#Headline'
+
+    def __post_init__(self):
+        valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline'}
+        valid_diftypes = {'nodif', 'dif', 'difpct', 'basedf', 'lastdf'}
+        
+        if self.showtype not in valid_showtypes:
+            raise ValueError(f"showtype must be one of {valid_showtypes}, got {self.showtype}")
+        
+        if self.diftype not in valid_diftypes:
+            raise ValueError(f"diftype must be one of {valid_diftypes}, got {self.diftype}")
+
+
+@dataclass
 class displaydef:
     mmodel      : Any = None
-    options     : Dict = field(default_factory=dict)
+    options: Options = field(default_factory=Options)
     lines       : List = field(default_factory=list)
     name        : str = 'table'
-    supl_description :  Dict = field(default_factory=dict)
+
     latex       : str = '' 
     
     def __post_init__(self):
-        self.var_description = self.mmodel.defsub(self.mmodel.var_description | self.supl_description )
-        self.timeslice = self.timeslice if self.timeslice else self.mmodel.current_per
+        self.var_description = self.mmodel.defsub(self.mmodel.var_description | self.options.supl_description )
+        self.timeslice = self.options.timeslice if self.options.timeslice else self.mmodel.current_per
 
     
 
     def get_rowdes(self,df,showtype,line):
-        if self.options.get('trans',line.get('trans',True)):
+        if self.options.rename or line.rename:
             rowdes = [self.var_description[v] for v in df.index]
         else: 
             rowdes = [v for v in df.index]
             
-        if self.options.get('decorate',True):
+        if self.options.decorate :
             match showtype:
                 case 'growth':
                     rowdes = [f'{des}, % growth' for des in    rowdes]
@@ -650,9 +714,9 @@ class displaydef:
 
     @property    
     def outdf_str(self):
-        width = self.options.get('width',20) 
+        width = self.options.width
         df = self.outdf.copy( )
-        format_decimal = [  line.get('dec',2)  for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
+        format_decimal = [  line.dec for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
         for i, dec in enumerate(format_decimal):
               df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
         return df      
@@ -661,24 +725,6 @@ class displaydef:
     def datawidget(self): 
         return self.make_html_style(self.displaydf.loc[:,self.timeslice],self.lines )
 
-    
-#     @staticmethod
-#     def latexwrap(breadlatex): 
-         
-#         latex_pre = r'''\documentclass{article}
-# \usepackage{booktabs}
-# \usepackage{caption} % Include the caption package
-# \captionsetup{justification=raggedright,singlelinecheck=false}
-
-# \begin{document}
-
-# '''
-        
-#         latex_post = r'''
-# \end{document}
-#         '''   
-#         out = latex_pre + breadlatex + latex_post 
-#         return out 
     
  
     def latexwrap(self): 
@@ -700,26 +746,6 @@ class displaydef:
         return out 
 
   
-    # def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
-    #     from IPython.display import IFrame,display
-
-    #     latex_dir = Path('latex')
-    #     latex_dir.mkdir(parents=True, exist_ok=True)
-        
-    #     latex_file = latex_dir / f'{self.name}.tex'
-    #     pdf_file = latex_dir / f'{self.name}.pdf'
-
-    #     outlatex = self.latexwidget + '\n'.join(morelatex)
-    #     # Now open the file for writing within the newly created directory
-    #     with open(latex_file, 'wt') as f:
-    #         f.write(self.__class__.latexwrap(outlatex))  # Assuming tab.fulllatexwidget is the content you want to write
-    #     xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = 'latex/')
-    #     if xx0.returncode: 
-    #         raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
-    #     if xopen:
-    #         wb.open(pdf_file , new=2)
-    #     if show:
-    #         return IFrame(pdf_file, width=width, height=height)
    
     def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
         from IPython.display import IFrame,display
@@ -797,26 +823,26 @@ class displaydef:
     }
 ],overwrite=False)
         
-        out= out.set_caption(self.options.get('caption' , 'Summary'))
+        out= out.set_caption(self.options.caption)
         
         return out 
  
     @property
     def latexwidget(self): 
             rowlines  = [ line for  line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
-            dfs = [self.outdf_str.iloc[:, i:i+self.chunk_size] for i in range(0, self.outdf_str.shape[1], self.chunk_size)]
+            dfs = [self.outdf_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.outdf_str.shape[1], self.options.chunk_size)]
             outlist = [] 
             for df in dfs: 
                 ncol=len(df.columns)
                 newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{'+df.index[i]+'}'  
-                            if line.get('showtype', 'growth') == 'line'
+                            if line.showtype == 'textline'
                             else df.index[i]
                     for i, line  in enumerate(rowlines)]    
     
                 df.index = newindex
                 tabformat = 'l'+'r'*ncol
                 outlist = outlist + [df.style.format(lambda x:x) \
-                 .set_caption(self.options.get('caption' , 'Summary')) \
+                 .set_caption(self.options.caption) \
                  .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('$',r'\$') ] 
                    
             # print(outlist)
@@ -897,8 +923,6 @@ class latexrepo:
 
 @dataclass
 class tabledef(displaydef):
-    chunk_size :int = 5 
-    timeslice   : List = field(default_factory=list)
     
     
     def __post_init__(self):
@@ -915,19 +939,18 @@ class tabledef(displaydef):
     
             
     def make_var_df(self, line):   
-        showtype = line.get('showtype', 'growth')
-        diftype = line.get('diftype', 'nodif')
+        showtype = line.showtype
+        diftype = line.diftype
         
         with self.mmodel.keepswitch(switch=True): 
 
             # Pre-process for cases that use linevars and linedes
-            if showtype  in ['line']:                
-                linetext = line.get('text', 'A line ')
-                linedf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[linetext]).T
+            if showtype  in ['textline']:                
+                linedf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[line.centertext]).T
                 
             else:                    
                 def getline(start_ofset= 0,**kvargs):
-                    locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line['pat'],showtype=showtype,
+                    locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line.pat,showtype=showtype,
                                     diftype = diftype,keep_dim=False)
                     if diftype == 'basedf':
                         locallinedf = next(iter((locallinedfdict.values()))).T
