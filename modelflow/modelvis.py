@@ -619,6 +619,7 @@ class displaydef:
     lines       : List = field(default_factory=list)
     name        : str = 'table'
     supl_description :  Dict = field(default_factory=dict)
+    latex       : str = '' 
     
     def __post_init__(self):
         self.var_description = self.mmodel.defsub(self.mmodel.var_description | self.supl_description )
@@ -661,12 +662,31 @@ class displaydef:
         return self.make_html_style(self.displaydf.loc[:,self.timeslice],self.lines )
 
     
-    @staticmethod
-    def latexwrap(breadlatex): 
+#     @staticmethod
+#     def latexwrap(breadlatex): 
+         
+#         latex_pre = r'''\documentclass{article}
+# \usepackage{booktabs}
+# \usepackage{caption} % Include the caption package
+# \captionsetup{justification=raggedright,singlelinecheck=false}
+
+# \begin{document}
+
+# '''
+        
+#         latex_post = r'''
+# \end{document}
+#         '''   
+#         out = latex_pre + breadlatex + latex_post 
+#         return out 
+    
+ 
+    def latexwrap(self): 
          
         latex_pre = r'''\documentclass{article}
 \usepackage{booktabs}
 \usepackage{caption} % Include the caption package
+\usepackage{graphicx}
 \captionsetup{justification=raggedright,singlelinecheck=false}
 
 \begin{document}
@@ -676,11 +696,31 @@ class displaydef:
         latex_post = r'''
 \end{document}
         '''   
-        out = latex_pre + breadlatex + latex_post 
+        out = latex_pre + self.latex + latex_post 
         return out 
-    
- 
+
   
+    # def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
+    #     from IPython.display import IFrame,display
+
+    #     latex_dir = Path('latex')
+    #     latex_dir.mkdir(parents=True, exist_ok=True)
+        
+    #     latex_file = latex_dir / f'{self.name}.tex'
+    #     pdf_file = latex_dir / f'{self.name}.pdf'
+
+    #     outlatex = self.latexwidget + '\n'.join(morelatex)
+    #     # Now open the file for writing within the newly created directory
+    #     with open(latex_file, 'wt') as f:
+    #         f.write(self.__class__.latexwrap(outlatex))  # Assuming tab.fulllatexwidget is the content you want to write
+    #     xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = 'latex/')
+    #     if xx0.returncode: 
+    #         raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
+    #     if xopen:
+    #         wb.open(pdf_file , new=2)
+    #     if show:
+    #         return IFrame(pdf_file, width=width, height=height)
+   
     def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
         from IPython.display import IFrame,display
 
@@ -690,10 +730,10 @@ class displaydef:
         latex_file = latex_dir / f'{self.name}.tex'
         pdf_file = latex_dir / f'{self.name}.pdf'
 
-        outlatex = self.latexwidget + '\n'.join(morelatex)
+        
         # Now open the file for writing within the newly created directory
         with open(latex_file, 'wt') as f:
-            f.write(self.__class__.latexwrap(outlatex))  # Assuming tab.fulllatexwidget is the content you want to write
+            f.write(self.latexwrap())  # Assuming tab.fulllatexwidget is the content you want to write
         xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = 'latex/')
         if xx0.returncode: 
             raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
@@ -702,6 +742,22 @@ class displaydef:
         if show:
             return IFrame(pdf_file, width=width, height=height)
    
+
+
+
+    def __floordiv__(self, other):
+        if isinstance(other, latexrepo):
+            # If the other object is an instance of LaTeXHolder, concatenate their LaTeX strings
+            return latexrepo(self.latex + '\n' + other.latex)
+        elif isinstance(other, str):
+            # If the other object is a string, assume it's a raw LaTeX string and concatenate
+            return latexrepo(self.latex + '\n' + other)
+        elif isinstance(other, displaydef):
+            # If the other object is a string, assume it's a raw LaTeX string and concatenate
+            return latexrepo(self.latex + '\n' + other.latexwidget)
+        else:
+            # If the other object is neither a LaTeXHolder instance nor a string, raise an error
+            raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
         
 
 
@@ -786,6 +842,7 @@ class latexrepo:
 \usepackage{booktabs}
 \usepackage{caption} % Include the caption package
 \captionsetup{justification=raggedright,singlelinecheck=false}
+\usepackage{graphicx}
 
 \begin{document}
 
@@ -832,7 +889,7 @@ class latexrepo:
             return latexrepo(self.latex + '\n' + other)
         elif isinstance(other, displaydef):
             # If the other object is a string, assume it's a raw LaTeX string and concatenate
-            return latexrepo(self.latex + '\n' + other.latexwidget)
+            return latexrepo(self.latex + '\n' + other.latex)
         else:
             # If the other object is neither a LaTeXHolder instance nor a string, raise an error
             raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
@@ -853,7 +910,7 @@ class tabledef(displaydef):
         self.outdf     = pd.concat( self.outdfs ) 
         self.displaydf = pd.concat( self.outdfs ) 
         
-      
+        self.latex = self.latexwidget 
         return 
     
             
