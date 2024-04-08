@@ -619,19 +619,23 @@ class Options:
     Represents configuration options for data display definitions.
 
     Attributes:
+        name (str) : name for this display. Default is 'display'
+        foot (str) : footer if relevant 
         rename (bool): If True, allows renaming of data columns. Default is True.
         decorate (bool): If True, decorates row descriptions based on the showtype. Default is True.
         width (int): Specifies the width for formatting output in characters. Default is 20.
-        supl_description (Dict): Supplementary description to augment or override default descriptions. Empty by default.
-        caption (str): Text for the table caption. Default is an empty string.
+        custom_description (Dict): Custom description to augment or override default descriptions. Empty by default.
+        title (str): Text for the title. Default is an empty string.
         chunk_size (int): Specifies the number of columns per chunk in the display output. Default is 5.
         timeslice (List): Specifies the time slice for data display. Empty by default.
     """
+    name : str = 'display'
+    foot : str =''
     rename: bool = True
     decorate: bool = True
     width: int = 20
-    supl_description: Dict = field(default_factory=dict)
-    caption: str = ''
+    custom_description: Dict = field(default_factory=dict)
+    title : str = ''
     chunk_size  : int = 5 
     timeslice   : List = field(default_factory=list)
 
@@ -656,14 +660,16 @@ class Line:
         rename (bool): If True, allows renaming of data columns. Default is True.
         dec (int): Specifies the number of decimal places to use for numerical output. Default is 2.
         pat (str): Pattern or identifier used to select data for the line. Default is '#Headline'.
+        latexfont (str) : Modifier used in lates for instande r'\textbf' 
     """
     
     showtype: str = 'level'
     diftype: str = 'nodif'
     centertext : str = ' '
-    rename: bool = True
+    rename: bool = False
     dec: int = 2
     pat : str = '#Headline'
+    latexfont :str =''
 
     def __post_init__(self):
         valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline'}
@@ -677,18 +683,38 @@ class Line:
 
 
 @dataclass
-class displaydef:
-    mmodel      : Any = None
-    options: Options = field(default_factory=Options)
-    lines       : List = field(default_factory=list)
-    name        : str = 'table'
+class DisplaySpec:
+    """
+    A dataclass to encapsulate display specifications including options and a list of line configurations.
 
-    latex       : str = '' 
+    Attributes:
+        options (Options): An instance of the Options dataclass specifying configuration options.
+        lines (List[Line]): A list of Line instances specifying individual line configurations.
+    """
+    options: Options = field(default_factory=Options)
+    lines: List[Line] = field(default_factory=list)
+
+
+@dataclass
+class DisplayDef:
+    mmodel      : Any = None
+    spec : Options = field(default_factory=DisplaySpec)
+    name        : str = ''
+
     
     def __post_init__(self):
-        self.var_description = self.mmodel.defsub(self.mmodel.var_description | self.options.supl_description )
-        self.timeslice = self.options.timeslice if self.options.timeslice else self.mmodel.current_per
-
+        self.options = self.spec.options
+        self.lines = self.spec.lines 
+        self.name = self.name if self.name else self.options.name
+        try:
+            self.var_description = self.mmodel.defsub(self.mmodel.var_description | self.options.custom_description )
+        except: 
+            self.var_description = {}
+            
+        try:    
+            self.timeslice = self.options.timeslice if self.options.timeslice else self.mmodel.current_per
+        except: 
+            self.timeslice = [] 
     
 
     def get_rowdes(self,df,showtype,line):
@@ -727,60 +753,20 @@ class displaydef:
 
     
  
-    def latexwrap(self): 
-         
-        latex_pre = r'''\documentclass{article}
-\usepackage{booktabs}
-\usepackage{caption} % Include the caption package
-\usepackage{graphicx}
-\captionsetup{justification=raggedright,singlelinecheck=false}
-
-\begin{document}
-
-'''
-        
-        latex_post = r'''
-\end{document}
-        '''   
-        out = latex_pre + self.latex + latex_post 
-        return out 
-
-  
    
-    def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
-        from IPython.display import IFrame,display
-
-        latex_dir = Path('latex')
-        latex_dir.mkdir(parents=True, exist_ok=True)
-        
-        latex_file = latex_dir / f'{self.name}.tex'
-        pdf_file = latex_dir / f'{self.name}.pdf'
-
-        
-        # Now open the file for writing within the newly created directory
-        with open(latex_file, 'wt') as f:
-            f.write(self.latexwrap())  # Assuming tab.fulllatexwidget is the content you want to write
-        xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = 'latex/')
-        if xx0.returncode: 
-            raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
-        if xopen:
-            wb.open(pdf_file , new=2)
-        if show:
-            return IFrame(pdf_file, width=width, height=height)
    
-
+    def pdf(self,xopen=False,show=True,width=800,height=600):
+        repo = LatexRepo(self.latex ,name=self.name)
+        return repo.pdf(xopen,show,width,height)
 
 
     def __floordiv__(self, other):
-        if isinstance(other, latexrepo):
+        if hasattr(other,'latex'):
             # If the other object is an instance of LaTeXHolder, concatenate their LaTeX strings
-            return latexrepo(self.latex + '\n' + other.latex)
+            return LatexRepo(latex =self.latex + '\n' + other.latex,name=self.name)
         elif isinstance(other, str):
             # If the other object is a string, assume it's a raw LaTeX string and concatenate
-            return latexrepo(self.latex + '\n' + other)
-        elif isinstance(other, displaydef):
-            # If the other object is a string, assume it's a raw LaTeX string and concatenate
-            return latexrepo(self.latex + '\n' + other.latexwidget)
+            return LatexRepo(latex = self.latex + '\n' + other,name=self.name)
         else:
             # If the other object is neither a LaTeXHolder instance nor a string, raise an error
             raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
@@ -823,18 +809,18 @@ class displaydef:
     }
 ],overwrite=False)
         
-        out= out.set_caption(self.options.caption)
+        out= out.set_caption(self.options.title)
         
         return out 
  
     @property
-    def latexwidget(self): 
+    def latex(self): 
             rowlines  = [ line for  line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
             dfs = [self.outdf_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.outdf_str.shape[1], self.options.chunk_size)]
             outlist = [] 
-            for df in dfs: 
+            for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
-                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{'+df.index[i]+'}'  
+                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i]+'}}'  
                             if line.showtype == 'textline'
                             else df.index[i]
                     for i, line  in enumerate(rowlines)]    
@@ -842,8 +828,8 @@ class displaydef:
                 df.index = newindex
                 tabformat = 'l'+'r'*ncol
                 outlist = outlist + [df.style.format(lambda x:x) \
-                 .set_caption(self.options.caption) \
-                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('$',r'\$') ] 
+                 .set_caption(self.options.title + ('' if i == 0 else ' - continued ')) \
+                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$') ] 
                    
             # print(outlist)
             out = ' '.join(outlist) 
@@ -858,9 +844,13 @@ class displaydef:
                 
 
 @dataclass
-class latexrepo:
+class LatexRepo:
     latex: str = ""
     name : str ='latex_test'
+    
+    def set_name(self,name):
+        self.name = name
+        return self
     
     def latexwrap(self): 
          
@@ -869,6 +859,8 @@ class latexrepo:
 \usepackage{caption} % Include the caption package
 \captionsetup{justification=raggedright,singlelinecheck=false}
 \usepackage{graphicx}
+\usepackage{pgf}
+
 
 \begin{document}
 
@@ -885,7 +877,7 @@ class latexrepo:
     def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
         from IPython.display import IFrame,display
 
-        latex_dir = Path('latex')
+        latex_dir = Path(f'latex/{self.name}')
         latex_dir.mkdir(parents=True, exist_ok=True)
         
         latex_file = latex_dir / f'{self.name}.tex'
@@ -895,34 +887,40 @@ class latexrepo:
         # Now open the file for writing within the newly created directory
         with open(latex_file, 'wt') as f:
             f.write(self.latexwrap())  # Assuming tab.fulllatexwidget is the content you want to write
-        xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = 'latex/')
+        xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = f'{latex_dir}')
         if xx0.returncode: 
+            wb.open(latex_dir.absolute(), new=1)
+
             raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
+            
         if xopen:
             wb.open(pdf_file , new=2)
+            
         if show:
             return IFrame(pdf_file, width=width, height=height)
-   
-
 
 
     def __floordiv__(self, other):
-        if isinstance(other, latexrepo):
-            # If the other object is an instance of LaTeXHolder, concatenate their LaTeX strings
-            return latexrepo(self.latex + '\n' + other.latex)
-        elif isinstance(other, str):
-            # If the other object is a string, assume it's a raw LaTeX string and concatenate
-            return latexrepo(self.latex + '\n' + other)
-        elif isinstance(other, displaydef):
-            # If the other object is a string, assume it's a raw LaTeX string and concatenate
-            return latexrepo(self.latex + '\n' + other.latex)
-        else:
-            # If the other object is neither a LaTeXHolder instance nor a string, raise an error
-            raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
-          
-
+        if isinstance(other,str):
+            other_latex = other
+        else: 
+            if hasattr(other,'latex'):
+                other_latex= other.latex 
+            else: 
+                raise Exception('Trying to join latex from object without latex content ')
+        out =  LatexRepo(self.latex + other_latex )
+        return out 
+    
+    
+    def _repr_html_(self):  
+        self.pdf(show=False)
+        pdf_file = f"latex/{self.name}/{self.name}.pdf"
+        return f'<iframe src="{pdf_file}" width="800" height="600"></iframe>'
+ 
+    
+    
 @dataclass
-class tabledef(displaydef):
+class DisplayVarTableDef(DisplayDef):
     
     
     def __post_init__(self):
@@ -933,8 +931,6 @@ class tabledef(displaydef):
         self.outdfs = [self.make_var_df(line) for line in self.lines ] 
         self.outdf     = pd.concat( self.outdfs ) 
         self.displaydf = pd.concat( self.outdfs ) 
-        
-        self.latex = self.latexwidget 
         return 
     
             
@@ -963,6 +959,56 @@ class tabledef(displaydef):
             linedf = self.get_rowdes(linedf,showtype,line)    
             
         return(linedf)
+                
+                    
+@dataclass
+class DisplayFigWrapDef(DisplayDef):
+    
+    figs : Dict = field(default_factory=dict)
+    extensions : List[str] = field(default_factory=lambda: ['svg','pgf'])
+    
+    
+    def __post_init__(self):
+        super().__post_init__()  # Call the parent class's __post_init__
+
+
+        self.titledic = {chart: fig.axes[0].get_title()  for chart,fig in self.figs.items() }
+        
+        self.newfigs= {chart : fig for chart,fig in self.figs.items()  }
+        for fig in self.newfigs.values():
+            fig.axes[0].set_title('')
+            
+            
+        self.mmodel.savefigs(figs=self.newfigs, location = './latex',
+              experimentname = self.name ,extensions= self.extensions
+              ,xopen=False)
+        self.charts = list(self.newfigs.keys() )
+        
+        
+        return 
+    
+    def figwrap(self,chart):
+        latex_dir = Path(f'../{self.name}')
+        
+        out = r''' 
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{\input{'''
+        out = out + fr'{(latex_dir / chart).as_posix()}.pgf'+'}}'
+        out = out + fr'''
+\caption{{{self.titledic[chart]}}}
+\end{{figure}}
+'''
+        return out 
+
+    @property 
+    def latex(self):
+        latex_dir = Path(f'../{self.name}')
+
+        out = '\n'.join( self.figwrap(chart) for chart in self.charts)
+        return out 
+        
+               
                 
                     
 
