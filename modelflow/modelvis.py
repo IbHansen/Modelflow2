@@ -614,12 +614,6 @@ Note:
             return out
 
 
-    @property 
-    def latex(self):
-        latex_dir = Path(f'../{self.name}')
-
-        out = '\n'.join( self.figwrap(chart) for chart in self.charts)
-        return out 
         
                
                 
