@@ -190,13 +190,21 @@ class DisplayDef:
         return df 
 
     @property    
-    def outdf_str(self):
+    def df_str(self):
         width = self.options.width
-        df = self.outdf.copy( )
-        format_decimal = [  line.dec for line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
+        df = self.df.copy( )
+        format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
         for i, dec in enumerate(format_decimal):
               df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
         return df      
+
+    @property    
+    def df_str_disp(self):
+        width = self.options.width
+        rawdata = self.df_str.to_string().split('\n')
+        out = '\n'.join(center_title_under_years(rawdata))
+        return out       
+
 
     @property
     def datawidget(self): 
@@ -225,7 +233,7 @@ class DisplayDef:
 
 
     def make_html_style(self,df,lines)  :
-        out = self.outdf_str.style.set_table_styles([           
+        out = self.df_str.style.set_table_styles([           
     {
         'selector': '.row_heading, .corner',
         'props': [
@@ -266,8 +274,8 @@ class DisplayDef:
  
     @property
     def latex(self): 
-            rowlines  = [ line for  line,df  in zip(self.lines,self.outdfs) for row in range(len(df))]
-            dfs = [self.outdf_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.outdf_str.shape[1], self.options.chunk_size)]
+            rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
             outlist = [] 
             for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
@@ -379,9 +387,9 @@ class DisplayVarTableDef(DisplayDef):
 
         
         
-        self.outdfs = [self.make_var_df(line) for line in self.lines ] 
-        self.outdf     = pd.concat( self.outdfs ) 
-        self.displaydf = pd.concat( self.outdfs ) 
+        self.dfs = [self.make_var_df(line) for line in self.lines ] 
+        self.df     = pd.concat( self.dfs ) 
+        self.displaydf = pd.concat( self.dfs ) 
         return 
     
             
@@ -460,6 +468,46 @@ class DisplayFigWrapDef(DisplayDef):
         return out 
         
                
-                
+def tab_growth(mmodel  = None,  pat='#Headline',title='Growth',dif=False,custom_description = {}):              
                     
+    tabspec = DisplaySpec(
+        options = Options(decorate=False,rename=True,name='A_small_table',
+                          custom_description=custom_description,title = 'ibs test',width=5),
+        lines = [           
+             Line(showtype='textline',centertext='--- percent growth ---'),
+             Line(showtype='growth' ,pat=pat) , 
+             Line(showtype='textline'),
+        ]
+    )
+    tab = DisplayVarTableDef (mmodel=mmodel, spec = tabspec)
+    return tab
 
+
+def center_title_under_years(data, title_row_index=1):
+    """
+    Center a title (specified by its index in the list) under the years row in a list of strings.
+    
+    :param data: List of strings representing the data.
+    :param title_row_index: Index of the title row in the list. Defaults to 1.
+    :return: A new list of strings with the centered title.
+    """
+    # Make a shallow copy of the list to avoid modifying the original list
+    adjusted_data = data.copy()
+    
+    # Find the start and end indices of the year values in the first row
+    year_row = adjusted_data[0]
+    start_index = len(year_row) - len(year_row.lstrip())
+    end_index = len(year_row.rstrip())
+    
+    # Calculate the total space available for centering
+    total_space = end_index - start_index
+    
+    # Center the title within this space
+    title = adjusted_data[title_row_index].strip()  # Remove leading and trailing spaces
+    centered_title = title.center(total_space)
+    
+    # Replace the original title in the list with the centered title
+    # Ensuring that the centered title is positioned correctly relative to the entire line
+    adjusted_data[title_row_index] = f"{year_row[:start_index]}{centered_title}{year_row[end_index:]}"
+    
+    return adjusted_data
