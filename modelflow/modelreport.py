@@ -79,6 +79,7 @@ class Options:
         title (str): Text for the title. Default is an empty string.
         chunk_size (int): Specifies the number of columns per chunk in the display output. Default is 5.
         timeslice (List): Specifies the time slice for data display. Empty by default.
+        max_sting_cols : max columns when displayed as string 
     """
     name : str = 'display'
     foot : str =''
@@ -89,6 +90,7 @@ class Options:
     title : str = ''
     chunk_size  : int = 5 
     timeslice   : List = field(default_factory=list)
+    max_string_cols :int = 6  
 
     
     
@@ -198,13 +200,27 @@ class DisplayDef:
               df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
         return df      
 
+
+    def df_str_max_col(self,max_col): 
+        df = self.df_str 
+        if 2 * max_col >= len(df.columns):
+            raise ValueError("n is too large; it must be less than half the number of columns in the DataFrame")
+        dots  = [ (line.showtype != 'textline' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+
+        first_n = df.iloc[:, :max_col]
+        last_n = df.iloc[:, -max_col:]
+        ellipsis_col = pd.DataFrame({'...': ['...' if dot else '   ' for dot in dots]}, index=df.index)
+        result = pd.concat([first_n, ellipsis_col, last_n], axis=1)
+        return result
+
+
     @property    
     def df_str_disp(self):
         center = [ (line.showtype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
         center_index = [index+1 for index, value in enumerate(center) if value]
 
         width = self.options.width
-        rawdata = self.df_str.to_string().split('\n')
+        rawdata = self.df_str.to_string(max_cols= self.options.max_string_cols).split('\n')
         data = center_title_under_years(rawdata,center_index)
         out = '\n'.join(data)
         return out       
@@ -217,7 +233,7 @@ class DisplayDef:
 
     @property
     def datawidget(self): 
-        return self.make_html_style(self.displaydf.loc[:,self.timeslice],self.lines )
+        return self.make_html_style(self.df.loc[:,self.timeslice],self.lines )
 
     
  
@@ -295,8 +311,7 @@ class DisplayDef:
                                 'background-color: white; color: #000066; font-size: 0.8em;width:100%'
                                 'transform: translate(0px, -24px); padding: 0.6em; border-radius: 0.5em;')
                 except Exception as e: 
-                    print(f'no tooltips {e}')
-       
+                    ...       
         out= out.set_caption(self.options.title)
         
         return out 
@@ -304,7 +319,10 @@ class DisplayDef:
     @property
     def latex(self): 
             rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-            dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
+            if 0:
+                dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
+            else: 
+                dfs = [self.df_str_max_col(self.options.max_string_cols//2)]
             outlist = [] 
             for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
@@ -317,7 +335,7 @@ class DisplayDef:
                 tabformat = 'l'+'r'*ncol
                 outlist = outlist + [df.style.format(lambda x:x) \
                  .set_caption(self.options.title + ('' if i == 0 else ' - continued ')) \
-                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$') ] 
+                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ] 
                    
             # print(outlist)
             out = r' '.join(outlist) 
@@ -540,7 +558,7 @@ def center_title_under_years(data, title_row_index=[1]):
     
     # Center the title within this space
     for row_index in title_row_index:
-        title = adjusted_data[row_index].strip()  # Remove leading and trailing spaces
+        title = adjusted_data[row_index].replace('...','   ').strip()  # Remove leading and trailing spaces
         centered_title = title.center(total_space)
         
         # Replace the original title in the list with the centered title

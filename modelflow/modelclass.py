@@ -8038,7 +8038,7 @@ Stability_Mixin.jack_largest_reduction.__doc__ = newton_diff.jack_largest_reduct
 Stability_Mixin.jack_largest_reduction_plot.__doc__ = newton_diff.jack_largest_reduction_plot.__doc__ 
 
 
-
+  
 
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
@@ -8047,6 +8047,40 @@ class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin
 
     pass
 
+class Report_Mixin: 
+    
+
+    def tab_growth(self, pat='#Headline',title='Growth',dif=False,custom_description = {},diftext = 'Impact,',**kwargs):              
+
+        from modelreport import DisplayVarTableDef, DisplayDef, LatexRepo 
+        from modelreport import Line, Options,DisplaySpec,DisplayFigWrapDef
+        
+        
+        if dif==True: 
+            diftype = 'dif'
+            ldiftext = diftext
+        else: 
+            diftype = 'nodif'
+            ldiftext = ''
+                    
+        tabspec = DisplaySpec(
+            options = Options(decorate=False,name='A_small_table', 
+                              custom_description=custom_description,title =title,width=5,**kwargs),
+            lines = [           
+                 Line(showtype='textline',centertext=f'--- {ldiftext} Percent growth ---'),
+                 Line(showtype='growth' ,pat=pat,diftype=diftype ) , 
+            ]
+        )
+        tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
+        return tab
+
+
+class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
+            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
+            Fix_Mixin,Stability_Mixin,Report_Mixin):
+    '''This is the main model definition'''
+
+    pass
 
 
 #  Functions used in calculating

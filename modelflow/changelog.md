@@ -159,3 +159,4 @@ vis now have pct dublicate growth, difpct dublicate difgrowth,year_pct and year_
 vis now have qoq_ar quarter on quarter anualized rate 
 modelload also reports model_description 
 ncol same as colrow in vis.plot to be compabiteble with keep_plot 
+for display in [] new css for more clear datadisplay 

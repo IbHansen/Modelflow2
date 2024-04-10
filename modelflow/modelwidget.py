@@ -477,9 +477,26 @@ class htmlwidget_df:
     
         newnamedf = self.df_var.copy().rename(columns=self.trans)
         self.org_df_var = newnamedf.T if self.transpose else newnamedf
-        image = self.mmodel.ibsstyle(self.org_df_var,percent = self.percent).to_html()
-        self.whtml = widgets.HTML(image)
-        self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+        if 0:
+            image = self.mmodel.ibsstyle(self.org_df_var,percent = self.percent).to_html()
+        else: 
+            style_html = """
+<style>
+table, th, td {
+    border: none;     
+    border-collapse: collapse;
+    padding: 10px;  # Adjust padding as needed
+    text-align: left;
+}
+</style>
+"""
+            image_html = self.mmodel.ibsstyle(self.org_df_var, percent=self.percent).to_html()
+            image = f"{style_html}{image_html}"
+
+            self.whtml = widgets.HTML(image)
+            self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+
+
         
     @property
     def show(self):
