@@ -57,15 +57,17 @@ import fnmatch
 from matplotlib import dates
 import matplotlib.ticker as ticker
 from IPython.display import display
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any, List, Dict,  Optional
+from copy import deepcopy
+
 
 from subprocess import run
 from pathlib import Path
 import webbrowser as wb
 
 @dataclass
-class Options:
+class Options_old:
     """
     Represents configuration options for data display definitions.
 
@@ -88,17 +90,114 @@ class Options:
     width: int = 20
     custom_description: Dict = field(default_factory=dict)
     title : str = ''
-    chunk_size  : int = 5 
+    chunk_size  : int = None  
     timeslice   : List = field(default_factory=list)
-    max_string_cols :int = 6  
+    max_cols :int = 4 
+    last_cols : int = 1
 
     
     
     def __post_init__(self):
         ...
     
+        
+    def __add__(self, other):
+        # Create a new instance by deeply copying the current one
+        new_instance = deepcopy(self)
+
+        if isinstance(other, dict):
+            # Update using dictionary
+            for key, value in other.items():
+                if hasattr(new_instance, key):
+                    setattr(new_instance, key, value)
+                else:
+                    raise AttributeError(f"No such attribute {key} to update in Options class.")
+        elif isinstance(other, Options):
+            # Update using another Options instance, but only for non-default values
+            default_values = {field.name: field.default for field in fields(Options) if field.default != field.default_factory}
+            for key, value in vars(other).items():
+                if value != default_values.get(key, field.default_factory) and value is not None:
+                    setattr(new_instance, key, value)
+        else:
+            raise TypeError("Operand must be an instance of dict or Options.")
+
+        return new_instance
+
+from dataclasses import dataclass, field, fields, MISSING
+from typing import Dict, List
+from copy import deepcopy
+
+@dataclass
+class Options:
+    """
+    Represents configuration options for data display definitions.
+
+    Attributes:
+        name (str): Name for this display. Default is 'display'.
+        foot (str): Footer if relevant.
+        rename (bool): If True, allows renaming of data columns. Default is True.
+        decorate (bool): If True, decorates row descriptions based on the showtype. Default is True.
+        width (int): Specifies the width for formatting output in characters. Default is 20.
+        custom_description (Dict[str, str]): Custom description to augment or override default descriptions. Empty by default.
+        title (str): Text for the title. Default is an empty string.
+        chunk_size (int): Specifies the number of columns per chunk in the display output. Default is 0 meaning no chunking.
+        timeslice (List[int]): Specifies the time slice for data display. Empty by default.
+        max_cols (int): Maximum columns when displayed as string. Default is 4.
+        last_cols (int): Specifies the number of last columns to include in a display slice. Default is 1.
     
+    Methods:
+    __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
+                    instance that combines settings from both, preferring non-default values from 'other'. If 'other' is a
+                    dictionary, attributes not existing in this instance will raise an AttributeError. TypeErrors are raised
+                    when 'other' is neither a dictionary nor an Options instance.
+
     
+    """
+    name: str = 'display'
+    foot: str = ''
+    rename: bool = True
+    decorate: bool = True
+    width: int = 20
+    custom_description: Dict[str, str] = field(default_factory=dict)
+    title: str = ''
+    chunk_size: int = 0  
+    timeslice: List = field(default_factory=list)
+    max_cols: int = 4
+    last_cols: int = 1
+
+    def __add__(self, other):
+        if not isinstance(other, (Options, dict)):
+            raise TypeError("Operand must be an instance of Options or dict.")
+
+        # Create a new instance by deeply copying the current one
+        new_instance = deepcopy(self)
+
+        # Get default values for comparison
+        default_values = {f.name: f.default if f.default is not MISSING else f.default_factory()
+                          for f in fields(self)}
+
+        if isinstance(other, dict):
+            # Update using dictionary
+            for key, value in other.items():
+                if hasattr(new_instance, key):
+                    setattr(new_instance, key, value)
+                else:
+                    raise AttributeError(f"No such attribute {key}  in Options class.")
+        elif isinstance(other, Options):
+            # Update using another Options instance, but only for non-default values
+            for key, value in vars(other).items():
+                default = default_values[key]
+                if value != default and value is not None:
+                    setattr(new_instance, key, value)
+
+        return new_instance
+
+    def __post_init__(self):
+        pass
+
+
+
+   
 @dataclass
 class Line:
     """
@@ -146,6 +245,25 @@ class DisplaySpec:
     """
     options: Options = field(default_factory=Options)
     lines: List[Line] = field(default_factory=list)
+
+    def __add__(self, other):
+        new_lines = self.lines  # use existing lines directly
+
+        if isinstance(other, DisplaySpec):
+            new_options = self.options + other.options
+            new_lines += other.lines  # extends the list with other's lines
+        elif isinstance(other, (Options, dict)):
+            new_options = self.options + other  # update options
+        elif isinstance(other, Line):
+            new_lines = new_lines + [other]  # creates a new list with the added line
+        elif isinstance(other, list) and all(isinstance(line, Line) for line in other):
+            new_lines = new_lines + other  # extends the list with the new lines
+        else:
+            raise TypeError("Operand must be an instance of DisplaySpec, Options, dict, Line, or list of Line instances.")
+        
+        return DisplaySpec(options=new_options, lines=new_lines)
+
+
 
 
 @dataclass
@@ -220,7 +338,7 @@ class DisplayDef:
         center_index = [index+1 for index, value in enumerate(center) if value]
 
         width = self.options.width
-        rawdata = self.df_str.to_string(max_cols= self.options.max_string_cols).split('\n')
+        rawdata = self.df_str.to_string(max_cols= self.options.max_cols).split('\n')
         data = center_title_under_years(rawdata,center_index)
         out = '\n'.join(data)
         return out       
@@ -318,11 +436,20 @@ class DisplayDef:
  
     @property
     def latex(self): 
+            last_cols = 0 
             rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-            if 0:
+            if self.options.chunk_size:
                 dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
             else: 
-                dfs = [self.df_str_max_col(self.options.max_string_cols//2)]
+                #dfs = [self.df_str_max_col(self.options.max_cols//2)]
+                if len(self.df_str.columns) > self.options.max_cols:
+                    
+                    last_cols = self.options.last_cols 
+                    first_cols = self.options.max_cols - last_cols
+                
+                    dfs = [pd.concat([self.df_str.iloc[:, :first_cols], self.df_str.iloc[:, -last_cols:]], axis=1)]
+                else:
+                    dfs = [self.df_str]
             outlist = [] 
             for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
@@ -332,7 +459,7 @@ class DisplayDef:
                     for i, line  in enumerate(rowlines)]    
     
                 df.index = newindex
-                tabformat = 'l'+'r'*ncol
+                tabformat = 'l'+'r'*(ncol-last_cols) + ( ('|'+'r'*last_cols) if last_cols else '') 
                 outlist = outlist + [df.style.format(lambda x:x) \
                  .set_caption(self.options.title + ('' if i == 0 else ' - continued ')) \
                  .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ] 
