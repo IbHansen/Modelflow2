@@ -4,7 +4,7 @@ Created on Mon Apr  8 14:58:26 2024
 
 @author: ibhan
 
-The `modeldisplay` module facilitates the generation, management, and display of data visualizations and tables 
+The `modelreport` module facilitates the generation, management, and display of data visualizations and tables 
 derived from ModelFlow models. It is designed to support a wide range of output formats including LaTeX documents, 
 HTML, and interactive IPyWidgets, making it highly versatile for different reporting and analysis needs in Jupyter 
 notebook environments.
@@ -54,17 +54,23 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns 
 import fnmatch 
+import re 
 from matplotlib import dates
 import matplotlib.ticker as ticker
 from IPython.display import display
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, asdict
 from typing import Any, List, Dict,  Optional
 from copy import deepcopy
+import json
+
 
 
 from subprocess import run
 from pathlib import Path
 import webbrowser as wb
+
+WIDTH = '100%'
+HEIGHT = '400px'
 
 @dataclass
 class Options_old:
@@ -143,7 +149,7 @@ class Options:
         chunk_size (int): Specifies the number of columns per chunk in the display output. Default is 0 meaning no chunking.
         timeslice (List[int]): Specifies the time slice for data display. Empty by default.
         max_cols (int): Maximum columns when displayed as string. Default is 4.
-        last_cols (int): Specifies the number of last columns to include in a display slice. Default is 1.
+        last_cols (int): In Latex specifies the number of last columns to include in a display slice. Default is 1.
     
     Methods:
     __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
@@ -162,7 +168,7 @@ class Options:
     title: str = ''
     chunk_size: int = 0  
     timeslice: List = field(default_factory=list)
-    max_cols: int = 4
+    max_cols: int = 6
     last_cols: int = 1
 
     def __add__(self, other):
@@ -182,7 +188,8 @@ class Options:
                 if hasattr(new_instance, key):
                     setattr(new_instance, key, value)
                 else:
-                    raise AttributeError(f"No such attribute {key}  in Options class.")
+                    ...
+                    # raise AttributeError(f"No such attribute {key}  in Options class.")
         elif isinstance(other, Options):
             # Update using another Options instance, but only for non-default values
             for key, value in vars(other).items():
@@ -243,6 +250,7 @@ class DisplaySpec:
         options (Options): An instance of the Options dataclass specifying configuration options.
         lines (List[Line]): A list of Line instances specifying individual line configurations.
     """
+    display_type : str = ''
     options: Options = field(default_factory=Options)
     lines: List[Line] = field(default_factory=list)
 
@@ -262,6 +270,46 @@ class DisplaySpec:
             raise TypeError("Operand must be an instance of DisplaySpec, Options, dict, Line, or list of Line instances.")
         
         return DisplaySpec(options=new_options, lines=new_lines)
+    
+    
+    @classmethod
+    def from_json(cls, json_str: str) -> 'DisplaySpec':
+        """
+        Creates a DisplaySpec instance from a JSON string using the class that called this method,
+        which supports use by subclasses.
+        
+        Args:
+        json_str (str): A JSON string representation of a DisplaySpec instance.
+        
+        Returns:
+        DisplaySpec: The constructed DisplaySpec instance (or an instance of a subclass).
+        """
+        data = json.loads(json_str)
+        options_data = data['options']
+        lines_data = data['lines']
+    
+        # Create Options instance from options data
+        options = Options(**options_data)
+    
+        # Create list of Line instances from lines data
+        lines = [Line(**line_data) for line_data in lines_data]
+    
+        # Return an instance of the calling class, which may be DisplaySpec or any of its subclasses
+        return cls(options=options, lines=lines)
+
+    def to_json(self,display_type) -> str:
+        """
+        Converts the DisplaySpec instance into a JSON string.
+        
+        Returns:
+        str: A JSON string representation of the DisplaySpec instance.
+        """
+        # Convert DisplaySpec instance to dictionary
+        
+        display_spec_dict = {"display_type":display_type,  "options": asdict(self.options), "lines": [asdict(line) for line in self.lines]}
+        
+        # Serialize the dictionary to a JSON string
+        return json.dumps(display_spec_dict, indent=4)
 
 
 
@@ -274,19 +322,31 @@ class DisplayDef:
 
     
     def __post_init__(self):
+        self.setup() 
+        
         self.options = self.spec.options
         self.lines = self.spec.lines 
-        self.name = self.name if self.name else self.options.name
+        
         try:
             self.var_description = self.mmodel.defsub(self.mmodel.var_description | self.options.custom_description )
         except: 
             self.var_description = {}
             
-        try:    
-            self.timeslice = self.options.timeslice if self.options.timeslice else self.mmodel.current_per
-        except: 
-            self.timeslice = [] 
+            
+        self.name = self.name if self.name else self.options.name 
+        self.options.name = self.name 
+        self.timeslice = self.options.timeslice if self.options.timeslice else []
     
+    def set_name(self,name):
+        self.name = name
+        self.options.name = name 
+        return self
+
+    @property
+    def save_spec(self):
+        display_type = self.__class__.__name__
+        out = self.spec.to_json(display_type) 
+        return out
 
     def get_rowdes(self,df,showtype,line):
         if self.options.rename or line.rename:
@@ -338,7 +398,9 @@ class DisplayDef:
         center_index = [index+1 for index, value in enumerate(center) if value]
 
         width = self.options.width
-        rawdata = self.df_str.to_string(max_cols= self.options.max_cols).split('\n')
+        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str  
+            
+        rawdata = thisdf.to_string(max_cols= self.options.max_cols).split('\n')
         data = center_title_under_years(rawdata,center_index)
         out = '\n'.join(data)
         return out       
@@ -348,6 +410,8 @@ class DisplayDef:
         if self.options.title: 
             print(self.options.title)
         print(self.df_str_disp)
+        if self.options.foot: 
+            print(self.options.foot)
 
     @property
     def datawidget(self): 
@@ -357,7 +421,7 @@ class DisplayDef:
  
    
    
-    def pdf(self,xopen=False,show=True,width=800,height=600):
+    def pdf(self,xopen=False,show=True,width=WIDTH,height=HEIGHT):
         repo = LatexRepo(self.latex ,name=self.name)
         return repo.pdf(xopen,show,width,height)
 
@@ -438,18 +502,21 @@ class DisplayDef:
     def latex(self): 
             last_cols = 0 
             rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-            if self.options.chunk_size:
-                dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
-            else: 
-                #dfs = [self.df_str_max_col(self.options.max_cols//2)]
-                if len(self.df_str.columns) > self.options.max_cols:
+            if self.timeslice: 
+                dfs = [self.df_str.loc[:,self.timeslice]]
+            else:    
+                if self.options.chunk_size:
+                    dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
+                else: 
+                    #dfs = [self.df_str_max_col(self.options.max_cols//2)]
+                    if len(self.df_str.columns) > self.options.max_cols:
+                        
+                        last_cols = self.options.last_cols 
+                        first_cols = self.options.max_cols - last_cols
                     
-                    last_cols = self.options.last_cols 
-                    first_cols = self.options.max_cols - last_cols
-                
-                    dfs = [pd.concat([self.df_str.iloc[:, :first_cols], self.df_str.iloc[:, -last_cols:]], axis=1)]
-                else:
-                    dfs = [self.df_str]
+                        dfs = [pd.concat([self.df_str.iloc[:, :first_cols], self.df_str.iloc[:, -last_cols:]], axis=1)]
+                    else:
+                        dfs = [self.df_str]
             outlist = [] 
             for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
@@ -468,13 +535,34 @@ class DisplayDef:
             out = r' '.join(outlist) 
             
             out = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in out.split('\n'))
+            if self.options.foot: 
+                out = out.replace(r'\end{tabular}',r'\end{tabular}'+'\n\caption*{'+f'{self.options.foot}' + '}')
             return out       
         
                 
     def _repr_html_(self):  
         return self.datawidget._repr_html_()
-                
-                
+                 
+      
+    def set_name(self,name):
+        self.name = name
+        return self
+
+    def set_options(self,**kwargs):
+        self.options = self.options + kwargs  
+        
+        if 'custom_description' in kwargs: 
+            self.var_description = self.mmodel.defsub(self.var_description | self.options.custom_description )
+            
+        if 'name' in kwargs:     
+            self.name =  self.options.name   
+        
+        if 'timeslice' in kwargs:     
+
+                self.timeslice = self.options.timeslice 
+            
+        
+        return self           
 
 @dataclass
 class LatexRepo:
@@ -507,7 +595,7 @@ class LatexRepo:
     
  
   
-    def pdf(self,xopen=False,show=True,width=800,height=600,morelatex = [] ):
+    def pdf(self,xopen=False,show=True,width=WIDTH,height=HEIGHT):
         from IPython.display import IFrame,display
 
         latex_dir = Path(f'latex/{self.name}')
@@ -524,7 +612,7 @@ class LatexRepo:
         if xx0.returncode: 
             wb.open(latex_dir.absolute(), new=1)
 
-            raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex folder')
+            raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex file, {latex_file}')
             
         if xopen:
             wb.open(pdf_file , new=2)
@@ -548,7 +636,7 @@ class LatexRepo:
     def _repr_html_(self):  
         self.pdf(show=False)
         pdf_file = f"latex/{self.name}/{self.name}.pdf"
-        return f'<iframe src="{pdf_file}" width="800" height="600"></iframe>'
+        return f'<iframe src="{pdf_file}" width={WIDTH} height={HEIGHT}></iframe>'
  
     
     
@@ -592,6 +680,27 @@ class DisplayVarTableDef(DisplayDef):
             linedf = self.get_rowdes(linedf,showtype,line)    
             
         return(linedf)
+    
+    
+    def __add__(self, other):
+        """
+        Combines two DisplayDef instances into a new DisplayDef with combined specifications.
+    
+        :param other: Another DisplayDef instance to add.
+        :return: A new DisplayDef instance with merged specifications.
+        """
+        if not isinstance(other, DisplayVarTableDef):
+            return NotImplemented
+    
+        # Combine options using the existing __add__ method of DisplaySpec
+        new_spec = self.spec + other.spec
+    
+        # Merge names if they differ, separated by a comma
+        new_name = self.name if self.name == other.name else f"{self.name}, {other.name}"
+    
+        # Create a new DisplayDef with the combined specifications
+        return DisplayVarTableDef(mmodel=self.mmodel, spec=new_spec, name=new_name)
+
                 
                     
 @dataclass
@@ -641,27 +750,78 @@ class DisplayFigWrapDef(DisplayDef):
         out = '\n'.join( self.figwrap(chart) for chart in self.charts)
         return out 
         
+
+class DatatypeAccessor:
+    def __init__(self, datatype, **kwargs):
+        """
+        Initializes the ConfigAccessor with a datatype and a configuration table in Markdown format.
+
+        :param datatype: A string keyword to fetch configuration for.
+        :param config_table: A string representing the configuration in Markdown table format.
+        """
+
+        self.datatype = datatype
+        config_table = r"""
+| datatype  | showtype   | diftype | units            | difext |
+|-----------|----------|---------|-----------------|---------|
+| growth    | growth     | nodif   | Percent growth    |         |
+| difgrowth | growth     | dif     | Percent growth    | Impact  |
+| gdppct    | gdppct      | nodif   | Percent of GDP    |         |
+| difgdppct | gdppct     | dif     | Percent of GDP    | Impact  |
+| level     | level      | nodif   | Level             |         |
+| diflevel  | level      | dif   | Level               |  Impact |
+| difpctlevel| level     | difpct  | Impact in percent |         |
+| base          | level      | basedf   | Level             |         |
+| basegrowth    | growth     | basedf   | Percent growth    |         |
+| basegdppct    | gdppct      | basedf   | Percent of GDP    |         |
+
+
+
+
+"""
+
+
+
+        self.configurations = self.parse_config_table(config_table)
+        
+        # Apply any overrides from kwargs
+        if datatype in self.configurations:
+            self.configurations[datatype].update((k, v) for k, v in kwargs.items() if k in self.configurations[datatype])
+
+
+    def parse_config_table(self,config_table):
+        """
+        Parses a Markdown table into a dictionary of configurations.
+
+        :param config_table: Markdown table as a string.
+        :return: Dictionary with datatype keys and property dictionaries as values.
+        """
+        
+        lines = config_table.strip().split('\n')
+        headers = re.split(r'\s*\|\s*', lines[0].strip('|').strip())
+        configs = {}
+
+        for line in lines[2:]:  # Skip the header and delimiter rows
+            values = re.split(r'\s*\|\s*', line.strip('|').strip())
+            config = {headers[i]: values[i] for i in range(len(values))}
+            datatype = config.pop('datatype')  # Remove the datatype key to use as the dictionary key
+            configs[datatype] = config
+
+        return configs
+
+    def __getattr__(self, item):
+        """
+        Provides dynamic access to configuration properties based on the initial datatype.
+
+        :param item: The property name to fetch from the configuration for the provided datatype.
+        :return: The value associated with 'item' under the specified datatype's configuration.
+        """
+        config_data = self.configurations.get(self.datatype)
+        if not config_data:
+            raise ValueError(f"Configuration for datatype '{self.datatype}' not found")
+        
+        return config_data.get(item, '')
                
-def tab_growth(mmodel  = None,  pat='#Headline',title='Growth',dif=False,custom_description = {},diftext = 'Impact '):              
-    
-    if dif==True: 
-        diftype = 'dif'
-        ldiftext = diftext
-    else: 
-        diftype = 'nodif'
-        ldiftext = ''
-                
-    tabspec = DisplaySpec(
-        options = Options(decorate=False,rename=True,name='A_small_table', 
-                          custom_description=custom_description,title =title,width=5),
-        lines = [           
-             Line(showtype='textline',centertext=f'--- {ldiftext} Percent growth ---'),
-             Line(showtype='growth' ,pat=pat,diftype=diftype ) , 
-             Line(showtype='textline'),
-        ]
-    )
-    tab = DisplayVarTableDef (mmodel=mmodel, spec = tabspec)
-    return tab
 
 
 def center_title_under_years(data, title_row_index=[1]):
@@ -693,3 +853,44 @@ def center_title_under_years(data, title_row_index=[1]):
         adjusted_data[row_index] = f"{year_row[:start_index]}{centered_title}{year_row[end_index:]}"
         
     return adjusted_data
+
+
+def create_instance_from_json(mmodel,json_str: str):
+    
+    def find_classes_matching_pattern():
+        """
+        Finds and returns a dictionary of classes in the current module that match
+        the pattern 'Display*Def', where the keys are the class names and the values
+        are the actual class objects.
+        """
+        pattern = re.compile(r'^Display.*Def$')
+        class_dict = {name: cls for name, cls in globals().items() 
+                      if re.match(pattern, name) and isinstance(cls, type)}
+        return class_dict
+
+    data = json.loads(json_str)
+    display_type = data['display_type']
+    
+    
+    class_map = find_classes_matching_pattern() 
+    # print(class_map)
+    
+    if display_type not in class_map:
+        raise ValueError(f"Unsupported display type: {display_type}")
+    
+    # Get the class
+    cls = class_map[display_type]
+    
+    # Process options and lines
+    options = Options(**data['options'])
+    lines = [Line(**line) for line in data['lines']]
+    
+    # Create DisplaySpec instance
+    spec = DisplaySpec(options=options, lines=lines)
+    
+    # Create the display type instance (e.g., DisplayVarTableDef)
+    instance = cls(mmodel,spec=spec)
+    
+    return instance
+
+

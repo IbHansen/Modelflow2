@@ -137,7 +137,7 @@ class BaseModel():
     def __init__(self, i_eq='', modelname='testmodel', silent=False, straight=False, funks=[],
                  tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= False,
                  var_description={}, model_description = '', 
-                 var_groups = {}, equations_latex='', eviews_dict = {},use_fbmin= True,
+                 var_groups = {}, reports = {}, equations_latex='', eviews_dict = {},use_fbmin= True,
                  **kwargs):
         ''' initialize a model'''
         if i_eq != '':
@@ -167,6 +167,8 @@ class BaseModel():
             
             self.var_description = var_description
             self.var_groups = var_groups
+            self.reports =  reports
+            
             self.model_description= model_description
             self.eviews_dict = eviews_dict
             self.equations_latex = equations_latex
@@ -2788,6 +2790,7 @@ class Modify_Mixin():
         modelname=f'Combined {self.name} and {another_model.name}',
         var_description = {**self.var_description , **another_model.var_description},
         var_groups  = {**self.var_groups      , **another_model.var_groups },
+        reports =  self.reports | another_model.reports ,
         equations_latex = self.equations_latex+ another_model.equations_latex ,
         eviews_dict = {**self.eviews_dict,**another_model.eviews_dict},
         model_description = f'''This model was created by combining the two models:{self.name} and {another_model.name}\n
@@ -2847,6 +2850,7 @@ class Modify_Mixin():
                           var_description=self.var_description, 
                           model_description = self.model_description, 
                           var_groups = self.var_groups , 
+                          reports = self.reports , 
                           equations_latex='',
                              
                                       
@@ -2894,6 +2898,7 @@ class Modify_Mixin():
                           var_description=self.var_description, 
                           model_description = self.model_description + f'\nWith deledet variables: {vars_todelete}', 
                           var_groups = self.var_groups , 
+                          reports = self.reports , 
                           eviews_dict = neweviewsdict ,
                           equations_latex='',
                                       
@@ -2976,6 +2981,8 @@ class Modify_Mixin():
                                  var_description=self.var_description, 
                                  model_description = self.model_description, 
                                  var_groups = self.var_groups , 
+                                 reports = self.reports , 
+
                                  equations_latex='',
                                
                                       
@@ -5648,6 +5655,8 @@ class Json_Mixin():
             'keep_solutions': {k:v.to_json(double_precision=15) for k,v in self.keep_solutions.items()} if keep else {},
             'wb_MFMSAOPTIONS': self.wb_MFMSAOPTIONS if hasattr(self, 'wb_MFMSAOPTIONS') else '',
             'var_groups'     : self.var_groups,
+            'reports'        : self.reports , 
+
             'model_description'     : self.model_description,
             'eviews_dict'           : self.eviews_dict,
 
@@ -5766,6 +5775,7 @@ class Json_Mixin():
         if input.get('wb_MFMSAOPTIONS', None) : mmodel.wb_MFMSAOPTIONS = input.get('wb_MFMSAOPTIONS', None)
         mmodel.keep_solutions = {k : pd.read_json(StringIO(jdf)) for k,jdf in input.get('keep_solutions',{}).items()}
         mmodel.var_groups = input.get('var_groups', {})
+        mmodel.reports    = input.get('reports',{} )
         mmodel.model_description = input.get('model_description', '')
         mmodel.eviews_dict = input.get('eviews_dict', {})
         if keep_json:
@@ -8040,40 +8050,87 @@ Stability_Mixin.jack_largest_reduction_plot.__doc__ = newton_diff.jack_largest_r
 
   
 
-class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
-            Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
-            Fix_Mixin,Stability_Mixin):
-    '''This is the main model definition'''
 
-    pass
 
 class Report_Mixin: 
     
 
-    def tab_growth(self, pat='#Headline',title='Growth',dif=False,custom_description = {},diftext = 'Impact,',**kwargs):              
 
-        from modelreport import DisplayVarTableDef, DisplayDef, LatexRepo 
+    def tab(self, pat='#Headline',title='Table',datatype='growth',custom_description = {},dec=2,heading='',**kwargs):     
+        """
+        Generates a table display configuration based on specified parameters and data types, including dynamic 
+        adjustments of display options using both standard and keyword arguments.
+    
+        Parameters:
+        - pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
+        - title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
+        - datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
+        - custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
+        - dec (int): Number of decimal places for numerical output, passed directly to Line configuration, defaulting to 2.
+        - heading (str): Optional heading line for the table, empty by default.
+        - name (str): Name for the display, defaults to 'A_small_table'.
+        - foot (str): Footer text, if relevant.
+        - rename (bool): Allows renaming of data columns
+        - decorate (bool): Decorates row descriptions based on the showtype, defaulting to False.
+        - width (int): Specifies the width for formatting output in characters, efaulting to 5.
+        - chunk_size (int): Number of columns per chunk in the display output, defaulting to 0.
+        - timeslice (List[int]): Time slice for data display, empty by default.
+        - max_cols (int): Maximum columns when displayed as a string, faulting to the system-wide setting.
+        - last_cols (int): Specifies the number of last columns to include in a display slice, particularly in Latex.
+        - units (str): text centered on columns 
+        - difext (str) : text to be used then displaying differences. 
+        
+        Returns:
+    DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
+                        such as units and type of transformation based on the datatype.
+    
+        
+        
+        """
+                 
+
+        from modelreport import DisplayVarTableDef, DisplayDef, LatexRepo, DatatypeAccessor
         from modelreport import Line, Options,DisplaySpec,DisplayFigWrapDef
         
-        
-        if dif==True: 
-            diftype = 'dif'
-            ldiftext = diftext
-        else: 
-            diftype = 'nodif'
-            ldiftext = ''
-                    
+
+
+
+        config =   DatatypeAccessor(datatype, **kwargs)    
+        headingline = [Line(showtype='textline',centertext=heading)] if heading else [] 
+        unitline   =  [ Line(showtype='textline',centertext=f'--- {config.difext} {config.units} ---')] if config.units else []
+               
         tabspec = DisplaySpec(
             options = Options(decorate=False,name='A_small_table', 
-                              custom_description=custom_description,title =title,width=5,**kwargs),
-            lines = [           
-                 Line(showtype='textline',centertext=f'--- {ldiftext} Percent growth ---'),
-                 Line(showtype='growth' ,pat=pat,diftype=diftype ) , 
+                              custom_description=custom_description,title =title,width=5) + kwargs,
+            lines = headingline + unitline + [
+                 Line(showtype=config.showtype ,pat=pat,dec=dec,diftype=config. diftype ) , 
             ]
         )
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
         return tab
 
+    def report_from_spec(self,json_str):
+        from modelreport import  create_instance_from_json
+        return create_instance_from_json(self,json_str)
+
+    def add_report(self,a_DisplayDef_list,*args): 
+        this_DisplayDef_list = a_DisplayDef_list if type(a_DisplayDef_list) ==list else [a_DisplayDef_list]
+        this_DisplayDef_list =  this_DisplayDef_list + list(args) 
+        new_reports  = {r.name:r.save_spec for r in this_DisplayDef_list }
+        self.reports = self.reports | new_reports 
+        print(f'Reports added to report repo: {", ".join(n for n in new_reports.keys() )}')
+        
+        
+    def rtab(self,key):
+         if not key in self.reports.keys():
+             print(f'No stored report with the name {key}')
+             print(f'Possible values:  {", ".join(n for n in self.reports.keys() )}')
+             raise Exception('Wrong report key try again')
+         else: 
+             out = self.report_from_spec(self.reports[key])
+         
+             return out 
+             
 
 class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
