@@ -322,7 +322,6 @@ class DisplayDef:
 
     
     def __post_init__(self):
-        self.setup() 
         
         self.options = self.spec.options
         self.lines = self.spec.lines 
@@ -372,11 +371,13 @@ class DisplayDef:
     @property    
     def df_str(self):
         width = self.options.width
-        df = self.df.copy( )
+        # df = self.df.copy( )
+        df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
+
         format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
         for i, dec in enumerate(format_decimal):
-              df.iloc[i] = df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
-        return df      
+              df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+        return df_char      
 
 
     def df_str_max_col(self,max_col): 
@@ -536,7 +537,8 @@ class DisplayDef:
             
             out = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in out.split('\n'))
             if self.options.foot: 
-                out = out.replace(r'\end{tabular}',r'\end{tabular}'+'\n\caption*{'+f'{self.options.foot}' + '}')
+                out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
+
             return out       
         
                 
@@ -558,7 +560,6 @@ class DisplayDef:
             self.name =  self.options.name   
         
         if 'timeslice' in kwargs:     
-
                 self.timeslice = self.options.timeslice 
             
         
@@ -696,7 +697,7 @@ class DisplayVarTableDef(DisplayDef):
         new_spec = self.spec + other.spec
     
         # Merge names if they differ, separated by a comma
-        new_name = self.name if self.name == other.name else f"{self.name}, {other.name}"
+        new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
     
         # Create a new DisplayDef with the combined specifications
         return DisplayVarTableDef(mmodel=self.mmodel, spec=new_spec, name=new_name)

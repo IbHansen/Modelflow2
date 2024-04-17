@@ -72,7 +72,7 @@ class tabwidget:
 @dataclass
 class sheetwidget:
     ''' class defining a widget which updates from a sheet '''
-    df_var         : any = pd.DataFrame()         # definition 
+    df_var         : pd.DataFrame = field(default_factory=pd.DataFrame)        # definition 
     trans          : any = lambda x : x      # renaming of variables 
     transpose      : bool = False            # orientation of dataframe 
     expname      : str =  "Carbon tax rate, US$ per tonn "
@@ -321,7 +321,7 @@ class updatewidget:
     keeppat   : str = '*'
     varpat    : str ='*'
     showvarpat  : bool = True 
-    exodif   : any = pd.DataFrame()         # definition 
+    exodif   : pd.DataFrame = field(default_factory=pd.DataFrame)        # definition 
     lwrun    : bool = True
     lwupdate : bool = False
     lwreset  :  bool = True
@@ -462,7 +462,7 @@ class htmlwidget_df:
     ''' class displays a dataframe in a html widget '''
     
     mmodel : any     # a model   
-    df_var         : any = pd.DataFrame()         # definition 
+    df_var         : pd.DataFrame = field(default_factory=pd.DataFrame)        # definition 
     trans          : any = lambda x : x      # renaming of variables 
     transpose      : bool = False            # orientation of dataframe 
     expname      : str =  ""
