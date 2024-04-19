@@ -993,7 +993,7 @@ class BaseModel():
         return out
 
     def make_res(self, order='', exclude=[]):
-        ''' makes a function which performs a Gaus-Seidle iteration
+        r''' makes a function which performs a Gaus-Seidle iteration
         if ljit=True a Jittet function will also be created.
         The functions will be placed in\: 
             
@@ -5642,12 +5642,54 @@ class Json_Mixin():
         
         if keep=True the model.keep_solutions will alse be dumped'''
         # print('dump ready')
+        def ibs_to_json(series):
+            def period_to_dict(period):
+                # This function converts a pandas Period object to a dictionary similar to the JSON structure
+                # provided in pandas versions before 2.0 when using to_json()
+                return {
+                    "day": period.day,
+                    "day_of_week": period.day_of_week,
+                    "day_of_year": period.day_of_year,
+                    "dayofweek": period.day_of_week,
+                    "dayofyear": period.day_of_year,
+                    "days_in_month": period.days_in_month,
+                    "daysinmonth": period.days_in_month,
+                    "end_time": int(period.end_time.timestamp() * 1000),  # Convert to milliseconds
+                    "freqstr": period.freqstr,
+                    "hour": period.hour,
+                    "is_leap_year": period.is_leap_year,
+                    "minute": period.minute,
+                    "month": period.month,
+                    "ordinal": period.ordinal,
+                    "quarter": period.quarter,
+                    "qyear": period.qyear,
+                    "second": period.second,
+                    "start_time": int(period.start_time.timestamp() * 1000),  # Convert to milliseconds
+                    "week": period.week,
+                    "weekday": period.weekday,
+                    "weekofyear": period.week,
+                    "year": period.year
+                }
+            
+            # Creating a dictionary from the series where each period is converted to a dictionary
+            result_dict = {str(idx): period_to_dict(period) for idx, period in enumerate(series)}
+            
+            # Converting the dictionary to a JSON string
+            return json.dumps(result_dict)
+
+        # to manage error in pandas 2. 
+        try:
+            current_per_json =  pd.Series(self.current_per).to_json() 
+        except: 
+            print( 'Pandas 2. error handled ')
+            current_per_json  = ibs_to_json(pd.Series(self.current_per))
+
 
         dumpjson = {
             'version': '1.00',
             'frml': self.equations,
             'lastdf': self.lastdf.to_json(double_precision=15),
-            'current_per': pd.Series(self.current_per).to_json(),
+            'current_per': current_per_json ,
             'modelname': self.name,
             'oldkwargs': self.oldkwargs,
             'var_description': self.var_description,
@@ -5784,7 +5826,8 @@ class Json_Mixin():
         try:
             lastdf, current_per = make_current_from_quarters(
                 lastdf, current_per)
-        except:
+        except Exception as e:
+            print(e)
             pass
         
         if mmodel.model_description:
@@ -5801,6 +5844,7 @@ class Json_Mixin():
             res = mmodel(lastdf, current_per[0], current_per[-1], **newkwargs)
             return mmodel, res
         else:
+            mmodel.current_per = current_per 
             mmodel.basedf = lastdf.copy()  
             return mmodel, lastdf
 

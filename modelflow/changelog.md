@@ -160,3 +160,6 @@ vis now have qoq_ar quarter on quarter anualized rate
 modelload also reports model_description 
 ncol same as colrow in vis.plot to be compabiteble with keep_plot 
 for display in [] new css for more clear datadisplay 
+modelload will also set .current_per
+modeldump handels an error in pandas 2.2 for dataframes with periode index 
+
