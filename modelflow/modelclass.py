@@ -8103,7 +8103,7 @@ class Report_Mixin:
             options = Options(decorate=False,name='A_small_table', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = headingline + unitline + [
-                 Line(showtype=config.showtype ,pat=pat,dec=dec,diftype=config. diftype ) , 
+                 Line(showtype=config.showtype ,pat=pat,dec=dec,diftype=config.diftype ) , 
             ]
         )
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
