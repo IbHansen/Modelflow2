@@ -4719,7 +4719,7 @@ class Display_Mixin():
                 res[solver] = outv
         return res
 
-    def keep_get_dict(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, diff=False):
+    def keep_get_dict(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, diff=False,trans=False):
         """
        Returns a dict of the keept experiments. Key is the variable names, values are a dataframe with variable values for each experiment
 

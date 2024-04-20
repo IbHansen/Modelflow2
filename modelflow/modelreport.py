@@ -57,6 +57,8 @@ import fnmatch
 import re 
 from matplotlib import dates
 import matplotlib.ticker as ticker
+import matplotlib.gridspec as gridspec
+
 from IPython.display import display
 from dataclasses import dataclass, field, fields, asdict
 from typing import Any, List, Dict,  Optional
@@ -170,6 +172,11 @@ class Options:
     timeslice: List = field(default_factory=list)
     max_cols: int = 6
     last_cols: int = 1
+    
+    ncol : int = 2
+    samefig :bool = False 
+    size: tuple = (10, 6)
+    legend: bool = True
 
     def __add__(self, other):
         if not isinstance(other, (Options, dict)):
@@ -181,6 +188,10 @@ class Options:
         # Get default values for comparison
         default_values = {f.name: f.default if f.default is not MISSING else f.default_factory()
                           for f in fields(self)}
+
+        def is_explicitly_set(attr, value, default):
+            return value != default or attr in other  # Check if the attribute is present in 'other'
+
 
         if isinstance(other, dict):
             # Update using dictionary
@@ -194,7 +205,7 @@ class Options:
             # Update using another Options instance, but only for non-default values
             for key, value in vars(other).items():
                 default = default_values[key]
-                if value != default and value is not None:
+                if is_explicitly_set(key, value, default):
                     setattr(new_instance, key, value)
 
         return new_instance
@@ -229,6 +240,9 @@ class Line:
     dec: int = 2
     pat : str = '#Headline'
     latexfont :str =''
+    keep_dim :bool = True 
+    mul : float = 1.0 
+    yunit : str = ''
 
     def __post_init__(self):
         valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline'}
@@ -260,7 +274,9 @@ class DisplaySpec:
         if isinstance(other, DisplaySpec):
             new_options = self.options + other.options
             new_lines += other.lines  # extends the list with other's lines
-        elif isinstance(other, (Options, dict)):
+        elif isinstance(other, Options):
+            new_options = self.options + other  # update options
+        elif isinstance(other,  dict):
             new_options = self.options + other  # update options
         elif isinstance(other, Line):
             new_lines = new_lines + [other]  # creates a new list with the added line
@@ -652,7 +668,6 @@ class DisplayVarTableDef(DisplayDef):
         
         self.dfs = [self.make_var_df(line) for line in self.lines ] 
         self.df     = pd.concat( self.dfs ) 
-        self.displaydf = pd.concat( self.dfs ) 
         return 
     
             
@@ -681,6 +696,144 @@ class DisplayVarTableDef(DisplayDef):
             linedf = self.get_rowdes(linedf,showtype,line)    
             
         return(linedf)
+
+@dataclass
+class DisplayKeepFigDef(DisplayDef):
+    
+    
+    def __post_init__(self):
+        super().__post_init__()  # Call the parent class's __post_init__
+
+        
+        
+        self.dfs = [f for line in self.lines  for f in self.make_var_df(line) ] 
+        return 
+    
+            
+    def make_var_df(self, line):   
+
+        # Pre-process for cases that use linevars and linedes
+        locallinedfdict = self.mmodel.keep_get_plotdict_new(
+                               pat=line.pat,
+                               showtype=line.showtype,
+                               diftype = line.diftype,
+                               keep_dim=line.keep_dim)
+                    
+        outlist = [{'line':line, 'key':k ,'df' : df.loc[self.mmodel.current_per,:]  } for k,df in locallinedfdict.items()  ]    
+        
+        return(outlist)
+
+    def make_figs(self,showfig=True):
+    # def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
+    #       diff=False, diffpct=False, mul=1.0, title='Scenarios', legend=False, scale='linear',
+    #       yunit='', ylabel='', dec='', trans=None, showfig=True, kind='line', size=(10, 6),
+    #       vline=None, savefig='', keep_dim=True, dataonly=False, samefig=False, ncol=2):
+         """
+    Generate and display plots for specified scenarios and variables.
+    Returns:
+        dict: A dictionary of Matplotlib figures, with keys being the variable names and values being the figure objects.
+
+    Raises:
+        ZeroDivisionError: If no kept solution is available for plotting.
+    """
+    # Function implementation...
+
+    # Function implementation...
+
+         plt.close('all')
+         plt.ioff() 
+
+            
+         dfsres = self.dfs
+         
+         
+
+         number =  len(dfsres)
+         options = self.options
+         
+         if options.samefig:
+             ...
+             all_keep_dim = all([item['line'].keep_dim for item in dfsres])
+             xcol = options.ncol 
+             xrow=-((-number )//options.ncol)
+             figsize =  (xcol*options.size[0],xrow*options.size[1])
+             
+             # print(f'{size=}  {figsize=}')
+             fig = plt.figure(figsize=figsize)
+             #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
+             
+             if options.legend and all_keep_dim: 
+                 extra_row = 1 
+                 row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
+
+             else: 
+                 extra_row = 0 
+                 row_heights = [1] * xrow  # Assuming equal height for all plot rows,
+
+                 
+             gs = gridspec.GridSpec(xrow + extra_row , xcol, figure=fig, height_ratios=row_heights)
+
+             fig.set_constrained_layout(True)
+
+# Create axes for the plots
+             axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
+             if options.legend and all_keep_dim: 
+                 legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
+             
+             figs = {self.name : fig}
+
+         else:
+             ... 
+             figs_and_ax  = {f'{self.name}_{i}' :  plt.subplots(figsize=options.size) for i,v  in enumerate(dfsres)}
+             figs = {v : fig for v,(fig,ax)   in figs_and_ax.items() } 
+             axes = [    ax  for fig,ax    in figs_and_ax.values() ] 
+         
+         
+         for i,item in enumerate(dfsres):
+             v = item['key']
+             df = item['df']
+             line = item['line']
+             
+             mul = line.mul
+             keep_dim= line.keep_dim
+             aspct = ' as pct ' if line.diftype in {'difpct'} else ' '
+             dftype = line.showtype.capitalize()
+             dec = line.dec 
+             
+             ylabel = 'Percent' if (line.showtype in { 'growth','gdppct'} or line.diftype == 'difpct' )  else ''
+             title=(f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
+             if (line.diftype in {'difpct'}) else f'{dftype}:')
+
+             self.mmodel.plot_basis_ax(axes[i], v , df*mul, legend=options.legend,
+                                     scale='linear', trans=self.var_description if self.options.rename else {},
+                                     title=title,
+                                     yunit=line.yunit,
+                                     ylabel='Percent' if (line.showtype == 'growth' or line.diftype in {'difpct'})else ylabel,
+                                     xlabel='',kind = 'line',samefig=options.samefig and all_keep_dim,
+                                     dec=dec)
+
+         for ax in axes[number:]:
+             ax.set_visible(False)
+
+         
+         if options.samefig: 
+             fig.suptitle(options.title ,fontsize=20) 
+
+             if options.legend  and all_keep_dim: 
+                 handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
+                 legend_ax.legend(handles, labels, loc='center', ncol=3 if True else len(labels), fontsize='large')
+                 legend_ax.axis('off')  # Hide the axis
+
+         
+         
+         if showfig:
+             ...
+             for f in figs.values(): 
+                 display(f)
+                 plt.close(f)
+         plt.ion() 
+
+         return figs
     
     
     def __add__(self, other):
@@ -700,7 +853,7 @@ class DisplayVarTableDef(DisplayDef):
         new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
     
         # Create a new DisplayDef with the combined specifications
-        return DisplayVarTableDef(mmodel=self.mmodel, spec=new_spec, name=new_name)
+        return DisplayKeepFigDef(mmodel=self.mmodel, spec=new_spec, name=new_name)
 
                 
                     
