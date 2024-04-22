@@ -4909,7 +4909,8 @@ class Display_Mixin():
                elif diftype == 'difpct': 
                    dfsres = {v:  (vdf/first_scenario-1.)*100
                         for i,(v, vdf)  in enumerate(dfs.items()) if i >= 1}
-               elif diftype == diftype in  ['nodif', 'basedf', 'lastdf']:  # for use in tabledf
+               elif diftype == diftype in  ['nodif', 
+                                            ]:  # for use in tabledf
                      dfsres = dfs
  
                else:
@@ -8152,6 +8153,58 @@ class Report_Mixin:
         )
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
         return tab
+
+    def plot(self, pat='#Headline',title='',datatype='growth',custom_description = {}, **kwargs):     
+        """
+        Generates a table display configuration based on specified parameters and data types, including dynamic 
+        adjustments of display options using both standard and keyword arguments.
+    
+        Parameters:
+        - pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
+        - title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
+        - datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
+        - custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
+        - dec (int): Number of decimal places for numerical output, passed directly to Line configuration, defaulting to 2.
+        - heading (str): Optional heading line for the table, empty by default.
+        - name (str): Name for the display, defaults to 'A_small_table'.
+        - foot (str): Footer text, if relevant.
+        - rename (bool): Allows renaming of data columns
+        - decorate (bool): Decorates row descriptions based on the showtype, defaulting to False.
+        - width (int): Specifies the width for formatting output in characters, efaulting to 5.
+        - chunk_size (int): Number of columns per chunk in the display output, defaulting to 0.
+        - timeslice (List[int]): Time slice for data display, empty by default.
+        - max_cols (int): Maximum columns when displayed as a string, faulting to the system-wide setting.
+        - last_cols (int): Specifies the number of last columns to include in a display slice, particularly in Latex.
+        - units (str): text centered on columns 
+        - difext (str) : text to be used then displaying differences. 
+        
+        Returns:
+    DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
+                        such as units and type of transformation based on the datatype.
+    
+        
+        
+        """
+                 
+
+        from modelreport import DisplayVarTableDef, DisplayDef, LatexRepo, DatatypeAccessor
+        from modelreport import Line, Options,DisplaySpec,DisplayFigWrapDef,DisplayKeepFigDef
+        
+
+
+
+        config =   DatatypeAccessor(datatype, **kwargs)    
+               
+        figspec = DisplaySpec(
+            options = Options(decorate=False,name='A plot', 
+                              custom_description=custom_description,title =title,width=5) + kwargs,
+            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype ) , 
+            ]
+        )
+        figs = DisplayKeepFigDef (mmodel=self, spec = figspec)
+        return figs
+
+
 
     def report_from_spec(self,json_str):
         from modelreport import  create_instance_from_json

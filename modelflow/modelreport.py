@@ -61,7 +61,7 @@ import matplotlib.gridspec as gridspec
 
 from IPython.display import display
 from dataclasses import dataclass, field, fields, asdict
-from typing import Any, List, Dict,  Optional
+from typing import Any, List, Dict,  Optional , Tuple
 from copy import deepcopy
 import json
 
@@ -74,67 +74,25 @@ import webbrowser as wb
 WIDTH = '100%'
 HEIGHT = '400px'
 
-@dataclass
-class Options_old:
-    """
-    Represents configuration options for data display definitions.
-
-    Attributes:
-        name (str) : name for this display. Default is 'display'
-        foot (str) : footer if relevant 
-        rename (bool): If True, allows renaming of data columns. Default is True.
-        decorate (bool): If True, decorates row descriptions based on the showtype. Default is True.
-        width (int): Specifies the width for formatting output in characters. Default is 20.
-        custom_description (Dict): Custom description to augment or override default descriptions. Empty by default.
-        title (str): Text for the title. Default is an empty string.
-        chunk_size (int): Specifies the number of columns per chunk in the display output. Default is 5.
-        timeslice (List): Specifies the time slice for data display. Empty by default.
-        max_sting_cols : max columns when displayed as string 
-    """
-    name : str = 'display'
-    foot : str =''
-    rename: bool = True
-    decorate: bool = True
-    width: int = 20
-    custom_description: Dict = field(default_factory=dict)
-    title : str = ''
-    chunk_size  : int = None  
-    timeslice   : List = field(default_factory=list)
-    max_cols :int = 4 
-    last_cols : int = 1
-
-    
-    
-    def __post_init__(self):
-        ...
-    
-        
-    def __add__(self, other):
-        # Create a new instance by deeply copying the current one
-        new_instance = deepcopy(self)
-
-        if isinstance(other, dict):
-            # Update using dictionary
-            for key, value in other.items():
-                if hasattr(new_instance, key):
-                    setattr(new_instance, key, value)
-                else:
-                    raise AttributeError(f"No such attribute {key} to update in Options class.")
-        elif isinstance(other, Options):
-            # Update using another Options instance, but only for non-default values
-            default_values = {field.name: field.default for field in fields(Options) if field.default != field.default_factory}
-            for key, value in vars(other).items():
-                if value != default_values.get(key, field.default_factory) and value is not None:
-                    setattr(new_instance, key, value)
-        else:
-            raise TypeError("Operand must be an instance of dict or Options.")
-
-        return new_instance
 
 from dataclasses import dataclass, field, fields, MISSING
 from typing import Dict, List
 from copy import deepcopy
 
+def track_fields():
+    '''To find fields which has been set '''
+    def wrap(cls):
+        cls.__original_init = cls.__init__
+        def __init__(self, *args, **kw):
+            kw.update(dict(zip(cls.__dataclass_fields__.keys(), args)))
+            self.__explicitly_set__ = set(kw.keys())
+            kw = {k: v for k, v in kw.items() if k in cls.__dataclass_fields__}
+            self.__original_init(**kw)
+        cls.__init__ = __init__
+        return cls
+    return wrap
+
+@track_fields()
 @dataclass
 class Options:
     """
@@ -177,6 +135,11 @@ class Options:
     samefig :bool = False 
     size: tuple = (10, 6)
     legend: bool = True
+    
+    def was_explicitly_set(self, field_name: str) -> bool:
+        # Using getattr with three arguments to avoid KeyError and return False when the attribute isn't found
+        return getattr(self, '__explicitly_set__', set()).__contains__(field_name)
+    
 
     def __add__(self, other):
         if not isinstance(other, (Options, dict)):
@@ -204,8 +167,7 @@ class Options:
         elif isinstance(other, Options):
             # Update using another Options instance, but only for non-default values
             for key, value in vars(other).items():
-                default = default_values[key]
-                if is_explicitly_set(key, value, default):
+                if other.was_explicitly_set(key):
                     setattr(new_instance, key, value)
 
         return new_instance
@@ -235,6 +197,8 @@ class Line:
     
     showtype: str = 'level'
     diftype: str = 'nodif'
+    scale : str = 'linear'
+    kind : str = 'line'
     centertext : str = ''
     rename: bool = False
     dec: int = 2
@@ -270,6 +234,7 @@ class DisplaySpec:
 
     def __add__(self, other):
         new_lines = self.lines  # use existing lines directly
+        new_options = self.options  # Start with existing options
 
         if isinstance(other, DisplaySpec):
             new_options = self.options + other.options
@@ -363,14 +328,15 @@ class DisplayDef:
         out = self.spec.to_json(display_type) 
         return out
 
-    def get_rowdes(self,df,showtype,line):
+    def get_rowdes(self,df,line,row=True):
+        thisdf = df.copy() if row else df.copy().T
         if self.options.rename or line.rename:
-            rowdes = [self.var_description[v] for v in df.index]
+            rowdes = [self.var_description[v] for v in thisdf.index]
         else: 
-            rowdes = [v for v in df.index]
+            rowdes = [v for v in thisdf.index]
             
         if self.options.decorate :
-            match showtype:
+            match line.showtype:
                 case 'growth':
                     rowdes = [f'{des}, % growth' for des in    rowdes]
         
@@ -380,9 +346,10 @@ class DisplayDef:
         
                 case _:
                     rowdes = rowdes
-                    
-        df.index = rowdes 
-        return df 
+        # print(f'get_rowdes {line=}')            
+        thisdf.index = rowdes 
+        dfout = thisdf if row else thisdf.T 
+        return dfout 
 
     @property    
     def df_str(self):
@@ -706,20 +673,24 @@ class DisplayKeepFigDef(DisplayDef):
 
         
         
-        self.dfs = [f for line in self.lines  for f in self.make_var_df(line) ] 
+        self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
         return 
     
             
-    def make_var_df(self, line):   
-
-        # Pre-process for cases that use linevars and linedes
-        locallinedfdict = self.mmodel.keep_get_plotdict_new(
+    def make_df(self, line):   
+        if line.showtype  in ['textline']:                
+            # textdf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[line.centertext]).T
+            outlist = []    
+        else: 
+            locallinedfdict = self.mmodel.keep_get_plotdict_new(
                                pat=line.pat,
                                showtype=line.showtype,
                                diftype = line.diftype,
                                keep_dim=line.keep_dim)
                     
-        outlist = [{'line':line, 'key':k ,'df' : df.loc[self.mmodel.current_per,:]  } for k,df in locallinedfdict.items()  ]    
+            outlist = [{'line':line, 'key':k ,
+                        'df' : self.get_rowdes(df.loc[self.mmodel.current_per,:],line,row=False) 
+                        } for k,df in locallinedfdict.items()  ]    
         
         return(outlist)
 
@@ -801,15 +772,24 @@ class DisplayKeepFigDef(DisplayDef):
              dec = line.dec 
              
              ylabel = 'Percent' if (line.showtype in { 'growth','gdppct'} or line.diftype == 'difpct' )  else ''
-             title=(f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
-             if (line.diftype in {'difpct'}) else f'{dftype}:')
+             
+             if keep_dim: 
+                 title = (f'Difference{aspct}to "{list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
+                 if (line.diftype in {'difpct', 'dif'}) else f'{dftype}:')
+             else:
+                 title = (f'Difference{aspct}to "{df.columns[0] }" for {dftype}:' 
+                 if (line.diftype in {'difpct','dif'}) else f'{dftype}:')
+
+                 
+             # title=(f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
+             # if (line.diftype in {'difpct'}) else f'{dftype}:')
 
              self.mmodel.plot_basis_ax(axes[i], v , df*mul, legend=options.legend,
                                      scale='linear', trans=self.var_description if self.options.rename else {},
                                      title=title,
                                      yunit=line.yunit,
-                                     ylabel='Percent' if (line.showtype == 'growth' or line.diftype in {'difpct'})else ylabel,
-                                     xlabel='',kind = 'line',samefig=options.samefig and all_keep_dim,
+                                     ylabel='Percent' if (line.showtype in {'growth','gdppct'} or line.diftype in {'difpct'})else ylabel,
+                                     xlabel='',kind = line.kind ,samefig=options.samefig and all_keep_dim,
                                      dec=dec)
 
          for ax in axes[number:]:
@@ -833,6 +813,7 @@ class DisplayKeepFigDef(DisplayDef):
                  plt.close(f)
          plt.ion() 
 
+         
          return figs
     
     
