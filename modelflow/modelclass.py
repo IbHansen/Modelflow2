@@ -4909,8 +4909,7 @@ class Display_Mixin():
                elif diftype == 'difpct': 
                    dfsres = {v:  (vdf/first_scenario-1.)*100
                         for i,(v, vdf)  in enumerate(dfs.items()) if i >= 1}
-               elif diftype == diftype in  ['nodif', 
-                                            ]:  # for use in tabledf
+               elif diftype == diftype in   ['nodif', 'basedf', 'lastdf']:  # for use in tabledf
                      dfsres = dfs
  
                else:

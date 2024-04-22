@@ -64,6 +64,8 @@ from dataclasses import dataclass, field, fields, asdict
 from typing import Any, List, Dict,  Optional , Tuple
 from copy import deepcopy
 import json
+import  ipywidgets as widgets  
+
 
 
 
@@ -78,6 +80,9 @@ HEIGHT = '400px'
 from dataclasses import dataclass, field, fields, MISSING
 from typing import Dict, List
 from copy import deepcopy
+
+
+from modelwidget import fig_to_image,tabwidget,htmlwidget_fig
 
 def track_fields():
     '''To find fields which has been set '''
@@ -318,8 +323,8 @@ class DisplayDef:
         self.timeslice = self.options.timeslice if self.options.timeslice else []
     
     def set_name(self,name):
-        self.name = name
-        self.options.name = name 
+        self.name = name.replace(' ','_')
+        self.options.name = self.name 
         return self
 
     @property
@@ -397,9 +402,6 @@ class DisplayDef:
         if self.options.foot: 
             print(self.options.foot)
 
-    @property
-    def datawidget(self): 
-        return self.make_html_style(self.df.loc[:,self.timeslice],self.lines )
 
     
  
@@ -421,66 +423,6 @@ class DisplayDef:
             # If the other object is neither a LaTeXHolder instance nor a string, raise an error
             raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
         
-
-
-    def make_html_style(self,df,lines,use_tooltips =True )  :
-        out = self.df_str.style.set_table_styles([           
-    {
-        'selector': '.row_heading, .corner',
-        'props': [
-            ('position', 'sticky'),
-            ('left', '0'),
-            ('z-index', '3'),
-            ('background-color', 'white'),
-            ('width', '300px'),  # Set the width of the row headings
-            ('min-width', '200px'),  # Ensure the minimum width is respected
-            ('max-width', '400px')  # Ensure the maximum width is respected
-        ]
-    },
-    {
-        'selector': '.col_heading',
-        'props': [
-            ('position', 'sticky'),
-            ('top', '0'),
-            ('z-index', '2'),
-            ('background-color', 'white')
-        ]
-    },
-    {
-        'selector': 'th',
-        'props': [
-            ('text-align', 'left') , # Align text to the left
-            ('background-color', 'white'),  # Ensuring headers are not transparent
-               ('z-index', '2')  # Headers z-index on par with column headings
-        ]
-    },
-        {
-            'selector': 'td',  # Targeting data cells
-            'props': [
-                ('z-index', '1'),  # Lower z-index than headers
-            ]
-        },
-    
-    
-    {
-        'selector': 'caption',
-        'props': [
-            ('font-size', '16px'),  # Make the font larger
-            ('font-weight', 'bold')  # Make the font bold
-        ]
-    }
-],overwrite=True)
-        if use_tooltips:
-                tt = pd.DataFrame([[v for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
-                try:
-                   out=out.set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'
-                                'background-color: white; color: #000066; font-size: 0.8em;width:100%'
-                                'transform: translate(0px, -24px); padding: 0.6em; border-radius: 0.5em;')
-                except Exception as e: 
-                    ...       
-        out= out.set_caption(self.options.title)
-        
-        return out 
  
     @property
     def latex(self): 
@@ -529,9 +471,6 @@ class DisplayDef:
         return self.datawidget._repr_html_()
                  
       
-    def set_name(self,name):
-        self.name = name
-        return self
 
     def set_options(self,**kwargs):
         self.options = self.options + kwargs  
@@ -548,13 +487,30 @@ class DisplayDef:
         
         return self           
 
+    def figwrap(self,chart):
+        latex_dir = Path(f'../{self.name}')
+        
+        out = r''' 
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{\input{'''
+        out = out + fr'"{(latex_dir / chart).as_posix()}.pgf"'+'}}'
+        out = out + fr'''
+\caption{{{self.titledic[chart]}}}
+\end{{figure}}
+'''
+        return out
+
+
+
+
 @dataclass
 class LatexRepo:
     latex: str = ""
     name : str ='latex_test'
     
     def set_name(self,name):
-        self.name = name
+        self.name = name.replace(' ','_')
         return self
     
     def latexwrap(self): 
@@ -660,9 +616,93 @@ class DisplayVarTableDef(DisplayDef):
                     return locallinedf.loc[:,self.mmodel.current_per] 
                 
                 linedf = getline() 
-            linedf = self.get_rowdes(linedf,showtype,line)    
+            linedf = self.get_rowdes(linedf,line)    
             
         return(linedf)
+    
+    @property
+    def datawidget(self): 
+        return self.make_html_style(self.df.loc[:,self.timeslice],self.lines )
+
+
+    def make_html_style(self,df,lines,use_tooltips =True )  :
+        out = self.df_str.style.set_table_styles([           
+    {
+        'selector': '.row_heading, .corner',
+        'props': [
+            ('position', 'sticky'),
+            ('left', '0'),
+            ('z-index', '3'),
+            ('background-color', 'white'),
+            ('width', '300px'),  # Set the width of the row headings
+            ('min-width', '200px'),  # Ensure the minimum width is respected
+            ('max-width', '400px')  # Ensure the maximum width is respected
+        ]
+    },
+    {
+        'selector': '.col_heading',
+        'props': [
+            ('position', 'sticky'),
+            ('top', '0'),
+            ('z-index', '2'),
+            ('background-color', 'white')
+        ]
+    },
+    {
+        'selector': 'th',
+        'props': [
+            ('text-align', 'left') , # Align text to the left
+            ('background-color', 'white'),  # Ensuring headers are not transparent
+               ('z-index', '2')  # Headers z-index on par with column headings
+        ]
+    },
+        {
+            'selector': 'td',  # Targeting data cells
+            'props': [
+                ('z-index', '1'),  # Lower z-index than headers
+            ]
+        },
+    
+    
+    {
+        'selector': 'caption',
+        'props': [
+            ('font-size', '16px'),  # Make the font larger
+            ('font-weight', 'bold')  # Make the font bold
+        ]
+    }
+],overwrite=True)
+        if use_tooltips:
+                tt = pd.DataFrame([[v for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
+                try:
+                   out=out.set_tooltips(tt, props='visibility: hidden; position: absolute; z-index: 1; border: 1px solid #000066;'
+                                'background-color: white; color: #000066; font-size: 0.8em;width:100%'
+                                'transform: translate(0px, -24px); padding: 0.6em; border-radius: 0.5em;')
+                except Exception as e: 
+                    ...       
+        out= out.set_caption(self.options.title)
+        
+        return out 
+    
+    def __add__(self, other):
+        """
+        Combines two DisplayDef instances into a new DisplayDef with combined specifications.
+    
+        :param other: Another DisplayDef instance to add.
+        :return: A new DisplayDef instance with merged specifications.
+        """
+        if not isinstance(other, DisplayVarTableDef):
+            return NotImplemented
+    
+        # Combine options using the existing __add__ method of DisplaySpec
+        new_spec = self.spec + other.spec
+    
+        # Merge names if they differ, separated by a comma
+        new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
+    
+        # Create a new DisplayDef with the combined specifications
+        return DisplayVarTableDef(mmodel=self.mmodel, spec=new_spec, name=new_name)
+    
 
 @dataclass
 class DisplayKeepFigDef(DisplayDef):
@@ -674,6 +714,23 @@ class DisplayKeepFigDef(DisplayDef):
         
         
         self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
+        
+        self.figs = self.make_figs(showfig=True)
+        self.latexfigs = self.make_figs(showfig=False)
+        
+        self.titledic = {chart: fig.axes[0].get_title()  for chart,fig in self.figs.items() }
+        
+        for fig in self.latexfigs.values():
+            fig.axes[0].set_title('')
+
+        self.mmodel.savefigs(figs=self.latexfigs, location = './latex',
+              experimentname = self.name ,extensions= ['pgf'],
+              xopen=False)
+        
+        self.chart_names = list(self.figs.keys() )
+
+
+
         return 
     
             
@@ -816,6 +873,13 @@ class DisplayKeepFigDef(DisplayDef):
          
          return figs
     
+    @property 
+    def latex(self):
+        latex_dir = Path(f'../{self.name}')
+
+        out = '\n'.join( self.figwrap(chart) for chart in self.chart_names)
+        return out 
+    
     
     def __add__(self, other):
         """
@@ -824,7 +888,7 @@ class DisplayKeepFigDef(DisplayDef):
         :param other: Another DisplayDef instance to add.
         :return: A new DisplayDef instance with merged specifications.
         """
-        if not isinstance(other, DisplayVarTableDef):
+        if not isinstance(other, DisplayKeepFigDef):
             return NotImplemented
     
         # Combine options using the existing __add__ method of DisplaySpec
@@ -835,6 +899,19 @@ class DisplayKeepFigDef(DisplayDef):
     
         # Create a new DisplayDef with the combined specifications
         return DisplayKeepFigDef(mmodel=self.mmodel, spec=new_spec, name=new_name)
+    
+    @property 
+    def datawidget(self):
+        figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
+        out = tabwidget(figlist)
+        return out.datawidget 
+    
+    def _repr_html_(self):  
+        return self.datawidget
+
+    
+        
+        
 
                 
                     
@@ -864,18 +941,6 @@ class DisplayFigWrapDef(DisplayDef):
         
         return 
     
-    def figwrap(self,chart):
-        latex_dir = Path(f'../{self.name}')
-        
-        out = r''' 
-\begin{figure}[htbp]
-\centering
-\resizebox{\textwidth}{!}{\input{'''
-        out = out + fr'{(latex_dir / chart).as_posix()}.pgf'+'}}'
-        out = out + fr'''
-\caption{{{self.titledic[chart]}}}
-\end{{figure}}
-'''
         return out 
 
     @property 
