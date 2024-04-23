@@ -65,6 +65,8 @@ from typing import Any, List, Dict,  Optional , Tuple
 from copy import deepcopy
 import json
 import  ipywidgets as widgets  
+from io import StringIO
+
 
 
 
@@ -239,7 +241,6 @@ class DisplaySpec:
 
     def __add__(self, other):
         new_lines = self.lines  # use existing lines directly
-        new_options = self.options  # Start with existing options
 
         if isinstance(other, DisplaySpec):
             new_options = self.options + other.options
@@ -716,20 +717,12 @@ class DisplayKeepFigDef(DisplayDef):
         self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
         
         self.figs = self.make_figs(showfig=True)
-        self.latexfigs = self.make_figs(showfig=False)
-        
-        self.titledic = {chart: fig.axes[0].get_title()  for chart,fig in self.figs.items() }
-        
-        for fig in self.latexfigs.values():
-            fig.axes[0].set_title('')
-
-        self.mmodel.savefigs(figs=self.latexfigs, location = './latex',
-              experimentname = self.name ,extensions= ['pgf'],
-              xopen=False)
         
         self.chart_names = list(self.figs.keys() )
+        
+        
 
-
+        
 
         return 
     
@@ -876,7 +869,26 @@ class DisplayKeepFigDef(DisplayDef):
     @property 
     def latex(self):
         latex_dir = Path(f'../{self.name}')
+        
+        if  self.options.samefig: 
+            chart = list(self.figs.keys())[0]
+            self.titledic = {chart: self.options.title}
+        else:     
+            self.titledic = {chart: fig.axes[0].get_title()  for chart,fig in self.figs.items() }
+    
+            for fig in self.figs.values():
+                fig.axes[0].set_title('')
 
+        self.mmodel.savefigs(figs=self.figs, location = './latex',
+              experimentname = self.name ,extensions= ['pgf'],
+              xopen=False)
+
+        if not self.options.samefig: 
+            for c,fig in self.figs.items():
+                fig.axes[0].set_title(self.titledic[c])
+
+        
+        
         out = '\n'.join( self.figwrap(chart) for chart in self.chart_names)
         return out 
     
@@ -906,10 +918,28 @@ class DisplayKeepFigDef(DisplayDef):
         out = tabwidget(figlist)
         return out.datawidget 
     
-    def _repr_html_(self):  
-        return self.datawidget
+    # def _repr_html_(self):  
+    #     display(self.datawidget)
+    #     return ''
 
-    
+    # def _repr_html_(self):
+    #     """Return the HTML representation for all figures."""
+    #     html_str = '<div>'
+    #     for label, fig in self.figs.items():
+    #         # Create an in-memory buffer to save each figure to
+    #         buf = StringIO()
+    #         fig.savefig(buf, format='svg', bbox_inches='tight')
+    #         svg = buf.getvalue()
+    #         buf.close()
+            
+    #         # Add the figure with a label or header if desired
+    #         html_str += f'<h3>{label}</h3>'  # Optional: Add a header for each figure
+    #         html_str += svg
+    #     html_str += '</div>'
+    #     return html_str
+
+    def _ipython_display_(self):
+        display(self.datawidget)
         
         
 
