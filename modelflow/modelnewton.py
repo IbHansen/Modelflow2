@@ -353,11 +353,11 @@ class newton_diff():
                 
     def show_diff_latex(self,pat='*',show_expression=True,show_values=True,maxper=5):
         varpat = r'(?P<var>[a-zA-Z_]\w*)\((?P<lag>[+-][0-9]+)\)'
-        varlatex = '\g<var>_{t\g<lag>}'
+        # varlatex = '\g<var>_{t\g<lag>}'
         
         
         def partial_to_latex(v,k):
-            udtryk=r'\frac{\partial '+ mj.an_expression_to_latex(v)+'}{\partial '+mj.an_expression_to_latex(k)+'}'
+            udtryk=r'\frac{\partial '+ mj.an_expression_to_latex(v)+r'}{\partial '+mj.an_expression_to_latex(k)+'}'
             return udtryk
          
         if show_values: _ = self.get_diff_values_all()

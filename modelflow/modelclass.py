@@ -995,7 +995,7 @@ class BaseModel():
     def make_res(self, order='', exclude=[]):
         r''' makes a function which performs a Gaus-Seidle iteration
         if ljit=True a Jittet function will also be created.
-        The functions will be placed in\: 
+        The functions will be placed in: 
             
         - model.solve 
         - model.solve_jit 
@@ -1094,7 +1094,7 @@ class Org_model_Mixin():
         Returns a list of variable in the model matching the pattern, the pattern can be a list of patterns
 
         Args:
-            pat (string or list of strings): One or more pattern seperated by space wildcards * and ?, special pattern\: #ENDO  
+            pat (string or list of strings): One or more pattern seperated by space wildcards * and ?, special pattern: #ENDO  
         
         Returns:
             out (list): list of variable names matching the pat.
@@ -2754,7 +2754,7 @@ class Description_Mixin():
         Returns a list of variable where the description in the model matching the pattern, the pattern can be a list of patterns
 
         Args:
-            pat (string or list of strings): One or more pattern seperated by space wildcards * and ?, special pattern\: #ENDO  
+            pat (string or list of strings): One or more pattern seperated by space wildcards * and ?, special pattern: #ENDO  
         
         Returns:
             out (list): list of variable names where the description matching the pat.
@@ -4233,15 +4233,15 @@ class Graph_Draw_Mixin():
         with open(filename, 'w') as f:
             f.write(dot)
         warnings = "" if kwargs.get("warnings", False) else "-q"
-#        run('dot -Tsvg  -Gsize=9,9\! -o'+svgname+' "'+filename+'"',shell=True) # creates the drawing
+#        run('dot -Tsvg  -Gsize=9,9  -o'+svgname+' "'+filename+'"',shell=True) # creates the drawing
         # creates the drawing
-        run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}\! -o{svgname} "{filename}"   {warnings} ', shell=True)
+        run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}  -o{svgname} "{filename}"   {warnings} ', shell=True)
         # creates the drawing
-        run(f'dot -Tpng  -Gsize={size[0]},{size[1]}\! -Gdpi=300 -o{pngname} "{filename}"  {warnings} ', shell=True)
+        run(f'dot -Tpng  -Gsize={size[0]},{size[1]}  -Gdpi=300 -o{pngname} "{filename}"  {warnings} ', shell=True)
         # creates the drawing
-        run(f'dot -Tpdf  -Gsize={size[0]},{size[1]}\! -o{pdfname} "{filename}"  {warnings} ', shell=True)
-        # run('dot -Tpdf  -Gsize=9,9\! -o'+pdfname+' "'+filename+'"',shell=True) # creates the drawing
-        # run('dot -Teps  -Gsize=9,9\! -o'+epsname+' "'+filename+'"',shell=True) # creates the drawing
+        run(f'dot -Tpdf  -Gsize={size[0]},{size[1]}  -o{pdfname} "{filename}"  {warnings} ', shell=True)
+        # run('dot -Tpdf  -Gsize=9,9  -o'+pdfname+' "'+filename+'"',shell=True) # creates the drawing
+        # run('dot -Teps  -Gsize=9,9  -o'+epsname+' "'+filename+'"',shell=True) # creates the drawing
 
         if kwargs.get('png', False):
             display(Image(filename=pngname[1:-1]))
@@ -4301,13 +4301,13 @@ class Graph_Draw_Mixin():
         pdfname = filename.with_suffix('.pdf')
         epsname = filename.with_suffix('.eps')
 
-        xx0 = run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}\! -o"{svgname}" "{filename}" -q  {warnings} ',
+        xx0 = run(f'dot -Tsvg  -Gsize={size[0]},{size[1]}  -o"{svgname}" "{filename}" -q  {warnings} ',
                   shell=True, capture_output=True, text=True).stderr  # creates the drawing
-        xx1 = run(f'dot -Tpng  -Gsize={size[0]},{size[1]}\! -Gdpi=300 -o"{pngname}" "{filename}"  {warnings} ',
+        xx1 = run(f'dot -Tpng  -Gsize={size[0]},{size[1]}  -Gdpi=300 -o"{pngname}" "{filename}"  {warnings} ',
                   shell=True, capture_output=True, text=True).stderr  # creates the drawing
         xx2 = '' if not (lpdf or fpdf) else run(
-            f'dot -Tpdf  -Gsize={size[0]},{size[1]}\! -o"{pdfname}" "{filename}"  {warnings} ', shell=True, capture_output=True, text=True).stderr  # creates the drawing
-        xx3 = '' if not leps else run(f'dot -Teps  -Gsize={size[0]},{size[1]}\! -o"{epsname}" "{filename}"  {warnings} ',
+            f'dot -Tpdf  -Gsize={size[0]},{size[1]}  -o"{pdfname}" "{filename}"  {warnings} ', shell=True, capture_output=True, text=True).stderr  # creates the drawing
+        xx3 = '' if not leps else run(f'dot -Teps  -Gsize={size[0]},{size[1]}  -o"{epsname}" "{filename}"  {warnings} ',
                                       shell=True, capture_output=True, text=True).stderr  # creates the drawing
         for x in [xx0, xx1, xx2, xx3]:
             if x:
