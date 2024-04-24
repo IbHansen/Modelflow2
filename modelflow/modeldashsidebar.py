@@ -131,7 +131,7 @@ def app_run(app,jupyter=False,debug=False,port=5000,inline=True):
     else:    
         Timer(1, open_browser).start()            
 
-        xx = app.run_server(debug=debug,port=port)
+        xx = app.run_server(debug=debug,port=port,jupyter_mode="tab")
         
     
 
