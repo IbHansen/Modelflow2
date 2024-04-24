@@ -991,7 +991,12 @@ class DatatypeAccessor:
         """
 
         self.datatype = datatype
-        config_table = r"""
+        
+        if 'config_table' in kwargs:
+            config_table = kwargs.get('config_table')
+        else:     
+        
+            config_table = r"""
 | datatype  | showtype   | diftype | units            | difext |
 |-----------|----------|---------|-----------------|---------|
 | growth    | growth     | nodif   | Percent growth    |         |
