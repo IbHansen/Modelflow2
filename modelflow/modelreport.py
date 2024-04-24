@@ -423,6 +423,15 @@ class DisplayDef:
         else:
             # If the other object is neither a LaTeXHolder instance nor a string, raise an error
             raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
+            
+    def __rfloordiv__(self, other):
+        if isinstance(other, str):
+            # If the left-hand side operand is a string, this method will be called
+            return LatexRepo(latex=other + '\n' + self.latex, name=self.name)
+        else:
+            # Handling unexpected types gracefully
+            raise ValueError("Left operand must be a string for LaTeX concatenation.")
+            
         
  
     @property
@@ -572,6 +581,14 @@ class LatexRepo:
                 raise Exception('Trying to join latex from object without latex content ')
         out =  LatexRepo(self.latex + other_latex )
         return out 
+
+    def __rfloordiv__(self, other):
+        if isinstance(other, str):
+            # If the left-hand side operand is a string, this method will be called
+            return LatexRepo(latex=other + '\n' + self.latex, name=self.name)
+        else:
+            # Handling unexpected types gracefully
+            raise ValueError("Left operand must be a string for LaTeX concatenation.")
     
     
     def _repr_html_(self):  
