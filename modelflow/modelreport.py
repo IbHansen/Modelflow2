@@ -304,7 +304,7 @@ class DisplaySpec:
 @dataclass
 class DisplayDef:
     mmodel      : Any = None
-    spec : Options = field(default_factory=DisplaySpec)
+    spec : DisplaySpec = field(default_factory=DisplaySpec)
     name        : str = ''
 
     
@@ -495,7 +495,13 @@ class DisplayDef:
                 self.timeslice = self.options.timeslice 
             
         
-        return self           
+        return self    
+
+    def set_options(self,**kwargs):
+        spec = self.spec + kwargs
+        
+        return self.__class__(mmodel=self.mmodel,spec= spec)   
+
 
     def figwrap(self,chart):
         latex_dir = Path(f'../{self.name}')
@@ -733,7 +739,7 @@ class DisplayKeepFigDef(DisplayDef):
         
         self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
         
-        self.figs = self.make_figs(showfig=True)
+        self.figs = self.make_figs(showfig=False)
         
         self.chart_names = list(self.figs.keys() )
         

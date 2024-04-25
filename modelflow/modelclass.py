@@ -5801,7 +5801,6 @@ class Json_Mixin():
                 
                 print(f'Open file from URL:  {urlfile}')  
             json_string = read_from_url(urlfile)
-
         input = json.loads(json_string)
         version = input['version']
         frml = input['frml']
@@ -5820,6 +5819,9 @@ class Json_Mixin():
         mmodel.reports    = input.get('reports',{} )
         mmodel.model_description = input.get('model_description', '')
         mmodel.eviews_dict = input.get('eviews_dict', {})
+        
+        # mmodel.json_string = json_string
+
         if keep_json:
             mmodel.json_keep = input
 
@@ -5827,7 +5829,7 @@ class Json_Mixin():
             lastdf, current_per = make_current_from_quarters(
                 lastdf, current_per)
         except Exception as e:
-            print(e)
+            print('makecurrent',e)
             pass
         
         if mmodel.model_description:
