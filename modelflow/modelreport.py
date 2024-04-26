@@ -365,51 +365,6 @@ class DisplayDef:
         dfout = thisdf if row else thisdf.T 
         return dfout 
 
-    @property    
-    def df_str(self):
-        width = self.options.width
-        # df = self.df.copy( )
-        df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
-
-        format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-        for i, dec in enumerate(format_decimal):
-              df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
-        return  df_char.T if self.options.transpose else df_char   
-
-
-    def df_str_max_col(self,max_col): 
-        df = self.df_str 
-        if 2 * max_col >= len(df.columns):
-            raise ValueError("n is too large; it must be less than half the number of columns in the DataFrame")
-        dots  = [ (line.showtype != 'textline' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-
-        first_n = df.iloc[:, :max_col]
-        last_n = df.iloc[:, -max_col:]
-        ellipsis_col = pd.DataFrame({'...': ['...' if dot else '   ' for dot in dots]}, index=df.index)
-        result = pd.concat([first_n, ellipsis_col, last_n], axis=1)
-        return result
-
-
-    @property    
-    def df_str_disp(self):
-        center = [ (line.showtype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-        center_index = [index+1 for index, value in enumerate(center) if value]
-
-        width = self.options.width
-        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str  
-            
-        rawdata = thisdf.to_string(max_cols= self.options.max_cols).split('\n')
-        data = center_title_under_years(rawdata,center_index)
-        out = '\n'.join(data)
-        return out       
-
-    @property 
-    def print(self):
-        if self.options.title: 
-            print(self.options.title)
-        print(self.df_str_disp)
-        if self.options.foot: 
-            print(self.options.foot)
 
 
     
@@ -448,21 +403,6 @@ class DisplayDef:
         return self.datawidget._repr_html_()
                  
       
-
-    def set_options(self,**kwargs):
-        self.options = self.options + kwargs  
-        
-        if 'custom_description' in kwargs: 
-            self.var_description = self.mmodel.defsub(self.var_description | self.options.custom_description )
-            
-        if 'name' in kwargs:     
-            self.name =  self.options.name   
-        
-        if 'timeslice' in kwargs:     
-                self.timeslice = self.options.timeslice 
-            
-        
-        return self    
 
     def set_options(self,**kwargs):
         spec = self.spec + kwargs
@@ -616,12 +556,76 @@ class DisplayVarTableDef(DisplayDef):
             
         return(linedf)
     
+    @property    
+    def df_str(self):
+        width = self.options.width
+        # df = self.df.copy( )
+        df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
+
+        format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+        for i, dec in enumerate(format_decimal):
+              df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+        return  df_char   
+
+
+    def df_str_max_col(self,max_col): 
+        df = self.df_str 
+        if 2 * max_col >= len(df.columns):
+            raise ValueError("n is too large; it must be less than half the number of columns in the DataFrame")
+        dots  = [ (line.showtype != 'textline' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+
+        first_n = df.iloc[:, :max_col]
+        last_n = df.iloc[:, -max_col:]
+        ellipsis_col = pd.DataFrame({'...': ['...' if dot else '   ' for dot in dots]}, index=df.index)
+        result = pd.concat([first_n, ellipsis_col, last_n], axis=1)
+        return result
+
+
+    @property    
+    def df_str_disp(self):
+        center = [ (line.showtype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+        center_index = [index+1 for index, value in enumerate(center) if value]
+
+        width = self.options.width
+        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str 
+            
+        rawdata = thisdf.to_string(max_cols= self.options.max_cols).split('\n')
+        data = center_title_under_years(rawdata,center_index)
+        out = '\n'.join(data)
+        return out       
+
+    @property    
+    def df_str_disp_transpose(self):
+        
+        width = self.options.width
+        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str  
+        centerdf = create_column_multiindex(thisdf.T)    
+        rawdata = centerdf.to_string(max_cols= self.options.max_cols).split('\n')
+        data = center_title_under_years(rawdata,title_row_index=[0],year_row_index=1)
+        out = '\n'.join(data)
+        return out       
+
+
+    @property 
+    def print(self):
+        if self.options.title: 
+            print(self.options.title)
+        print(self.df_str_disp_transpose  if self.options.transpose else  self.df_str_disp)
+        if self.options.foot: 
+            print(self.options.foot)
+
+    
     @property
     def datawidget(self): 
         return self.make_html_style(self.df.loc[:,self.timeslice],self.lines )
-    
+
     @property
     def latex(self): 
+        return self.latex_transpose if self.options.transpose else self.latex_straight
+
+    
+    @property
+    def latex_straight(self): 
             last_cols = 0 
             rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
             if self.timeslice: 
@@ -630,7 +634,6 @@ class DisplayVarTableDef(DisplayDef):
                 if self.options.chunk_size:
                     dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
                 else: 
-                    #dfs = [self.df_str_max_col(self.options.max_cols//2)]
                     if len(self.df_str.columns) > self.options.max_cols:
                         
                         last_cols = self.options.last_cols 
@@ -662,6 +665,24 @@ class DisplayVarTableDef(DisplayDef):
 
             return out       
 
+    @property
+    def latex_transpose(self): 
+
+        df = (self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str).T
+        multi_df  = create_column_multiindex(df)
+        tabformat = 'l'+'r'*len(multi_df.columns) 
+
+        latex_df = (multi_df.style.format(lambda x:x)
+                 .set_caption(self.options.title) 
+                 .to_latex(hrules=True, position='ht', column_format=tabformat)
+                 .replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ) 
+        out = latex_df
+        out = '\n'.join(l.replace('{r}','{c}') if 'multicolum' in l else l   for l in out.split('\n'))
+        if self.options.foot: 
+            out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
+        
+        return out 
+        
 
     def make_html_style(self,df,lines,use_tooltips =True )  :
         out = self.df_str.style.set_table_styles([           
@@ -1115,7 +1136,7 @@ class DatatypeAccessor:
                
 
 
-def center_title_under_years(data, title_row_index=[1]):
+def center_title_under_years(data, title_row_index=[1],year_row_index = 0):
     """
     Center a title (specified by its index in the list) under the years row in a list of strings.
     
@@ -1127,7 +1148,7 @@ def center_title_under_years(data, title_row_index=[1]):
     adjusted_data = data.copy()
     
     # Find the start and end indices of the year values in the first row
-    year_row = adjusted_data[0]
+    year_row = adjusted_data[year_row_index]
     start_index = len(year_row) - len(year_row.lstrip())
     end_index = len(year_row.rstrip())
     
