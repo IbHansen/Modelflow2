@@ -117,6 +117,7 @@ class Options:
         timeslice (List[int]): Specifies the time slice for data display. Empty by default.
         max_cols (int): Maximum columns when displayed as string. Default is 4.
         last_cols (int): In Latex specifies the number of last columns to include in a display slice. Default is 1.
+        latex_text (str) : A latex text 
     
     Methods:
     __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
@@ -126,7 +127,7 @@ class Options:
 
     
     """
-    name: str = 'display'
+    name: str = 'Display'
     foot: str = ''
     rename: bool = True
     decorate: bool = True
@@ -142,6 +143,15 @@ class Options:
     samefig :bool = False 
     size: tuple = (10, 6)
     legend: bool = True
+    latex_text :str =''
+    transpose : bool = False
+    
+    def __post_init__(self):
+        
+        if ' ' in self.name:
+            self.name = self.name.replace(' ','_')
+            print(f'Blank space is not allowed in name, renamed: {self.name}')
+
     
     def was_explicitly_set(self, field_name: str) -> bool:
         # Using getattr with three arguments to avoid KeyError and return False when the attribute isn't found
@@ -179,8 +189,6 @@ class Options:
 
         return new_instance
 
-    def __post_init__(self):
-        pass
 
 
 
@@ -366,7 +374,7 @@ class DisplayDef:
         format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
         for i, dec in enumerate(format_decimal):
               df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
-        return df_char      
+        return  df_char.T if self.options.transpose else df_char   
 
 
     def df_str_max_col(self,max_col): 
@@ -434,47 +442,6 @@ class DisplayDef:
             
         
  
-    @property
-    def latex(self): 
-            last_cols = 0 
-            rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-            if self.timeslice: 
-                dfs = [self.df_str.loc[:,self.timeslice]]
-            else:    
-                if self.options.chunk_size:
-                    dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
-                else: 
-                    #dfs = [self.df_str_max_col(self.options.max_cols//2)]
-                    if len(self.df_str.columns) > self.options.max_cols:
-                        
-                        last_cols = self.options.last_cols 
-                        first_cols = self.options.max_cols - last_cols
-                    
-                        dfs = [pd.concat([self.df_str.iloc[:, :first_cols], self.df_str.iloc[:, -last_cols:]], axis=1)]
-                    else:
-                        dfs = [self.df_str]
-            outlist = [] 
-            for i,df in enumerate(dfs): 
-                ncol=len(df.columns)
-                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i]+'}}'  
-                            if line.showtype == 'textline'
-                            else df.index[i]
-                    for i, line  in enumerate(rowlines)]    
-    
-                df.index = newindex
-                tabformat = 'l'+'r'*(ncol-last_cols) + ( ('|'+'r'*last_cols) if last_cols else '') 
-                outlist = outlist + [df.style.format(lambda x:x) \
-                 .set_caption(self.options.title + ('' if i == 0 else ' - continued ')) \
-                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ] 
-                   
-            # print(outlist)
-            out = r' '.join(outlist) 
-            
-            out = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in out.split('\n'))
-            if self.options.foot: 
-                out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
-
-            return out       
         
                 
     def _repr_html_(self):  
@@ -499,9 +466,14 @@ class DisplayDef:
 
     def set_options(self,**kwargs):
         spec = self.spec + kwargs
-        
-        return self.__class__(mmodel=self.mmodel,spec= spec)   
+        try:
+            #We want to keep the smpl which shere used originaly if it is a tab
+            with self.mmodel.set_smpl(self.df.columns[0],self.df.columns[-1]):
+                out = self.__class__(mmodel=self.mmodel,spec= spec) 
+        except: 
+                out = self.__class__(mmodel=self.mmodel,spec= spec) 
 
+        return out 
 
     def figwrap(self,chart):
         latex_dir = Path(f'../{self.name}')
@@ -647,6 +619,48 @@ class DisplayVarTableDef(DisplayDef):
     @property
     def datawidget(self): 
         return self.make_html_style(self.df.loc[:,self.timeslice],self.lines )
+    
+    @property
+    def latex(self): 
+            last_cols = 0 
+            rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            if self.timeslice: 
+                dfs = [self.df_str.loc[:,self.timeslice]]
+            else:    
+                if self.options.chunk_size:
+                    dfs = [self.df_str.iloc[:, i:i+self.options.chunk_size] for i in range(0, self.df_str.shape[1], self.options.chunk_size)]
+                else: 
+                    #dfs = [self.df_str_max_col(self.options.max_cols//2)]
+                    if len(self.df_str.columns) > self.options.max_cols:
+                        
+                        last_cols = self.options.last_cols 
+                        first_cols = self.options.max_cols - last_cols
+                    
+                        dfs = [pd.concat([self.df_str.iloc[:, :first_cols], self.df_str.iloc[:, -last_cols:]], axis=1)]
+                    else:
+                        dfs = [self.df_str]
+            outlist = [] 
+            for i,df in enumerate(dfs): 
+                ncol=len(df.columns)
+                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i]+'}}'  
+                            if line.showtype == 'textline'
+                            else df.index[i]
+                    for i, line  in enumerate(rowlines)]    
+    
+                df.index = newindex
+                tabformat = 'l'+'r'*(ncol-last_cols) + ( ('|'+'r'*last_cols) if last_cols else '') 
+                outlist = outlist + [df.style.format(lambda x:x) \
+                 .set_caption(self.options.title + ('' if i == 0 else ' - continued ')) \
+                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ] 
+                   
+            # print(outlist)
+            out = r' '.join(outlist) 
+            
+            out = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in out.split('\n'))
+            if self.options.foot: 
+                out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
+
+            return out       
 
 
     def make_html_style(self,df,lines,use_tooltips =True )  :
@@ -962,8 +976,27 @@ class DisplayKeepFigDef(DisplayDef):
     #     return html_str
 
     def _ipython_display_(self):
-        display(self.datawidget)
+        for f in self.figs.values(): 
+            display(f)
+            
+        # display(self.datawidget)
         
+        
+@dataclass
+class DisplayLatex(DisplayDef):
+    def __post_init__(self):
+        super().__post_init__()  # Call the parent class's __post_init__
+
+ 
+    @property 
+    def latex(self) :
+        return self.options.latex_text
+    
+    
+    @property 
+    def datawidget(self):
+        repo = LatexRepo(self.latex,name=self.name)
+        return repo.pdf()
         
 
                 
@@ -1151,4 +1184,33 @@ def create_instance_from_json(mmodel,json_str: str):
     
     return instance
 
+def create_column_multiindex(df):
+    """
+    Transforms the columns of a DataFrame into a MultiIndex, where the first column's name
+    becomes the top level, and the names of the remaining columns serve as the second level.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to convert.
+
+    Returns:
+    pd.DataFrame: A DataFrame with MultiIndex columns.
+    """
+    # Retrieve the name of the first column to be used as the top level of the MultiIndex
+    top_level_name = df.columns[0]
+
+    # Create a MultiIndex from the first column name and the names of the remaining columns
+    multiindex_columns = [(top_level_name, col) for col in df.columns[1:]]
+
+    # Construct a new DataFrame with the MultiIndex columns
+    multiindex_df = pd.DataFrame(df.iloc[:, 1:].values, index=df.index, columns=pd.MultiIndex.from_tuples(multiindex_columns))
+
+    return multiindex_df
+
+
+def center_multiindex_headers(df):
+    style = df.style.set_table_styles([
+        {'selector': 'th.level0', 'props': [('text-align', 'center')]},
+        {'selector': 'th', 'props': [('font-size', '12pt')]}
+    ])
+    return style
 

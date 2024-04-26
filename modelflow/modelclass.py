@@ -5829,7 +5829,7 @@ class Json_Mixin():
             lastdf, current_per = make_current_from_quarters(
                 lastdf, current_per)
         except Exception as e:
-            print('makecurrent',e)
+            # print('makecurrent',e)
             pass
         
         if mmodel.model_description:
@@ -8197,7 +8197,7 @@ class Report_Mixin:
         config =   DatatypeAccessor(datatype, **kwargs)    
                
         figspec = DisplaySpec(
-            options = Options(decorate=False,name='A plot', 
+            options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype ) , 
             ]
@@ -8205,7 +8205,11 @@ class Report_Mixin:
         figs = DisplayKeepFigDef (mmodel=self, spec = figspec)
         return figs
 
-
+    def latex(self,latex_text= '',name='latexdisplay',**kwargs):
+        from modelreport import DisplayLatex
+        from modelreport import Line, Options,DisplaySpec
+        figspec = DisplaySpec() + Options(latex_text=latex_text,name=name,**kwargs)
+        return DisplayLatex(mmodel=self,spec = figspec)
 
     def report_from_spec(self,json_str):
         from modelreport import  create_instance_from_json
