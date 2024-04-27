@@ -602,6 +602,7 @@ class DisplayVarTableDef(DisplayDef):
         centerdf = create_column_multiindex(thisdf.T)    
         rawdata = centerdf.to_string(max_cols= self.options.max_cols).split('\n')
         data = center_title_under_years(rawdata,title_row_index=[0],year_row_index=1)
+        data[0],data[1] = data[1],data[0]
         out = '\n'.join(data)
         return out       
 
@@ -617,7 +618,11 @@ class DisplayVarTableDef(DisplayDef):
     
     @property
     def datawidget(self): 
-        return self.make_html_style(self.df.loc[:,self.timeslice],self.lines )
+        if self.options.transpose: 
+            multi_df  = center_multiindex_headers(create_column_multiindex(self.df_str.T))
+            return  multi_df
+        else: 
+            return self.make_html_style(self.df.loc[:,self.timeslice])
 
     @property
     def latex(self): 
@@ -654,7 +659,8 @@ class DisplayVarTableDef(DisplayDef):
                 tabformat = 'l'+'r'*(ncol-last_cols) + ( ('|'+'r'*last_cols) if last_cols else '') 
                 outlist = outlist + [df.style.format(lambda x:x) \
                  .set_caption(self.options.title + ('' if i == 0 else ' - continued ')) \
-                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ] 
+                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots')
+                 .replace(r'\caption{',r'\caption*{')] 
                    
             # print(outlist)
             out = r' '.join(outlist) 
@@ -677,14 +683,20 @@ class DisplayVarTableDef(DisplayDef):
                  .to_latex(hrules=True, position='ht', column_format=tabformat)
                  .replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ) 
         out = latex_df
+        data = out.split('\n')
+        # print(*[f'{i} {d}' for i,d in enumerate(data)],sep='\n')
+        data[6],data[4],data[5]       =  data [4],data[5],data[6]
+        # print(*[f'{i} {d}' for i,d in enumerate(data)],sep='\n')
+        out = '\n'.join(data)
         out = '\n'.join(l.replace('{r}','{c}') if 'multicolum' in l else l   for l in out.split('\n'))
+        out = out.replace(r'\caption{',r'\caption*{')
         if self.options.foot: 
             out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
         
         return out 
         
 
-    def make_html_style(self,df,lines,use_tooltips =True )  :
+    def make_html_style(self,df,use_tooltips =False )  :
         out = self.df_str.style.set_table_styles([           
     {
         'selector': '.row_heading, .corner',
@@ -1074,18 +1086,18 @@ class DatatypeAccessor:
         else:     
         
             config_table = r"""
-| datatype  | showtype   | diftype | units            | difext |
-|-----------|----------|---------|-----------------|---------|
-| growth    | growth     | nodif   | Percent growth    |         |
-| difgrowth | growth     | dif     | Percent growth    | Impact  |
-| gdppct    | gdppct      | nodif   | Percent of GDP    |         |
-| difgdppct | gdppct     | dif     | Percent of GDP    | Impact  |
-| level     | level      | nodif   | Level             |         |
-| diflevel  | level      | dif   | Level               |  Impact |
-| difpctlevel| level     | difpct  | Impact in percent |         |
-| base          | level      | basedf   | Level             |         |
-| basegrowth    | growth     | basedf   | Percent growth    |         |
-| basegdppct    | gdppct      | basedf   | Percent of GDP    |         |
+| datatype  | showtype   | diftype | col_desc |
+|-----------|----------|---------|------------------|
+| growth    | growth     | nodif   | Percent growth               |
+| difgrowth  | growth     | dif     | Impact, Percent growth       |
+| gdppct     | gdppct      | nodif   | Percent of GDP              |
+| difgdppct  | gdppct     | dif     |  Impact, Percent of GDP      |
+| level      | level      | nodif   | Level                        |
+| diflevel   | level      | dif   | Impact, Level                  |
+| difpctlevel| level     | difpct  | Impact in percent            |
+| base          | level      | basedf   | Level                   |
+| basegrowth    | growth     | basedf   | Percent growth          |
+| basegdppct    | gdppct      | basedf   | Percent of GDP         |
 
 
 
@@ -1115,6 +1127,8 @@ class DatatypeAccessor:
 
         for line in lines[2:]:  # Skip the header and delimiter rows
             values = re.split(r'\s*\|\s*', line.strip('|').strip())
+            # print(f'{line=}')
+            # print(f'{values=}')
             config = {headers[i]: values[i] for i in range(len(values))}
             datatype = config.pop('datatype')  # Remove the datatype key to use as the dictionary key
             configs[datatype] = config
@@ -1224,7 +1238,7 @@ def create_column_multiindex(df):
 
     # Construct a new DataFrame with the MultiIndex columns
     multiindex_df = pd.DataFrame(df.iloc[:, 1:].values, index=df.index, columns=pd.MultiIndex.from_tuples(multiindex_columns))
-
+    # print(multiindex_df)
     return multiindex_df
 
 
@@ -1234,4 +1248,29 @@ def center_multiindex_headers(df):
         {'selector': 'th', 'props': [('font-size', '12pt')]}
     ])
     return style
+
+
+def create_column_multiindex__(df):
+    """
+    Transforms the columns of a DataFrame into a MultiIndex, where the first column's name
+    becomes the top level, and the names of the remaining columns serve as the second level.
+    The top level name will only be shown once in the MultiIndex representation.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to convert.
+
+    Returns:
+    pd.DataFrame: A DataFrame with MultiIndex columns.
+    """
+    # Retrieve the name of the first column to be used as the top level of the MultiIndex
+    top_level_name = df.columns[0]
+
+    # Create a list of tuples for the MultiIndex where the first element is the top level name
+    # and only use it once as the top level label for all subsequent columns
+    multiindex_columns = [(top_level_name, col) if col != top_level_name else ('', col) for col in df.columns]
+
+    # Construct a new DataFrame with the MultiIndex columns
+    multiindex_df = pd.DataFrame(df.values, index=df.index, columns=pd.MultiIndex.from_tuples(multiindex_columns))
+
+    return multiindex_df
 

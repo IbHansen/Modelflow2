@@ -8143,7 +8143,7 @@ class Report_Mixin:
 
         config =   DatatypeAccessor(datatype, **kwargs)    
         headingline = [Line(showtype='textline',centertext=heading)] if heading else [] 
-        unitline   =  [ Line(showtype='textline',centertext=f'--- {config.difext} {config.units} ---')] if config.units else []
+        unitline   =  [ Line(showtype='textline',centertext=f'--- {config.col_desc} ---')] if config.col_desc else []
                
         tabspec = DisplaySpec(
             options = Options(decorate=False,name='A_small_table', 
