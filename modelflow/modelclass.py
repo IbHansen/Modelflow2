@@ -8102,7 +8102,7 @@ class Report_Mixin:
     
 
 
-    def tab(self, pat='#Headline',title='Table',datatype='growth',custom_description = {},dec=2,heading='',**kwargs):     
+    def table(self, pat='#Headline',title='Table',datatype='growth',custom_description = {},dec=2,heading='',**kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8223,7 +8223,7 @@ class Report_Mixin:
         print(f'Reports added to report repo: {", ".join(n for n in new_reports.keys() )}')
         
         
-    def rtab(self,key):
+    def get_report(self,key):
          if not key in self.reports.keys():
              print(f'No stored report with the name {key}')
              print(f'Possible values:  {", ".join(n for n in self.reports.keys() )}')
