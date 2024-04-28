@@ -248,19 +248,20 @@ class DisplaySpec:
     lines: List[Line] = field(default_factory=list)
 
     def __add__(self, other):
-        new_lines = self.lines  # use existing lines directly
 
         if isinstance(other, DisplaySpec):
             new_options = self.options + other.options
-            new_lines += other.lines  # extends the list with other's lines
+            new_lines = self.lines + other.lines  # extends the list with other's lines
         elif isinstance(other, Options):
             new_options = self.options + other  # update options
+            new_lines = self.lines
         elif isinstance(other,  dict):
             new_options = self.options + other  # update options
+            new_lines = self.lines
         elif isinstance(other, Line):
-            new_lines = new_lines + [other]  # creates a new list with the added line
+            new_lines = self.lines + [other]  # creates a new list with the added line
         elif isinstance(other, list) and all(isinstance(line, Line) for line in other):
-            new_lines = new_lines + other  # extends the list with the new lines
+            new_lines = self.lines + other  # extends the list with the new lines
         else:
             raise TypeError("Operand must be an instance of DisplaySpec, Options, dict, Line, or list of Line instances.")
         
@@ -382,7 +383,7 @@ class DisplayDef:
             return LatexRepo(latex =self.latex + '\n' + other.latex,name=self.name)
         elif isinstance(other, str):
             # If the other object is a string, assume it's a raw LaTeX string and concatenate
-            return LatexRepo(latex = self.latex + '\n' + other,name=self.name)
+            return LatexRepo(latex = self.latex + '\n' + DisplayLatex(DisplaySpec(options = Options(latex_text=other,name=self.name))).latex )
         else:
             # If the other object is neither a LaTeXHolder instance nor a string, raise an error
             raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
@@ -390,7 +391,7 @@ class DisplayDef:
     def __rfloordiv__(self, other):
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
-            return LatexRepo(latex=other + '\n' + self.latex, name=self.name)
+            return LatexRepo(latex =    DisplayLatex(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex + '\n' + self.latex)
         else:
             # Handling unexpected types gracefully
             raise ValueError("Left operand must be a string for LaTeX concatenation.")
@@ -490,8 +491,10 @@ class LatexRepo:
 
 
     def __floordiv__(self, other):
+
         if isinstance(other,str):
-            other_latex = other
+            other_latex = DisplayLatex(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex 
+
         else: 
             if hasattr(other,'latex'):
                 other_latex= other.latex 
@@ -503,7 +506,7 @@ class LatexRepo:
     def __rfloordiv__(self, other):
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
-            return LatexRepo(latex=other + '\n' + self.latex, name=self.name)
+            return LatexRepo(latex=DisplayLatex(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex  + '\n' + self.latex, name=self.name)
         else:
             # Handling unexpected types gracefully
             raise ValueError("Left operand must be a string for LaTeX concatenation.")
@@ -767,7 +770,9 @@ class DisplayVarTableDef(DisplayDef):
     
         # Combine options using the existing __add__ method of DisplaySpec
         new_spec = self.spec + other.spec
-    
+        # print(f' \n{self.spec=}')
+        # print(f' \n{ other.spec=}')
+        # print(f' \n{new_spec=}')
         # Merge names if they differ, separated by a comma
         new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
     
