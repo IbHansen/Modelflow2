@@ -85,7 +85,7 @@ from typing import Dict, List
 from copy import deepcopy
 
 
-from modelwidget import fig_to_image,tabwidget,htmlwidget_fig
+from modelwidget import fig_to_image,tabwidget,htmlwidget_fig, htmlwidget_df
 
 def track_fields():
     '''To find fields which has been set '''
@@ -392,22 +392,56 @@ class DisplayDef:
         repo = LatexRepo(self.latex ,name=self.name)
         return repo.pdf(xopen,show,width,height)
 
+    def __add__(self, other):
+        """
+        Combines two DisplayDef instances into a new DisplayDef with combined specifications.
+    
+        :param other: Another DisplayDef instance to add.
+        :return: A new DisplayDef instance with merged specifications.
+        """
 
-    def __floordiv__(self, other):
+        out = DisplayReportDef(mmodel=self.mmodel,reports= [self,other])
+    
+        # Create a new DisplayDef with the combined specifications
+        return out 
+
+
+
+
+    def __rshift__(self, other):
+        """
+        Combines two DisplayDef instances into a new DisplayDef with combined specifications.
+    
+        :param other: Another DisplayDef instance to add.
+        :return: A new DisplayDef instance with merged specifications.
+        """
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+    
+        # Combine options using the existing __add__ method of DisplaySpec
+        new_spec = self.spec + other.spec
+    
+        # Merge names if they differ, separated by a comma
+        new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
+    
+        # Create a new DisplayDef with the combined specifications
+        return self.__class__(mmodel=self.mmodel, spec=new_spec, name=new_name)
+
+    def __or__(self, other):
         if hasattr(other,'latex'):
             # If the other object is an instance of LaTeXHolder, concatenate their LaTeX strings
             return LatexRepo(latex =self.latex + '\n' + other.latex,name=self.name)
         elif isinstance(other, str):
             # If the other object is a string, assume it's a raw LaTeX string and concatenate
-            return LatexRepo(latex = self.latex + '\n' + DisplayLatex(DisplaySpec(options = Options(latex_text=other,name=self.name))).latex )
+            return LatexRepo(latex = self.latex + '\n' + DisplayLatexDef(DisplaySpec(options = Options(latex_text=other,name=self.name))).latex )
         else:
             # If the other object is neither a LaTeXHolder instance nor a string, raise an error
             raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
             
-    def __rfloordiv__(self, other):
+    def __ror__(self, other):
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
-            return LatexRepo(latex =    DisplayLatex(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex + '\n' + self.latex)
+            return LatexRepo(latex =    DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex + '\n' + self.latex)
         else:
             # Handling unexpected types gracefully
             raise ValueError("Left operand must be a string for LaTeX concatenation.")
@@ -506,10 +540,10 @@ class LatexRepo:
             return IFrame(pdf_file, width=width, height=height)
 
 
-    def __floordiv__(self, other):
+    def __or__(self, other):
 
         if isinstance(other,str):
-            other_latex = DisplayLatex(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex 
+            other_latex = DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex 
 
         else: 
             if hasattr(other,'latex'):
@@ -519,7 +553,7 @@ class LatexRepo:
         out =  LatexRepo(self.latex + other_latex )
         return out 
 
-    def __rfloordiv__(self, other):
+    def __ror__(self, other):
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
             return LatexRepo(latex=DisplayLatex(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex  + '\n' + self.latex, name=self.name)
@@ -778,26 +812,6 @@ class DisplayVarTableDef(DisplayDef):
         
         return out 
     
-    def __add__(self, other):
-        """
-        Combines two DisplayDef instances into a new DisplayDef with combined specifications.
-    
-        :param other: Another DisplayDef instance to add.
-        :return: A new DisplayDef instance with merged specifications.
-        """
-        if not isinstance(other, DisplayVarTableDef):
-            return NotImplemented
-    
-        # Combine options using the existing __add__ method of DisplaySpec
-        new_spec = self.spec + other.spec
-        # print(f' \n{self.spec=}')
-        # print(f' \n{ other.spec=}')
-        # print(f' \n{new_spec=}')
-        # Merge names if they differ, separated by a comma
-        new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
-    
-        # Create a new DisplayDef with the combined specifications
-        return DisplayVarTableDef(mmodel=self.mmodel, spec=new_spec, name=new_name)
     
 
 @dataclass
@@ -990,24 +1004,6 @@ class DisplayKeepFigDef(DisplayDef):
         return out 
     
     
-    def __add__(self, other):
-        """
-        Combines two DisplayDef instances into a new DisplayDef with combined specifications.
-    
-        :param other: Another DisplayDef instance to add.
-        :return: A new DisplayDef instance with merged specifications.
-        """
-        if not isinstance(other, DisplayKeepFigDef):
-            return NotImplemented
-    
-        # Combine options using the existing __add__ method of DisplaySpec
-        new_spec = self.spec + other.spec
-    
-        # Merge names if they differ, separated by a comma
-        new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
-    
-        # Create a new DisplayDef with the combined specifications
-        return DisplayKeepFigDef(mmodel=self.mmodel, spec=new_spec, name=new_name)
     
     @property 
     def datawidget(self):
@@ -1040,10 +1036,15 @@ class DisplayKeepFigDef(DisplayDef):
             display(f)
             
         # display(self.datawidget)
+
+    @property
+    def print(self):
+        for f in self.figs.values(): 
+            display(f)
         
         
 @dataclass
-class DisplayLatex(DisplayDef):
+class DisplayLatexDef(DisplayDef):
     def __post_init__(self):
         super().__post_init__()  # Call the parent class's __post_init__
 
@@ -1057,6 +1058,12 @@ class DisplayLatex(DisplayDef):
     def datawidget(self):
         repo = LatexRepo(self.latex,name=self.name)
         return repo.pdf()
+
+    @property 
+    def print(self):
+        print(self.latex)
+        
+
         
 @dataclass
 class DisplayReportDef:
@@ -1066,6 +1073,22 @@ class DisplayReportDef:
     options: dict = field(default_factory=dict)
 
     
+    def __add__(self, other):
+        """
+        Combines two DisplayDef instances into a new DisplayDef with combined specifications.
+    
+        :param other: Another DisplayDef instance to add.
+        :return: A new DisplayDef instance with merged specifications.
+        """
+
+        out = DisplayReportDef(mmodel=self.mmodel,reports= self.reports + [other])
+    
+        # Create a new DisplayDef with the combined specifications
+        return out 
+
+
+
+
     @property 
     def latex(self): 
         out = '\n'.join(l.latex for l in self.reports) 
@@ -1101,6 +1124,12 @@ class DisplayReportDef:
         out = cls(mmodel=mmodel,reports = [create_instance_from_json(mmodel,r) for r in reports_json_strings['reports']]  )
         return out 
         # print (*[r for r in reports_json_strings['reports']],sep='\n')     
+        
+        
+    @property 
+    def print(self):
+        for r in self.reports:
+            r.print
                     
 @dataclass
 class DisplayFigWrapDef(DisplayDef):
