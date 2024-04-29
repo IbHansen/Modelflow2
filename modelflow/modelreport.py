@@ -58,6 +58,7 @@ import re
 from matplotlib import dates
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
+import numpy as np
 
 from IPython.display import display
 from dataclasses import dataclass, field, fields, asdict
@@ -304,7 +305,7 @@ class DisplaySpec:
         # Convert DisplaySpec instance to dictionary
         
         display_spec_dict = {"display_type":display_type,  "options": asdict(self.options), "lines": [asdict(line) for line in self.lines]}
-        
+        # print(display_spec_dict)
         # Serialize the dictionary to a JSON string
         return json.dumps(display_spec_dict, indent=4)
 
@@ -319,7 +320,6 @@ class DisplayDef:
 
     
     def __post_init__(self):
-        
         self.options = self.spec.options
         self.lines = self.spec.lines 
         
@@ -332,16 +332,31 @@ class DisplayDef:
         self.name = self.name if self.name else self.options.name 
         self.options.name = self.name 
         self.timeslice = self.options.timeslice if self.options.timeslice else []
+        
     
     def set_name(self,name):
         self.name = name.replace(' ','_')
         self.options.name = self.name 
         return self
+    
+    @property  
+    def get_report_smpl(self):
+        if type(self.mmodel.current_per[0]) == np.int64:
+            report_smpl = (int(self.mmodel.current_per[0]),int(self.mmodel.current_per[-1]))
+        else:     
+            report_smpl = (str(self.mmodel.current_per[0]),str(self.mmodel.current_per[-1]) ) 
+        return report_smpl    
+
 
     @property
     def save_spec(self):
         display_type = self.__class__.__name__
-        out = self.spec.to_json(display_type) 
+        new_spec = self.spec + Options(smpl = self.report_smpl)
+        # print(f"\n{Options(smpl = self.report_smpl)=}")
+        # print(f"\n{new_spec=}")
+        # print(f"\n{new_spec=}")
+        # out = self.spec.to_json(display_type) 
+        out = new_spec.to_json(display_type) 
         return out
 
     def get_rowdes(self,df,line,row=True):
@@ -528,11 +543,15 @@ class DisplayVarTableDef(DisplayDef):
         super().__post_init__()  # Call the parent class's __post_init__
 
         
-        
-        self.dfs = [self.make_var_df(line) for line in self.lines ] 
+        with self.mmodel.set_smpl(*self.options.smpl):
+            self.dfs = [self.make_var_df(line) for line in self.lines ] 
+            self.report_smpl = self.get_report_smpl
+
+            
         self.df     = pd.concat( self.dfs ) 
         return 
-    
+
+
             
     def make_var_df(self, line):   
         showtype = line.showtype
@@ -788,11 +807,13 @@ class DisplayKeepFigDef(DisplayDef):
     def __post_init__(self):
         super().__post_init__()  # Call the parent class's __post_init__
 
+        with self.mmodel.set_smpl(*self.options.smpl):
+            
+            self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
         
-        
-        self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
-        
-        self.figs = self.make_figs(showfig=False)
+            self.figs = self.make_figs(showfig=False)
+            self.report_smpl = self.get_report_smpl
+
         
         self.chart_names = list(self.figs.keys() )
         
