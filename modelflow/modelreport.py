@@ -672,6 +672,15 @@ class DisplayVarTableDef(DisplayDef):
         if self.options.foot: 
             print(self.options.foot)
 
+    @property 
+    def sheetwidget(self):
+        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
+        if self.options.transpose: 
+            tablist   = {self.name :  htmlwidget_df(self.mmodel, create_column_multiindex(thisdf.T))}
+        else: 
+            tablist = {self.name: htmlwidget_df(self.mmodel,thisdf)  }
+        return tablist 
+
     
     @property
     def datawidget(self): 
@@ -1003,11 +1012,15 @@ class DisplayKeepFigDef(DisplayDef):
         out = '\n'.join( self.figwrap(chart) for chart in self.chart_names)
         return out 
     
+    @property 
+    def sheetwidget(self):
+        figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
+        return figlist 
     
     
     @property 
     def datawidget(self):
-        figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
+        figlist = {t: htmlwidget_fig(self,f) for t,f in self.figs.items() }
         out = tabwidget(figlist)
         return out.datawidget 
     
@@ -1130,6 +1143,13 @@ class DisplayReportDef:
     def print(self):
         for r in self.reports:
             r.print
+
+
+    @property 
+    def datawidget(self):
+        widget_dict = {f'{r.name} {i} {j}' : content  for i,r in enumerate(self.reports) for j,(name,content) in enumerate(r.sheetwidget.items()) }
+        out = tabwidget(widget_dict,tab = True)
+        return out.datawidget
                     
 @dataclass
 class DisplayFigWrapDef(DisplayDef):

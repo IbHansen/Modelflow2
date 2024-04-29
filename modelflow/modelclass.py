@@ -8123,8 +8123,7 @@ class Report_Mixin:
         - timeslice (List[int]): Time slice for data display, empty by default.
         - max_cols (int): Maximum columns when displayed as a string, faulting to the system-wide setting.
         - last_cols (int): Specifies the number of last columns to include in a display slice, particularly in Latex.
-        - units (str): text centered on columns 
-        - difext (str) : text to be used then displaying differences. 
+        - col_desc  (str): text centered on columns 
         
         Returns:
     DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications

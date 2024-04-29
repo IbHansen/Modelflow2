@@ -467,6 +467,7 @@ class htmlwidget_df:
     transpose      : bool = False            # orientation of dataframe 
     expname      : str =  ""
     percent      : bool = False 
+    style        : any = ''
    
     
     def __post_init__(self):
@@ -489,8 +490,11 @@ table, th, td {
     text-align: left;
 }
 </style>
-"""
-            image_html = self.mmodel.ibsstyle(self.org_df_var, percent=self.percent).to_html()
+"""         
+            if self.style:
+                image_html = self.style(self.org_df_var).to_html()
+            else:
+                image_html = self.mmodel.ibsstyle(self.org_df_var, percent=self.percent).to_html()
             image = f"{style_html}{image_html}"
 
             self.whtml = widgets.HTML(image)
