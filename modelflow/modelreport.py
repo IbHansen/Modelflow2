@@ -145,6 +145,7 @@ class Options:
     legend: bool = True
     latex_text :str =''
     transpose : bool = False
+    smpl : tuple = ('','')
     
     def __post_init__(self):
         
@@ -1036,8 +1037,49 @@ class DisplayLatex(DisplayDef):
         repo = LatexRepo(self.latex,name=self.name)
         return repo.pdf()
         
+@dataclass
+class DisplayReportDef:
+    mmodel      : Any = None
+    reports: List[DisplayDef] = field(default_factory=list)
+    name: str = 'Report_test'
+    options: dict = field(default_factory=dict)
 
-                
+    
+    @property 
+    def latex(self): 
+        out = '\n'.join(l.latex for l in self.reports) 
+        return out
+    
+    def pdf(self,xopen=False,show=True,width=WIDTH,height=HEIGHT):
+        repo = LatexRepo(self.latex ,name=self.name)
+        return repo.pdf(xopen,show,width,height)
+
+    @property
+    def spec_list(self):
+        out = [r.save_spec for r in self.reports]  
+        return out
+
+    @property
+    def save_spec(self):
+        display_type = self.__class__.__name__
+        out = self.to_json(display_type) 
+        return out
+    
+     
+    def to_json(self,display_type):
+
+        display_spec_dict = {"display_type":display_type,  "options": self.options, "reports": [r.save_spec for r in self.reports]  }
+        
+        # Serialize the dictionary to a JSON string
+        return json.dumps(display_spec_dict, indent=4)
+
+    @classmethod    
+    def reports_restore(cls,mmodel,json_string):
+        reports_json_strings = json.loads(json_string)
+
+        out = cls(mmodel=mmodel,reports = [create_instance_from_json(mmodel,r) for r in reports_json_strings['reports']]  )
+        return out 
+        # print (*[r for r in reports_json_strings['reports']],sep='\n')     
                     
 @dataclass
 class DisplayFigWrapDef(DisplayDef):
