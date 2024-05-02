@@ -85,7 +85,7 @@ from typing import Dict, List
 from copy import deepcopy
 
 
-from modelwidget import fig_to_image,tabwidget,htmlwidget_fig, htmlwidget_df
+from modelwidget import fig_to_image,tabwidget,htmlwidget_fig, htmlwidget_df,htmlwidget_text,htmlwidget_style
 
 def track_fields():
     '''To find fields which has been set '''
@@ -399,8 +399,33 @@ class DisplayDef:
         :param other: Another DisplayDef instance to add.
         :return: A new DisplayDef instance with merged specifications.
         """
+        if isinstance(other, str):
+            # If the left-hand side operand is a string, this method will be called
+            linstance =  DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name='Text')))
+            out = DisplayReportDef(mmodel=self.mmodel,reports= [self,linstance])
 
-        out = DisplayReportDef(mmodel=self.mmodel,reports= [self,other])
+        else:
+      
+            out = DisplayReportDef(mmodel=self.mmodel,reports= [self,other])
+    
+        # Create a new DisplayDef with the combined specifications
+        return out 
+
+    def __radd__(self, other):
+        """
+        Combines two DisplayDef instances into a new DisplayDef with combined specifications.
+    
+        :param other: Another DisplayDef instance to add.
+        :return: A new DisplayDef instance with merged specifications.
+        """
+        if isinstance(other, str):
+            # If the left-hand side operand is a string, this method will be called
+            linstance =  DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name='Text')))
+        else:
+            return NotImplemented
+
+
+        out = DisplayReportDef(mmodel=self.mmodel,reports= [linstance,self])
     
         # Create a new DisplayDef with the combined specifications
         return out 
@@ -450,9 +475,12 @@ class DisplayDef:
  
         
                 
-    def _repr_html_(self):  
-        return self.datawidget._repr_html_()
-                 
+    # def _repr_html_(self):  
+    #     return self.datawidget
+    
+    def _ipython_display_(self):
+        display(self.datawidget)
+
       
 
     def set_options(self,**kwargs):
@@ -672,23 +700,34 @@ class DisplayVarTableDef(DisplayDef):
         if self.options.foot: 
             print(self.options.foot)
 
+    
     @property 
     def sheetwidget(self):
-        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
-        if self.options.transpose: 
-            tablist   = {self.name :  htmlwidget_df(self.mmodel, create_column_multiindex(thisdf.T))}
-        else: 
-            tablist = {self.name: htmlwidget_df(self.mmodel,thisdf)  }
-        return tablist 
+        
+        return [self.datawidget] 
 
     
     @property
     def datawidget(self): 
+        from IPython.display import display, clear_output,Latex, Markdown,HTML
+
+        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
+
         if self.options.transpose: 
-            multi_df  = center_multiindex_headers(create_column_multiindex(self.df_str.T))
-            return  multi_df
+            outsty  = center_multiindex_headers(create_column_multiindex(thisdf.T))
         else: 
-            return self.make_html_style(self.df.loc[:,self.timeslice])
+            outsty =  self.make_html_style(self.make_html_style(thisdf)  )
+            
+        if self.options.title: 
+            outsty = outsty.set_caption(self.options.title)
+    
+        if self.options.foot:
+            out = add_footer_to_styler(outsty,self.options.foot)
+        else:
+            out = outsty.to_html()
+    
+        return HTML(out)     
+
 
     @property
     def latex(self): 
@@ -1014,39 +1053,18 @@ class DisplayKeepFigDef(DisplayDef):
     
     @property 
     def sheetwidget(self):
-        figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
-        return figlist 
+        return  [self.datawidget ]
     
     
     @property 
     def datawidget(self):
-        figlist = {t: htmlwidget_fig(self,f) for t,f in self.figs.items() }
+        figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
         out = tabwidget(figlist)
         return out.datawidget 
     
-    # def _repr_html_(self):  
+    
+    # def _ipython_display_(self):
     #     display(self.datawidget)
-    #     return ''
-
-    # def _repr_html_(self):
-    #     """Return the HTML representation for all figures."""
-    #     html_str = '<div>'
-    #     for label, fig in self.figs.items():
-    #         # Create an in-memory buffer to save each figure to
-    #         buf = StringIO()
-    #         fig.savefig(buf, format='svg', bbox_inches='tight')
-    #         svg = buf.getvalue()
-    #         buf.close()
-            
-    #         # Add the figure with a label or header if desired
-    #         html_str += f'<h3>{label}</h3>'  # Optional: Add a header for each figure
-    #         html_str += svg
-    #     html_str += '</div>'
-    #     return html_str
-
-    def _ipython_display_(self):
-        for f in self.figs.values(): 
-            display(f)
             
         # display(self.datawidget)
 
@@ -1073,6 +1091,13 @@ class DisplayLatexDef(DisplayDef):
         return repo.pdf()
 
     @property 
+    def sheetwidget(self):
+        tablist   = [self.options.latex_text]
+        return tablist
+       
+
+
+    @property 
     def print(self):
         print(self.latex)
         
@@ -1093,8 +1118,13 @@ class DisplayReportDef:
         :param other: Another DisplayDef instance to add.
         :return: A new DisplayDef instance with merged specifications.
         """
+        if isinstance(other, str):
+            # If the left-hand side operand is a string, this method will be called
+            linstance =  DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name='Text')))
+            out = DisplayReportDef(mmodel=self.mmodel,reports= self.reports + [linstance])
 
-        out = DisplayReportDef(mmodel=self.mmodel,reports= self.reports + [other])
+        else: 
+            out = DisplayReportDef(mmodel=self.mmodel,reports= self.reports + [other])
     
         # Create a new DisplayDef with the combined specifications
         return out 
@@ -1142,14 +1172,27 @@ class DisplayReportDef:
     @property 
     def print(self):
         for r in self.reports:
+            print('\n')
             r.print
 
 
     @property 
+    def sheetwidget(self):
+        tablist   = [ r for r in self.reports for s in r.sheetwidget]
+        return tablist
+
+   
+
+    @property 
     def datawidget(self):
-        widget_dict = {f'{r.name} {i} {j}' : content  for i,r in enumerate(self.reports) for j,(name,content) in enumerate(r.sheetwidget.items()) }
-        out = tabwidget(widget_dict,tab = True)
-        return out.datawidget
+        for r in self.reports:
+            for c in r.sheetwidget:
+                 display(c)
+        #return out.datawidget
+        
+    def _ipython_display_(self):
+        _ = self.datawidget
+  
                     
 @dataclass
 class DisplayFigWrapDef(DisplayDef):
@@ -1362,7 +1405,52 @@ def create_column_multiindex(df):
 def center_multiindex_headers(df):
     style = df.style.set_table_styles([
         {'selector': 'th.level0', 'props': [('text-align', 'center')]},
-        {'selector': 'th', 'props': [('font-size', '12pt')]}
+        # {'selector': 'th', 'props': [('font-size', '12pt')]},
+       {
+           'selector': '.row_heading, .corner',
+           'props': [
+               ('position', 'sticky'),
+               ('left', '0'),
+               ('z-index', '3'),
+               ('background-color', 'white'),
+               ('width', '300px'),  # Set the width of the row headings
+               ('min-width', '200px'),  # Ensure the minimum width is respected
+               ('max-width', '400px')  # Ensure the maximum width is respected
+           ]
+       },
+       {
+           'selector': '.col_heading',
+           'props': [
+               ('position', 'sticky'),
+               ('top', '0'),
+               ('z-index', '2'),
+               ('background-color', 'white')
+           ]
+       },
+       {
+           'selector': 'th',
+           'props': [
+               ('text-align', 'left') , # Align text to the left
+               ('background-color', 'white'),  # Ensuring headers are not transparent
+                  ('z-index', '2')  # Headers z-index on par with column headings
+           ]
+       },
+           {
+               'selector': 'td',  # Targeting data cells
+               'props': [
+                   ('z-index', '1'),  # Lower z-index than headers
+               ]
+           },
+       
+       
+       {
+           'selector': 'caption',
+           'props': [
+               ('font-size', '16px'),  # Make the font larger
+               ('font-weight', 'bold')  # Make the font bold
+           ]
+       }  
+        
     ])
     return style
 
@@ -1391,3 +1479,46 @@ def create_column_multiindex__(df):
 
     return multiindex_df
 
+def format_list_with_numbers(items):
+    # This dictionary will keep track of the counts of each prefix
+    count_dict = {}
+    # This will be the resulting list with formatted strings
+    formatted_list = []
+    
+    # First pass: count occurrences of each prefix
+    for item in items:
+        prefix = item.split('|')[0].strip()
+        if prefix in count_dict:
+            count_dict[prefix] += 1
+        else:
+            count_dict[prefix] = 1
+
+    # Second pass: format based on the count
+    temp_dict = {}  # This dictionary keeps track of the running count used for numbering
+    for item in items:
+        prefix = item.split('|')[0].strip()
+        
+        # Determine the numbering based on the count
+        if count_dict[prefix] > 1:
+            if prefix in temp_dict:
+                temp_dict[prefix] += 1
+            else:
+                temp_dict[prefix] = 1
+            formatted_item = f"{prefix} {temp_dict[prefix]}"
+        else:
+            formatted_item = f"{prefix}"
+
+        formatted_list.append(formatted_item)
+    
+    return formatted_list
+
+def add_footer_to_styler(styler, footer_text):
+    """Extend a Pandas Styler object with a footer."""
+    # Convert styler to HTML and append a footer section
+    styled_html = styler.to_html()  # or styler.to_html() in older pandas versions
+    footer_html = f"<tfoot><tr><td colspan='{len(styler.data.columns)}' style='text-align: center;'>{footer_text}</td></tr></tfoot>"
+    footer_html = f"<tfoot><tr><td colspan='{len(styler.data.columns)}' style='text-align: left;'>{footer_text}</td></tr></tfoot>"
+    
+    # Insert the footer just before the closing table tag
+    styled_html_with_footer = styled_html.replace('</table>', f'{footer_html}</table>')
+    return styled_html_with_footer

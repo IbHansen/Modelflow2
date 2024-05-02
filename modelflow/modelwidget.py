@@ -492,7 +492,7 @@ table, th, td {
 </style>
 """         
             if self.style:
-                image_html = self.style(self.org_df_var).to_html()
+                image_html = self.style(self.df_var).to_html()
             else:
                 image_html = self.mmodel.ibsstyle(self.org_df_var, percent=self.percent).to_html()
             image = f"{style_html}{image_html}"
@@ -525,6 +525,33 @@ class htmlwidget_fig:
         image = fig_to_image(self.figs,format=self.format)
         self.whtml = widgets.HTML(image)
         self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+
+@dataclass
+class htmlwidget_style:
+    ''' Class that displays text in an HTML widget. '''
+    
+    styler: any = ''
+
+    def __post_init__(self):
+        # Initialize the label widget with the provided text
+        style_html = """
+<style>
+table, th, td {
+    border: none;     
+    border-collapse: collapse;
+    padding: 10px;  # Adjust padding as needed
+    line-height: normal;  # Ensures normal line spacing
+
+    text-align: left;
+}
+</style>
+"""         
+        self.datawidget = widgets.HTML(f'{style_html}{self.styler.to_html()}' )
+        
+    def display(self):
+        # Function to display the widget
+        display(self.datawidget)
+
         
 @dataclass
 class htmlwidget_label:
@@ -541,6 +568,25 @@ class htmlwidget_label:
  
     
         self.datawidget=self.wexp
+
+@dataclass
+class htmlwidget_text:
+    ''' Class that displays text in an HTML widget. '''
+    
+    text: str = ""
+    format: str = "svg"  # This property is included but not used in this example
+    
+    def __post_init__(self):
+        # Initialize the label widget with the provided text
+        self.datawidget = widgets.HTML(
+            value=f"<p style='font-family:sans-serif;'>{self.text}</p>",
+            layout={'width': '90%'}
+        )
+        
+    def display(self):
+        # Function to display the widget
+        display(self.data_widget)
+
 
 @dataclass
 class visshow:

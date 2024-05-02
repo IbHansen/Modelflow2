@@ -8205,10 +8205,10 @@ class Report_Mixin:
         return figs
 
     def latex(self,latex_text= '',name='latexdisplay',**kwargs):
-        from modelreport import DisplayLatex
+        from modelreport import DisplayLatexDef
         from modelreport import Line, Options,DisplaySpec
         figspec = DisplaySpec() + Options(latex_text=latex_text,name=name,**kwargs)
-        return DisplayLatex(mmodel=self,spec = figspec)
+        return DisplayLatexDef(mmodel=self,spec = figspec)
 
     def report_from_spec(self,json_str):
         from modelreport import  create_instance_from_json
