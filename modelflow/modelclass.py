@@ -8102,7 +8102,7 @@ class Report_Mixin:
     
 
 
-    def table(self, pat='#Headline',title='Table',datatype='growth',custom_description = {},dec=2,heading='',**kwargs):     
+    def table(self, pat='#Headline',title='Table',datatype='growth',custom_description = {},dec=2,heading='',mul=1.0,**kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8148,13 +8148,13 @@ class Report_Mixin:
             options = Options(decorate=False,name='A_small_table', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = headingline + unitline + [
-                 Line(showtype=config.showtype ,pat=pat,dec=dec,diftype=config.diftype ) , 
+                 Line(showtype=config.showtype ,pat=pat,dec=dec,diftype=config.diftype ,mul=mul ) , 
             ]
         )
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
         return tab
 
-    def plot(self, pat='#Headline',title='',datatype='growth',custom_description = {}, **kwargs):     
+    def plot(self, pat='#Headline',title='',datatype='growth',custom_description = {},keep_dim = True,mul=1.0 , **kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8198,7 +8198,7 @@ class Report_Mixin:
         figspec = DisplaySpec(
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
-            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype ) , 
+            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,keep_dim = keep_dim,mul=mul) , 
             ]
         )
         figs = DisplayKeepFigDef (mmodel=self, spec = figspec)

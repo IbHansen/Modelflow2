@@ -224,6 +224,7 @@ class Line:
     keep_dim :bool = True 
     mul : float = 1.0 
     yunit : str = ''
+    keep_dim :bool = True 
 
     def __post_init__(self):
         valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline'}
@@ -636,7 +637,8 @@ class DisplayVarTableDef(DisplayDef):
                         
                     return locallinedf.loc[:,self.mmodel.current_per] 
                 
-                linedf = getline() 
+                # print(line.mul)
+                linedf = getline() * line.mul
             linedf = self.get_rowdes(linedf,line)    
             
         return(linedf)
@@ -963,8 +965,13 @@ class DisplayKeepFigDef(DisplayDef):
              figs = {self.name : fig}
 
          else:
+             if 1:
+                 keys = format_list_with_numbers([f'{self.var_description[dr["key"]]} ' for dr in dfsres ])
+             else:
+                 keys = format_list_with_numbers([dr['key'] for dr in dfsres ])
              ... 
-             figs_and_ax  = {f'{self.name}_{i}' :  plt.subplots(figsize=options.size) for i,v  in enumerate(dfsres)}
+             # figs_and_ax  = {f'{self.name}_{i}' :  plt.subplots(figsize=options.size) for i,v  in enumerate(dfsres)}
+             figs_and_ax  = {v  :  plt.subplots(figsize=options.size) for v in  keys}
              figs = {v : fig for v,(fig,ax)   in figs_and_ax.items() } 
              axes = [    ax  for fig,ax    in figs_and_ax.values() ] 
          
@@ -1059,7 +1066,7 @@ class DisplayKeepFigDef(DisplayDef):
     @property 
     def datawidget(self):
         figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
-        out = tabwidget(figlist)
+        out = tabwidget(figlist,tab=False,selected_index=0)
         return out.datawidget 
     
     
@@ -1155,7 +1162,7 @@ class DisplayReportDef:
      
     def to_json(self,display_type):
 
-        display_spec_dict = {"display_type":display_type,  "options": self.options, "reports": [r.save_spec for r in self.reports]  }
+        display_spec_dict = {"display_type":display_type,  "options": self.options, "name":self.name,  "reports": [r.save_spec for r in self.reports]  }
         
         # Serialize the dictionary to a JSON string
         return json.dumps(display_spec_dict, indent=4)
@@ -1363,20 +1370,23 @@ def create_instance_from_json(mmodel,json_str: str):
     
     if display_type not in class_map:
         raise ValueError(f"Unsupported display type: {display_type}")
-    
-    # Get the class
-    cls = class_map[display_type]
-    
-    # Process options and lines
-    options = Options(**data['options'])
-    lines = [Line(**line) for line in data['lines']]
-    
-    # Create DisplaySpec instance
-    spec = DisplaySpec(options=options, lines=lines)
-    
-    # Create the display type instance (e.g., DisplayVarTableDef)
-    instance = cls(mmodel,spec=spec)
-    
+        
+    if display_type == 'DisplayReportDef' :
+        instance = DisplayReportDef.reports_restore(mmodel,json_str)
+    else:    
+        # Get the class
+        cls = class_map[display_type]
+        
+        # Process options and lines
+        options = Options(**data['options'])
+        lines = [Line(**line) for line in data['lines']]
+        
+        # Create DisplaySpec instance
+        spec = DisplaySpec(options=options, lines=lines)
+        
+        # Create the display type instance (e.g., DisplayVarTableDef)
+        instance = cls(mmodel,spec=spec)
+        
     return instance
 
 def create_column_multiindex(df):
