@@ -403,11 +403,11 @@ class DisplayDef:
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
             linstance =  DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name='Text')))
-            out = DisplayReportDef(mmodel=self.mmodel,reports= [self,linstance])
+            out = DisplayContainerDef(mmodel=self.mmodel,reports= [self,linstance])
 
         else:
       
-            out = DisplayReportDef(mmodel=self.mmodel,reports= [self,other])
+            out = DisplayContainerDef(mmodel=self.mmodel,reports= [self,other])
     
         # Create a new DisplayDef with the combined specifications
         return out 
@@ -426,7 +426,7 @@ class DisplayDef:
             return NotImplemented
 
 
-        out = DisplayReportDef(mmodel=self.mmodel,reports= [linstance,self])
+        out = DisplayContainerDef(mmodel=self.mmodel,reports= [linstance,self])
     
         # Create a new DisplayDef with the combined specifications
         return out 
@@ -1122,7 +1122,7 @@ class DisplayLatexDef(DisplayDef):
 
         
 @dataclass
-class DisplayReportDef:
+class DisplayContainerDef:
     mmodel      : Any = None
     reports: List[DisplayDef] = field(default_factory=list)
     name: str = 'Report_test'
@@ -1139,10 +1139,10 @@ class DisplayReportDef:
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
             linstance =  DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name='Text')))
-            out = DisplayReportDef(mmodel=self.mmodel,reports= self.reports + [linstance])
+            out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [linstance])
 
         else: 
-            out = DisplayReportDef(mmodel=self.mmodel,reports= self.reports + [other])
+            out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [other])
     
         # Create a new DisplayDef with the combined specifications
         return out 
@@ -1382,8 +1382,8 @@ def create_instance_from_json(mmodel,json_str: str):
     if display_type not in class_map:
         raise ValueError(f"Unsupported display type: {display_type}")
         
-    if display_type == 'DisplayReportDef' :
-        instance = DisplayReportDef.reports_restore(mmodel,json_str)
+    if display_type == 'DisplayContainerDef' :
+        instance = DisplayContainerDef.reports_restore(mmodel,json_str)
     else:    
         # Get the class
         cls = class_map[display_type]
