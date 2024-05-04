@@ -713,12 +713,20 @@ class DisplayVarTableDef(DisplayDef):
     def datawidget(self): 
         from IPython.display import display, clear_output,Latex, Markdown,HTML
 
+       
+    
+        return HTML(self.htmlwidget)     
+
+    @property
+    def htmlwidget(self): 
+        from IPython.display import display, clear_output,Latex, Markdown,HTML
+
         thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
 
         if self.options.transpose: 
             outsty  = center_multiindex_headers(create_column_multiindex(thisdf.T))
         else: 
-            outsty =  self.make_html_style(self.make_html_style(thisdf)  )
+            outsty =  self.make_html_style(thisdf)  
             
         if self.options.title: 
             outsty = outsty.set_caption(self.options.title)
@@ -728,8 +736,7 @@ class DisplayVarTableDef(DisplayDef):
         else:
             out = outsty.to_html()
     
-        return HTML(out)     
-
+        return out    
 
     @property
     def latex(self): 
@@ -862,6 +869,10 @@ class DisplayVarTableDef(DisplayDef):
         
         return out 
     
+    def make_html_style(self,df,use_tooltips =False )  :
+        out = self.mmodel.ibsstyle(self.df_str)          
+                                   
+        return out 
     
 
 @dataclass
