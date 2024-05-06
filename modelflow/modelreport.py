@@ -60,7 +60,7 @@ import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 import numpy as np
 
-from IPython.display import display
+from IPython.display import display,HTML
 from dataclasses import dataclass, field, fields, asdict
 from typing import Any, List, Dict,  Optional , Tuple
 from copy import deepcopy
@@ -144,15 +144,19 @@ class Options:
     samefig :bool = False 
     size: tuple = (10, 6)
     legend: bool = True
-    latex_text :str =''
     transpose : bool = False
     smpl : tuple = ('','')
+    
+    latex_text :str =''
+    html_text :str =''
+    text_text :str =''
+    markdown_text :str =''
     
     def __post_init__(self):
         
         if ' ' in self.name:
             self.name = self.name.replace(' ','_')
-            print(f'Blank space is not allowed in name, renamed: {self.name}')
+            # print(f'Blank space is not allowed in name, renamed: {self.name}')
 
     
     def was_explicitly_set(self, field_name: str) -> bool:
@@ -401,9 +405,7 @@ class DisplayDef:
         :return: A new DisplayDef instance with merged specifications.
         """
         if isinstance(other, str):
-            # If the left-hand side operand is a string, this method will be called
-            linstance =  DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name='Text')))
-            out = DisplayContainerDef(mmodel=self.mmodel,reports= [self,linstance])
+                out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [get_DisplayTextDef(other)])
 
         else:
       
@@ -421,12 +423,15 @@ class DisplayDef:
         """
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
-            linstance =  DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name='Text')))
+                linstance =  get_DisplayTextDef(input_string = other)
+          
+            
+                out = DisplayContainerDef(mmodel=self.mmodel,reports= [linstance,self])
         else:
             return NotImplemented
 
 
-        out = DisplayContainerDef(mmodel=self.mmodel,reports= [linstance,self])
+        # out = DisplayContainerDef(mmodel=self.mmodel,reports= [linstance,self])
     
         # Create a new DisplayDef with the combined specifications
         return out 
@@ -434,7 +439,7 @@ class DisplayDef:
 
 
 
-    def __rshift__(self, other):
+    def __or__(self, other):
         """
         Combines two DisplayDef instances into a new DisplayDef with combined specifications.
     
@@ -453,7 +458,7 @@ class DisplayDef:
         # Create a new DisplayDef with the combined specifications
         return self.__class__(mmodel=self.mmodel, spec=new_spec, name=new_name)
 
-    def __or__(self, other):
+    def __and__(self, other):
         if hasattr(other,'latex'):
             # If the other object is an instance of LaTeXHolder, concatenate their LaTeX strings
             return LatexRepo(latex =self.latex + '\n' + other.latex,name=self.name)
@@ -464,7 +469,7 @@ class DisplayDef:
             # If the other object is neither a LaTeXHolder instance nor a string, raise an error
             raise ValueError("Can only add another LaTeXHolder instance or a raw LaTeX string.")
             
-    def __ror__(self, other):
+    def __rand__(self, other):
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
             return LatexRepo(latex =    DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex + '\n' + self.latex)
@@ -476,11 +481,9 @@ class DisplayDef:
  
         
                 
-    # def _repr_html_(self):  
-    #     return self.datawidget
     
     def _ipython_display_(self):
-        display(self.datawidget)
+        display(self.out_html)
 
       
 
@@ -569,7 +572,7 @@ class LatexRepo:
             return IFrame(pdf_file, width=width, height=height)
 
 
-    def __or__(self, other):
+    def __and__(self, other):
 
         if isinstance(other,str):
             other_latex = DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex 
@@ -582,7 +585,7 @@ class LatexRepo:
         out =  LatexRepo(self.latex + other_latex )
         return out 
 
-    def __ror__(self, other):
+    def __rand__(self, other):
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
             return LatexRepo(latex=DisplayLatex(spec = DisplaySpec(options = Options(latex_text=other,name=self.name))).latex  + '\n' + self.latex, name=self.name)
@@ -624,7 +627,7 @@ class DisplayVarTableDef(DisplayDef):
 
             # Pre-process for cases that use linevars and linedes
             if showtype  in ['textline']:                
-                linedf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[line.centertext]).T
+                linedf = pd.DataFrame(pd.NA, index=self.mmodel.current_per, columns=[line.centertext]).T
                 
             else:                    
                 def getline(start_ofset= 0,**kvargs):
@@ -695,7 +698,7 @@ class DisplayVarTableDef(DisplayDef):
 
 
     @property 
-    def print(self):
+    def show(self):
         if self.options.title: 
             print(self.options.title)
         print(self.df_str_disp_transpose  if self.options.transpose else  self.df_str_disp)
@@ -706,11 +709,11 @@ class DisplayVarTableDef(DisplayDef):
     @property 
     def sheetwidget(self):
         
-        return [self.datawidget] 
+        return [self.out_html] 
 
     
     @property
-    def datawidget(self): 
+    def out_html(self): 
         from IPython.display import display, clear_output,Latex, Markdown,HTML
 
        
@@ -734,7 +737,7 @@ class DisplayVarTableDef(DisplayDef):
         if self.options.foot:
             out = add_footer_to_styler(outsty,self.options.foot)
         else:
-            out = outsty.to_html()
+            out = outsty.to_html(na_rep='')
     
         return out    
 
@@ -774,7 +777,7 @@ class DisplayVarTableDef(DisplayDef):
                 outlist = outlist + [df.style.format(lambda x:x) \
                  .set_caption(self.options.title + ('' if i == 0 else ' - continued ')) \
                  .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots')
-                 .replace(r'\caption{',r'\caption*{')] 
+                 .replace(r'\caption{',r'\caption{')] # to be used if no numbering 
                    
             # print(outlist)
             out = r' '.join(outlist) 
@@ -803,7 +806,7 @@ class DisplayVarTableDef(DisplayDef):
         # print(*[f'{i} {d}' for i,d in enumerate(data)],sep='\n')
         out = '\n'.join(data)
         out = '\n'.join(l.replace('{r}','{c}') if 'multicolum' in l else l   for l in out.split('\n'))
-        out = out.replace(r'\caption{',r'\caption*{')
+        out = out.replace(r'\caption{',r'\caption{')
         if self.options.foot: 
             out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
         
@@ -811,7 +814,7 @@ class DisplayVarTableDef(DisplayDef):
         
 
     def make_html_style(self,df,use_tooltips =False )  :
-        out = self.df_str.style.set_table_styles([           
+        out = df.style.set_table_styles([           
     {
         'selector': '.row_heading, .corner',
         'props': [
@@ -870,7 +873,8 @@ class DisplayVarTableDef(DisplayDef):
         return out 
     
     def make_html_style(self,df,use_tooltips =False )  :
-        out = self.mmodel.ibsstyle(self.df_str)          
+        out = self.mmodel.ibsstyle(self.df_str,use_tooltip=False)          
+        out = self.mmodel.ibsstyle(df,use_tooltip=False)          
                                    
         return out 
     
@@ -977,7 +981,8 @@ class DisplayKeepFigDef(DisplayDef):
 
          else:
              if 1:
-                 keys = format_list_with_numbers([f'{self.var_description[dr["key"]]} ' for dr in dfsres ])
+                 keys = format_list_with_numbers([f'{self.var_description[dr["key"]]}, {dr["line"].showtype} '+
+                                                  f'{dr["line"].diftype} ' for dr in dfsres ])
              else:
                  keys = format_list_with_numbers([dr['key'] for dr in dfsres ])
              ... 
@@ -1071,53 +1076,82 @@ class DisplayKeepFigDef(DisplayDef):
     
     @property 
     def sheetwidget(self):
-        return  [self.datawidget ]
+        return  [self.out_html ]
     
     
     @property 
-    def datawidget(self):
+    def out_html(self):
         figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
         out = tabwidget(figlist,tab=False,selected_index=0)
         return out.datawidget 
     
     
     # def _ipython_display_(self):
-    #     display(self.datawidget)
+    #     display(self.out_html)
             
-        # display(self.datawidget)
+        # display(self.out_html)
 
     @property
-    def print(self):
+    def show(self):
         for f in self.figs.values(): 
             display(f)
         
         
 @dataclass
-class DisplayLatexDef(DisplayDef):
+class DisplayTextDef(DisplayDef):
+    
+    
     def __post_init__(self):
         super().__post_init__()  # Call the parent class's __post_init__
+        self.latex_text = self.options.latex_text
+        self.html_text  = self.options.html_text 
+        self.text_text  = self.options.text_text
+        self.markdown_text  = self.options.markdown_text
+        
+    def __or__(self, other):
+         """
+         Combines two DisplayDef instances into a new DisplayDef with combined specifications.
+     
+         :param other: Another DisplayDef instance to add.
+         :return: A new DisplayDef instance with merged specifications.
+         """
+         if not isinstance(other, self.__class__):
+             return NotImplemented
+     
+         # Combine options using the existing __add__ method of DisplaySpec
+     
+         # Merge names if they differ, separated by a comma
+         new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
+         new_spec  = DisplaySpec(options=Options(
+             text_text=self.text_text + other.text_text  ,
+             html_text=self.html_text + other.html_text,
+             latex_text=latex_content, 
+             markdown_text=markdown_content,
+             name='some_text'))
+         # Create a new DisplayDef with the combined specifications
+         return self.__class__(mmodel=self.mmodel, spec=new_spec, name=new_name)
 
  
     @property 
     def latex(self) :
-        return self.options.latex_text
+        return self.latex_text
     
-    
-    @property 
-    def datawidget(self):
-        repo = LatexRepo(self.latex,name=self.name)
-        return repo.pdf()
+  
+
+    @property
+    def out_html(self):
+        return HTML(self.html_text)
 
     @property 
     def sheetwidget(self):
-        tablist   = [self.options.latex_text]
+        tablist   = [self.out_html]
         return tablist
        
 
 
     @property 
-    def print(self):
-        print(self.latex)
+    def show(self):
+        print(self.text_text)
         
 
         
@@ -1137,9 +1171,7 @@ class DisplayContainerDef:
         :return: A new DisplayDef instance with merged specifications.
         """
         if isinstance(other, str):
-            # If the left-hand side operand is a string, this method will be called
-            linstance =  DisplayLatexDef(spec = DisplaySpec(options = Options(latex_text=other,name='Text')))
-            out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [linstance])
+            out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [get_DisplayTextDef(other)])
 
         else: 
             out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [other])
@@ -1188,10 +1220,10 @@ class DisplayContainerDef:
         
         
     @property 
-    def print(self):
+    def show(self):
         for r in self.reports:
             print('\n')
-            r.print
+            r.show
 
 
     @property 
@@ -1202,14 +1234,14 @@ class DisplayContainerDef:
    
 
     @property 
-    def datawidget(self):
+    def out_html(self):
         for r in self.reports:
             for c in r.sheetwidget:
                  display(c)
-        #return out.datawidget
+        #return out.out_html
         
     def _ipython_display_(self):
-        _ = self.datawidget
+        _ = self.out_html
   
                     
 @dataclass
@@ -1284,6 +1316,7 @@ class DatatypeAccessor:
 
 
 
+
         self.configurations = self.parse_config_table(config_table)
         
         # Apply any overrides from kwargs
@@ -1326,6 +1359,9 @@ class DatatypeAccessor:
         
         return config_data.get(item, '')
                
+
+        
+
 
 
 def center_title_under_years(data, title_row_index=[1],year_row_index = 0):
@@ -1501,6 +1537,15 @@ def create_column_multiindex__(df):
     return multiindex_df
 
 def format_list_with_numbers(items):
+    """
+    Format a list of items with numbered prefixes.
+
+    Args:
+    items (list of str): The list of items to be formatted, where each item is a string separated by '|'.
+
+    Returns:
+    list of str: The formatted list with numbered prefixes.
+    """
     # This dictionary will keep track of the counts of each prefix
     count_dict = {}
     # This will be the resulting list with formatted strings
@@ -1534,12 +1579,168 @@ def format_list_with_numbers(items):
     return formatted_list
 
 def add_footer_to_styler(styler, footer_text):
-    """Extend a Pandas Styler object with a footer."""
+    """
+    Extend a Pandas Styler object with a footer.
+
+    Args:
+    styler (pandas.io.formats.style.Styler): The Pandas Styler object.
+    footer_text (str): The text to be included in the footer.
+
+    Returns:
+    str: The styled HTML with the added footer.
+    """
     # Convert styler to HTML and append a footer section
-    styled_html = styler.to_html()  # or styler.to_html() in older pandas versions
-    footer_html = f"<tfoot><tr><td colspan='{len(styler.data.columns)}' style='text-align: center;'>{footer_text}</td></tr></tfoot>"
+    styled_html = styler.to_html(na_rep='')  # or styler.to_html() in older pandas versions
     footer_html = f"<tfoot><tr><td colspan='{len(styler.data.columns)}' style='text-align: left;'>{footer_text}</td></tr></tfoot>"
     
     # Insert the footer just before the closing table tag
     styled_html_with_footer = styled_html.replace('</table>', f'{footer_html}</table>')
     return styled_html_with_footer
+
+def split_text_html_latex(other):
+            if other.startswith('<'):
+                html,latex = other.split('<>')
+            # If the left-hand side operand is a string, this method will be called
+                linstance =  DisplayTextDef(spec = DisplaySpec(options = Options(html_text=other,name='html Text')))
+                
+                
+            else:
+                linstance =  DisplayTextDef(spec = DisplaySpec(options = Options(html_text=other,name='latex Text')))
+
+def split_text(input_string):
+    """
+    Split the input string based on the specified terminals.
+
+    Args:
+    input_string (str): The input string to be split.
+
+    Returns:
+    tuple: A tuple containing three substrings:
+        - The first substring before any terminals.
+        - The substring between <latex> and </latex> terminals.
+        - The substring between <html> and </html> terminals.
+        - The substring between <markdown> and </markdown> terminals.
+    """
+    # Find the indices of terminals
+    latex_start = input_string.find("<latex>")
+    html_start = input_string.find("<html>")
+    markdown_start = input_string.find("<markdown>")
+    latex_end = input_string.find("</latex>")
+    html_end = input_string.find("</html>")
+    markdown_end = input_string.find("</markdown>")
+    
+    # If terminals are not found, set their indices to the end of the string
+    if latex_start == -1:
+        latex_start = len(input_string)
+    if html_start == -1:
+        html_start = len(input_string)
+    if markdown_start == -1:
+        markdown_start = len(input_string)
+    if latex_end == -1:
+        latex_end = len(input_string)
+    if html_end == -1:
+        html_end = len(input_string)
+    if markdown_end == -1:
+        markdown_end = len(input_string)
+    
+    # Extract the content between terminals
+    latex_content = input_string[latex_start + len("<latex>"):latex_end]
+    html_content = input_string[html_start + len("<html>"):html_end]
+    markdown_content = input_string[markdown_start + len("<markdown>"):markdown_end]
+    
+    # If no terminals are present, separate the first part as text
+    text_end = min(html_start, markdown_start, latex_start)
+    first_part = input_string[:text_end]
+    return first_part, latex_content, html_content, markdown_content
+
+def get_DisplayTextDef(input_string):
+    """
+    Create a DisplayTextDef object based on the input string.
+
+    Args:
+    input_string (str): The input string to be processed.
+
+    Returns:
+    DisplayTextDef: A DisplayTextDef object with the text, HTML, LaTeX, and Markdown content.
+    """
+    # Find the indices of terminals and extract substrings
+    text_obj = SplitTextResult(input_string)
+    
+    # Create a DisplayTextDef object with the extracted content
+    
+    out = DisplayTextDef(spec=DisplaySpec(options=Options(
+        text_text=text_obj.text_text,
+        html_text=text_obj. html_text,
+        latex_text=text_obj.latex_text, 
+        markdown_text=text_obj.markdown_text,
+        name='some_text')))
+    return out
+
+from dataclasses import dataclass
+
+@dataclass
+class SplitTextResult:
+    input_string: str
+    text_text: str = ""
+    latex_text: str = ""
+    html_text: str = ""
+    markdown_text: str = ""
+    
+    def __post_init__(self):
+        self.split_text(self.input_string)
+        
+    def split_text(self, input_string):
+        """
+        Split the input string based on the specified terminals.
+    
+        Args:
+        input_string (str): The input string to be split.
+    
+        Returns:
+        None
+        """
+        # Find the indices of terminals
+        latex_start = input_string.find("<latex>")
+        html_start = input_string.find("<html>")
+        markdown_start = input_string.find("<markdown>")
+        latex_end = input_string.find("</latex>")
+        html_end = input_string.find("</html>")
+        markdown_end = input_string.find("</markdown>")
+        
+        # If terminals are not found, set their indices to the end of the string
+        if latex_start == -1:
+            latex_start = len(input_string)
+        if html_start == -1:
+            html_start = len(input_string)
+        if markdown_start == -1:
+            markdown_start = len(input_string)
+        if latex_end == -1:
+            latex_end = len(input_string)
+        if html_end == -1:
+            html_end = len(input_string)
+        if markdown_end == -1:
+            markdown_end = len(input_string)
+
+        # If no terminals are present, separate the first part as text
+        text_end = min(html_start, markdown_start, latex_start)
+        self.text_text = input_string[:text_end]
+
+        # Extract the content between terminals
+        latex_content_ = input_string[latex_start + len("<latex>"):latex_end]
+        html_content_ = input_string[html_start + len("<html>"):html_end]
+        markdown_content_ = input_string[markdown_start + len("<markdown>"):markdown_end]
+        self.latex_text = latex_content_ if latex_content_ else self.text_text 
+        self.html_text = html_content_ if html_content_ else self.text_text 
+        self.markdown_text = markdown_content_ if markdown_content_ else self.text_text 
+
+# Test the implementation
+if __name__ == '__main__':
+
+    result = SplitTextResult("<html>Hello</html><latex>Latex Content</latex><markdown>Markdown Content</markdown>")
+    print(result)
+    
+    
+    
+    print(SplitTextResult('test'))
+    print(SplitTextResult('test<latex>notest</latex<html>'))
+    print(get_DisplayTextDef('test'))
