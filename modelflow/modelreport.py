@@ -60,13 +60,14 @@ import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 import numpy as np
 
-from IPython.display import display,HTML
 from dataclasses import dataclass, field, fields, asdict
 from typing import Any, List, Dict,  Optional , Tuple
 from copy import deepcopy
 import json
 import  ipywidgets as widgets  
 from io import StringIO
+
+from IPython.display import display, clear_output,Latex, Markdown,HTML , IFrame
 
 
 
@@ -405,7 +406,7 @@ class DisplayDef:
         :return: A new DisplayDef instance with merged specifications.
         """
         if isinstance(other, str):
-                out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [get_DisplayTextDef(other)])
+                out = DisplayContainerDef(mmodel=self.mmodel,reports= [self]  + [get_DisplayTextDef(other)])
 
         else:
       
@@ -547,7 +548,6 @@ class LatexRepo:
  
   
     def pdf(self,xopen=False,show=True,width=WIDTH,height=HEIGHT):
-        from IPython.display import IFrame,display
 
         latex_dir = Path(f'latex/{self.name}')
         latex_dir.mkdir(parents=True, exist_ok=True)
@@ -714,7 +714,6 @@ class DisplayVarTableDef(DisplayDef):
     
     @property
     def out_html(self): 
-        from IPython.display import display, clear_output,Latex, Markdown,HTML
 
        
     
@@ -722,7 +721,6 @@ class DisplayVarTableDef(DisplayDef):
 
     @property
     def htmlwidget(self): 
-        from IPython.display import display, clear_output,Latex, Markdown,HTML
 
         thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
 
@@ -1115,18 +1113,23 @@ class DisplayTextDef(DisplayDef):
          :param other: Another DisplayDef instance to add.
          :return: A new DisplayDef instance with merged specifications.
          """
-         if not isinstance(other, self.__class__):
-             return NotImplemented
+         if isinstance(other, str):
+                 out = get_DisplayTextDef(other)
+
+         elif  isinstance(other, self.__class__):
+                 out = other
+         else:         
+                 return NotImplemented
      
          # Combine options using the existing __add__ method of DisplaySpec
-     
+
          # Merge names if they differ, separated by a comma
-         new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
+         new_name = self.name if self.name == out.name else f"{self.name}_{out.name}"
          new_spec  = DisplaySpec(options=Options(
-             text_text=self.text_text + other.text_text  ,
-             html_text=self.html_text + other.html_text,
-             latex_text=latex_content, 
-             markdown_text=markdown_content,
+             text_text=self.text_text + out.text_text  ,
+             html_text=self.html_text + out.html_text,
+             latex_text=self.latex_text + out.latex_text, 
+             markdown_text=self.markdown_text + out.markdown_text,
              name='some_text'))
          # Create a new DisplayDef with the combined specifications
          return self.__class__(mmodel=self.mmodel, spec=new_spec, name=new_name)
