@@ -612,9 +612,12 @@ class DisplayVarTableDef(DisplayDef):
         with self.mmodel.set_smpl(*self.options.smpl):
             self.dfs = [self.make_var_df(line) for line in self.lines ] 
             self.report_smpl = self.get_report_smpl
-
-            
-        self.df     = pd.concat( self.dfs ) 
+        
+        if self.options.transpose:
+            self.df = self.dfs[-1].T
+            ...
+        else:    
+            self.df     = pd.concat( self.dfs ) 
         return 
 
 
@@ -628,7 +631,7 @@ class DisplayVarTableDef(DisplayDef):
             # Pre-process for cases that use linevars and linedes
             if showtype  in ['textline']:                
                 linedf = pd.DataFrame(pd.NA, index=self.mmodel.current_per, columns=[line.centertext]).T
-                
+                self.unitline = self.lines[0].centertext
             else:                    
                 def getline(start_ofset= 0,**kvargs):
                     locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line.pat,showtype=showtype,
@@ -641,6 +644,9 @@ class DisplayVarTableDef(DisplayDef):
                     return locallinedf.loc[:,self.mmodel.current_per] 
                 
                 # print(line.mul)
+                
+                
+                
                 linedf = getline() * line.mul
             linedf = self.get_rowdes(linedf,line)    
             
@@ -650,25 +656,21 @@ class DisplayVarTableDef(DisplayDef):
     def df_str(self):
         width = self.options.width
         # df = self.df.copy( )
-        df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
-
-        format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-        for i, dec in enumerate(format_decimal):
-              df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+        if self.options.transpose:
+            dec = self.lines[-1].dec 
+            thisdf = self.df.loc[self.timeslice,:] if self.timeslice else self.df 
+            # df_char = pd.DataFrame(' ', index=self.thisdf.index, columns=self.thisdf.columns)
+            df_char = thisdf.applymap(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+        else:
+            df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
+    
+            format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            for i, dec in enumerate(format_decimal):
+                  df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+      
         return  df_char   
 
 
-    def df_str_max_col(self,max_col): 
-        df = self.df_str 
-        if 2 * max_col >= len(df.columns):
-            raise ValueError("n is too large; it must be less than half the number of columns in the DataFrame")
-        dots  = [ (line.showtype != 'textline' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
-
-        first_n = df.iloc[:, :max_col]
-        last_n = df.iloc[:, -max_col:]
-        ellipsis_col = pd.DataFrame({'...': ['...' if dot else '   ' for dot in dots]}, index=df.index)
-        result = pd.concat([first_n, ellipsis_col, last_n], axis=1)
-        return result
 
 
     @property    
@@ -681,18 +683,19 @@ class DisplayVarTableDef(DisplayDef):
             
         rawdata = thisdf.to_string(max_cols= self.options.max_cols).split('\n')
         data = center_title_under_years(rawdata,center_index)
+        # print(*data,sep='\n')
+        # rawdata[0],rawdata[1] = rawdata[1],rawdata[0]
         out = '\n'.join(data)
         return out       
 
     @property    
     def df_str_disp_transpose(self):
         
-        width = self.options.width
-        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str  
-        centerdf = create_column_multiindex(thisdf.T)    
-        rawdata = centerdf.to_string(max_cols= self.options.max_cols).split('\n')
-        data = center_title_under_years(rawdata,title_row_index=[0],year_row_index=1)
+        
+        rawdata = self.df_str.to_string(max_cols= self.options.max_cols).split('\n')
+        data = [self.unitline ] +rawdata 
         data[0],data[1] = data[1],data[0]
+        data = center_title_under_years(data,title_row_index=[1],year_row_index=0)
         out = '\n'.join(data)
         return out       
 
@@ -722,12 +725,13 @@ class DisplayVarTableDef(DisplayDef):
     @property
     def htmlwidget(self): 
 
-        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
 
         if self.options.transpose: 
-            outsty  = center_multiindex_headers(create_column_multiindex(thisdf.T))
+            thisdf = self.df.loc[self.timeslice,:] if self.timeslice else self.df             
         else: 
-            outsty =  self.make_html_style(thisdf)  
+            thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
+            
+        outsty =  self.make_html_style(thisdf)  
             
         if self.options.title: 
             outsty = outsty.set_caption(self.options.title)
@@ -736,6 +740,9 @@ class DisplayVarTableDef(DisplayDef):
             out = add_footer_to_styler(outsty,self.options.foot)
         else:
             out = outsty.to_html(na_rep='')
+            
+        if self.options.transpose:
+            out = insert_centered_row(out,self.unitline,len(self.df.columns))
     
         return out    
 
@@ -787,7 +794,7 @@ class DisplayVarTableDef(DisplayDef):
             return out       
 
     @property
-    def latex_transpose(self): 
+    def latex_transpose_old(self): 
 
         df = (self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str).T
         multi_df  = create_column_multiindex(df)
@@ -810,6 +817,31 @@ class DisplayVarTableDef(DisplayDef):
         
         return out 
         
+    @property
+    def latex_transpose(self): 
+    
+          thisdf = self.df_str.loc[self.timeslice,:] if self.timeslice else self.df_str
+          tabformat = 'l'+'r'*len(thisdf.columns) 
+    
+          latex_df = (thisdf.style.format(lambda x:x)
+                   .set_caption(self.options.title) 
+                   .to_latex(hrules=True, position='ht', column_format=tabformat)
+                   .replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ) 
+          out = latex_df
+          data = out.split('\n')
+          # print(*[f'{i} {d}' for i,d in enumerate(data)],sep='\n')
+          
+          unit_line_latex  = fr'&\multicolumn{{{len(thisdf.columns)}}}'+'{c}{{' + self.unitline+r'}}\\'  
+          data = data[:6]+ [unit_line_latex]   + data[6:]                  
+      
+          # print(*[f'{i} {d}' for i,d in enumerate(data)],sep='\n')
+          out = '\n'.join(data)
+          out = '\n'.join(l.replace('{r}','{c}') if 'multicolum' in l else l   for l in out.split('\n'))
+          out = out.replace(r'\caption{',r'\caption{')
+          if self.options.foot: 
+              out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
+          
+          return out 
 
     def make_html_style(self,df,use_tooltips =False )  :
         out = df.style.set_table_styles([           
@@ -871,7 +903,7 @@ class DisplayVarTableDef(DisplayDef):
         return out 
     
     def make_html_style(self,df,use_tooltips =False )  :
-        out = self.mmodel.ibsstyle(self.df_str,use_tooltip=False)          
+        # out = self.mmodel.ibsstyle(self.df_str,use_tooltip=False)          
         out = self.mmodel.ibsstyle(df,use_tooltip=False)          
                                    
         return out 
@@ -1678,6 +1710,20 @@ def get_DisplayTextDef(input_string):
         markdown_text=text_obj.markdown_text,
         name='some_text')))
     return out
+
+def insert_centered_row(html_text, centered_text, num_columns):
+    # Find the index where the tbody starts
+    tbody_start_index = html_text.find('<tbody>')+len('<tbody>')   
+    
+    # Construct the new row with centered text
+    new_row = '\n'+f"<tr><td colspan='{num_columns}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{centered_text}</td></tr>"
+    
+    # Insert the new row at the beginning of the tbody
+    
+    modified_html_text = html_text[:tbody_start_index] + new_row + html_text[tbody_start_index:]
+    
+    return modified_html_text
+
 
 from dataclasses import dataclass
 
