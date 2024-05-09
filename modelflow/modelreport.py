@@ -727,9 +727,11 @@ class DisplayVarTableDef(DisplayDef):
 
 
         if self.options.transpose: 
-            thisdf = self.df.loc[self.timeslice,:] if self.timeslice else self.df             
+            thisdf = self.df_str.loc[self.timeslice,:] if self.timeslice else self.df_str             
         else: 
             thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
+            center = [ (line.showtype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+
             
         outsty =  self.make_html_style(thisdf)  
             
@@ -1396,6 +1398,20 @@ class DatatypeAccessor:
                
 
         
+@dataclass
+class Html_plit_table:
+    html: str
+
+    def __post_init__(self):
+        self.text_before_tbody, self.tbody, self.text_after_tbody = self.split_html()
+
+    def split_html(self):
+        # Split HTML text into text before tbody, tbody, and text after tbody
+        text_before_tbody = self.html.split('<tbody>')[0]
+        tbody = self.html.split('<tbody>')[1].split('</tbody>')[0]
+        text_after_tbody = self.html.split('</tbody>')[1]
+
+        return text_before_tbody, tbody, text_after_tbody
 
 
 
