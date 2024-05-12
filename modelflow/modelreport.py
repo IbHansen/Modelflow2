@@ -755,10 +755,13 @@ class DisplayVarTableDef(DisplayDef):
             nonlocal endhtml
             out = ''
             html_all = self.mmodel.ibsstyle(df,use_tooltip=False).to_html() 
-            splitted_html = HtmlSplitTable(html_all)
+            splitted_html = HTMLSplitData(html_all)
             if i == 0:
-                out = splitted_html.text_before_tbody+'\n'+'<tbody>'
-                endhtml = '</tbody>'+ splitted_html.text_after_tbody
+                caption = f'<caption>{self.options.title}</caption>' if self.options.title else '' 
+                out = splitted_html.text_before_thead + caption + '<thead>' + splitted_html.thead+'\n'
+                
+                
+                endhtml = splitted_html.text_after_tbody
 
             if (line.showtype == 'textline' and line.centertext !='' ):
                 col0 = '<tr><td <th class="row_heading level0 row0" >  </td>'
@@ -791,7 +794,13 @@ class DisplayVarTableDef(DisplayDef):
            thisdfs = [(i,df.loc[:,self.timeslice] if self.timeslice else df, line) for i,(df,line) in 
              enumerate(zip(self.dfs,self.lines))]
             
-           out = '\n'.join([tab_to_html(i,df,line) for i,df,line in thisdfs])+'\n'+ endhtml
+           out = '\n'.join([tab_to_html(i,df,line) for i,df,line in thisdfs])+'\n'
+           if self.options.foot:               
+               foot = f"<tfoot><tr><td colspan='5' style='text-align: left;'>{self.options.foot}</td></tr></tfoot>"
+           else:
+               foot =''
+           
+           out = out + foot + '</table>'     
     
         
     
@@ -1466,6 +1475,27 @@ class HtmlSplitTable:
         return text_before_tbody, tbody, text_after_tbody
 
 
+@dataclass
+class HTMLSplitData:
+    html: str
+
+    def __post_init__(self):
+        self.text_before_thead, self.thead, self.tbody, self.text_after_tbody = self.split_html()
+
+    def split_html(self):
+        # Split HTML text into parts before <thead>, <thead>, before <tbody>, <tbody>, and after <tbody>
+        parts_before_thead = self.html.split('<thead>')
+        text_before_thead = parts_before_thead[0]
+
+        thead_parts = parts_before_thead[1].split('</thead>')
+        thead = '<thead>' + thead_parts[0] + '</thead>'
+        text_before_tbody = thead_parts[1]
+
+        tbody_parts = text_before_tbody.split('<tbody>')
+        tbody = '<tbody>' + tbody_parts[1].split('</tbody>')[0] + '</tbody>'
+        text_after_tbody = tbody_parts[1].split('</tbody>')[1]
+
+        return text_before_thead, thead, tbody, text_after_tbody
 
 def center_title_under_years(data, title_row_index=[1],year_row_index = 0):
     """
