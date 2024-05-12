@@ -723,7 +723,7 @@ class DisplayVarTableDef(DisplayDef):
         return HTML(self.htmlwidget)     
 
     @property
-    def htmlwidget(self): 
+    def htmlwidget_old(self): 
 
 
         if self.options.transpose: 
@@ -747,6 +747,58 @@ class DisplayVarTableDef(DisplayDef):
             out = insert_centered_row(out,self.unitline,len(self.df.columns))
     
         return out    
+
+    @property
+    def htmlwidget(self): 
+        endhtml = ''
+        def tab_to_html(i,df,line):
+            nonlocal endhtml
+            out = ''
+            html_all = self.mmodel.ibsstyle(df,use_tooltip=False).to_html() 
+            splitted_html = HtmlSplitTable(html_all)
+            if i == 0:
+                out = splitted_html.text_before_tbody+'\n'+'<tbody>'
+                endhtml = '</tbody>'+ splitted_html.text_after_tbody
+
+            if (line.showtype == 'textline' and line.centertext !='' ):
+                col0 = '<tr><td <th class="row_heading level0 row0" >  </td>'
+                out = out + '\n'+col0 + f"<td colspan='{len(df.columns)}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{line.centertext}</td></tr>"
+
+            else: 
+                out = out + splitted_html.tbody
+                
+            return out         
+    
+    
+        if self.options.transpose: 
+            thisdf = self.df_str.loc[self.timeslice,:] if self.timeslice else self.df_str             
+    
+            
+            outsty =  self.make_html_style(thisdf)  
+                
+            if self.options.title: 
+                outsty = outsty.set_caption(self.options.title)
+        
+            if self.options.foot:
+                out = add_footer_to_styler(outsty,self.options.foot)
+            else:
+                out = outsty.to_html(na_rep='')
+                
+            if self.options.transpose:
+                out = insert_centered_row(out,self.unitline,len(self.df.columns))
+
+        else:    
+           thisdfs = [(i,df.loc[:,self.timeslice] if self.timeslice else df, line) for i,(df,line) in 
+             enumerate(zip(self.dfs,self.lines))]
+            
+           out = '\n'.join([tab_to_html(i,df,line) for i,df,line in thisdfs])+'\n'+ endhtml
+    
+        
+    
+    
+        return out    
+
+
 
     @property
     def latex(self): 
@@ -1399,7 +1451,7 @@ class DatatypeAccessor:
 
         
 @dataclass
-class Html_plit_table:
+class HtmlSplitTable:
     html: str
 
     def __post_init__(self):
@@ -1732,7 +1784,9 @@ def insert_centered_row(html_text, centered_text, num_columns):
     tbody_start_index = html_text.find('<tbody>')+len('<tbody>')   
     
     # Construct the new row with centered text
-    new_row = '\n'+f"<tr><td colspan='{num_columns}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{centered_text}</td></tr>"
+    col0 = '<tr><td <th class="row_heading level0 row0" >  </td>'
+
+    new_row = '\n'+col0 + f"<td colspan='{num_columns}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{centered_text}</td></tr>"
     
     # Insert the new row at the beginning of the tbody
     
