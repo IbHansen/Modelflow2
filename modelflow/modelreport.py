@@ -502,15 +502,27 @@ class DisplayDef:
     def figwrap(self,chart):
         latex_dir = Path(f'../{self.name}')
         
-        out = r''' 
+        if True: 
+            out = r''' 
 \begin{figure}[htbp]
 \centering
-\resizebox{\textwidth}{!}{\input{'''
-        out = out + fr'"{(latex_dir / chart).as_posix()}.pgf"'+'}}'
-        out = out + fr'''
+\resizebox{\textwidth}{!}'''
+            out = out + r'{\input{' +fr'"{(latex_dir / chart).as_posix()}.pgf"'+'}}'
+            out = out + fr'''
 \caption{{{self.titledic[chart]}}}
-\end{{figure}}
+\end{{figure}} '''
+        else:  # for pandoc and word 
+            out = r''' 
+\begin{figure}[htbp]
+\centering
 '''
+            out = out + r'\includegraphics[width=\textwidth]{' +fr'"{(latex_dir / chart).as_posix()}.png"'+'}'
+            out = out + fr'''
+\caption{{{self.titledic[chart]}}}
+\end{{figure}} '''
+
+
+
         return out
 
 
@@ -1155,7 +1167,7 @@ class DisplayKeepFigDef(DisplayDef):
                 fig.axes[0].set_title('')
 
         self.mmodel.savefigs(figs=self.figs, location = './latex',
-              experimentname = self.name ,extensions= ['pgf'],
+              experimentname = self.name ,extensions= ['pgf','png'],
               xopen=False)
 
         if not self.options.samefig: 
