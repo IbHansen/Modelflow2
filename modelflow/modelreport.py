@@ -499,10 +499,10 @@ class DisplayDef:
 
         return out 
 
-    def figwrap(self,chart):
+    def figwrap(self,chart,png=False):
         latex_dir = Path(f'../{self.name}')
         
-        if True: 
+        if png: 
             out = r''' 
 \begin{figure}[htbp]
 \centering
@@ -1087,7 +1087,7 @@ class DisplayKeepFigDef(DisplayDef):
          else:
              if 1:
                  keys = format_list_with_numbers([f'{self.var_description[dr["key"]]}, {dr["line"].showtype} '+
-                                                  f'{dr["line"].diftype} ' for dr in dfsres ])
+                                                  f'{dr["line"].diftype} '.replace('nodif','') for dr in dfsres ])
              else:
                  keys = format_list_with_numbers([dr['key'] for dr in dfsres ])
              ... 
