@@ -8115,7 +8115,7 @@ class Report_Mixin:
         - dec (int): Number of decimal places for numerical output, passed directly to Line configuration, defaulting to 2.
         - heading (str): Optional heading line for the table, empty by default.
         - name (str): Name for the display, defaults to 'A_small_table'.
-        - foot (str): Footer text, if relevant.
+        - foot (str): Footer text.
         - rename (bool): Allows renaming of data columns
         - decorate (bool): Decorates row descriptions based on the showtype, defaulting to False.
         - width (int): Specifies the width for formatting output in characters, efaulting to 5.
@@ -8161,23 +8161,11 @@ class Report_Mixin:
     
         Parameters:
         - pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
-        - title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
         - datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
+        - title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
         - custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
-        - dec (int): Number of decimal places for numerical output, passed directly to Line configuration, defaulting to 2.
-        - heading (str): Optional heading line for the table, empty by default.
-        - name (str): Name for the display, defaults to 'A_small_table'.
-        - foot (str): Footer text, if relevant.
         - rename (bool): Allows renaming of data columns
-        - decorate (bool): Decorates row descriptions based on the showtype, defaulting to False.
-        - width (int): Specifies the width for formatting output in characters, efaulting to 5.
-        - chunk_size (int): Number of columns per chunk in the display output, defaulting to 0.
-        - timeslice (List[int]): Time slice for data display, empty by default.
-        - max_cols (int): Maximum columns when displayed as a string, faulting to the system-wide setting.
-        - last_cols (int): Specifies the number of last columns to include in a display slice, particularly in Latex.
-        - units (str): text centered on columns 
-        - difext (str) : text to be used then displaying differences. 
-        
+        - ncol  (int):         
         Returns:
     DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
                         such as units and type of transformation based on the datatype.
