@@ -39,6 +39,11 @@ Classes:
   from ModelFlow model outputs.
 - `DisplayFigWrapDef`: Focuses on wrapping and adjusting matplotlib figures for inclusion in various display formats, 
   ensuring figures are presentation-ready.
+ - `SplitTextResult`: Parses a string containing text with embedded <html>, <latex>, and <markdown> tags and separates 
+  the content accordingly.
+- `DatatypeAccessor`: Manages configurations for different datatypes, allowing for easy access and parsing of 
+  configuration tables provided in Markdown format.
+ 
 
 The `modeldisplay` module bridges the gap between analytical modeling and result presentation, offering a streamlined 
 workflow for transforming ModelFlow model outputs into high-quality visual and tabular displays suitable for a wide 
@@ -335,7 +340,7 @@ class DisplayDef:
             self.var_description = {}
             
             
-        self.name = self.name if self.name else self.options.name 
+        self.name = (self.name if self.name else self.options.name).replace(' ','_') 
         self.options.name = self.name 
         self.timeslice = self.options.timeslice if self.options.timeslice else []
         
@@ -499,10 +504,10 @@ class DisplayDef:
 
         return out 
 
-    def figwrap(self,chart,png=False):
+    def figwrap(self,chart,pgf=False):
         latex_dir = Path(f'../{self.name}')
         
-        if png: 
+        if pgf: 
             out = r''' 
 \begin{figure}[htbp]
 \centering
@@ -1165,9 +1170,9 @@ class DisplayKeepFigDef(DisplayDef):
     
             for fig in self.figs.values():
                 fig.axes[0].set_title('')
-
+        ##  pgf may not work in new version of matplotlib 
         self.mmodel.savefigs(figs=self.figs, location = './latex',
-              experimentname = self.name ,extensions= ['pgf','png'],
+              experimentname = self.name ,extensions= ['png','pgf'],
               xopen=False)
 
         if not self.options.samefig: 
