@@ -231,10 +231,9 @@ class Line:
     dec: int = 2
     pat : str = '#Headline'
     latexfont :str =''
-    keep_dim :bool = True 
+    by_var :bool = True 
     mul : float = 1.0 
     yunit : str = ''
-    keep_dim :bool = True 
 
     def __post_init__(self):
         valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline'}
@@ -1022,7 +1021,7 @@ class DisplayKeepFigDef(DisplayDef):
                                pat=line.pat,
                                showtype=line.showtype,
                                diftype = line.diftype,
-                               keep_dim=line.keep_dim)
+                               keep_dim=line.by_var)
                     
             outlist = [{'line':line, 'key':k ,
                         'df' : self.get_rowdes(df.loc[self.mmodel.current_per,:],line,row=False) 
@@ -1034,7 +1033,7 @@ class DisplayKeepFigDef(DisplayDef):
     # def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
     #       diff=False, diffpct=False, mul=1.0, title='Scenarios', legend=False, scale='linear',
     #       yunit='', ylabel='', dec='', trans=None, showfig=True, kind='line', size=(10, 6),
-    #       vline=None, savefig='', keep_dim=True, dataonly=False, samefig=False, ncol=2):
+    #       vline=None, savefig='', by_var=True, dataonly=False, samefig=False, ncol=2):
          """
     Generate and display plots for specified scenarios and variables.
     Returns:
@@ -1060,7 +1059,7 @@ class DisplayKeepFigDef(DisplayDef):
          
          if options.samefig:
              ...
-             all_keep_dim = all([item['line'].keep_dim for item in dfsres])
+             all_by_var = all([item['line'].by_var for item in dfsres])
              xcol = options.ncol 
              xrow=-((-number )//options.ncol)
              figsize =  (xcol*options.size[0],xrow*options.size[1])
@@ -1069,7 +1068,7 @@ class DisplayKeepFigDef(DisplayDef):
              fig = plt.figure(figsize=figsize)
              #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
              
-             if options.legend and all_keep_dim: 
+             if options.legend and all_by_var: 
                  extra_row = 1 
                  row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
 
@@ -1084,7 +1083,7 @@ class DisplayKeepFigDef(DisplayDef):
 
 # Create axes for the plots
              axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
-             if options.legend and all_keep_dim: 
+             if options.legend and all_by_var: 
                  legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
              
              figs = {self.name : fig}
@@ -1108,14 +1107,14 @@ class DisplayKeepFigDef(DisplayDef):
              line = item['line']
              
              mul = line.mul
-             keep_dim= line.keep_dim
+             by_var= line.by_var
              aspct = ' as pct ' if line.diftype in {'difpct'} else ' '
              dftype = line.showtype.capitalize()
              dec = line.dec 
              
              ylabel = 'Percent' if (line.showtype in { 'growth','gdppct'} or line.diftype == 'difpct' )  else ''
              
-             if keep_dim: 
+             if by_var: 
                  title = (f'Difference{aspct}to "{list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
                  if (line.diftype in {'difpct', 'dif'}) else f'{dftype}:')
              else:
@@ -1123,7 +1122,7 @@ class DisplayKeepFigDef(DisplayDef):
                  if (line.diftype in {'difpct','dif'}) else f'{dftype}:')
 
                  
-             # title=(f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
+             # title=(f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
              # if (line.diftype in {'difpct'}) else f'{dftype}:')
 
              self.mmodel.plot_basis_ax(axes[i], v , df*mul, legend=options.legend,
@@ -1131,7 +1130,7 @@ class DisplayKeepFigDef(DisplayDef):
                                      title=title,
                                      yunit=line.yunit,
                                      ylabel='Percent' if (line.showtype in {'growth','gdppct'} or line.diftype in {'difpct'})else ylabel,
-                                     xlabel='',kind = line.kind ,samefig=options.samefig and all_keep_dim,
+                                     xlabel='',kind = line.kind ,samefig=options.samefig and all_by_var,
                                      dec=dec)
 
          for ax in axes[number:]:
@@ -1141,7 +1140,7 @@ class DisplayKeepFigDef(DisplayDef):
          if options.samefig: 
              fig.suptitle(options.title ,fontsize=20) 
 
-             if options.legend  and all_keep_dim: 
+             if options.legend  and all_by_var: 
                  handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
                  legend_ax.legend(handles, labels, loc='center', ncol=3 if True else len(labels), fontsize='large')
                  legend_ax.axis('off')  # Hide the axis

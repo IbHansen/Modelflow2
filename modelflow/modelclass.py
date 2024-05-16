@@ -455,7 +455,7 @@ class BaseModel():
         self.current_per = old_current_per
 
     @contextmanager
-    def keepswitch(self,switch=False,scenarios='*'):
+    def keepswitch(self,switch=False,base_last=False,scenarios='*'):
          """
          temporary place basedf,lastdf in keep_solutions
          if scenarios contains * or ? they are separated by | else space
@@ -466,7 +466,7 @@ class BaseModel():
          # old_keep_solutions = {k:v.copy() for k,v in self.keep_solutions.items() }
          old_keep_solutions = self.keep_solutions
          
-         if switch: 
+         if switch or base_last: 
              basename = self.basename if hasattr(self, 'basename') else 'Baseline solution'
              lastname = self.lastname if hasattr(self, 'lastname') else 'Last solution'
              self.keep_solutions = {basename:self.basedf.copy() , lastname:self.lastdf.copy()}
@@ -5015,6 +5015,8 @@ class Display_Mixin():
             ax.legend()
         # ax.xaxis.set_minor_locator(ticker.MultipleLocator(years))
         # breakpoint()
+        
+      #  ax.set_xticks(df.index)
         ax.set_yscale(scale)
         ax.set_xlabel(f'{xlabel__}', fontsize=15)
         ax.set_ylabel(f'{ylabel}', fontsize=15,
@@ -8154,7 +8156,7 @@ class Report_Mixin:
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
         return tab
 
-    def plot(self, pat='#Headline',title='',datatype='growth',custom_description = {},keep_dim = True,mul=1.0 , **kwargs):     
+    def plot(self, pat='#Headline',title='',datatype='growth',custom_description = {},by_var = True,mul=1.0 , **kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8186,7 +8188,7 @@ class Report_Mixin:
         figspec = DisplaySpec(
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
-            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,keep_dim = keep_dim,mul=mul) , 
+            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,by_var = by_var,mul=mul) , 
             ]
         )
         figs = DisplayKeepFigDef (mmodel=self, spec = figspec)
