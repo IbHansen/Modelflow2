@@ -1217,6 +1217,7 @@ class DisplayTextDef(DisplayDef):
         self.html_text  = self.options.html_text 
         self.text_text  = self.options.text_text
         self.markdown_text  = self.options.markdown_text
+        self.report_smpl =('','')
         
     def __or__(self, other):
          """
@@ -1295,7 +1296,9 @@ class DisplayContainerDef:
         return out 
 
 
-
+    def set_name(self,name):
+        self.name = name.replace(' ','_')
+        return self 
 
     @property 
     def latex(self): 
