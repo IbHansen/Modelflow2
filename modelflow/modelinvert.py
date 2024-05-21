@@ -48,7 +48,7 @@ class targets_instruments():
     
     '''
     
-    def __init__(self,databank,targets,instruments,model,DefaultImpuls=0.01,defaultconv=0.01, delay=0, 
+    def __init__(self,databank,targets,instruments,model,defaultimpuls=0.01,defaultconv=0.01, delay=0, 
                  nonlin=False,silent = True, maxiter=30,solveopt={},varimpulse=False,progressbar= True):
         '''
         
@@ -63,7 +63,7 @@ class targets_instruments():
             list of instruments .
         model : TYPE
             the model to use .
-        DefaultImpuls : TYPE, optional
+        defaultimpuls : TYPE, optional
             default delta . The default is 0.01.
         defaultconv : TYPE, optional
             default convergence . The default is 0.01.
@@ -102,11 +102,11 @@ class targets_instruments():
         self.savesolvearg = model.oldkwargs if hasattr(model,'oldkwargs') else {}
         for inumber,i in enumerate(instruments): 
             vars =  i if isinstance(i,list) else [i] # make it a list even if one variable
-            xx =   [v if isinstance(v,tuple) else (v,DefaultImpuls) for v in vars] # make sure there is a impuls 
+            xx =   [v if isinstance(v,tuple) else (v,defaultimpuls) for v in vars] # make sure there is a impuls 
             name = ','.join(n for n,i in xx)
             name = f'Instrument_{inumber}' if len(name)>500 else name 
             self.instruments[inumber] = {'name':name , 'vars': xx,  }
-        self.DefaultImpuls = DefaultImpuls
+        self.defaultimpuls = defaultimpuls
         # breakpoint()
 
         

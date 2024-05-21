@@ -435,8 +435,14 @@ class BaseModel():
             _ = self.smpl(start, end, df)
             old_current_per = self.current_per.copy()
 
-        yield
-        self.current_per = old_current_per
+        # yield
+        # self.current_per = old_current_per
+        
+        try:
+            yield
+        finally:
+            self.current_per = old_current_per
+        
 
 
     @contextmanager
@@ -450,9 +456,12 @@ class BaseModel():
         new_end = min(len(self.basedf.index), old_end+end_ofset)
         self.current_per = self.basedf.index[new_start:new_end]
 
-        yield
+        try:
+            yield
+        finally:
+            self.current_per = old_current_per
 
-        self.current_per = old_current_per
+
 
     @contextmanager
     def keepswitch(self,switch=False,base_last=False,scenarios='*'):
@@ -486,9 +495,13 @@ class BaseModel():
                  print('No scenarios match the scenarios you try')
                  self.keep_solutions = old_keep_solutions
          
-         yield
+         # yield
                      
-         self.keep_solutions = old_keep_solutions
+         # self.keep_solutions = old_keep_solutions
+         try:
+            yield
+         finally:
+            self.keep_solutions = old_keep_solutions
 
 
 
@@ -4756,11 +4769,11 @@ class Display_Mixin():
 
     def keep_get_plotdict(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, 
                           showtype='level',
-                   diff=False, diffpct = False, keep_dim=1):
+                   diff=False, diffpct = False, by_var=1):
             """
             returns 
-            - a dict of {variable in pat :dfs scenarios as columnns } if keep_dim = 1
-            - a dict of {scenarios       :dfs with variables in pat as columnns } if keep_dim = 1
+            - a dict of {variable in pat :dfs scenarios as columnns } if by_var = 1
+            - a dict of {scenarios       :dfs with variables in pat as columnns } if by_var = 1
             
             Args:
                 pat (string, optional): Variable selection. Defaults to '*'.
@@ -4779,7 +4792,7 @@ class Display_Mixin():
             if diff and diffpct: 
                 raise Exception("keep_plot can't be called with both diff and diffpct")
 
-            if keep_dim:
+            if by_var:
                 dfs = self.keep_get_dict(pat, start, end, start_ofset, end_ofset)
             else: 
                 dfs = self.keep_var_dict(pat, start, end, start_ofset, end_ofset)
@@ -4793,7 +4806,7 @@ class Display_Mixin():
             else:
                 ... 
             
-            if keep_dim: 
+            if by_var: 
                 if diff:
                     dfsres = {v: (vdf.subtract(
                         vdf.iloc[:, 0], axis=0)).iloc[:, 1:]  for v, vdf in dfs.items()}
@@ -4822,11 +4835,11 @@ class Display_Mixin():
     
           
     def keep_get_plotdict_new(self, pat='*', start='', end='', 
-                          showtype='level',diftype='nodif', keep_dim = True):
+                          showtype='level',diftype='nodif', by_var = True):
             """
             returns 
-            - a dict of {variable in pat :dfs scenarios as columnns } if keep_dim = 1
-            - a dict of {scenarios       :dfs with variables in pat as columnns } if keep_dim = 1
+            - a dict of {variable in pat :dfs scenarios as columnns } if by_var = 1
+            - a dict of {scenarios       :dfs with variables in pat as columnns } if by_var = 0
             
             Args:
                 pat (string, optional): Variable selection. Defaults to '*'.
@@ -4844,7 +4857,7 @@ class Display_Mixin():
             else:
                 start_ofset = 0 
                 
-            if keep_dim:
+            if by_var:
                 dfs = self.keep_get_dict(pat, start, end, start_ofset )
             else: 
                 dfs = self.keep_var_dict(pat, start, end, start_ofset, trans=False)
@@ -4852,6 +4865,10 @@ class Display_Mixin():
                 
             if showtype == 'growth':
                 dfs = {v: vdf.pct_change()*100. for v, vdf in dfs.items()}
+
+            elif showtype ==  'qoq_ar':
+                dfs = {v: ((1.+vdf.pct_change())**4.-1.)*100. for v, vdf in dfs.items()}
+
         
             elif showtype == 'change':
                 dfs = {v: vdf.diff() for v, vdf in dfs.items()}
@@ -4860,7 +4877,7 @@ class Display_Mixin():
                 dfs = dfs 
         
             elif showtype ==  'gdppct':
-                if keep_dim: 
+                if by_var: 
                     linevars = list(dfs.keys())
                     gdpvars = [self.findgdpvar(v) for v in linevars]
                     dfgdp = self.keep_get_dict(gdpvars, start, end, start_ofset,trans=False)
@@ -4887,7 +4904,7 @@ class Display_Mixin():
             else: 
                 raise Exception('Wrong showtype in keep_get') 
             
-            if keep_dim: 
+            if by_var: 
                 if diftype == 'dif':
                     dfsres = {v: (vdf.subtract(
                         vdf.iloc[:, 0], axis=0)).iloc[:, 1:]  for v, vdf in dfs.items()}
@@ -5016,7 +5033,8 @@ class Display_Mixin():
         # ax.xaxis.set_minor_locator(ticker.MultipleLocator(years))
         # breakpoint()
         
-      #  ax.set_xticks(df.index)
+        if len(df.index) <= 5:
+            ax.set_xticks(df.index)
         ax.set_yscale(scale)
         ax.set_xlabel(f'{xlabel__}', fontsize=15)
         ax.set_ylabel(f'{ylabel}', fontsize=15,
@@ -5035,7 +5053,7 @@ class Display_Mixin():
         return ax
     
     @staticmethod
-    def savefigs(figs, location='./graph', experimentname='experiment1', addname='', extensions=['svg'], xopen=True):
+    def savefigs(figs, location=r'./graph', experimentname=r'experiment1', addname=r'', extensions=['svg'], xopen=False):
         """
         Saves a collection of matplotlib figures to a specified directory.
 
@@ -5074,7 +5092,7 @@ class Display_Mixin():
         if xopen:
             wb.open(folder.absolute(), new=1)
 
-        return f'Saved at: {folder.absolute()}'
+        return f'Saved at: {folder}'.replace('\\','/')
 
         
     
@@ -5084,7 +5102,7 @@ class Display_Mixin():
     def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
           diff=False, diffpct=False, mul=1.0, title='Scenarios', legend=False, scale='linear',
           yunit='', ylabel='', dec='', trans=None, showfig=True, kind='line', size=(10, 6),
-          vline=None, savefig='', keep_dim=True, dataonly=False, samefig=False, ncol=2):
+          vline=None, savefig='', by_var=True, dataonly=False, samefig=False, ncol=2):
          """
     Generate and display plots for specified scenarios and variables.
 
@@ -5109,7 +5127,7 @@ class Display_Mixin():
         kind (str, optional): Type of plot ('line', 'bar', etc.). Defaults to 'line'.
         size (tuple, optional): Figure size as (width, height). Defaults to (10, 6).
         vline (list, optional): List of tuples (time, text) for vertical lines in the plot. vline is persistent, to reset vline=None. Defaults to an empty list.
-        keep_dim (bool, optional): If True, each line represents a scenario, else each line represents a variable. Defaults to True.
+        by_var (bool, optional): If True, each line represents a scenario, else each line represents a variable. Defaults to True.
         dataonly (bool, optional): If True, only the dataframes are returned, no plot is generated. Defaults to False.
         samefig (bool, optional): If True, all plots are displayed in the same figure. Defaults to False.
         ncol (int, optional): Number of columns for subplots when using samefig. Defaults to 2.
@@ -5134,7 +5152,7 @@ class Display_Mixin():
          dfsres = self.keep_get_plotdict(pat=pat, start=start, end=end, 
                               start_ofset = start_ofset, end_ofset = end_ofset, 
                                 showtype=showtype,
-                         diff=diff, diffpct = diffpct, keep_dim=keep_dim)
+                         diff=diff, diffpct = diffpct, by_var=by_var)
     
          
          if dataonly: 
@@ -5186,7 +5204,7 @@ class Display_Mixin():
          for i,(v, df) in enumerate(dfsres.items()):
               self.plot_basis_ax(axes[i], v , df*mul, legend=legend,
                                      scale=scale, trans=xtrans,
-                                     title=f'Difference{aspct}to "{df.columns[0] if not keep_dim else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
+                                     title=f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
                                      yunit=yunit,
                                      ylabel='Percent' if (showtype == 'growth' or diffpct == True )else ylabel,
                                      xlabel='',kind = kind,samefig=samefig,
@@ -7678,7 +7696,7 @@ class Solver_Mixin():
         return outdf
 
     def invert(self, databank, targets, instruments, silent=1,
-               DefaultImpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, delay=0,varimpulse=False,progressbar = True, 
+               defaultimpuls=0.01, defaultconv=0.001, nonlin=False, maxiter=30, delay=0,varimpulse=False,progressbar = True, 
                debug = False):
         ''' 
      Solves a target instrument problem 
@@ -7738,7 +7756,7 @@ class Solver_Mixin():
 '''
         from modelinvert import targets_instruments
         t_i = targets_instruments(databank, targets, instruments, self, silent=silent,delay=delay,varimpulse=varimpulse,
-                                  DefaultImpuls=DefaultImpuls, defaultconv=defaultconv, nonlin=nonlin, maxiter=maxiter,
+                                  defaultimpuls=defaultimpuls, defaultconv=defaultconv, nonlin=nonlin, maxiter=maxiter,
                                   progressbar=progressbar )
         self.t_i = t_i
         self.t_i.debug = debug 

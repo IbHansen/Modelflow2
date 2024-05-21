@@ -125,6 +125,7 @@ class Options:
         max_cols (int): Maximum columns when displayed as string. Default is 4.
         last_cols (int): In Latex specifies the number of last columns to include in a display slice. Default is 1.
         latex_text (str) : A latex text 
+        base_last : If using basedf and lasdtf instead og keep_solutions 
     
     Methods:
     __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
@@ -151,6 +152,8 @@ class Options:
     size: tuple = (10, 6)
     legend: bool = True
     transpose : bool = False
+    base_last : bool = False
+    scenarios : str  ='*'
     smpl : tuple = ('','')
     
     latex_text :str =''
@@ -651,7 +654,7 @@ class DisplayVarTableDef(DisplayDef):
             else:                    
                 def getline(start_ofset= 0,**kvargs):
                     locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line.pat,showtype=showtype,
-                                    diftype = diftype,keep_dim=False)
+                                    diftype = diftype,by_var=False)
                     if diftype == 'basedf':
                         locallinedf = next(iter((locallinedfdict.values()))).T
                     else: 
@@ -994,13 +997,15 @@ class DisplayKeepFigDef(DisplayDef):
     
     def __post_init__(self):
         super().__post_init__()  # Call the parent class's __post_init__
-
-        with self.mmodel.set_smpl(*self.options.smpl):
-            
-            self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
         
-            self.figs = self.make_figs(showfig=False)
-            self.report_smpl = self.get_report_smpl
+        with self.mmodel.keepswitch(scenarios=self.options.scenarios,base_last = self.options.base_last):
+
+            with self.mmodel.set_smpl(*self.options.smpl):
+                
+                self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
+            
+                self.figs = self.make_figs(showfig=False)
+                self.report_smpl = self.get_report_smpl
 
         
         self.chart_names = list(self.figs.keys() )
@@ -1021,7 +1026,7 @@ class DisplayKeepFigDef(DisplayDef):
                                pat=line.pat,
                                showtype=line.showtype,
                                diftype = line.diftype,
-                               keep_dim=line.by_var)
+                               by_var=line.by_var)
                     
             outlist = [{'line':line, 'key':k ,
                         'df' : self.get_rowdes(df.loc[self.mmodel.current_per,:],line,row=False) 
@@ -1145,6 +1150,11 @@ class DisplayKeepFigDef(DisplayDef):
                  legend_ax.legend(handles, labels, loc='center', ncol=3 if True else len(labels), fontsize='large')
                  legend_ax.axis('off')  # Hide the axis
 
+         else:
+            for v,fig in figs.items() :
+                if options.title: 
+                    fig.suptitle(options.title ,fontsize=20) 
+
          
          
          if showfig:
@@ -1182,6 +1192,27 @@ class DisplayKeepFigDef(DisplayDef):
         
         out = '\n'.join( self.figwrap(chart) for chart in self.chart_names)
         return out 
+
+    def savefigs(self,**kwargs):
+        '''
+        Saves a collection of matplotlib figures to a specified directory.
+
+        Parameters:
+        - location (str): The base folder in which to save the charts. Defaults to './graph'.
+        - experimentname (str): A subfolder under 'location' where charts are saved. Defaults to 'experiment1'.
+        - addname (str): An additional name added to each figure filename. Defaults to an empty string.
+        - extensions (list): A list of string file extensions for saving the figures. Defaults to ['svg'].
+        - xopen (bool): If True, open the saved figure locations in a web browser.
+
+        Returns:
+        str: The absolute path to the folder where figures are saved.
+
+        Raises:
+        Exception: If the folder cannot be created or a figure cannot be saved/opened.
+        '''
+
+        return self.mmodel.savefigs(figs=self.figs,**kwargs)
+        
     
     @property 
     def sheetwidget(self):
@@ -1422,9 +1453,12 @@ class DatatypeAccessor:
 | level      | level      | nodif   | Level                        |
 | diflevel   | level      | dif   | Impact, Level                  |
 | difpctlevel| level     | difpct  | Impact in percent            |
-| base          | level      | basedf   | Level                   |
-| basegrowth    | growth     | basedf   | Percent growth          |
-| basegdppct    | gdppct      | basedf   | Percent of GDP         |
+| qoq_ar    | qoq_ar      | nodif   | Q-Q anuallized          |
+| difqoq_ar    | qoq_ar      | dif   | Impact Q-Q anuallized          |
+| base          | level      | basedf   | Base Level                   |
+| basegrowth    | growth     | basedf   | Base Percent growth          |
+| basegdppct    | gdppct      | basedf   | Base Percent of GDP         |
+| baseqoq_ar    | qoq_ar      | basedf   | Base Q-Q anuallized          |
 
 
 

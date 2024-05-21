@@ -162,4 +162,14 @@ ncol same as colrow in vis.plot to be compabiteble with keep_plot
 for display in [] new css for more clear datadisplay 
 modelload will also set .current_per
 modeldump handels an error in pandas 2.2 for dataframes with periode index 
+modelload and dumo also handels reports
+new report module 
+keep_dim -> by_var
+in keepswitch base_last is the same as switch for using basedf,lastdf 
+set_smpl will revert to original smpl if an exception is raised
+set_relativ_smpl the same 
+savefig dont return the full path only the relative 
+keepswitch also handles exceptions in context without deleting all keep_solution. 
+.plot also handels base_last and scenario 
+
 
