@@ -773,7 +773,7 @@ class DisplayVarTableDef(DisplayDef):
         def tab_to_html(i,df,line):
             nonlocal endhtml
             out = ''
-            html_all = self.mmodel.ibsstyle(df,use_tooltip=False).to_html() 
+            html_all = self.mmodel.ibsstyle(df,use_tooltip=False,dec=line.dec).to_html() 
             splitted_html = HTMLSplitData(html_all)
             if i == 0:
                 caption = f'<caption>{self.options.title}</caption>' if self.options.title else '' 
@@ -1455,7 +1455,7 @@ class DatatypeAccessor:
 | difpctlevel| level     | difpct  | Impact in percent            |
 | qoq_ar    | qoq_ar      | nodif   | Q-Q anuallized          |
 | difqoq_ar    | qoq_ar      | dif   | Impact Q-Q anuallized          |
-| base          | level      | basedf   | Base Level                   |
+| baselevel    | level      | basedf   | Base Level                   |
 | basegrowth    | growth     | basedf   | Base Percent growth          |
 | basegdppct    | gdppct      | basedf   | Base Percent of GDP         |
 | baseqoq_ar    | qoq_ar      | basedf   | Base Q-Q anuallized          |
