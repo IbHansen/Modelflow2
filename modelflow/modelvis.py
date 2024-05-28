@@ -221,15 +221,16 @@ class vis():
      @property
      def eviews(self):
          '''Returns variable descriptions '''
+         nl = '\n'
          def geteviews(var,l):
              if var in self.model.endogene: 
                  ev = self.model.eviews_dict.get(var,'Not avaible')
-                 return f'{var:<{l}} : {ev}'
+                 return f'{var:<{l}} : {nl}{ev}'
              else: 
                 return f'{var:<{l}} : Exogen'
                  
          mlength = max([len(v) for v in self.names]) 
-         out = '\n'.join(geteviews(var,mlength) for var in self.names)
+         out = '\n  \n'.join(geteviews(var,mlength) for var in self.names)
          print(out)
           
 

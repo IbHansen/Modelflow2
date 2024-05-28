@@ -171,5 +171,7 @@ set_relativ_smpl the same
 savefig dont return the full path only the relative 
 keepswitch also handles exceptions in context without deleting all keep_solution. 
 .plot also handels base_last and scenario 
+2.30 releasee
+fix h
 
 
