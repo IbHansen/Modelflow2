@@ -15,6 +15,7 @@ for automating the reporting process in data analysis, financial modeling, and r
 capabilities for data processing and visualization along with advanced document presentation features.
 
 Key Features:
+    
 - Dynamic generation of LaTeX and HTML content for integrating data visualizations and tables into reports and 
   presentations.
 - Compatibility with IPyWidgets for creating interactive, widget-based displays that enhance the interactivity of 
@@ -25,23 +26,24 @@ Key Features:
   and formats.
 
 Classes:
-- `Options`: Configures display options for managing how data and figures are presented, including naming conventions, 
+    
+- :class:`Options`: Configures display options for managing how data and figures are presented, including naming conventions, 
   formatting preferences, and title settings.
-- `Line`: Defines line configurations for table displays, supporting various data representation and difference 
+- :class:`Line`: Defines line configurations for table displays, supporting various data representation and difference 
   calculations to suit different analysis needs.
-- `DisplaySpec`: Groups display options and line configurations, facilitating the management of complex display setups 
+- :class:`DisplaySpec`: Groups display options and line configurations, facilitating the management of complex display setups 
   in a structured manner.
-- `DisplayDef`: Base class for display definitions, capable of compiling various display components into cohesive 
+- :class:`DisplayDef`: Base class for display definitions, capable of compiling various display components into cohesive 
   specifications for rendering.
-- `LatexRepo`: Handles the generation of LaTeX content, compilation into PDFs, and embedding within Jupyter notebooks, 
+- :class:`LatexRepo`: Handles the generation of LaTeX content, compilation into PDFs, and embedding within Jupyter notebooks, 
   supporting both static and dynamic content creation.
-- `DisplayVarTableDef`: Specializes in displaying variable tables, automating the creation and formatting of tables 
+- :class:`DisplayVarTableDef`: Specializes in displaying variable tables, automating the creation and formatting of tables 
   from ModelFlow model outputs.
-- `DisplayFigWrapDef`: Focuses on wrapping and adjusting matplotlib figures for inclusion in various display formats, 
+- :class:`DisplayFigWrapDef`: Focuses on wrapping and adjusting matplotlib figures for inclusion in various display formats, 
   ensuring figures are presentation-ready.
- - `SplitTextResult`: Parses a string containing text with embedded <html>, <latex>, and <markdown> tags and separates 
+- :class:`SplitTextResult`: Parses a string containing text with embedded <html>, <latex>, and <markdown> tags and separates 
   the content accordingly.
-- `DatatypeAccessor`: Manages configurations for different datatypes, allowing for easy access and parsing of 
+- :class:`DatatypeAccessor`: Manages configurations for different datatypes, allowing for easy access and parsing of 
   configuration tables provided in Markdown format.
  
 
@@ -94,7 +96,17 @@ from copy import deepcopy
 from modelwidget import fig_to_image,tabwidget,htmlwidget_fig, htmlwidget_df,htmlwidget_text,htmlwidget_style
 
 def track_fields():
-    '''To find fields which has been set '''
+    """
+    A decorator to track which fields in a dataclass have been explicitly set during initialization.
+
+    This decorator modifies the `__init__` method of a dataclass to keep track of which fields
+    have been explicitly set by the user when an instance is created. The explicitly set fields
+    are stored in a set called `__explicitly_set__`.
+
+    Returns:
+        wrap (function): A decorator function that modifies the dataclass to track explicitly set fields.
+
+    """
     def wrap(cls):
         cls.__original_init = cls.__init__
         def __init__(self, *args, **kw):
@@ -112,8 +124,8 @@ class Options:
     """
     Represents configuration options for data display definitions.
 
-    Attributes:
-        name (str): Name for this display. Default is 'display'.
+    Args:
+        name (str): Name for this display. Default is 'display'. :noindex:
         foot (str): Footer if relevant.
         rename (bool): If True, allows renaming of data columns. Default is True.
         decorate (bool): If True, decorates row descriptions based on the showtype. Default is True.
@@ -129,7 +141,7 @@ class Options:
         landscape: if trye a table will be shown in landscape 
     
     Methods:
-    __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
+        __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
                     instance that combines settings from both, preferring non-default values from 'other'. If 'other' is a
                     dictionary, attributes not existing in this instance will raise an AttributeError. TypeErrors are raised
                     when 'other' is neither a dictionary nor an Options instance.
@@ -1778,11 +1790,11 @@ def add_footer_to_styler(styler, footer_text):
     Extend a Pandas Styler object with a footer.
 
     Args:
-    styler (pandas.io.formats.style.Styler): The Pandas Styler object.
-    footer_text (str): The text to be included in the footer.
+        styler (pandas.io.formats.style.Styler): The Pandas Styler object.
+        footer_text (str): The text to be included in the footer.
 
     Returns:
-    str: The styled HTML with the added footer.
+        str: The styled HTML with the added footer.
     """
     # Convert styler to HTML and append a footer section
     styled_html = styler.to_html(na_rep='')  # or styler.to_html() in older pandas versions
@@ -1807,7 +1819,7 @@ def split_text(input_string):
     Split the input string based on the specified terminals.
 
     Args:
-    input_string (str): The input string to be split.
+      input_string (str): The input string to be split.
 
     Returns:
     tuple: A tuple containing three substrings:

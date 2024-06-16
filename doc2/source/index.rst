@@ -62,6 +62,7 @@ Modules
    onboard/onboard
    attribution/Attribution
    Quick result visualization <vis/modelvis>
+   report/modelreport
    Dashboard <plotly/modeldashsidebar>
    jupyter/jupyter
    Targets and instruments <used/modelinvert>
