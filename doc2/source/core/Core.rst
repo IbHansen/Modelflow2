@@ -10,4 +10,5 @@ Core Modules, creates and solves model instances
    modelpattern
    modelBLfunk
    modeluserfunk
+   modelreport
 

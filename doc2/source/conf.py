@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../../../modelflow'))
 # -- Project information -----------------------------------------------------
 
 project = 'ModelFlow'
-copyright = '2022, Ib Hansen'
+copyright = '2024, Ib Hansen'
 author = 'Ib Hansen'
 
 

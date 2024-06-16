@@ -23,6 +23,8 @@ Each of these handles more or less common tasks.
 - :class:`Dash_Mixin`
 - :class:`Modify_Mixin`
 - :class:`Fix_Mixin`
+- :class:`Stability_Mixin`
+- :class:`Report_Mixin`
 
 In addition the :class:`upd` class is defines, It defines a pandas dataframe extension 
 which allows the user to use the upd methods on dataframes. 
@@ -89,6 +91,8 @@ try:
     import xlwings as xw
 except:
     ...
+
+
 
 
 import modelmanipulation as mp
@@ -1867,44 +1871,77 @@ class Model_help_Mixin():
         mj.get_frml_latex(self)
 
     
+    # @staticmethod
+    # def get_a_repo_yaml(owner: str = "IbHansen",
+    #                    repo_name: str = "modelflow-manual",
+    #                    branch: str = 'main', 
+    #                    file:  str = r'papers/mfbook/repo_def.yaml',
+    #                    **kwargs): 
+    #     """
+    # Retrieve and load a YAML file from a specified GitHub repository.
+
+    # Parameters:
+    # - owner (str): The owner of the GitHub repository. Default is "IbHansen".
+    # - repo_name (str): The name of the GitHub repository. Default is "modelflow-manual".
+    # - branch (str): The branch where the file is located. Default is "main".
+    # - file (str): The path to the file within the GitHub repository. Default is "papers/mfbook/repo_def.yaml".
+
+    # Returns:
+    # - dict or list: A dictionary or list containing the loaded YAML data.
+
+    # Exceptions:
+    # - Raises an exception if there is an error retrieving or loading the file, 
+    #   with the exception message printed to the console.
+    #     """  
+       
+    #     from urllib.request import urlopen
+    #     import yaml 
+        
+    #     url = Path(rf"https://raw.githubusercontent.com/{owner}/{repo_name}/{branch}/{file}").as_posix().replace('https:/','https://')
+    #   #  print(f'Open file from URL:  {url}')  
+    #     try:
+    #         with urlopen(url) as f:            
+    #                 res = yaml.safe_load(f)
+    #     except Exception as e:
+    #         print(f'{e}')
+    
+    #     return res 
+    
+    
     @staticmethod
     def get_a_repo_yaml(owner: str = "IbHansen",
-                       repo_name: str = "modelflow-manual",
-                       branch: str = 'main', 
-                       file:  str = r'papers/mfbook/repo_def.yaml',
-                       **kwargs): 
+                        repo_name: str = "modelflow-manual",
+                        branch: str = 'main', 
+                        file: str = r'papers/mfbook/repo_def.yaml',
+                        **kwargs): 
         """
-    Retrieve and load a YAML file from a specified GitHub repository.
+        Retrieve and load a YAML file from a specified GitHub repository.
 
-    Parameters:
-    - owner (str): The owner of the GitHub repository. Default is "IbHansen".
-    - repo_name (str): The name of the GitHub repository. Default is "modelflow-manual".
-    - branch (str): The branch where the file is located. Default is "main".
-    - file (str): The path to the file within the GitHub repository. Default is "papers/mfbook/repo_def.yaml".
+        args:
+            owner (str): The owner of the GitHub repository. Default is "IbHansen".
+            repo_name (str): The name of the GitHub repository. Default is "modelflow-manual".
+            branch (str): The branch where the file is located. Default is "main".
+            file (str): The path to the file within the GitHub repository. Default is "papers/mfbook/repo_def.yaml".
 
-    Returns:
-    - dict or list: A dictionary or list containing the loaded YAML data.
+        Returns:
+            dict or list: A dictionary or list containing the loaded YAML data.
 
-    Exceptions:
-    - Raises an exception if there is an error retrieving or loading the file, 
-      with the exception message printed to the console.
-      """  
-       
+        Exceptions:
+            Raises an exception if there is an error retrieving or loading the file, 
+              with the exception message printed to the console.
+        """  
         from urllib.request import urlopen
         import yaml 
-        
+
         url = Path(rf"https://raw.githubusercontent.com/{owner}/{repo_name}/{branch}/{file}").as_posix().replace('https:/','https://')
-      #  print(f'Open file from URL:  {url}')  
+        # print(f'Open file from URL: {url}')  
         try:
             with urlopen(url) as f:            
-                    res = yaml.safe_load(f)
+                res = yaml.safe_load(f)
         except Exception as e:
             print(f'{e}')
     
-        return res 
-    
-    
-        
+        return res         
     
     
     @staticmethod
@@ -1920,17 +1957,17 @@ class Model_help_Mixin():
         """
         Download an entire GitHub repository and extract it to a specified location.
     
-        Parameters:
-        - owner: The owner of the GitHub repository.
-        - repo_name: The name of the repository.
-        - branch: The branch to download.
-        - destination: The local path where the repository should be extracted.
-        - go: display toc of notebooks 
-        - silent: keep silent 
-        - description:optional description which will be used as folder name 
+        args:
+          owner: The owner of the GitHub repository.
+          repo_name: The name of the repository.
+          branch: The branch to download.
+          destination: The local path where the repository should be extracted.
+          go: display toc of notebooks 
+          silent: keep silent 
+          description:optional description which will be used as folder name 
     
         Returns:
-        - A message indicating whether the download was successful or not.
+          A message indicating whether the download was successful or not.
         """
         # Construct the URL to download the zip file of the entire repository
         import shutil
@@ -1992,24 +2029,25 @@ class Model_help_Mixin():
                              branch: str = 'main', 
                              destination  = './wb-repos',
                              go = True, 
-                             silent=False,
+                             colab=False,
+                             silent=True,
                              replace = False,
                             ):
         """
         Download an entire GitHub repository and extract it to a specified location.
     
         Parameters:
-        - owner: The owner of the GitHub repository.
-        - repo_name: The name of the repository.
-        - branch: The branch to download.
-        - destination: The local path where the repository should be extracted.
-        - go: display toc of notebooks 
-        - silent: keep silent 
-        - replace: if True replace existing files with the files from repo 
-        - description:optional description which will be used as folder name 
+          owner: The owner of the GitHub repository.
+          repo_name: The name of the repository.
+          branch: The branch to download.
+          destination: The local path where the repository should be extracted.
+          go: display toc of notebooks 
+          silent: keep silent 
+          replace: if True replace existing files with the files from repo 
+          description:optional description which will be used as folder name 
     
         Returns:
-        - A message indicating whether the download was successful or not.
+          A message indicating whether the download was successful or not.
         """
         # Construct the URL to download the zip file of the entire repository
         import shutil
@@ -2080,9 +2118,76 @@ class Model_help_Mixin():
         copy_new_files_only(extract_to,new_location)
         shutil.rmtree(extract_to)
         if go:
-            model.display_toc('**Avaiable notebooks**',folder=new_location)
+            if colab: 
+                model.display_toc_github('**Avaiable notebooks github**',folder=new_location,
+                colab=colab,
+                owner = owner,
+                repo_name = repo_name,
+                branch = branch, 
+                                        
+                                         )
+            else:            
+                model.display_toc_github('**Avaiable notebooks**',folder=new_location,colab=False)
+            
+
         return 
+     
+    @staticmethod
+    def display_toc_github(text='**Jupyter notebooks**',folder='.',all=False,nocwd=False,
+                               colab=True,
+                                owner: str = "IbHansen",
+                               repo_name: str = 'wb-repos',
+                               branch: str = 'main', 
+                               destination  = './wb-repos',                     
+                           
+                           ):
+        '''In a jupyter notebook this function displays a clickable table of content of all 
+        jupyter notebooks in this and sub folders'''
         
+        from IPython.display import display, Markdown, HTML
+        from pathlib import Path
+        display(Markdown(text))
+        for dir in sorted(Path(folder).glob('**')):
+            # print(f'{dir=} {nocwd=}')
+            if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
+                continue
+            
+            if dir == Path('.') and nocwd :
+                continue
+            
+            filelist = (list(dir.glob('*readme.ipynb')) 
+                    + [f for f in sorted(dir.glob('*.ipynb')) 
+                       if not f.stem.endswith('readme')])
+            
+            for i, notebook in enumerate(filelist):
+                # print(notebook)    
+                if (not all) and (notebook.name.startswith('test') or notebook.name.startswith('Overview')):
+                    continue
+                if i == 0:
+                    blanks = ''.join(
+                        ['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))
+                    if len(dir.parts):
+                        thisdir = Path(*dir.parts[1:])
+                        display(HTML(f'{blanks}<b>{str(thisdir)}</b>'))
+                    else:
+                        display(
+                            HTML(f'{blanks}<b>{str(Path.cwd().parts[-1])} (.)</b>'))
+
+                name = notebook.name.split('.')[0]
+                # print(notebook)
+                notebookshort = Path(*notebook.parts[1:])
+                # print(notebookshort.as_posix())
+
+                if colab: 
+                    githubname = f'https://colab.research.google.com/github/{owner}/{repo_name}/blob/{branch}/{notebookshort.as_posix()}'
+                    # print(githubname)
+                    display(HTML(
+                        f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{githubname}" target="_blank">{name}</a>'))
+                else:
+                    display(HTML(
+                        f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
+                    
+
         
 
     @staticmethod
@@ -2098,15 +2203,15 @@ class Model_help_Mixin():
         Download an entire GitHub repository and extract it to a specified location.
     
         Parameters:
-        - owner: The owner of the GitHub repository.
-        - repo_name: The name of the repository.
-        - branch: The branch to download.
-        - destination: The local path where the repository should be extracted.
-        - go: display toc of notebooks 
-        - silent: keep silent 
+          owner: The owner of the GitHub repository.
+          repo_name: The name of the repository.
+          branch: The branch to download.
+          destination: The local path where the repository should be extracted.
+          go: display toc of notebooks 
+          silent: keep silent 
     
         Returns:
-        - A message indicating whether the download was successful or not.
+          A message indicating whether the download was successful or not.
         """
         
         return  model.download_github_repo(owner = owner,
@@ -2124,26 +2229,26 @@ class Model_help_Mixin():
     @staticmethod
     def load_repo_widget(loadspec= None,nocwd=True,silent=False,**kwargs):
         """
-Create an interactive widget for selecting and downloading repositories from GitHub.
-
-This function displays a list of repositories in a SelectMultiple widget, allowing the user to select one or more 
-repositories. Upon clicking the "Submit" button, the selected repositories are downloaded, and a confirmation 
-message is displayed for each successful download.
-
-Finaly a clicable toc of all notebooks is displayed
-
-Parameters:
-- loadspec (list of dict, optional): A list of dictionaries containing repository information. Each dictionary 
-  should have keys like 'description' and 'repo_name'. If not provided, the function will call `model.get_a_repo_yaml()` 
-  which retrives the default list from github,to retrieve the repository data. Default is None.
-
-Returns:
-- None: The function displays widgets and handles user interactions but does not return a value.
-
-Raises:
-- Exception: Prints exception messages to the output widget if errors occur during the download process.
-
-"""
+        Create an interactive widget for selecting and downloading repositories from GitHub.
+        
+        This function displays a list of repositories in a SelectMultiple widget, allowing the user to select one or more 
+        repositories. Upon clicking the "Submit" button, the selected repositories are downloaded, and a confirmation 
+        message is displayed for each successful download.
+        
+        Finaly a clicable toc of all notebooks is displayed
+        
+        Parameters:
+          loadspec (list of dict, optional): A list of dictionaries containing repository information. Each dictionary 
+          should have keys like 'description' and 'repo_name'. If not provided, the function will call `model.get_a_repo_yaml()` 
+          which retrives the default list from github,to retrieve the repository data. Default is None.
+        
+        Returns:
+          None: The function displays widgets and handles user interactions but does not return a value.
+        
+        Raises:
+          Exception: Prints exception messages to the output widget if errors occur during the download process.
+        
+        """
 
         
         
@@ -2206,26 +2311,40 @@ class Dekomp_Mixin():
     def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
         '''Print all variables that determines input variable (varnavn)
         optional -- enter period and databank to get var values for chosen period
-        
-        Optional Parameters:
-    varnavn (str): Input variable name.
-    start (str): Start period for retrieving variable values (default: '').
-    end (str): End period for retrieving variable values (default: '').
-    basedf (pd.DataFrame): Base dataframe to use (default: None).
-    altdf (pd.DataFrame): Alternative dataframe to use (default: None).
-    lprint (bool): Flag to print the results (default: True).
-    time_att (bool): Flag to do a timevise  attribute (default: False).
-    
-Returns:
-    namedtuple: A named tuple containing the following decomposition results:
-        - diff_level: DataFrame with level differences.
-        - att_level: DataFrame with attributions  to the level difference.
-        - att_pct: DataFrame with the share of attributions to the difference in level .
-        - diff_growth: DataFrame with differences in growth rate.
-        - att_growth: DataFrame with attributions to the difference in growth rate.
+        Optionally, enter the period and databank to get variable values for the chosen period.
 
-        
-        
+        Parameters
+        ----------
+        varnavn : str
+            Input variable name.
+        start : str, optional
+            Start period for retrieving variable values (default is '').
+        end : str, optional
+            End period for retrieving variable values (default is '').
+        basedf : pd.DataFrame, optional
+            Base dataframe to use (default is None).
+        altdf : pd.DataFrame, optional
+            Alternative dataframe to use (default is None).
+        lprint : bool, optional
+            Flag to print the results (default is True).
+        time_att : bool, optional
+            Flag to do a timewise attribute (default is False).
+
+        Returns
+        -------
+        namedtuple
+            A named tuple containing the following decomposition results:
+            - diff_level : pd.DataFrame
+                DataFrame with level differences.
+            - att_level : pd.DataFrame
+                DataFrame with attributions to the level difference.
+            - att_pct : pd.DataFrame
+                DataFrame with the share of attributions to the difference in level.
+            - diff_growth : pd.DataFrame
+                DataFrame with differences in growth rate.
+            - att_growth : pd.DataFrame
+                DataFrame with attributions to the difference in growth rate.
+    
         
         
         '''
@@ -5544,7 +5663,6 @@ class Display_Mixin():
                     f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
 
 
-
     @staticmethod
     def display_toc_this(pat='*',text='**Jupyter notebooks**',path='.',ext='ipynb',showext=False):
         
@@ -8128,25 +8246,25 @@ class Report_Mixin:
         adjustments of display options using both standard and keyword arguments.
     
         Parameters:
-        - pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
-        - title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
-        - datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
-        - custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
-        - dec (int): Number of decimal places for numerical output, passed directly to Line configuration, defaulting to 2.
-        - heading (str): Optional heading line for the table, empty by default.
-        - name (str): Name for the display, defaults to 'A_small_table'.
-        - foot (str): Footer text.
-        - rename (bool): Allows renaming of data columns
-        - decorate (bool): Decorates row descriptions based on the showtype, defaulting to False.
-        - width (int): Specifies the width for formatting output in characters, efaulting to 5.
-        - chunk_size (int): Number of columns per chunk in the display output, defaulting to 0.
-        - timeslice (List[int]): Time slice for data display, empty by default.
-        - max_cols (int): Maximum columns when displayed as a string, faulting to the system-wide setting.
-        - last_cols (int): Specifies the number of last columns to include in a display slice, particularly in Latex.
-        - col_desc  (str): text centered on columns 
+          pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
+          title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
+          datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
+          custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
+          dec (int): Number of decimal places for numerical output, passed directly to Line configuration, defaulting to 2.
+          heading (str): Optional heading line for the table, empty by default.
+          name (str): Name for the display, defaults to 'A_small_table'.
+          foot (str): Footer text.
+          rename (bool): Allows renaming of data columns
+          decorate (bool): Decorates row descriptions based on the showtype, defaulting to False.
+          width (int): Specifies the width for formatting output in characters, efaulting to 5.
+          chunk_size (int): Number of columns per chunk in the display output, defaulting to 0.
+          timeslice (List[int]): Time slice for data display, empty by default.
+          max_cols (int): Maximum columns when displayed as a string, faulting to the system wide setting.
+          last_cols (int): Specifies the number of last columns to include in a display slice, particularly in Latex.
+          col_desc  (str): text centered on columns 
         
         Returns:
-    DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
+            DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
                         such as units and type of transformation based on the datatype.
     
         
@@ -8180,12 +8298,12 @@ class Report_Mixin:
         adjustments of display options using both standard and keyword arguments.
     
         Parameters:
-        - pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
-        - datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
-        - title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
-        - custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
-        - rename (bool): Allows renaming of data columns
-        - ncol  (int):         
+          pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
+          datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
+          title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
+          custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
+          rename (bool): Allows renaming of data columns
+          ncol  (int):         
         Returns:
     DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
                         such as units and type of transformation based on the datatype.

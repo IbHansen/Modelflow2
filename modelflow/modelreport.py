@@ -126,6 +126,7 @@ class Options:
         last_cols (int): In Latex specifies the number of last columns to include in a display slice. Default is 1.
         latex_text (str) : A latex text 
         base_last : If using basedf and lasdtf instead og keep_solutions 
+        landscape: if trye a table will be shown in landscape 
     
     Methods:
     __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
@@ -155,6 +156,7 @@ class Options:
     base_last : bool = False
     scenarios : str  ='*'
     smpl : tuple = ('','')
+    landscape : bool = False
     
     latex_text :str =''
     html_text :str =''
@@ -239,7 +241,7 @@ class Line:
     yunit : str = ''
 
     def __post_init__(self):
-        valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline'}
+        valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline','qoq_ar'}
         valid_diftypes = {'nodif', 'dif', 'difpct', 'basedf', 'lastdf'}
         
         if self.showtype not in valid_showtypes:
@@ -552,7 +554,7 @@ class LatexRepo:
 \captionsetup{justification=raggedright,singlelinecheck=false}
 \usepackage{graphicx}
 \usepackage{pgf}
-
+\usepackage{lscape}
 
 \begin{document}
 
@@ -872,6 +874,9 @@ class DisplayVarTableDef(DisplayDef):
             out = '\n'.join(l.replace('&  ','') if 'multicolum' in l else l   for l in out.split('\n'))
             if self.options.foot: 
                 out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
+                
+            if self.options.landscape:
+                out= r'\begin{landscape}'+'\n' + out + r'\end{landscape}' +'\n'
 
             return out       
 
@@ -922,6 +927,10 @@ class DisplayVarTableDef(DisplayDef):
           out = out.replace(r'\caption{',r'\caption{')
           if self.options.foot: 
               out = out.replace(r'\end{tabular}', r'\end{tabular}'+'\n'+rf'\caption*{{{self.options.foot}}}')
+          
+          if self.options.landscape:
+                out= r'\begin{landscape}'+'\n' + out + r'\end{landscape}' +'\n'
+  
           
           return out 
 

@@ -30,5 +30,5 @@ print(runresult.stderr.decode('utf-8'))
 wb.open(fileloc, new=2)
 if 'latex' in options: 
     ...
-if 'copy' in options or True:
+if 'copy' in options:
     copytree(buildhtml,destination,dirs_exist_ok=True )

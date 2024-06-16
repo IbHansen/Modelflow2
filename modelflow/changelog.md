@@ -102,7 +102,7 @@ model.<variable>.dash implemented.
 modeldash now default jupyter=True 
 <var>.dash 
 reworked dekomp 
-get_att will find attribution 
+get_att will find attribution dir
 errormessge when graph is empty 
 magic latexgrabmodel dont repeat lists for every cell, it was anoying 
 magic latexgrabmodel braces the latex in a pre- and postample so it works with a latex editor 
@@ -172,6 +172,11 @@ savefig dont return the full path only the relative
 keepswitch also handles exceptions in context without deleting all keep_solution. 
 .plot also handels base_last and scenario 
 2.30 releasee
-fix h
+fix 
+moreblanks in .eviews 
+fix qoq_ar in reports 
+download_github_repo nov can open in colab 
+display_toc_github for colab 
+2.35 released
 
 
