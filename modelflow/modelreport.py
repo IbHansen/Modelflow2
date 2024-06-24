@@ -125,7 +125,7 @@ class Options:
     Represents configuration options for data display definitions.
 
     Args:
-        name (str): Name for this display. Default is 'display'. :noindex:
+        name (str): Name for this display. Default is 'display'. 
         foot (str): Footer if relevant.
         rename (bool): If True, allows renaming of data columns. Default is True.
         decorate (bool): If True, decorates row descriptions based on the showtype. Default is True.
