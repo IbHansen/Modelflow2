@@ -446,7 +446,7 @@ class varvis():
  - `growthshow|gs = True` will include a table of growth for each variable
  - `HR = True` will reorient the dependency graph 
  - `up = <integer>` will determine how many levels of parents to include
- - `pgn = True` will display as a png picture
+ - `png = True` will display as a png picture
  - `svg = True` will display as a svg picture which can be zoomed
  - `pdf = True` will display as a pdf picture
  - `eps = True` will create a eps file
