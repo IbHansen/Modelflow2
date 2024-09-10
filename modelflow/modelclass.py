@@ -8326,7 +8326,7 @@ class Report_Mixin:
         figspec = DisplaySpec(
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
-            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,default_ax_title_template=config.col_desc,
+            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,default_ax_title_template=config.ax_title_template,
                           by_var = by_var,mul=mul,ax_title_template=ax_title_template) , 
             ]
         )

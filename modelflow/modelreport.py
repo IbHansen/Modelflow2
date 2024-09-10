@@ -1485,21 +1485,21 @@ class DatatypeAccessor:
         else:     
         
             config_table = r"""
-| datatype  | showtype   | diftype | col_desc |
-|-----------|----------|---------|------------------|
-| growth     | growth    | nodif   | {var_description} \n% growth                      |
-| difgrowth  | growth    | dif     | {var_description} \nImpact, % growth vs {compare} |
-| gdppct     | gdppct    | nodif   | {var_description} \n(% GDP)                       |
-| difgdppct  | gdppct    | dif     | {var_description} \nImpact (% GDP) vs {compare}   |
-| level      | level     | nodif   | {var_description}                                 |
-| diflevel   | level     | dif     | {var_description} \nChange vs {compare}           |
-| difpctlevel| level     | difpct  | {var_description} \n% Change vs {compare}          |
-| qoq_ar     | qoq_ar    | nodif   | {var_description} \nQ-Q annualized                |
-| difqoq_ar  | qoq_ar    | dif     | {var_description} \nImpact Q-Q annualized vs {compare}  |
-| baselevel  | level     | basedf  | {var_description} \nBase Level                    |
-| basegrowth | growth    | basedf  | {var_description} \nBase % growth                 |
-| basegdppct | gdppct    | basedf  | {var_description} \nBase % of GDP                 |
-| baseqoq_ar | qoq_ar    | basedf  | {var_description} \nBase Q-Q annualized           |
+| datatype  | showtype   | diftype | col_desc | ax_title_template|
+|-----------|----------|---------|------------------|------------|
+| growth     | growth    | nodif   | Percent growth    | {var_description} \n% growth                      |
+| difgrowth  | growth    | dif      | Impact, Percent growth | {var_description} \nImpact, % growth vs {compare} |
+| gdppct     | gdppct    | nodif   | Percent of GDP | {var_description} \n(% GDP)                       |
+| difgdppct  | gdppct    | dif     |  Impact, Percent of GDP  | {var_description} \nImpact (% GDP) vs {compare}   |
+| level      | level     | nodif   | Level | {var_description}                                 |
+| diflevel   | level     | dif      | Impact, Level    | {var_description} \nChange vs {compare}           |
+| difpctlevel| level     | difpct   | Impact in percent | {var_description} \n% Change vs {compare}          |
+| qoq_ar     | qoq_ar    | nodif    | Q-Q anuallized   | {var_description} \nQ-Q annualized                |
+| difqoq_ar  | qoq_ar    | dif     | Impact Q-Q anuallized  | {var_description} \nImpact Q-Q annualized vs {compare}  |
+| baselevel  | level     | basedf  | Base Level    | {var_description} \nBase Level                    |
+| basegrowth | growth    | basedf    | Base Percent growth  | {var_description} \nBase % growth                 |
+| basegdppct | gdppct    | basedf |  Base Percent of GDP    | {var_description} \nBase % of GDP                 |
+| baseqoq_ar | qoq_ar    | basedf  | Base Q-Q anuallized  | {var_description} \nBase Q-Q annualized           |
 
 """
 
