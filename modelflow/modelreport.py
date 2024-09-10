@@ -155,6 +155,7 @@ class Options:
     width: int = 20
     custom_description: Dict[str, str] = field(default_factory=dict)
     title: str = ''
+    ax_title :str = '' 
     chunk_size: int = 0  
     timeslice: List = field(default_factory=list)
     max_cols: int = 6
@@ -237,6 +238,8 @@ class Line:
         dec (int): Specifies the number of decimal places to use for numerical output. Default is 2.
         pat (str): Pattern or identifier used to select data for the line. Default is '#Headline'.
         latexfont (str) : Modifier used in lates for instande r'\textbf' 
+        default_ax_title_template(str) Table specific template for individual chart titles
+        ax_title_template(str) user provided Table specific template for individual chart titles
     """
     
     showtype: str = 'level'
@@ -251,6 +254,9 @@ class Line:
     by_var :bool = True 
     mul : float = 1.0 
     yunit : str = ''
+    datatype_desc :str = ''
+    default_ax_title_template :str ='' 
+    ax_title_template :str = ''
 
     def __post_init__(self):
         valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline','qoq_ar'}
@@ -538,8 +544,9 @@ class DisplayDef:
 \centering
 '''
             out = out + r'\includegraphics[width=\textwidth]{' +fr'"{(latex_dir / chart).as_posix()}.png"'+'}'
+            caption = self.titledic[chart].replace("_",r'\_').replace('%',r'\%') 
             out = out + fr'''
-\caption{{{self.titledic[chart]}}}
+\caption{{{caption}}}
 \end{{figure}} '''
 
 
@@ -567,7 +574,6 @@ class LatexRepo:
 \usepackage{graphicx}
 \usepackage{pgf}
 \usepackage{lscape}
-
 \begin{document}
 
 '''
@@ -1118,6 +1124,7 @@ class DisplayKeepFigDef(DisplayDef):
              if 1:
                  keys = format_list_with_numbers([f'{self.var_description[dr["key"]]}, {dr["line"].showtype} '+
                                                   f'{dr["line"].diftype} '.replace('nodif','') for dr in dfsres ])
+                 #print(f'{keys}=')
              else:
                  keys = format_list_with_numbers([dr['key'] for dr in dfsres ])
              ... 
@@ -1140,20 +1147,28 @@ class DisplayKeepFigDef(DisplayDef):
              
              ylabel = 'Percent' if (line.showtype in { 'growth','gdppct'} or line.diftype == 'difpct' )  else ''
              
-             if by_var: 
-                 title = (f'Difference{aspct}to "{list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
-                 if (line.diftype in {'difpct', 'dif'}) else f'{dftype}:')
-             else:
-                 title = (f'Difference{aspct}to "{df.columns[0] }" for {dftype}:' 
-                 if (line.diftype in {'difpct','dif'}) else f'{dftype}:')
+             # if by_var: 
+             #     pretitle = (f'Difference{aspct}to "{list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
+             #     if (line.diftype in {'difpct', 'dif'}) else f'{dftype}:')
+             # else:
+             #     pretitle = (f'Difference{aspct}to "{df.columns[0] }" for {dftype}:' 
+             #     if (line.diftype in {'difpct','dif'}) else f'{dftype}:')
 
+             
+             compare = f"{list(self.mmodel.keep_solutions.keys())[0] }" if by_var else f"{df.columns[0] }" 
+             var_name = v
+             var_description = self.mmodel.var_description.get(v,v)
                  
+             ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template
+             ax_title =ax_title_template.format(compare=compare,var_name = var_name,var_description=var_description).replace(r'\n','\n')
+
+             # print(v,ax_title_template)    
              # title=(f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
              # if (line.diftype in {'difpct'}) else f'{dftype}:')
 
              self.mmodel.plot_basis_ax(axes[i], v , df*mul, legend=options.legend,
                                      scale='linear', trans=self.var_description if self.options.rename else {},
-                                     title=title,
+                                     ax_title = ax_title ,
                                      yunit=line.yunit,
                                      ylabel='Percent' if (line.showtype in {'growth','gdppct'} or line.diftype in {'difpct'})else ylabel,
                                      xlabel='',kind = line.kind ,samefig=options.samefig and all_by_var,
@@ -1202,7 +1217,8 @@ class DisplayKeepFigDef(DisplayDef):
                 fig.axes[0].set_title('')
         ##  pgf may not work in new version of matplotlib 
         self.mmodel.savefigs(figs=self.figs, location = './latex',
-              experimentname = self.name ,extensions= ['png','pgf'],
+              experimentname = self.name ,extensions= ['png'],
+            #  experimentname = self.name ,extensions= ['png','pgf'],
               xopen=False)
 
         if not self.options.samefig: 
@@ -1460,6 +1476,10 @@ class DatatypeAccessor:
 
         self.datatype = datatype
         
+        # {var_name}
+        # {var_description}
+        # {compare}     Keep name used for comparison
+        
         if 'config_table' in kwargs:
             config_table = kwargs.get('config_table')
         else:     
@@ -1467,22 +1487,19 @@ class DatatypeAccessor:
             config_table = r"""
 | datatype  | showtype   | diftype | col_desc |
 |-----------|----------|---------|------------------|
-| growth    | growth     | nodif   | Percent growth               |
-| difgrowth  | growth     | dif     | Impact, Percent growth       |
-| gdppct     | gdppct      | nodif   | Percent of GDP              |
-| difgdppct  | gdppct     | dif     |  Impact, Percent of GDP      |
-| level      | level      | nodif   | Level                        |
-| diflevel   | level      | dif   | Impact, Level                  |
-| difpctlevel| level     | difpct  | Impact in percent            |
-| qoq_ar    | qoq_ar      | nodif   | Q-Q anuallized          |
-| difqoq_ar    | qoq_ar      | dif   | Impact Q-Q anuallized          |
-| baselevel    | level      | basedf   | Base Level                   |
-| basegrowth    | growth     | basedf   | Base Percent growth          |
-| basegdppct    | gdppct      | basedf   | Base Percent of GDP         |
-| baseqoq_ar    | qoq_ar      | basedf   | Base Q-Q anuallized          |
-
-
-
+| growth     | growth    | nodif   | {var_description} \n% growth                      |
+| difgrowth  | growth    | dif     | {var_description} \nImpact, % growth vs {compare} |
+| gdppct     | gdppct    | nodif   | {var_description} \n(% GDP)                       |
+| difgdppct  | gdppct    | dif     | {var_description} \nImpact (% GDP) vs {compare}   |
+| level      | level     | nodif   | {var_description}                                 |
+| diflevel   | level     | dif     | {var_description} \nChange vs {compare}           |
+| difpctlevel| level     | difpct  | {var_description} \n% Change vs {compare}          |
+| qoq_ar     | qoq_ar    | nodif   | {var_description} \nQ-Q annualized                |
+| difqoq_ar  | qoq_ar    | dif     | {var_description} \nImpact Q-Q annualized vs {compare}  |
+| baselevel  | level     | basedf  | {var_description} \nBase Level                    |
+| basegrowth | growth    | basedf  | {var_description} \nBase % growth                 |
+| basegdppct | gdppct    | basedf  | {var_description} \nBase % of GDP                 |
+| baseqoq_ar | qoq_ar    | basedf  | {var_description} \nBase Q-Q annualized           |
 
 """
 
@@ -1490,10 +1507,11 @@ class DatatypeAccessor:
 
 
         self.configurations = self.parse_config_table(config_table)
-        
+        # print(self.configurations)
+
         # Apply any overrides from kwargs
-        if datatype in self.configurations:
-            self.configurations[datatype].update((k, v) for k, v in kwargs.items() if k in self.configurations[datatype])
+        # if datatype in self.configurations:
+        #     self.configurations[datatype].update((k, v) for k, v in kwargs.items() if k in self.configurations[datatype])
 
 
     def parse_config_table(self,config_table):
@@ -1526,6 +1544,7 @@ class DatatypeAccessor:
         :return: The value associated with 'item' under the specified datatype's configuration.
         """
         config_data = self.configurations.get(self.datatype)
+
         if not config_data:
             raise ValueError(f"Configuration for datatype '{self.datatype}' not found")
         

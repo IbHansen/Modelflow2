@@ -5088,7 +5088,7 @@ class Display_Mixin():
         return fig
     
     @staticmethod
-    def plot_basis_ax(ax,var, df, title='', suptitle='', legend=True, scale='linear', trans={}, dec='',
+    def plot_basis_ax(ax,var, df, ax_title='',  suptitle='', legend=True, scale='linear', trans={}, dec='',
                    ylabel='', yunit='', xlabel='',kind='line',samefig=False):
         import matplotlib.pyplot as plt
         import matplotlib as mpl
@@ -5106,8 +5106,8 @@ class Display_Mixin():
             fmtr = ticker.StrMethodFormatter('{x:.0f}')
             ax.xaxis.set_major_formatter(fmtr)
 
-
-        ax.set_title(f'{title} {trans.get(var,var)}', fontsize=14)
+        this_title = ax_title if ax_title else f'{trans.get(var,var)}'
+        ax.set_title(this_title, fontsize=14)
         if legend:
             ax.spines['right'].set_visible(False)
         else:
@@ -5323,7 +5323,7 @@ class Display_Mixin():
          for i,(v, df) in enumerate(dfsres.items()):
               self.plot_basis_ax(axes[i], v , df*mul, legend=legend,
                                      scale=scale, trans=xtrans,
-                                     title=f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
+                                     ax_title=f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
                                      yunit=yunit,
                                      ylabel='Percent' if (showtype == 'growth' or diffpct == True )else ylabel,
                                      xlabel='',kind = kind,samefig=samefig,
@@ -8292,7 +8292,8 @@ class Report_Mixin:
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
         return tab
 
-    def plot(self, pat='#Headline',title='',datatype='growth',custom_description = {},by_var = True,mul=1.0 , **kwargs):     
+    def plot(self, pat='#Headline',title='',datatype='growth',custom_description = {},by_var = True,mul=1.0 , 
+             ax_title_template='',**kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8320,11 +8321,13 @@ class Report_Mixin:
 
 
         config =   DatatypeAccessor(datatype, **kwargs)    
+        # print(config.showtype,config.diftype,config.col_desc)
                
         figspec = DisplaySpec(
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
-            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,by_var = by_var,mul=mul) , 
+            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,default_ax_title_template=config.col_desc,
+                          by_var = by_var,mul=mul,ax_title_template=ax_title_template) , 
             ]
         )
         figs = DisplayKeepFigDef (mmodel=self, spec = figspec)
