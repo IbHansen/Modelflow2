@@ -1157,7 +1157,7 @@ class DisplayKeepFigDef(DisplayDef):
              
              compare = f"{list(self.mmodel.keep_solutions.keys())[0] }" if by_var else f"{df.columns[0] }" 
              var_name = v
-             var_description = self.mmodel.var_description.get(v,v)
+             var_description = self.var_description[v]
                  
              ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template
              ax_title =ax_title_template.format(compare=compare,var_name = var_name,var_description=var_description).replace(r'\n','\n')
@@ -1367,6 +1367,13 @@ class DisplayContainerDef:
         self.name = name.replace(' ','_')
         return self 
 
+    def set_scenarios(self,scenarios):
+       rs = [r.set_options(scenarios=scenarios) for r in self.reports]
+       out = DisplayContainerDef(mmodel=self.mmodel,reports= rs)
+
+       return out   
+
+
     @property 
     def latex(self): 
         out = '\n'.join(l.latex for l in self.reports) 
@@ -1380,6 +1387,7 @@ class DisplayContainerDef:
     def spec_list(self):
         out = [r.save_spec for r in self.reports]  
         return out
+
 
     @property
     def save_spec(self):

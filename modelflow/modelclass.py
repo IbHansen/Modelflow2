@@ -5321,9 +5321,10 @@ class Display_Mixin():
          
          
          for i,(v, df) in enumerate(dfsres.items()):
+              ax_title=  (f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:')+f'{xtrans.get(v,v)}'
               self.plot_basis_ax(axes[i], v , df*mul, legend=legend,
                                      scale=scale, trans=xtrans,
-                                     ax_title=f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.keep_solutions.keys())[0] }" for {dftype}:' if (diff or diffpct) else f'{dftype}:',
+                                     ax_title=ax_title,
                                      yunit=yunit,
                                      ylabel='Percent' if (showtype == 'growth' or diffpct == True )else ylabel,
                                      xlabel='',kind = kind,samefig=samefig,
