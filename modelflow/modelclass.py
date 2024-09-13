@@ -8304,7 +8304,6 @@ class Report_Mixin:
           datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
           title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
           custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
-          rename (bool): Allows renaming of data columns
           ncol  (int):         
         Returns:
     DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
@@ -8327,7 +8326,9 @@ class Report_Mixin:
         figspec = DisplaySpec(
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
-            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,default_ax_title_template=config.ax_title_template,
+            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,
+                          default_ax_title_template=config.ax_title_template,
+                          default_ax_title_template_df=config.ax_title_template_df,
                           by_var = by_var,mul=mul,ax_title_template=ax_title_template) , 
             ]
         )

@@ -125,20 +125,30 @@ class Options:
     Represents configuration options for data display definitions.
 
     Args:
-        name (str): Name for this display. Default is 'display'. 
-        foot (str): Footer if relevant.
+        name (str): Name for this display. Default is 'Display'. 
+        foot (str): Footer if relevant. Default is an empty string.
         rename (bool): If True, allows renaming of data columns. Default is True.
         decorate (bool): If True, decorates row descriptions based on the showtype. Default is True.
         width (int): Specifies the width for formatting output in characters. Default is 20.
-        custom_description (Dict[str, str]): Custom description to augment or override default descriptions. Empty by default.
+        custom_description (Dict[str, str]): Custom descriptions to augment or override default descriptions. Empty by default.
         title (str): Text for the title. Default is an empty string.
-        chunk_size (int): Specifies the number of columns per chunk in the display output. Default is 0 meaning no chunking.
-        timeslice (List[int]): Specifies the time slice for data display. Empty by default.
-        max_cols (int): Maximum columns when displayed as string. Default is 4.
-        last_cols (int): In Latex specifies the number of last columns to include in a display slice. Default is 1.
-        latex_text (str) : A latex text 
-        base_last : If using basedf and lasdtf instead og keep_solutions 
-        landscape: if trye a table will be shown in landscape 
+        chunk_size (int): Specifies the number of columns per chunk in the display output. Default is 0 (no chunking).
+        timeslice (List): Specifies the time slice for data display. Empty by default.
+        max_cols (int): Maximum columns when displayed as string. Default is 6.
+        last_cols (int): In Latex, specifies the number of last columns to include in a display slice. Default is 1.
+        ncol (int): Number of columns in figures. Default is 2.
+        samefig (bool): If True, use the same figure for multiple plots. Default is False.
+        size (tuple): Tuple specifying the figure size (width, height). Default is (10, 6).
+        legend (bool): If True, display legend in plots. Default is True.
+        transpose (bool): If True, transpose the data when displaying. Default is False.
+        scenarios (str): Text specifying the scenarios for the display. Default is an empty string. if Empty use basedf/lastdf 
+        smpl (tuple): Tuple specifying start and end periods. Default is ('', '').
+        landscape (bool): If True, the table will be displayed in landscape mode. Default is False.
+        latex_text (str): Text for a LaTeX output. Default is an empty string.
+        html_text (str): Text for an HTML output. Default is an empty string.
+        text_text (str): Text for a plain text output. Default is an empty string.
+        markdown_text (str): Text for a Markdown output. Default is an empty string.
+    
     
     Methods:
         __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
@@ -155,7 +165,6 @@ class Options:
     width: int = 20
     custom_description: Dict[str, str] = field(default_factory=dict)
     title: str = ''
-    ax_title :str = '' 
     chunk_size: int = 0  
     timeslice: List = field(default_factory=list)
     max_cols: int = 6
@@ -166,8 +175,7 @@ class Options:
     size: tuple = (10, 6)
     legend: bool = True
     transpose : bool = False
-    base_last : bool = False
-    scenarios : str  ='*'
+    scenarios : str  =''
     smpl : tuple = ('','')
     landscape : bool = False
     
@@ -256,6 +264,7 @@ class Line:
     yunit : str = ''
     datatype_desc :str = ''
     default_ax_title_template :str ='' 
+    default_ax_title_template_df :str =''
     ax_title_template :str = ''
 
     def __post_init__(self):
@@ -1024,8 +1033,8 @@ class DisplayKeepFigDef(DisplayDef):
     
     def __post_init__(self):
         super().__post_init__()  # Call the parent class's __post_init__
-        
-        with self.mmodel.keepswitch(scenarios=self.options.scenarios,base_last = self.options.base_last):
+        self.base_last = not self.options.scenarios
+        with self.mmodel.keepswitch(scenarios=self.options.scenarios,base_last = self.base_last):
 
             with self.mmodel.set_smpl(*self.options.smpl):
                 
@@ -1158,7 +1167,8 @@ class DisplayKeepFigDef(DisplayDef):
              compare = f"{list(self.mmodel.keep_solutions.keys())[0] }" if by_var else f"{df.columns[0] }" 
              var_name = v
              var_description = self.var_description[v]
-                 
+             
+             default_title = line.default_ax_title_template_df if self.base_last  else line.default_ax_title_template 
              ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template
              ax_title =ax_title_template.format(compare=compare,var_name = var_name,var_description=var_description).replace(r'\n','\n')
 
@@ -1496,7 +1506,7 @@ class DatatypeAccessor:
 | datatype  | showtype   | diftype | col_desc | ax_title_template|
 |-----------|----------|---------|------------------|------------|
 | growth     | growth    | nodif   | Percent growth    | {var_description} \n% growth                      |
-| difgrowth  | growth    | dif      | Impact, Percent growth | {var_description} \nImpact, % growth vs {compare} |
+| difgrowth  | growth    | dif      | Impact, Percent growth | {var_description} \nImpact, % growth v|
 | gdppct     | gdppct    | nodif   | Percent of GDP | {var_description} \n(% GDP)                       |
 | difgdppct  | gdppct    | dif     |  Impact, Percent of GDP  | {var_description} \nImpact (% GDP) vs {compare}   |
 | level      | level     | nodif   | Level | {var_description}                                 |
@@ -1512,6 +1522,24 @@ class DatatypeAccessor:
 """
 
 
+            config_table = r"""
+| datatype     | showtype  | diftype | col_desc                  | ax_title_template                                | ax_title_template_df                           |
+|--------------|-----------|---------|---------------------------|-------------------------------------------------|------------------------------------------------|
+| growth       | growth    | nodif   | Percent growth             | {var_description} \n% growth                    | {var_description} \n% growth                   |
+| difgrowth    | growth    | dif     | Impact, Percent growth     | {var_description} \nImpact, % growth vs {compare} | {var_description} \nImpact, % |
+| gdppct       | gdppct    | nodif   | Percent of GDP             | {var_description} \n(% GDP)                     | {var_description} \n(% GDP)                    |
+| difgdppct    | gdppct    | dif     | Impact, Percent of GDP     | {var_description} \nImpact (% GDP) vs {compare} | {var_description} \nImpact (% GDP) |
+| level        | level     | nodif   | Level                     | {var_description}                               | {var_description}                              |
+| diflevel     | level     | dif     | Impact, Level              | {var_description} \nChange vs {compare}         | {var_description} \nChange        |
+| difpctlevel  | level     | difpct  | Impact in percent          | {var_description} \n% Change vs {compare}       | {var_description} \n% Change      |
+| qoq_ar       | qoq_ar    | nodif   | Q-Q annualized             | {var_description} \nQ-Q annualized              | {var_description} \nQ-Q annualized             |
+| difqoq_ar    | qoq_ar    | dif     | Impact Q-Q annualized      | {var_description} \nImpact Q-Q annualized vs {compare} | {var_description} \nImpact Q-Q annualized |
+| baselevel    | level     | basedf  | Base Level                 | {var_description} \nBase Level                  | {var_description} \nBase Level                 |
+| basegrowth   | growth    | basedf  | Base Percent growth        | {var_description} \nBase % growth               | {var_description} \nBase % growth              |
+| basegdppct   | gdppct    | basedf  | Base Percent of GDP        | {var_description} \nBase % of GDP               | {var_description} \nBase % of GDP              |
+| baseqoq_ar   | qoq_ar    | basedf  | Base Q-Q annualized        | {var_description} \nBase Q-Q annualized         | {var_description} \nBase Q-Q annualized        |
+
+"""
 
 
         self.configurations = self.parse_config_table(config_table)
