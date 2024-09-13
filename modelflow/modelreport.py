@@ -381,6 +381,37 @@ class DisplayDef:
         self.options.name = self.name 
         return self
     
+    def make_var_df(self, line):   
+        showtype = line.showtype
+        diftype = line.diftype
+        
+        with self.mmodel.keepswitch(switch=True): 
+
+            # Pre-process for cases that use linevars and linedes
+            if showtype  in ['textline']:                
+                linedf = pd.DataFrame(pd.NA, index=self.mmodel.current_per, columns=[line.centertext]).T
+                self.unitline = self.lines[0].centertext
+            else:                    
+                def getline(start_ofset= 0,**kvargs):
+                    locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line.pat,showtype=showtype,
+                                    diftype = diftype,by_var=False)
+                    if diftype == 'basedf':
+                        locallinedf = next(iter((locallinedfdict.values()))).T
+                    else: 
+                        locallinedf = next(iter(reversed(locallinedfdict.values()))).T
+                        
+                    return locallinedf.loc[:,self.mmodel.current_per] 
+                
+                # print(line.mul)
+                
+                
+                
+                linedf = getline() * line.mul
+            linedf = self.get_rowdes(linedf,line)    
+            
+        return(linedf)
+    
+    
     @property  
     def get_report_smpl(self):
         if type(self.mmodel.current_per[0]) == np.int64:
@@ -670,35 +701,6 @@ class DisplayVarTableDef(DisplayDef):
 
 
             
-    def make_var_df(self, line):   
-        showtype = line.showtype
-        diftype = line.diftype
-        
-        with self.mmodel.keepswitch(switch=True): 
-
-            # Pre-process for cases that use linevars and linedes
-            if showtype  in ['textline']:                
-                linedf = pd.DataFrame(pd.NA, index=self.mmodel.current_per, columns=[line.centertext]).T
-                self.unitline = self.lines[0].centertext
-            else:                    
-                def getline(start_ofset= 0,**kvargs):
-                    locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line.pat,showtype=showtype,
-                                    diftype = diftype,by_var=False)
-                    if diftype == 'basedf':
-                        locallinedf = next(iter((locallinedfdict.values()))).T
-                    else: 
-                        locallinedf = next(iter(reversed(locallinedfdict.values()))).T
-                        
-                    return locallinedf.loc[:,self.mmodel.current_per] 
-                
-                # print(line.mul)
-                
-                
-                
-                linedf = getline() * line.mul
-            linedf = self.get_rowdes(linedf,line)    
-            
-        return(linedf)
     
     @property    
     def df_str(self):
@@ -1037,9 +1039,9 @@ class DisplayKeepFigDef(DisplayDef):
         with self.mmodel.keepswitch(scenarios=self.options.scenarios,base_last = self.base_last):
 
             with self.mmodel.set_smpl(*self.options.smpl):
-                
+
                 self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
-            
+                    
                 self.figs = self.make_figs(showfig=False)
                 self.report_smpl = self.get_report_smpl
 
@@ -1063,11 +1065,30 @@ class DisplayKeepFigDef(DisplayDef):
                                showtype=line.showtype,
                                diftype = line.diftype,
                                by_var=line.by_var)
+            
+            # print(f'before {locallinedfdict.keys()=}')
+            if self.base_last:
+                if line.by_var:
+                    if line.diftype == 'basedf':
+                        locallinedfdict = {k: df.iloc[:,[0]] for k,df in locallinedfdict.items()  }
+                    else: 
+                        locallinedfdict = {k: df.iloc[:,[-1]] for k,df in locallinedfdict.items()  }
+                else: 
+                    if line.diftype == 'basedf':
+                        first_key = next(iter(locallinedfdict))    # First key
+                        locallinedfdict =  {first_key: locallinedfdict[first_key]}
+                    else: 
+                        last_key = next(reversed(locallinedfdict)) # Last key
+                        locallinedfdict =  {last_key: locallinedfdict[last_key]}
+                        
                     
+
+            # print(f'after {locallinedfdict.keys()=}')
+
             outlist = [{'line':line, 'key':k ,
-                        'df' : self.get_rowdes(df.loc[self.mmodel.current_per,:],line,row=False) 
-                        } for k,df in locallinedfdict.items()  ]    
-        
+                            'df' : self.get_rowdes(df.loc[self.mmodel.current_per,:],line,row=False) 
+                            } for k,df in locallinedfdict.items()  ]    
+            
         return(outlist)
 
     def make_figs(self,showfig=True):
@@ -1169,7 +1190,11 @@ class DisplayKeepFigDef(DisplayDef):
              var_description = self.var_description[v]
              
              default_title = line.default_ax_title_template_df if self.base_last  else line.default_ax_title_template 
-             ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template
+             if self.base_last:
+                 ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template
+             else:
+                 ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template_df
+
              ax_title =ax_title_template.format(compare=compare,var_name = var_name,var_description=var_description).replace(r'\n','\n')
 
              # print(v,ax_title_template)    
@@ -1534,10 +1559,10 @@ class DatatypeAccessor:
 | difpctlevel  | level     | difpct  | Impact in percent          | {var_description} \n% Change vs {compare}       | {var_description} \n% Change      |
 | qoq_ar       | qoq_ar    | nodif   | Q-Q annualized             | {var_description} \nQ-Q annualized              | {var_description} \nQ-Q annualized             |
 | difqoq_ar    | qoq_ar    | dif     | Impact Q-Q annualized      | {var_description} \nImpact Q-Q annualized vs {compare} | {var_description} \nImpact Q-Q annualized |
-| baselevel    | level     | basedf  | Base Level                 | {var_description} \nBase Level                  | {var_description} \nBase Level                 |
-| basegrowth   | growth    | basedf  | Base Percent growth        | {var_description} \nBase % growth               | {var_description} \nBase % growth              |
-| basegdppct   | gdppct    | basedf  | Base Percent of GDP        | {var_description} \nBase % of GDP               | {var_description} \nBase % of GDP              |
-| baseqoq_ar   | qoq_ar    | basedf  | Base Q-Q annualized        | {var_description} \nBase Q-Q annualized         | {var_description} \nBase Q-Q annualized        |
+| baselevel    | level     | basedf  | Baseline                 | {var_description} \nBaseline                   | {var_description} \nBaseline Level                 |
+| basegrowth   | growth    | basedf  | Baseline Percent growth        | {var_description} \nBaseline % growth               | {var_description} \nBaseline % growth              |
+| basegdppct   | gdppct    | basedf  | Baseline Percent of GDP        | {var_description} \nBaseline % of GDP               | {var_description} \nBaseline % of GDP              |
+| baseqoq_ar   | qoq_ar    | basedf  | Baseline Q-Q annualized        | {var_description} \nBaseline Q-Q annualized         | {var_description} \\nBaseline Q-Q annualized        |
 
 """
 

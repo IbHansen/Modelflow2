@@ -8321,13 +8321,13 @@ class Report_Mixin:
 
 
         config =   DatatypeAccessor(datatype, **kwargs)    
-        # print(config.showtype,config.diftype,config.col_desc)
+        # print(config.showtype,config.diftype,config.ax_title_template_df)
                
         figspec = DisplaySpec(
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,
-                          default_ax_title_template=config.ax_title_template,
+                          default_ax_title_template   =config.ax_title_template,
                           default_ax_title_template_df=config.ax_title_template_df,
                           by_var = by_var,mul=mul,ax_title_template=ax_title_template) , 
             ]
