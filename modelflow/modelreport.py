@@ -381,35 +381,6 @@ class DisplayDef:
         self.options.name = self.name 
         return self
     
-    def make_var_df(self, line):   
-        showtype = line.showtype
-        diftype = line.diftype
-        
-        with self.mmodel.keepswitch(switch=True): 
-
-            # Pre-process for cases that use linevars and linedes
-            if showtype  in ['textline']:                
-                linedf = pd.DataFrame(pd.NA, index=self.mmodel.current_per, columns=[line.centertext]).T
-                self.unitline = self.lines[0].centertext
-            else:                    
-                def getline(start_ofset= 0,**kvargs):
-                    locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line.pat,showtype=showtype,
-                                    diftype = diftype,by_var=False)
-                    if diftype == 'basedf':
-                        locallinedf = next(iter((locallinedfdict.values()))).T
-                    else: 
-                        locallinedf = next(iter(reversed(locallinedfdict.values()))).T
-                        
-                    return locallinedf.loc[:,self.mmodel.current_per] 
-                
-                # print(line.mul)
-                
-                
-                
-                linedf = getline() * line.mul
-            linedf = self.get_rowdes(linedf,line)    
-            
-        return(linedf)
     
     
     @property  
@@ -699,6 +670,35 @@ class DisplayVarTableDef(DisplayDef):
             self.df     = pd.concat( self.dfs ) 
         return 
 
+    def make_var_df(self, line):   
+        showtype = line.showtype
+        diftype = line.diftype
+        
+        with self.mmodel.keepswitch(switch=True): 
+
+            # Pre-process for cases that use linevars and linedes
+            if showtype  in ['textline']:                
+                linedf = pd.DataFrame(pd.NA, index=self.mmodel.current_per, columns=[line.centertext]).T
+                self.unitline = self.lines[0].centertext
+            else:                    
+                def getline(start_ofset= 0,**kvargs):
+                    locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line.pat,showtype=showtype,
+                                    diftype = diftype,by_var=False)
+                    if diftype == 'basedf':
+                        locallinedf = next(iter((locallinedfdict.values()))).T
+                    else: 
+                        locallinedf = next(iter(reversed(locallinedfdict.values()))).T
+                        
+                    return locallinedf.loc[:,self.mmodel.current_per] 
+                
+                # print(line.mul)
+                
+                
+                
+                linedf = getline() * line.mul
+            linedf = self.get_rowdes(linedf,line)    
+            
+        return(linedf)
 
             
     
@@ -1067,8 +1067,8 @@ class DisplayKeepFigDef(DisplayDef):
                                by_var=line.by_var)
             
             # print(f'before {locallinedfdict.keys()=}')
-            if self.base_last:
-                if line.by_var:
+            if self.base_last or line.diftype == 'basedf':
+                if line.by_var :
                     if line.diftype == 'basedf':
                         locallinedfdict = {k: df.iloc[:,[0]] for k,df in locallinedfdict.items()  }
                     else: 
@@ -1145,7 +1145,7 @@ class DisplayKeepFigDef(DisplayDef):
 
 # Create axes for the plots
              axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
-             if options.legend and all_by_var: 
+             if options.legend and all_by_var and not self.base_last: 
                  legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
              
              figs = {self.name : fig}
@@ -1208,7 +1208,10 @@ class DisplayKeepFigDef(DisplayDef):
                                      ylabel='Percent' if (line.showtype in {'growth','gdppct'} or line.diftype in {'difpct'})else ylabel,
                                      xlabel='',kind = line.kind ,samefig=options.samefig and all_by_var,
                                      dec=dec)
-
+             
+             if options.legend and self.base_last and  axes[i].get_legend() is not None:
+                 axes[i].get_legend().remove()
+                 
          for ax in axes[number:]:
              ax.set_visible(False)
 
@@ -1216,7 +1219,7 @@ class DisplayKeepFigDef(DisplayDef):
          if options.samefig: 
              fig.suptitle(options.title ,fontsize=20) 
 
-             if options.legend  and all_by_var: 
+             if options.legend  and all_by_var and not self.base_last: 
                  handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
                  legend_ax.legend(handles, labels, loc='center', ncol=3 if True else len(labels), fontsize='large')
                  legend_ax.axis('off')  # Hide the axis
@@ -1607,7 +1610,8 @@ class DatatypeAccessor:
         config_data = self.configurations.get(self.datatype)
 
         if not config_data:
-            raise ValueError(f"Configuration for datatype '{self.datatype}' not found")
+            allowed = '\nAllowed datatypes:'+'\n' + '\n'.join(self.configurations.keys() )
+            raise ValueError(f"Configuration for datatype '{self.datatype}' not found"+allowed)
         
         return config_data.get(item, '')
                

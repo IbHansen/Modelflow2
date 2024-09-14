@@ -479,7 +479,7 @@ class BaseModel():
          # old_keep_solutions = {k:v.copy() for k,v in self.keep_solutions.items() }
          old_keep_solutions = self.keep_solutions
          
-         if switch or base_last: 
+         if switch or base_last or scenarios in {'basedf','lastdf','basedflastdf'} :
              basename = self.basename if hasattr(self, 'basename') else 'Baseline solution'
              lastname = self.lastname if hasattr(self, 'lastname') else 'Last solution'
              self.keep_solutions = {basename:self.basedf.copy() , lastname:self.lastdf.copy()}
@@ -496,7 +496,7 @@ class BaseModel():
              if len(selected):
                  self.keep_solutions = {v:self.keep_solutions[v] for  v in selected}
              else: 
-                 print('No scenarios match the scenarios you try')
+                 print(f'No scenarios match the scenarios: {scenarios}')
                  self.keep_solutions = old_keep_solutions
          
          # yield
