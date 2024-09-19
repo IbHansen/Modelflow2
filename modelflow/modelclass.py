@@ -8241,7 +8241,7 @@ class Report_Mixin:
     
 
 
-    def table(self, pat='#Headline',title='Table',datatype='growth',custom_description = {},dec=2,heading='',mul=1.0,**kwargs):     
+    def table(self, pat='#Headline',title='Table',datatype='growth',col_desc='',custom_description = {},dec=2,heading='',mul=1.0,**kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8279,15 +8279,16 @@ class Report_Mixin:
 
 
 
-        config =   DatatypeAccessor(datatype, **kwargs)    
-        headingline = [Line(showtype='textline',centertext=heading)] if heading else [] 
-        unitline   =  [ Line(showtype='textline',centertext=f'--- {config.col_desc} ---')] if config.col_desc else []
+        config =   DatatypeAccessor(datatype)    
+        this_col_desc = col_desc if col_desc else config.col_desc
+        headingline = [Line(textlinetype='textline',centertext=heading)] if heading else [] 
+        unitline   =  [] if this_col_desc.strip() == '' else [ Line(textlinetype='textline',centertext=f'--- {this_col_desc} ---')]  
                
         tabspec = DisplaySpec(
             options = Options(decorate=False,name='A_small_table', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = headingline + unitline + [
-                 Line(showtype=config.showtype ,pat=pat,dec=dec,diftype=config.diftype ,mul=mul ) , 
+                 Line(datatype=datatype ,pat=pat,dec=dec, mul=mul ) , 
             ]
         )
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
@@ -8326,9 +8327,7 @@ class Report_Mixin:
         figspec = DisplaySpec(
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
-            lines = [Line(showtype=config.showtype ,pat=pat,diftype=config.diftype,
-                          default_ax_title_template   =config.ax_title_template,
-                          default_ax_title_template_df=config.ax_title_template_df,
+            lines = [Line(pat=pat, datatype=datatype,
                           by_var = by_var,mul=mul,ax_title_template=ax_title_template) , 
             ]
         )

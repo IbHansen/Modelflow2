@@ -118,6 +118,117 @@ def track_fields():
         return cls
     return wrap
 
+class DatatypeAccessor:
+    def __init__(self, datatype, **kwargs):
+        """
+        Initializes the ConfigAccessor with a datatype and a configuration table in Markdown format.
+
+        :param datatype: A string keyword to fetch configuration for.
+        :param config_table: A string representing the configuration in Markdown table format.
+        """
+
+        self.datatype = datatype
+        
+        # {var_name}
+        # {var_description}
+        # {compare}     Keep name used for comparison
+        
+        if 'config_table' in kwargs:
+            config_table = kwargs.get('config_table')
+        else:     
+        
+            config_table = r"""
+| datatype  | showtype   | diftype | col_desc | ax_title_template|
+|-----------|----------|---------|------------------|------------|
+| growth     | growth    | nodif   | Percent growth    | {var_description} \n% growth                      |
+| difgrowth  | growth    | dif      | Impact, Percent growth | {var_description} \nImpact, % growth v|
+| gdppct     | gdppct    | nodif   | Percent of GDP | {var_description} \n(% GDP)                       |
+| difgdppct  | gdppct    | dif     |  Impact, Percent of GDP  | {var_description} \nImpact (% GDP) vs {compare}   |
+| level      | level     | nodif   | Level | {var_description}                                 |
+| diflevel   | level     | dif      | Impact, Level    | {var_description} \nChange vs {compare}           |
+| difpctlevel| level     | difpct   | Impact in percent | {var_description} \n% Change vs {compare}          |
+| qoq_ar     | qoq_ar    | nodif    | Q-Q anuallized   | {var_description} \nQ-Q annualized                |
+| difqoq_ar  | qoq_ar    | dif     | Impact Q-Q anuallized  | {var_description} \nImpact Q-Q annualized vs {compare}  |
+| baselevel  | level     | basedf  | Base Level    | {var_description} \nBase Level                    |
+| basegrowth | growth    | basedf    | Base Percent growth  | {var_description} \nBase % growth                 |
+| basegdppct | gdppct    | basedf |  Base Percent of GDP    | {var_description} \nBase % of GDP                 |
+| baseqoq_ar | qoq_ar    | basedf  | Base Q-Q anuallized  | {var_description} \nBase Q-Q annualized           |
+
+"""
+
+
+            config_table = r"""
+| datatype     | showtype  | diftype | col_desc                  | ax_title_template                                | ax_title_template_df                           |
+|--------------|-----------|---------|---------------------------|-------------------------------------------------|------------------------------------------------|
+| growth       | growth    | nodif   | Percent growth             | {var_description} \n% growth                    | {var_description} \n% growth                   |
+| difgrowth    | growth    | dif     | Impact, Percent growth     | {var_description} \nImpact, % growth vs {compare} | {var_description} \nImpact, % |
+| gdppct       | gdppct    | nodif   | Percent of GDP             | {var_description} \n(% GDP)                     | {var_description} \n(% GDP)                    |
+| difgdppct    | gdppct    | dif     | Impact, Percent of GDP     | {var_description} \nImpact (% GDP) vs {compare} | {var_description} \nImpact (% GDP) |
+| level        | level     | nodif   | Level                     | {var_description}                               | {var_description}                              |
+| diflevel     | level     | dif     | Impact, Level              | {var_description} \nChange vs {compare}         | {var_description} \nChange        |
+| difpctlevel  | level     | difpct  | Impact in percent          | {var_description} \n% Change vs {compare}       | {var_description} \n% Change      |
+| qoq_ar       | qoq_ar    | nodif   | Q-Q annualized             | {var_description} \nQ-Q annualized              | {var_description} \nQ-Q annualized             |
+| difqoq_ar    | qoq_ar    | dif     | Impact Q-Q annualized      | {var_description} \nImpact Q-Q annualized vs {compare} | {var_description} \nImpact Q-Q annualized |
+| baselevel    | level     | basedf  | Baseline                 | {var_description} \nBaseline                   | {var_description} \nBaseline Level                 |
+| basegrowth   | growth    | basedf  | Baseline Percent growth        | {var_description} \nBaseline % growth               | {var_description} \nBaseline % growth              |
+| basegdppct   | gdppct    | basedf  | Baseline Percent of GDP        | {var_description} \nBaseline % of GDP               | {var_description} \nBaseline % of GDP              |
+| baseqoq_ar   | qoq_ar    | basedf  | Baseline Q-Q annualized        | {var_description} \nBaseline Q-Q annualized         | {var_description} \\nBaseline Q-Q annualized        |
+
+"""
+
+
+        self.configurations = self.parse_config_table(config_table)
+        # print(self.configurations)
+
+        # Apply any overrides from kwargs
+        # if datatype in self.configurations:
+        #     self.configurations[datatype].update((k, v) for k, v in kwargs.items() if k in self.configurations[datatype])
+
+
+    def parse_config_table(self,config_table):
+        """
+        Parses a Markdown table into a dictionary of configurations.
+
+        :param config_table: Markdown table as a string.
+        :return: Dictionary with datatype keys and property dictionaries as values.
+        """
+        
+        lines = config_table.strip().split('\n')
+        headers = re.split(r'\s*\|\s*', lines[0].strip('|').strip())
+        configs = {}
+
+        for line in lines[2:]:  # Skip the header and delimiter rows
+            values = re.split(r'\s*\|\s*', line.strip('|').strip())
+            # print(f'{line=}')
+            # print(f'{values=}')
+            config = {headers[i]: values[i] for i in range(len(values))}
+            datatype = config.pop('datatype')  # Remove the datatype key to use as the dictionary key
+            configs[datatype] = config
+
+        return configs
+
+    def __getattr__(self, item):
+        """
+        Provides dynamic access to configuration properties based on the initial datatype.
+
+        :param item: The property name to fetch from the configuration for the provided datatype.
+        :return: The value associated with 'item' under the specified datatype's configuration.
+        """
+        config_data = self.configurations.get(self.datatype)
+
+        if not config_data:
+            allowed = '\nAllowed datatypes:'+'\n' + '\n'.join(self.configurations.keys() )
+            raise ValueError(f"Configuration for datatype '{self.datatype}' not found"+allowed)
+        
+        return config_data.get(item, '')
+               
+
+
+
+
+
+
+
 @track_fields()
 @dataclass
 class Options:
@@ -237,10 +348,8 @@ class Line:
     A dataclass for representing and validating line configurations for data display.
 
     Attributes:
-        showtype (str): Specifies the type of data representation. Valid options are 'level', 'growth', 
-                        'change', 'basedf', 'textline', and 'gdppct'. Default is 'level'.
-        diftype (str): Specifies the type of difference calculation to apply. Valid options are 'nodif', 'dif', 
-                       'difpct', 'basedf', and 'lastdf'. Default is 'nodif'.
+        datatype  (str): Specifies the datatype as defines in DatatypeAccessor 
+        textlinetype (str): = 'textline' if the line is a textline in a table 
         centertext (str): Center text used when showtype is 'textline'. Default is a space.
         rename (bool): If True, allows renaming of data columns. Default is True.
         dec (int): Specifies the number of decimal places to use for numerical output. Default is 2.
@@ -250,8 +359,7 @@ class Line:
         ax_title_template(str) user provided Table specific template for individual chart titles
     """
     
-    showtype: str = 'level'
-    diftype: str = 'nodif'
+    datatype :str = 'level'
     scale : str = 'linear'
     kind : str = 'line'
     centertext : str = ''
@@ -263,11 +371,23 @@ class Line:
     mul : float = 1.0 
     yunit : str = ''
     datatype_desc :str = ''
-    default_ax_title_template :str ='' 
-    default_ax_title_template_df :str =''
     ax_title_template :str = ''
+    textlinetype :str = ''
+
+    # default_ax_title_template :str = field(init=False) 
+    # default_ax_title_template_df :str = field(init=False)
+    # showtype: str = field(init=False)
+    # diftype: str = field(init=False)
+
 
     def __post_init__(self):
+        
+        config = DatatypeAccessor(self.datatype)
+        self.showtype                      = config.showtype 
+        self.diftype                       = config.diftype
+        self.default_ax_title_template     = config.ax_title_template
+        self.default_ax_title_template_df  = config.ax_title_template_df
+
         valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline','qoq_ar'}
         valid_diftypes = {'nodif', 'dif', 'difpct', 'basedf', 'lastdf'}
         
@@ -677,7 +797,7 @@ class DisplayVarTableDef(DisplayDef):
         with self.mmodel.keepswitch(switch=True): 
 
             # Pre-process for cases that use linevars and linedes
-            if showtype  in ['textline']:                
+            if line.textlinetype  in ['textline']:                
                 linedf = pd.DataFrame(pd.NA, index=self.mmodel.current_per, columns=[line.centertext]).T
                 self.unitline = self.lines[0].centertext
             else:                    
@@ -725,7 +845,7 @@ class DisplayVarTableDef(DisplayDef):
 
     @property    
     def df_str_disp(self):
-        center = [ (line.showtype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+        center = [ (line.textlinetype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
         center_index = [index+1 for index, value in enumerate(center) if value]
 
         width = self.options.width
@@ -780,7 +900,7 @@ class DisplayVarTableDef(DisplayDef):
             thisdf = self.df_str.loc[self.timeslice,:] if self.timeslice else self.df_str             
         else: 
             thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
-            center = [ (line.showtype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            center = [ (line.textlinetype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
 
             
         outsty =  self.make_html_style(thisdf)  
@@ -813,7 +933,7 @@ class DisplayVarTableDef(DisplayDef):
                 
                 endhtml = splitted_html.text_after_tbody
 
-            if (line.showtype == 'textline' and line.centertext !='' ):
+            if (line.textlinetype == 'textline' and line.centertext !='' ):
                 col0 = '<tr><td <th class="row_heading level0 row0" >  </td>'
                 out = out + '\n'+col0 + f"<td colspan='{len(df.columns)}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{line.centertext}</td></tr>"
 
@@ -886,7 +1006,7 @@ class DisplayVarTableDef(DisplayDef):
             for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
                 newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i]+'}}'  
-                            if line.showtype == 'textline'
+                            if line.textlinetype == 'textline'
                             else df.index[i]
                     for i, line  in enumerate(rowlines)]    
     
@@ -1036,6 +1156,8 @@ class DisplayKeepFigDef(DisplayDef):
     def __post_init__(self):
         super().__post_init__()  # Call the parent class's __post_init__
         self.base_last = not self.options.scenarios
+        # print(self.options.scenarios)
+        # print(self.base_last)
         with self.mmodel.keepswitch(scenarios=self.options.scenarios,base_last = self.base_last):
 
             with self.mmodel.set_smpl(*self.options.smpl):
@@ -1056,7 +1178,7 @@ class DisplayKeepFigDef(DisplayDef):
     
             
     def make_df(self, line):   
-        if line.showtype  in ['textline']:                
+        if line.textlinetype  in ['textline']:                
             # textdf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[line.centertext]).T
             outlist = []    
         else: 
@@ -1191,9 +1313,9 @@ class DisplayKeepFigDef(DisplayDef):
              
              default_title = line.default_ax_title_template_df if self.base_last  else line.default_ax_title_template 
              if self.base_last:
-                 ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template
-             else:
                  ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template_df
+             else:
+                 ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template
 
              ax_title =ax_title_template.format(compare=compare,var_name = var_name,var_description=var_description).replace(r'\n','\n')
 
@@ -1510,111 +1632,6 @@ class DisplayFigWrapDef(DisplayDef):
         out = '\n'.join( self.figwrap(chart) for chart in self.charts)
         return out 
         
-
-class DatatypeAccessor:
-    def __init__(self, datatype, **kwargs):
-        """
-        Initializes the ConfigAccessor with a datatype and a configuration table in Markdown format.
-
-        :param datatype: A string keyword to fetch configuration for.
-        :param config_table: A string representing the configuration in Markdown table format.
-        """
-
-        self.datatype = datatype
-        
-        # {var_name}
-        # {var_description}
-        # {compare}     Keep name used for comparison
-        
-        if 'config_table' in kwargs:
-            config_table = kwargs.get('config_table')
-        else:     
-        
-            config_table = r"""
-| datatype  | showtype   | diftype | col_desc | ax_title_template|
-|-----------|----------|---------|------------------|------------|
-| growth     | growth    | nodif   | Percent growth    | {var_description} \n% growth                      |
-| difgrowth  | growth    | dif      | Impact, Percent growth | {var_description} \nImpact, % growth v|
-| gdppct     | gdppct    | nodif   | Percent of GDP | {var_description} \n(% GDP)                       |
-| difgdppct  | gdppct    | dif     |  Impact, Percent of GDP  | {var_description} \nImpact (% GDP) vs {compare}   |
-| level      | level     | nodif   | Level | {var_description}                                 |
-| diflevel   | level     | dif      | Impact, Level    | {var_description} \nChange vs {compare}           |
-| difpctlevel| level     | difpct   | Impact in percent | {var_description} \n% Change vs {compare}          |
-| qoq_ar     | qoq_ar    | nodif    | Q-Q anuallized   | {var_description} \nQ-Q annualized                |
-| difqoq_ar  | qoq_ar    | dif     | Impact Q-Q anuallized  | {var_description} \nImpact Q-Q annualized vs {compare}  |
-| baselevel  | level     | basedf  | Base Level    | {var_description} \nBase Level                    |
-| basegrowth | growth    | basedf    | Base Percent growth  | {var_description} \nBase % growth                 |
-| basegdppct | gdppct    | basedf |  Base Percent of GDP    | {var_description} \nBase % of GDP                 |
-| baseqoq_ar | qoq_ar    | basedf  | Base Q-Q anuallized  | {var_description} \nBase Q-Q annualized           |
-
-"""
-
-
-            config_table = r"""
-| datatype     | showtype  | diftype | col_desc                  | ax_title_template                                | ax_title_template_df                           |
-|--------------|-----------|---------|---------------------------|-------------------------------------------------|------------------------------------------------|
-| growth       | growth    | nodif   | Percent growth             | {var_description} \n% growth                    | {var_description} \n% growth                   |
-| difgrowth    | growth    | dif     | Impact, Percent growth     | {var_description} \nImpact, % growth vs {compare} | {var_description} \nImpact, % |
-| gdppct       | gdppct    | nodif   | Percent of GDP             | {var_description} \n(% GDP)                     | {var_description} \n(% GDP)                    |
-| difgdppct    | gdppct    | dif     | Impact, Percent of GDP     | {var_description} \nImpact (% GDP) vs {compare} | {var_description} \nImpact (% GDP) |
-| level        | level     | nodif   | Level                     | {var_description}                               | {var_description}                              |
-| diflevel     | level     | dif     | Impact, Level              | {var_description} \nChange vs {compare}         | {var_description} \nChange        |
-| difpctlevel  | level     | difpct  | Impact in percent          | {var_description} \n% Change vs {compare}       | {var_description} \n% Change      |
-| qoq_ar       | qoq_ar    | nodif   | Q-Q annualized             | {var_description} \nQ-Q annualized              | {var_description} \nQ-Q annualized             |
-| difqoq_ar    | qoq_ar    | dif     | Impact Q-Q annualized      | {var_description} \nImpact Q-Q annualized vs {compare} | {var_description} \nImpact Q-Q annualized |
-| baselevel    | level     | basedf  | Baseline                 | {var_description} \nBaseline                   | {var_description} \nBaseline Level                 |
-| basegrowth   | growth    | basedf  | Baseline Percent growth        | {var_description} \nBaseline % growth               | {var_description} \nBaseline % growth              |
-| basegdppct   | gdppct    | basedf  | Baseline Percent of GDP        | {var_description} \nBaseline % of GDP               | {var_description} \nBaseline % of GDP              |
-| baseqoq_ar   | qoq_ar    | basedf  | Baseline Q-Q annualized        | {var_description} \nBaseline Q-Q annualized         | {var_description} \\nBaseline Q-Q annualized        |
-
-"""
-
-
-        self.configurations = self.parse_config_table(config_table)
-        # print(self.configurations)
-
-        # Apply any overrides from kwargs
-        # if datatype in self.configurations:
-        #     self.configurations[datatype].update((k, v) for k, v in kwargs.items() if k in self.configurations[datatype])
-
-
-    def parse_config_table(self,config_table):
-        """
-        Parses a Markdown table into a dictionary of configurations.
-
-        :param config_table: Markdown table as a string.
-        :return: Dictionary with datatype keys and property dictionaries as values.
-        """
-        
-        lines = config_table.strip().split('\n')
-        headers = re.split(r'\s*\|\s*', lines[0].strip('|').strip())
-        configs = {}
-
-        for line in lines[2:]:  # Skip the header and delimiter rows
-            values = re.split(r'\s*\|\s*', line.strip('|').strip())
-            # print(f'{line=}')
-            # print(f'{values=}')
-            config = {headers[i]: values[i] for i in range(len(values))}
-            datatype = config.pop('datatype')  # Remove the datatype key to use as the dictionary key
-            configs[datatype] = config
-
-        return configs
-
-    def __getattr__(self, item):
-        """
-        Provides dynamic access to configuration properties based on the initial datatype.
-
-        :param item: The property name to fetch from the configuration for the provided datatype.
-        :return: The value associated with 'item' under the specified datatype's configuration.
-        """
-        config_data = self.configurations.get(self.datatype)
-
-        if not config_data:
-            allowed = '\nAllowed datatypes:'+'\n' + '\n'.join(self.configurations.keys() )
-            raise ValueError(f"Configuration for datatype '{self.datatype}' not found"+allowed)
-        
-        return config_data.get(item, '')
-               
 
         
 @dataclass
