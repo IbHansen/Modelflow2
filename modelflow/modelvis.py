@@ -172,26 +172,26 @@ class vis():
      @property
      def pct(self):
          '''Returns the pct change'''
-         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(),pat=self.__pat__)
+         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change()*100.,pat=self.__pat__)
      @property
      def growth(self):
          '''Returns the pct growth'''
-         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(),pat=self.__pat__)
+         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change()*100.,pat=self.__pat__)
 
      @property
      def year_pct(self):
          '''Returns the pct change over 4 periods (used for quarterly data) ''' 
-         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(periods=4).loc[:,self.names],pat=self.__pat__)
+         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(periods=4)*100..loc[:,self.names],pat=self.__pat__)
      
      @property
      def yoy_growth(self):
          '''Returns the pct change over 4 periods (used for quarterly data) ''' 
-         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(periods=4).loc[:,self.names],pat=self.__pat__)
+         return vis(model=self.model,df=self.thisdf.loc[:,self.names].pct_change(periods=4)*100..loc[:,self.names],pat=self.__pat__)
 
      @property
      def qoq_ar(self):
          '''Returns the pct change over 4 periods (used for quarterly data) ''' 
-         df = (1.+self.thisdf.loc[:,self.names].pct_change().loc[:,self.names])**4-1.
+         df = ((1.+self.thisdf.loc[:,self.names].pct_change().loc[:,self.names])**4-1.)**100.
          return vis(model=self.model,df=df,pat=self.__pat__)
 
 
@@ -243,18 +243,18 @@ class vis():
      @property
      def difpctlevel(self):
          ''' Returns the differens between the basedf and lastdf in percent '''
-         difdf = (self.thisdf-self.model.basedf.loc[:,self.names])/ self.model.basedf.loc[:,self.names]
+         difdf = ((self.thisdf-self.model.basedf.loc[:,self.names])/ self.model.basedf.loc[:,self.names])*100.
          return vis(model=self.model,df=difdf,pat=self.__pat__)
      
      @property
      def difpct(self):
          ''' Returns the differens between the pct changes in basedf and lastdf'''
-         difdf = self.thisdf.pct_change()-self.model.basedf.loc[:,self.names].pct_change()
+         difdf = (self.thisdf.pct_change()-self.model.basedf.loc[:,self.names].pct_change())*100.
          return vis(model=self.model,df=difdf,pat=self.__pat__)
      @property
      def difgrowth(self):
          ''' Returns the differens between the pct changes in basedf and lastdf'''
-         difdf = self.thisdf.pct_change()-self.model.basedf.loc[:,self.names].pct_change()
+         difdf = (self.thisdf.pct_change()-self.model.basedf.loc[:,self.names].pct_change())*100.
          return vis(model=self.model,df=difdf,pat=self.__pat__)
      
      @property 
@@ -352,8 +352,8 @@ class vis():
      
      @property
      def mul100(self):
-         '''Multiply the current result with 100 '''
-         return self.__mul__(100.0) 
+         '''Multiply the current result with 1,  used to be 100- '''
+         return self.__mul__(1.0) 
          
 class compvis() :
      ''' Class to compare to runs in boxplots''' 

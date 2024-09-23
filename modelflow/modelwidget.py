@@ -610,10 +610,10 @@ class visshow:
         self.out_dict['Baseline'] ={'df':this_vis.base}        
         self.out_dict['Alternative'] ={'df':this_vis} 
         self.out_dict['Difference'] ={'df':this_vis.dif} 
-        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpctlevel.mul100,'percent':True} 
-        self.out_dict['Base growth'] ={'df':this_vis.base.pct.mul100,'percent':True} 
-        self.out_dict['Alt. growth'] ={'df':this_vis.pct.mul100,'percent':True} 
-        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct.mul100,'percent':True} 
+        self.out_dict['Diff. pct. level'] ={'df':this_vis.difpctlevel,'percent':True} 
+        self.out_dict['Base growth'] ={'df':this_vis.base.pct,'percent':True} 
+        self.out_dict['Alt. growth'] ={'df':this_vis.pct,'percent':True} 
+        self.out_dict['Diff. in growth'] ={'df':this_vis.difpct,'percent':True} 
         
         out = widgets.Output() 
         self.out_to_data = {key:

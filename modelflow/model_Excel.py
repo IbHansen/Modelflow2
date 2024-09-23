@@ -321,7 +321,7 @@ def sheet_to_dict(wb,name,integers=None):
 
     
 if __name__ == '__main__':
-    testxls=Path('exceltest\lcrberegning2.xlsx')
+    testxls=Path('exceltest/lcrberegning2.xlsx')
     mmodel,para = getexcelmodel(testxls)
     eq=mmodel.equations
     mmodel.draw('_LCR_C62',up=10,down=1,HR=0,pdf=1)  # The LCR 
