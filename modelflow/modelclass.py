@@ -8179,7 +8179,11 @@ class Fix_Mixin():
                 print(f'\n{self.calc_add_factor_model.allvar[varnames[3]]["frml"]}')
             except:
                 ...
-            res = out.applymap(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  )
+            try:     
+                res = out.map(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  )
+            except: 
+                res = out.applymap(lambda value: "  " if value == 0.0 else " 1 " if value == 1.0 else value  )
+
             display(self.ibsstyle(res) )         
         
 class Stability_Mixin():

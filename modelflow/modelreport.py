@@ -780,7 +780,7 @@ class DisplayVarTableDef(DisplayDef):
 
         
         with self.mmodel.set_smpl(*self.options.smpl):
-            self.dfs = [self.make_var_df(line) for line in self.lines ] 
+            self.dfs = [self.make_var_df(line).astype('float')  for line in self.lines ] 
             self.report_smpl = self.get_report_smpl
         
         if self.options.transpose:
@@ -788,6 +788,7 @@ class DisplayVarTableDef(DisplayDef):
             ...
         else:    
             self.df     = pd.concat( self.dfs ) 
+            # assert 1==2
         return 
 
     def make_var_df(self, line):   
@@ -798,7 +799,7 @@ class DisplayVarTableDef(DisplayDef):
 
             # Pre-process for cases that use linevars and linedes
             if line.textlinetype  in ['textline']:                
-                linedf = pd.DataFrame(pd.NA, index=self.mmodel.current_per, columns=[line.centertext]).T
+                linedf = pd.DataFrame(np.nan , index=self.mmodel.current_per, columns=[line.centertext]).T
                 self.unitline = self.lines[0].centertext
             else:                    
                 def getline(start_ofset= 0,**kvargs):
@@ -822,8 +823,9 @@ class DisplayVarTableDef(DisplayDef):
 
             
     
+
     @property    
-    def df_str(self):
+    def df_str_old(self):
         width = self.options.width
         # df = self.df.copy( )
         if self.options.transpose:
@@ -840,6 +842,25 @@ class DisplayVarTableDef(DisplayDef):
       
         return  df_char   
 
+    @property    
+    def df_str(self):
+        width = self.options.width
+        # df = self.df.copy( )
+        if self.options.transpose:
+            dec = self.lines[-1].dec 
+            thisdf = self.df.loc[self.timeslice,:] if self.timeslice else self.df 
+            df_char = pd.DataFrame(' ', index=thisdf.index, columns=thisdf.columns)
+            for c in thisdf.columns:
+                df_char.loc[:,c] = thisdf.loc[:,c].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+            
+        else:
+            df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
+    
+            format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            for i, dec in enumerate(format_decimal):
+                  df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+      
+        return  df_char   
 
 
 
