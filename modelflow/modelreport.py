@@ -552,9 +552,9 @@ class DisplayDef:
  
    
    
-    def pdf(self,xopen=False,show=True,width=WIDTH,height=HEIGHT):
+    def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,typesetter='xelatex  -interaction=batchmode'):
         repo = LatexRepo(self.latex ,name=self.name)
-        return repo.pdf(xopen,show,width,height)
+        return repo.pdf(pdfopen,show,width,height,typesetter)
 
     def __add__(self, other):
         """
@@ -717,29 +717,87 @@ class LatexRepo:
     
  
   
-    def pdf(self,xopen=False,show=True,width=WIDTH,height=HEIGHT):
+    def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,
+            typesetter='xelatex  -interaction=batchmode'):
 
+        """
+        Generates a PDF file from the LaTeX content and optionally displays it.
+    
+        This method creates a directory for LaTeX files, writes the LaTeX content 
+        to a `.tex` file, and uses a specified typesetter to compile it into a PDF. 
+        The resulting PDF can be displayed in an `IFrame` or opened in the default 
+        PDF viewer.
+        
+        Requires that miktex or another appropiate latex framework is installed.
+        
+        Inspect the latex source by specifying: typesetter='texworks'
+        
+        The files are located in the folder called latex/{name}
+        
+         - The .tex file is called {name.tex}
+         - the .pdf file is called {name.pdf} 
+    
+        Args:
+            pdfopen (bool): If True, opens the generated PDF file in the default viewer.
+            show (bool): If True, shows the pdf as a IFrame in Jupyter notebook .
+            width (int): The width of the `IFrame` if `show` is True.
+            height (int): The height of the `IFrame` if `show` is True.
+            typesetter (str): The LaTeX engine to use for compilation (e.g., 'xelatex (default), pdflatex, texworks or latexmk').
+    
+        Returns:
+            IFrame: An iframe displaying the PDF file if `show` is True.
+    
+        Raises:
+            Exception: If the typesetter returns a non-zero exit code, indicating an error 
+            in generating the PDF. Opens the directory containing the LaTeX file for inspection.
+        """
+            
+     
+        
+        
         latex_dir = Path(f'latex/{self.name}')
         latex_dir.mkdir(parents=True, exist_ok=True)
         
-        latex_file = latex_dir / f'{self.name}.tex'
+        latex_file = latex_dir / f'{self.name}.tex'        
         pdf_file = latex_dir / f'{self.name}.pdf'
+        
+        latex_file.unlink(missing_ok=True)     
+        pdf_file.unlink(missing_ok=True)
+
 
         
+
         # Now open the file for writing within the newly created directory
         with open(latex_file, 'wt') as f:
             f.write(self.latexwrap())  # Assuming tab.fulllatexwidget is the content you want to write
-        xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = f'{latex_dir}')
-        if xx0.returncode: 
-            wb.open(latex_dir.absolute(), new=1)
+            
+            
+         # xx0 = run(f'pdflatex  {self.name}.tex'      ,cwd = f'{latex_dir}')
+        try:
+            
+            xx0 = run(f'{typesetter}  {self.name}.tex'      ,cwd = f'{latex_dir}')
+        except FileNotFoundError as e:
+            # Catch the FileNotFoundError and print a message
+            print(f"Error: {e}")
+            print(f'The typesetter "{typesetter}" was not found. Please check the name and file path and try again.')
+            
+            return 
+        except Exception as e:
+            # Catch any other exceptions
+            print(f"Preparing PDF file an unexpected error occurred: {e}")
+            return 
 
-            raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex file, {latex_file}')
-            
-        if xopen:
-            wb.open(pdf_file , new=2)
-            
+        # xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = f'{latex_dir}')
+        if xx0.returncode: 
+             wb.open(latex_dir.absolute(), new=1)
+ 
+             raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex file, {latex_file}')
+             
+        if pdfopen:
+             wb.open(pdf_file , new=2)
+             
         if show:
-            return IFrame(pdf_file, width=width, height=height)
+             return IFrame(pdf_file, width=width, height=height)
 
 
     def __and__(self, other):
@@ -770,7 +828,9 @@ class LatexRepo:
         return f'<iframe src="{pdf_file}" width={WIDTH} height={HEIGHT}></iframe>'
  
     
-    
+DisplayDef.pdf.__doc__ = LatexRepo.pdf.__doc__    
+
+
 @dataclass
 class DisplayVarTableDef(DisplayDef):
     
@@ -1560,9 +1620,9 @@ class DisplayContainerDef:
         out = '\n'.join(l.latex for l in self.reports) 
         return out
     
-    def pdf(self,xopen=False,show=True,width=WIDTH,height=HEIGHT):
+    def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,typesetter='xelatex  -interaction=batchmode'):
         repo = LatexRepo(self.latex ,name=self.name)
-        return repo.pdf(xopen,show,width,height)
+        return repo.pdf(pdfopen,show,width,height,typesetter)
 
     @property
     def spec_list(self):
@@ -1617,7 +1677,10 @@ class DisplayContainerDef:
     def _ipython_display_(self):
         _ = self.out_html
   
-                    
+ 
+DisplayContainerDef.pdf.__doc__ = LatexRepo.pdf.__doc__    
+
+                   
 @dataclass
 class DisplayFigWrapDef(DisplayDef):
     

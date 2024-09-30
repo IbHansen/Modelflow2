@@ -719,7 +719,7 @@ def melt(df,source='Latest'):
     return melted
 
 def heatshow(df,name='',cmap="Reds",mul=1.,annot=False,size=(11.69,8.27),dec=0,cbar=True,linewidths=.5):
-    ''' A heatmap of a dataframe ''' 
+    ''' A heatmap of a dataframe problems in 3.12''' 
     xx=(df.astype('float'))*mul 
 #    fig, ax = plt.subplots(figsize=(11,8))
     fig, ax = plt.subplots(figsize=size)  #A4 
@@ -728,14 +728,19 @@ def heatshow(df,name='',cmap="Reds",mul=1.,annot=False,size=(11.69,8.27),dec=0,c
     
     ax.set_yticklabels(ax.yaxis.get_majorticklabels(), ha = 'left',rotation=0)
     yax = ax.get_yaxis()
-    pad = max(T.label.get_window_extent().width for T in yax.majorTicks)
-    yax.set_tick_params(pad=pad)
     
+    yticklabels = ax.get_yticklabels()    
+    widths = [label.get_window_extent().width for label in yticklabels]    
+    pad = max(e for e in widths)
+        
+    yax.set_tick_params(pad=pad)
     ax.set_xticklabels(ax.xaxis.get_majorticklabels(), va = 'top' ,rotation=70.)
     fig.subplots_adjust(bottom=0.15)
     #ax.tick_paraOms(axis='y',direction='out', length=3, width=2, colors='b',labelleft=True)
     plt.close('all')
     return fig
+
+
 ##%%
 def attshow(df,treshold=False,head=5000,tail=0,t=True,annot=False,showsum=False,sort=True,size=(11.69,8.27),title='',
             tshow=True,dec=0,cbar=True,cmap='jet',savefig=''):
