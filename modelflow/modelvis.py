@@ -834,15 +834,16 @@ def water(serxinput,sort=False,ascending =True,autosum=False,allsort=False,thres
     if autosum:
         ser['Total'] = total
         
+    ser = ser.astype('float')
+        
     hbegin = ser.copy()
     hbegin[1:]=0.0
     hend   = ser.copy()
     hend[:-1] = 0.0
          
-    
     height = ser 
     start = ser.cumsum().shift().fillna(0.0)  # the  starting point for each bar
-    start[-1] = start[-1] if allsort and not autosum else 0     # the last bar should start at 0
+    start.iloc[-1] = start.iloc[-1] if allsort and not autosum else 0     # the last bar should start at 0
     end = start + ser
 
     hpos= height*(height>=0.0)
@@ -865,7 +866,7 @@ def waterplot(basis,sort=True,ascending =True,autosum=False,bartype='bar',thresh
         _ = dfatt.hneg.plot(ax=ax,kind=bartype,bottom=dfatt.start,stacked=True,
                             color='red',width=width)
         _ = None if allsort else dfatt.hbegin.plot(ax=ax,kind=bartype,bottom=dfatt.start,
-                stacked=True,color=('green' if dfatt.hbegin[0] > 0 else 'red') if zero else 'blue',width=width)
+                stacked=True,color=('green' if dfatt.hbegin.iloc[0] > 0 else 'red') if zero else 'blue',width=width)
         _ = None if allsort and not autosum else dfatt.hend.plot(ax=ax,kind=bartype,bottom=dfatt.start,stacked=True,color='blue',width=width)
         ax.set_ylabel(name,fontsize='x-large')
         dec=finddec(dfatt)

@@ -25,7 +25,7 @@ import pdb
 
 from modelhelp import cutout
 import modelclass as mc 
-import modeldekom as mk 
+#import modeldekom as mk 
 import modelvis as mv
 
 
@@ -140,12 +140,13 @@ def GetAllImpact(impact,sumaryvar):
 
 def GetSumImpact(impact,pat='PD__*'):
     """Gets the accumulated differences attributet to each impact group """ 
-    a = impact.loc[ilist(impact,pat),:].groupby(level=[0],axis=1).sum()   
+    a = impact.loc[ilist(impact,pat),:].T.groupby(level=[0]).sum().T   
     return a 
 
 def GetLastImpact(impact,pat='RCET1__*'):
     """Gets the last differences attributet to each impact group """ 
-    a = impact.loc[ilist(impact,pat),:].groupby(level=[0],axis=1).last()   
+    # assert 1==2
+    a = impact.loc[ilist(impact,pat),:].T.groupby(level=[0]).last().T   
     return a
  
 def GetAllImpact(impact,pat='RCET1__*'):
@@ -213,8 +214,9 @@ class totdif():
             fig (TYPE): DESCRIPTION.
 
         '''
+        # assert 1==2
         if self.go:         
-            self.impact = mk.GetLastImpact(self.res[use],pat=pat).T.rename(index=self.desdic)
+            self.impact = GetLastImpact(self.res[use],pat=pat).T.rename(index=self.desdic)
             ntitle = f'Decomposition last period, {use}' if title == '' else title
             fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title= ntitle,desdic=self.desdic,
                                threshold=threshold,ysize=ysize)
@@ -238,7 +240,7 @@ class totdif():
 
         '''
         if self.go:          
-           self.impact = mk.GetSumImpact(self.res[use],pat=pat).T.rename(index=self.desdic)
+           self.impact = GetSumImpact(self.res[use],pat=pat).T.rename(index=self.desdic)
            ntitle = f'Decomposition, sum over all periods, {use}' if title == '' else title
            fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic,
                               threshold=threshold,ysize=ysize )
@@ -263,7 +265,7 @@ class totdif():
         '''
         if self.go:        
            tper = self.res[use].columns.get_level_values(1)[0] if per == '' else per
-           self.impact = mk.GetOneImpact(self.res[use],pat=pat,per=tper).T.rename(index=self.desdic) 
+           self.impact = GetOneImpact(self.res[use],pat=pat,per=tper).T.rename(index=self.desdic) 
            t2per = str(tper.date()) if type(tper) == pd._libs.tslibs.timestamps.Timestamp else tper
            ntitle = f'Decomposition, {use}: {t2per}' if title == '' else title
            fig = mv.waterplot(self.impact,autosum=1,allsort=1,top=top,title=ntitle,desdic=self.desdic ,
@@ -337,32 +339,37 @@ class totdif():
             years_fmt = mdates.DateFormatter('%Y')
             
             selected =   GetAllImpact(self.res[use],pat) 
-            grouped = selected.stack().groupby(level=[0])
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', FutureWarning)
+            
+                grouped = selected.stack().groupby(level=[0])
             fig, axis = plt.subplots(nrows=len(grouped),ncols=1,figsize=(10,5*len(grouped)),constrained_layout=False)
             width = 0.5  # the width of the barsser
             ntitle = f'Decomposition, {use}' if title == '' else title
             laxis = axis if isinstance(axis,numpy.ndarray) else [axis]
-            for j,((name,dfatt),ax) in enumerate(zip(grouped,laxis)):
-                dfatt.index = [i[1] for i in dfatt.index]
-                if resample=='':
-                    tempdf=cutout(dfatt.T,threshold).T
-                else:
-                    tempdf=cutout(dfatt.T,threshold).T.resample(resample).mean()
-#                pdb.set_trace()
-                selfstack = (kind == 'line' or kind == 'area') and stacked 
-                tempdf = tempdf.rename(columns=self.desdic)
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=UserWarning)
-                    if selfstack:
-                        df_neg, df_pos =tempdf.clip(upper=0), tempdf.clip(lower=0)    
-                        df_pos.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
-                        ax.set_prop_cycle(None)
-                        df_neg.plot(ax=ax,legend=False,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
-                        ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', FutureWarning)
+                for j,((name,dfatt),ax) in enumerate(zip(grouped,laxis)):
+                    dfatt.index = [i[1] for i in dfatt.index]
+                    if resample=='':
+                        tempdf=cutout(dfatt.T,threshold).T
                     else:
-                        tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
-                        ax.xaxis.set_major_locator(plt.MaxNLocator(10))
-                ax.set_ylabel(name,fontsize='x-large')
+                        tempdf=cutout(dfatt.T,threshold).T.resample(resample).mean()
+    #                pdb.set_trace()
+                    selfstack = (kind == 'line' or kind == 'area') and stacked 
+                    tempdf = tempdf.rename(columns=self.desdic)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", category=UserWarning)
+                        if selfstack:
+                            df_neg, df_pos =tempdf.clip(upper=0), tempdf.clip(lower=0)    
+                            df_pos.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                            ax.set_prop_cycle(None)
+                            df_neg.plot(ax=ax,legend=False,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                            ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
+                        else:
+                            tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                            ax.xaxis.set_major_locator(plt.MaxNLocator(10))
+                    ax.set_ylabel(name,fontsize='x-large')
 #                ax.set_xticklabels(tempdf.index.tolist(), rotation = 45,fontsize='x-large')
 ##                ax.xaxis.set_minor_locator(plt.NullLocator())
 ##                ax.tick_params(axis='x', labelleft=True)
