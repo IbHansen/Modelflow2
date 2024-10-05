@@ -1745,7 +1745,7 @@ class Model_help_Mixin():
                 
                 if update_growth:
                     lastvalue = df.loc[time2,varname]
-                    df.loc[resttime,varname]= [lastvalue * m for m in multiplier]
+                    df.loc[resttime,varname]= [lastvalue * float(m) for m in multiplier]
                     # breakpoint()
         return df
 

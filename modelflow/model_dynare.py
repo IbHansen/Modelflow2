@@ -10,6 +10,7 @@ Reads a list of expanded modfile (outputtet from dynare)
 import re
 import pandas as pd
 import sys 
+from pathlib import Path
 
 
 import modelclass as mc
@@ -47,7 +48,7 @@ creates 5 files:
     :{modelname}_cons.mod: A consolidated .mod file defining the model and parameters 
     :{modelname}.inf: A with model information - also displayes after execution
     '''
-    def __init__(self, files,save=True,savepath='',modelname = 'testmodel'):
+    def __init__(self, files,save=False,savepath='',modelname = 'testmodel'):
         ''' initialize a model'''
  
          
@@ -58,22 +59,29 @@ creates 5 files:
 
             self.alllines = ''
             self.alllines=  ' '.join([open(f,'rt').read() for f in self.filenames]).upper()    
-            self.paralines= ' '.join([open(f,'rt').read() for f in self.parafilenames]).upper()    
-            self.path,self.modelname=self.filenames[0][:-4].rsplit('\\',1)
-            self.savepath = savepath if savepath else self.path  
+            self.paralines= ' '.join([open(f,'rt').read() for f in self.parafilenames]).upper()   
+            file_path = Path(self.filenames[0])
+            # self.path,self.modelname=self.filenames[0][:-4].rsplit('\\',1)
+            # self.savepath = savepath if savepath else self.path  
         else:
-            self.alllines = files # we got a string 
-            self.savepath = savepath 
-            self.modelname = modelname    
-    
+            self.filenames     = files
+            self.alllines = open(file_path := Path(files),'rt').read()  # we got a string 
+            self.paralines = ''
+        
+        self.path = str(file_path.parent)
+        self.modelname = file_path.stem
+        self.savepath = savepath if savepath else Path(self.path)
+
     #%% get rid of comments
         rest = [l.split(r'//')[0].strip() for l in self.alllines.split('\n') 
                           if 0 != len(l.split(r'//')[0].strip())] 
         
         #%% get the model and make it  
         restmod = ' '.join(rest)
-        modelpat = r'model(.*?)end'.upper()
+        modelpat = r'model\(no_static\);(.*?)end'
         modellist = re.findall(modelpat,restmod) # extract all model segments 
+        # breakpoint()
+
         assert len(modellist) == len([l for l in rest if 'model' in l.lower()]),'Some model segments missing'
         
         lthismodel  = [f'frml <> {f} $' for f in ''.join(modellist).split(';') 
@@ -92,11 +100,11 @@ creates 5 files:
         resmodelresvar = [v for v in self.mresmodel.endogene]
         assert set(modelresvar)==set(resmodelresvar),'Residual model does not match residuals in the model'
 
-        
+        # breakpoint() 
         #%% get a model for injecting parameters 
-        parampat = r'parameters(.*?)(?:(?:model)|(?:var)|(?:exovar)|(?:$))'.upper()
+        parampat = r'parameters(.*?)(?:(?:model)|(?:var)|(?:exovar)|(?:$))'
         paramlist = re.findall(parampat,restmod)+[self.paralines]
-        assert len(paramlist)-1 == len([l for l in rest if 'parameters'.upper() in l]),'Some parameter segments missing'
+ #       assert len(paramlist)-1 == len([l for l in rest if 'parameters'.upper() in l]),'Some parameter segments missing'
         
         #new get all the parameter settings and make a model for injecting theese
         self.paravalues = sorted(set([re.sub(r'\s+','',f) for f in ''.join(paramlist).split(';') if 0 != len(f.strip()) and '=' in f ]))
@@ -108,14 +116,14 @@ creates 5 files:
         self.paravars = sorted({re.sub(r'\s+','',p) for p in llparavars.split(' ') if 0 != len(p.strip())})
         
         ##% Variables 
-        varpat = r'var[^e](.*?);'.upper()
+        varpat = r'var[^e](.*?);'
         varlist = re.findall(varpat,restmod)
         vars = {v for v in ' '.join(varlist).split(' ') if 0 !=len(v)}
         assert len(vars)==len(self.mthismodel.endogene),'Not all endogenous variables are declared'
         
-        exovarpat = r'varexo(.*?);'.upper()
+        exovarpat = r'varexo(.*?);'
         exovarlist = re.findall(exovarpat,restmod)
-        exovars = {v for v in ' '.join(exovarlist).split(' ') if 0 !=len(v)}
+        exovars = {v.upper()  for v in ' '.join(exovarlist).split(' ') if 0 !=len(v)}
         
         
         
@@ -134,12 +142,12 @@ creates 5 files:
         +f'Number of exogenous                       : {len(self.mthismodel.exogene)} \n'
         +f'Parameters                                : {len(self.paravars)} \n'
         +f'Parameters set to values                  : {len(self.paravalues)} \n'
-        +f'Exovar not in model                       : { set(exovars)- self.mthismodel.exogene} \n'
-        +f'Model exogenous not in exovar or parameter: {self.mthismodel.exogene- (set(exovars)|set(self.paravars))} \n'
-        +f'Parameters also in exovar                 : {set(exovars) & set(self.paravars)} \n'
-        +f'Parameters not in model                   : \n{newline.join(sorted(set(self.paravars)- self.mthismodel.exogene))} \n'
+     #   +f'Exovar not in model                       : { set(exovars)- self.mthismodel.exogene} \n'
+        +f'Model exogenous not in exovar or parameter: {len(self.mthismodel.exogene- (set(exovars)|set(self.paravars)))} \n'
+        +f'Parameters also in exovar                 : {len(set(exovars) & set(self.paravars))} \n'
+       # +f'Parameters not in model                   : \n{newline.join(sorted(set(self.paravars)- self.mthismodel.exogene))} \n'
         )
-        #print(inf)
+        print(self.inf)
         if save:
             with open(f'{self.savepath}\{self.modelname}.inf','wt') as inffile:
                 inffile.write(self.inf)
@@ -153,9 +161,10 @@ creates 5 files:
                 consfile.write(self.modout)
 
 if __name__ == '__main__' :
-
-    dmodel = grap_modfile([r'j:\mpptest\CRPLMANII-macroexp.mod'])
-    modmod = dmodel.modout
+    if 1:
+        dmodel = grap_modfile(r'C:/mfmodeller_raw/beast/MA-macroexp.mod')
+        modmod = dmodel.modout
+        
 #%%
     if 0:
         #%%

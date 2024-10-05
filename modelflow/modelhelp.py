@@ -111,7 +111,7 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',end='',create=1, l
                 ilocrow =databank.index.get_loc(start)-1
                 iloccol = databank.columns.get_loc(var)
                 temp=databank.iloc[ilocrow,iloccol]
-                factor = list(itertools.accumulate([(1+i/100+o) for i,o in zip(inputserie,orgdata)],op.mul))
+                factor = list(itertools.accumulate([(1.0+i/100.0+o) for i,o in zip(inputserie,orgdata)],op.mul))
                 opdater=[temp * it for it in factor]
                 outputserie=pd.Series(opdater,current_per) 
             else:
