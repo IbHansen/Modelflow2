@@ -22,7 +22,7 @@ import operator as op
 
 def update_var(databank,xvar,operator='=',inputval=0,start='',end='',create=1, lprint=False,scale=1.0):
     
-        """Updates a variable in the databank. Possible update choices are: 
+        r"""Updates a variable in the databank. Possible update choices are: 
         \n \= : val = inputval 
         \n \+ : val = val + inputval 
         \n \- : val = val - inputval 
@@ -118,6 +118,7 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',end='',create=1, l
                 raise Exception(f'Illegal operator in update:{operator} Variable: {var}')
                 outputserie=pd.Series(np.NaN,current_per) 
             outputserie.name=var
+            databank[var] = databank[var].astype('float')   # to prevent error in the future 
             databank.loc[current_per,var]=outputserie
             if lprint:
                 print('Update',operator,inputdata,start,end)
