@@ -743,7 +743,7 @@ def get_att_gui2(totdif,var='RP',spat = '*',desdic={},use='level',kind='bar'):
 
 def vtol(var):
     ''' replaces special characters in variable name to latex'''
-    return var.replace(r'_',r'\_').replace('{','\{').replace('}','\}')
+    return var.replace(r'_',r'\_').replace('{',r'\{').replace('}',r'\}')
 
 
 def an_expression_to_latex(exp,funks=[]):

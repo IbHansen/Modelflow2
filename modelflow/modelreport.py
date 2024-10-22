@@ -552,7 +552,7 @@ class DisplayDef:
  
    
    
-    def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,typesetter='xelatex  -interaction=batchmode'):
+    def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,typesetter='xelatex  -interaction=batchmode -no-shell-escape'):
         repo = LatexRepo(self.latex ,name=self.name)
         return repo.pdf(pdfopen,show,width,height,typesetter)
 
@@ -718,7 +718,7 @@ class LatexRepo:
  
   
     def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,
-            typesetter='xelatex  -interaction=batchmode'):
+            typesetter='xelatex  -interaction=batchmode -no-shell-escape '):
 
         """
         Generates a PDF file from the LaTeX content and optionally displays it.
@@ -1620,7 +1620,7 @@ class DisplayContainerDef:
         out = '\n'.join(l.latex for l in self.reports) 
         return out
     
-    def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,typesetter='xelatex  -interaction=batchmode'):
+    def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,typesetter='xelatex  -interaction=batchmode -no-shell-escape'):
         repo = LatexRepo(self.latex ,name=self.name)
         return repo.pdf(pdfopen,show,width,height,typesetter)
 

@@ -153,7 +153,7 @@ def defunk(funk, subs , streng,startp='{',slutp='}'):
 def findindex(ind):
     ''' find the index variables on the left hand side. meaning variables braced by {} '''
     lhs=ind.split('=')[0]
-    return  re.findall('\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
+    return  re.findall(r'\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
 
 def doable(ind,show=False):
     ''' find all dimensions in the left hand side of = and and decorate with the nessecary do .. enddo ''' 

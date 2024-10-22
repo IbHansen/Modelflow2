@@ -964,7 +964,7 @@ def findindex(ind00):
     else:
         ind = ind0
     lhs=ind.split('=')[0]
-    return  (re.findall('\{([A-Za-z][\w]*)\}',lhs )) # all the index variables 
+    return  (re.findall(r'\{([A-Za-z][\w]*)\}',lhs )) # all the index variables 
 
 def doablelist(expressions,sep='\n'):
     ''' create a list of tupels from expressions seperated by sep, 
@@ -1040,7 +1040,7 @@ def doable(formulars,funks=[]):
             ind = exp.strip()
             
             if ind.startswith('<'):
-                frml_name = re.findall('\<.*?\>',ind)[0]
+                frml_name = re.findall(r'\<.*?\>',ind)[0]
                 sumname = kw_frml_name(frml_name, 'sum')
                 if sumname:
                     lhs= ind.split('>',1)[1].split('=',1)[0]
@@ -1073,14 +1073,14 @@ def findindex_gams(ind00):
     this function find frmlname and index variables on the left hand side. meaning variables braced by {} '''
     ind0 = ind00.strip()
     if ind0.startswith('<'):
-        frmlname = re.findall('\<.*?\>',ind0)[0]
+        frmlname = re.findall(r'\<.*?\>',ind0)[0]
         ind = ind0[ind0.index('>')+1:].strip()
     else:
         frmlname='<>'
         ind=ind0.strip()
         
     if ind.startswith('['):
-        allindex = re.findall('\[.*?\]',ind0)[0]
+        allindex = re.findall(r'\[.*?\]',ind0)[0]
         index = allindex[1:-1].split(',')
         rest = ind[ind.index(']')+1:]
     else:
