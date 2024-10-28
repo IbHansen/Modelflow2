@@ -4461,9 +4461,9 @@ class Graph_Draw_Mixin():
                 display(Image(filename=pngname))
 
         if browser:
-            wb.open(svgname, new=2)
+            wb.open(f'file://{svgname.resolve()}', new=2)
         if fpdf:
-            wb.open(pdfname, new=2)
+            wb.open(f'file://{pdfname.resolve()}', new=2)
            # display(IFrame(pdfname,width=500,height=500))
          # os.system(pdfname)
         return
@@ -5206,12 +5206,12 @@ class Display_Mixin():
                 try:
                     fig.savefig(file_path)
                     if xopen:
-                        wb.open(file_path, new=2)
+                        wb.open(f'file://{file_path.resolve()}', new=2)
                 except Exception as e:
                     raise Exception(f"!!!Can't save/open file: {file_path}. Error: {e}")
 
         if xopen:
-            wb.open(folder.absolute(), new=1)
+            wb.open(f'file://{folder.absolute()}', new=1)
 
         return f'Saved at: {folder}'.replace('\\','/')
 

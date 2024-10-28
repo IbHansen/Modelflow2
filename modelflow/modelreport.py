@@ -794,7 +794,9 @@ class LatexRepo:
              raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex file, {latex_file}')
              
         if pdfopen:
-             wb.open(pdf_file , new=2)
+            fileurl = f'file://{pdf_file.resolve()}'
+            # print(fileurl)
+            wb.open(fileurl , new=2)
              
         if show:
              return IFrame(pdf_file, width=width, height=height)
