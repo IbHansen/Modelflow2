@@ -775,7 +775,7 @@ class LatexRepo:
          # xx0 = run(f'pdflatex  {self.name}.tex'      ,cwd = f'{latex_dir}')
         try:
             
-            xx0 = run(f'{typesetter}  {self.name}.tex'      ,cwd = f'{latex_dir}')
+            xx0 = run(f'{typesetter}  {self.name}.tex'      ,cwd = f'{latex_dir}', shell=True)
         except FileNotFoundError as e:
             # Catch the FileNotFoundError and print a message
             print(f"Error: {e}")
