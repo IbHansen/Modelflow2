@@ -72,10 +72,10 @@ Modules
 
 
 
-.. toctree::
-   :maxdepth: 3
-   :caption: Unsorted:
-   :glob:
+.. .. toctree::
+..    :maxdepth: 3
+..    :caption: Unsorted:
+..    :glob:
 
-   unsorted/*
+.. ..   unsorted/*
 

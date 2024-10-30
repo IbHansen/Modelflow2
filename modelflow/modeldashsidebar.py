@@ -6,7 +6,7 @@ Created on Fri May 14 22:46:21 2021
 """
 
 import dash
-from jupyter_dash import JupyterDash
+# from jupyter_dash import JupyterDash
 from jupyter_dash.comms import _send_jupyter_config_comm_request
 try:
     from dash import Dash, callback, html, dcc, dash_table, Input, Output, State, MATCH, ALL
@@ -106,16 +106,17 @@ def app_setup(jupyter=False):
     if jupyter: 
         # Timer(1,_send_jupyter_config_comm_request).start()
         # JupyterDash.infer_jupyter_proxy_config()
-        app = JupyterDash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
+        # app = JupyterDash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
+        app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
     else:
         app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     return app                 
 
-def app_run(app,jupyter=False,debug=False,port=5000,inline=True):
+def app_run(app,jupyter=False,debug=False,port=5000,inline=False):
     def open_browser(port=port):
     	webbrowser.open_new(f"http://localhost:{port}")
     
-    # print('hest')   
+    print(f'{jupyter=} {inline=}')   
     if jupyter:
         if inline:
             xx = app.run_server(debug=debug,port=port,mode='inline')
@@ -123,15 +124,15 @@ def app_run(app,jupyter=False,debug=False,port=5000,inline=True):
             Timer(1, open_browser).start()   
             # print('ko')   
 
-            xx =app.run_server(debug=debug,port=port,mode='external')
+            xx =app.run_server(debug=debug,port=port,jupyter_mode='tab')
             # print('gris')   
 
             # print(f'{xx=}')
 
     else:    
-        # Timer(1, open_browser).start()            
+        Timer(1, open_browser).start()            
 
-        xx = app.run_server(debug=debug,port=port,jupyter_mode="tab")
+        xx = app.run_server(debug=debug,port=port,mode="tab")
         
     
 
@@ -446,4 +447,4 @@ if __name__ == "__main__":
         _ = madam(scenarie)
         
     
-    _ =  Dash_graph(madam,'FY',debug = 0,all=1,filter=30,show_trigger=True,jupyter=True,up=1,dashport=5005)
+    _ =  Dash_graph(madam,'FY',debug = 0,all=1,filter=30,show_trigger=True,jupyter=True,up=1,dashport=5006)

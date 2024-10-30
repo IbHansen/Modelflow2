@@ -16,7 +16,6 @@ Text processing and normalization of model specification
    
    modelmanipulation
    modelnormalize
-   model_doable
 
 Onboarding models
 **************************************
