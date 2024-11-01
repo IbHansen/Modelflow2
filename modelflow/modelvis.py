@@ -354,6 +354,39 @@ class vis():
      def mul100(self):
          '''Multiply the current result with 1,  used to be 100- '''
          return self.__mul__(1.0) 
+     
+     def __getattr__(self, name):
+         if name.startswith('_ipython_') or name.startswith('_repr_'):
+             return 
+         allowed = {
+           'names' : 'Variable names',
+           'des' : 'Descriptions',
+           'frml' : 'Normalized equations',
+           'eviews':'Eviews equations',
+           'base' : 'basedf values',
+           'growth' : 'growth',
+           'difgrowth' : 'difference in growth',
+           'dif' : 'diffference in values',
+           'difpctlevel' : 'diffference in pct in values',
+           'difgrowth' : 'difgrowth',
+           'yoy_growth' : 'year on year growth (quarterly data)',
+           'qoq_ar' : 'Quarter to quarter annual rate growth (quarterly data)',
+           'df':'dataframe',
+           'print':'as string',
+           'endo':'narrow to endogeneous variables',
+           'exo':'narrow to exogenous variables',
+           'plot()':'plot the results',
+           'rename()':'rename variables to their descriptions',
+             
+             }
+         print(f'<{name}> not allowed try one of these:')
+         # Find the maximum length of the keys for alignment
+         max_key_length = max(len(key) for key in allowed)
+
+# Print each key-value pair aligned
+         for key, value in allowed.items():
+            print(f"{key:<{max_key_length}} : {value}")
+
          
 class compvis() :
      ''' Class to compare to runs in boxplots''' 
@@ -614,6 +647,26 @@ Note:
             out = self._showall(all=0,last=1)
             return out
 
+     def __getattr__(self, name):
+         if name.startswith('_ipython_') or name.startswith('_repr_'):
+             return 
+         allowed = {
+           'show' : 'show frml and data',
+           'showdif' : 'show oly differences ',
+           'frml' : 'Normalized equations',
+           'eviews':'Eviews equations',
+           'dash' : 'interactive causal graph interface',
+           'get_att()' : 'get impact attrribution ',
+           'tracepre()' : 'trace preceding variables',
+           'tracedep()' : 'trace dependent variables',
+             }
+         print(f'<{name}> not allowed try one of these:')
+         # Find the maximum length of the keys for alignment
+         max_key_length = max(len(key) for key in allowed)
+
+# Print each key-value pair aligned
+         for key, value in allowed.items():
+            print(f"{key:<{max_key_length}} : {value}")
 
         
                
