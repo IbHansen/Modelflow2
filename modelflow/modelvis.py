@@ -24,6 +24,7 @@ from typing import Any, List, Dict,  Optional
 from subprocess import run
 from pathlib import Path
 import webbrowser as wb
+import types
 
 
 
@@ -94,14 +95,19 @@ class vis():
              raise ValueError(f'The variable specification:"{pat}" did not generate any matches')
 
              
-
-             
          if isinstance(df,pd.DataFrame):
              self.thisdf = df 
          else:
              self.thisdf = self.model.lastdf.loc[:,self.names] 
+             
+             
+             
+             
+             
+             
          return
-
+         
+     
 
      def explain(self,**kwargs):
          for var in self.names:
@@ -135,6 +141,61 @@ class vis():
          display(a)
          return a 
      
+        
+     def rplot(self,*args,**kwargs):
+         """
+         Generates a table display configuration based on specified parameters and data types, including dynamic 
+         adjustments of display options using both standard and keyword arguments.
+     
+         Parameters:
+           pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
+           title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
+           datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
+           custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
+           dec (int): Number of decimal places for numerical output, passed directly to Line configuration, defaulting to 2.
+           heading (str): Optional heading line for the table, empty by default.
+           name (str): Name for the display, defaults to 'A_small_table'.
+           foot (str): Footer text.
+           rename (bool): Allows renaming of data columns
+           decorate (bool): Decorates row descriptions based on the showtype, defaulting to False.
+           width (int): Specifies the width for formatting output in characters, efaulting to 5.
+           chunk_size (int): Number of columns per chunk in the display output, defaulting to 0.
+           timeslice (List[int]): Time slice for data display, empty by default.
+           max_cols (int): Maximum columns when displayed as a string, faulting to the system wide setting.
+           last_cols (int): Specifies the number of last columns to include in a display slice, particularly in Latex.
+           col_desc  (str): text centered on columns 
+         
+         Returns:
+             DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
+                         such as units and type of transformation based on the datatype.
+     
+         
+         
+         """
+
+         
+
+         return self.model.plot(self.names,*args,**kwargs)
+   
+     def rtable(self,*args,**kwargs):
+        """
+        Generates a table display configuration based on specified parameters and data types, including dynamic 
+        adjustments of display options using both standard and keyword arguments.
+    
+        Parameters:
+          pat (str): Pattern or identifier used to select data for the line, defaulting to '#Headline'.
+          datatype (str): Type of data transformation to apply (e.g., 'growth', 'level'), defaulting to 'growth'.
+          title (str): Title of the table, passed directly to Options, defaulting to 'Table'.
+          custom_description (dict): Custom descriptions to augment or override default descriptions, empty by default.
+          ncol  (int):         
+        Returns:
+           DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
+                        such as units and type of transformation based on the datatype.
+    
+        
+        
+         """
+        return self.model.table(self.names,*args,**kwargs)
         
      def plot_alt(self,title='Title',*args, **kwargs):
          ''' Displays a plot for each of the columns in the resulting dataframe '''
@@ -353,10 +414,11 @@ class vis():
      @property
      def mul100(self):
          '''Multiply the current result with 1,  used to be 100- '''
+         raise Exception ('mul100 cnat be used any more')
          return self.__mul__(1.0) 
      
      def __getattr__(self, name):
-         if name.startswith('_ipython_') or name.startswith('_repr_'):
+         if name.startswith('_'):
              return 
          allowed = {
            'names' : 'Variable names',
@@ -364,19 +426,22 @@ class vis():
            'frml' : 'Normalized equations',
            'eviews':'Eviews equations',
            'base' : 'basedf values',
-           'growth' : 'growth',
-           'difgrowth' : 'difference in growth',
-           'dif' : 'diffference in values',
-           'difpctlevel' : 'diffference in pct in values',
-           'difgrowth' : 'difgrowth',
-           'yoy_growth' : 'year on year growth (quarterly data)',
+           'growth' : 'Growth',
+           'difgrowth' : 'Difference in growth',
+           'dif' : 'Diffference in values',
+           'difpctlevel' : 'Diffference in pct in values',
+           'difgrowth' : 'Difgrowth',
+           'yoy_growth' : 'Year on year growth (quarterly data)',
            'qoq_ar' : 'Quarter to quarter annual rate growth (quarterly data)',
-           'df':'dataframe',
-           'print':'as string',
-           'endo':'narrow to endogeneous variables',
-           'exo':'narrow to exogenous variables',
-           'plot()':'plot the results',
-           'rename()':'rename variables to their descriptions',
+           'show':'Display widget with summary of variables - default output in jupyter',
+           'df':'Returns DataFrame',
+           'print':'Print DataFrame as string',
+           'plot()':'Plot the results',
+           'rplot()':"Report plot variables - default datatype='growth'",
+           'rtable()':"Report table variables - default datatype='growth'",
+           'rename()':'Rename variables to their descriptions',
+           'endo':'Limit to endogeneous variables',
+           'exo':'Limit to exogenous variables',
              
              }
          print(f'<{name}> not allowed try one of these:')
@@ -648,14 +713,14 @@ Note:
             return out
 
      def __getattr__(self, name):
-         if name.startswith('_ipython_') or name.startswith('_repr_'):
+         if name.startswith('_'):
              return 
          allowed = {
            'show' : 'show frml and data',
            'showdif' : 'show oly differences ',
            'frml' : 'Normalized equations',
            'eviews':'Eviews equations',
-           'dash' : 'interactive causal graph interface',
+           'dash' : 'causality dashboard',
            'get_att()' : 'get impact attrribution ',
            'tracepre()' : 'trace preceding variables',
            'tracedep()' : 'trace dependent variables',
