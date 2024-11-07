@@ -57,6 +57,9 @@ log.setLevel(logging.ERROR)
 # log.setLevel(logging.DEBUG)
 
 
+first_call = True
+
+
 
 initial_dot_source = """
 digraph  {
@@ -102,7 +105,7 @@ CONTENT_STYLE_TAB = {
 
 
 def app_setup(jupyter=False):  
-    print('apprun')
+    # print('apprun')
     if jupyter: 
         # Timer(1,_send_jupyter_config_comm_request).start()
         # JupyterDash.infer_jupyter_proxy_config()
@@ -113,18 +116,21 @@ def app_setup(jupyter=False):
     return app                 
 
 def app_run(app,jupyter=False,debug=False,port=5000,inline=False):
+    global first_call
     def open_browser(port=port):
     	webbrowser.open_new(f"http://localhost:{port}")
     
-    print(f'{jupyter=} {inline=}')   
+    # print(f'{jupyter=} {inline=}')   
     if jupyter:
         if inline:
             xx = app.run_server(debug=debug,port=port,mode='inline')
         else:     
-            Timer(1, open_browser).start()   
+            if first_call or  1:
+                Timer(1, open_browser).start()   
+                first_call = False
             # print('ko')   
 
-            xx =app.run_server(debug=debug,port=port,jupyter_mode='tab')
+            xx =app.run_server(debug=debug,port=port,jupyter_mode='external')
             # print('gris')   
 
             # print(f'{xx=}')
@@ -132,7 +138,7 @@ def app_run(app,jupyter=False,debug=False,port=5000,inline=False):
     else:    
         Timer(1, open_browser).start()            
 
-        xx = app.run_server(debug=debug,port=port,mode="tab")
+        xx = app.run_server(debug=debug,port=port,mode="external")
         
     
 
@@ -197,7 +203,7 @@ class Dash_graph():
      time_att  : bool = False 
      attshow :bool = False
      all : bool = False 
-     dashport : int = 5001
+     port : int = 5001
      debug : bool = False
      jupyter : bool = True 
      show_trigger : bool = False 
@@ -432,7 +438,7 @@ class Dash_graph():
             outvar_state = self.outvar_state
             return [dot_out, chart_out, chart_dif_out, att_pct_out, att_level_out, outvar_state ,dash.no_update,]
         
-        app_run(self.app,jupyter=self.jupyter,debug=self.debug,port=self.dashport,inline=self.inline)
+        app_run(self.app,jupyter=self.jupyter,debug=self.debug,port=self.port,inline=self.inline)
 #%test        
 if __name__ == "__main__":
 
@@ -447,4 +453,4 @@ if __name__ == "__main__":
         _ = madam(scenarie)
         
     
-    _ =  Dash_graph(madam,'FY',debug = 0,all=1,filter=30,show_trigger=True,jupyter=True,up=1,dashport=5006)
+    _ =  Dash_graph(madam,'FY',debug = 0,all=1,filter=30,show_trigger=True,jupyter=True,up=1,port=5006)

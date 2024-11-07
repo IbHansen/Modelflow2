@@ -556,19 +556,26 @@ To allow the use of the display in presentations or publications The resulting f
        '''
        self.model.draw(self.var,down=0,up=up,sink=self.var,**kwargs)
 
-     @property
-     def dash(self):
-       '''Trace dependensies of name down to level down'''
-       self.model.modeldash(self.var)
+     def dash(self,port=5001):
+        """
+        Launch a dashboard to trace dependencies of the specified variable.
+    
+        This method initializes a dashboard to visualize and trace dependencies 
+        of a specific variable within the model. The dashboard provides insights 
+        into how the selected variable is influenced by other components at various 
+        levels of the dependency hierarchy.
+    
+        Parameters:
+        ----------
+        port : int, optional
+            The port on which to launch the dashboard. Default is 5001.
+    
+        Returns:
+        -------
+        None
+        """
+        self.model.modeldash(self.var,port=port)
 
-     @property
-     def dash2(self):
-       '''Trace dependensies of name down to level down poer = 5002'''
-       self.model.modeldash(self.var,dashport=5002)
-
-     def dashport(self,port=5002):
-       '''Trace dependensies of name down to level down'''
-       self.model.modeldash(self.var,dashport=port)
 
 
      def get_att(self,start='',end='',dec=None,bare=True,**kwargs):

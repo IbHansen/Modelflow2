@@ -7984,11 +7984,30 @@ class Solver_Mixin():
 class Dash_Mixin():
     '''This mixin wraps call the Dash dashboard '''
     def modeldash(self,var,**kwargs):
+        
+        """Launch a causality dashboard to trace dependencies of the specified variable.
+    
+        This method initializes a dashboard to visualize and trace dependencies 
+        of a specific variable within the model. The dashboard provides insights 
+        into how the selected variable is influenced by other components at various 
+        levels of the dependency hierarchy.
+    
+        Parameters:
+        ----------
+        var : str,  The variable to use as starting point 
+        port : int, optional
+            The port on which to launch the dashboard. Default is 5001.
+    
+        Returns:
+        -------
+        None
+        """
+
         try:
             from modeldashsidebar import Dash_graph
             ...
             out = Dash_graph(self,var.upper() ,**kwargs)
-            return out 
+          #  return out 
         except Exception as e:
             print(f'No Dash, {str(e)}')
             return None
