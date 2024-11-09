@@ -406,6 +406,14 @@ class vis():
          # print(f'{endovar=}')
          return vis(model=self.model,df=muldf,pat = ' '.join( endovar ))
 
+     @property    
+     def endo_nofit(self):
+         ''' only endogennous variables.  columns '''
+         endovar = [v for v in self.names if v in self.model.endogene and not v.endswith('_FITTED')]
+         muldf = self.thisdf.loc[:,endovar] 
+         # print(f'{endovar=}')
+         return vis(model=self.model,df=muldf,pat = ' '.join( endovar ))
+
 
      def mul(self,other):
          ''' Multiply the curent result with other '''
@@ -441,6 +449,7 @@ class vis():
            'rtable()':"Report table variables - default datatype='growth'",
            'rename()':'Rename variables to their descriptions',
            'endo':'Limit to endogeneous variables',
+           'endo_nofit':'Limit to endogeneous variables not ending in "_FITTED"',
            'exo':'Limit to exogenous variables',
              
              }

@@ -141,7 +141,9 @@ class BaseModel():
     def __init__(self, i_eq='', modelname='testmodel', silent=False, straight=False, funks=[],
                  tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= False,
                  var_description={}, model_description = '', 
-                 var_groups = {}, reports = {}, equations_latex='', eviews_dict = {},use_fbmin= True,
+                 var_groups = {}, reports = {}, equations_latex='', 
+                 eviews_dict = {},use_fbmin= True,
+                 substitution = {},
                  **kwargs):
         ''' initialize a model'''
         if i_eq != '':
@@ -176,6 +178,8 @@ class BaseModel():
             self.model_description= model_description
             self.eviews_dict = eviews_dict
             self.equations_latex = equations_latex
+            
+            self.substitution = substitution.copy() 
         return
 
     @classmethod
@@ -1139,9 +1143,15 @@ class Org_model_Mixin():
 
         ipat = upat
         # breakpoint() 
-        patlist = [apat.upper()  for p in ipat for apat in p.split('|' if p.startswith('!') else ' ' )] 
-        # patlist = [self.var_groups[apat[1:]] if apat.startswith('#') else apat for apat in patlist0]
-        # print(f'{patlist=}') 
+        patlist = [apat  for p in ipat for apat in p.split('|' if p.startswith('!') else ' ' )] 
+        try:
+            patlist = [p.format_map(self.substitution) for p in patlist]
+        except Exception as e:
+            print(e)
+            print(f'{patlist=}') 
+            ...  
+        patlist = [apat.upper() for apat in patlist]    
+       # patlist = [self.var_groups[apat[1:]] if apat.startswith('#') else apat for apat in patlist0]
         try:
             out = [v for  up in patlist  for v in sorted(
                 self.deslist(up[1:] ) if up.startswith('!')
@@ -2788,6 +2798,17 @@ class Description_Mixin():
         allvarset = set(self.allvar.keys())
     
         self._var_description = self.defsub({k:v for k,v in a_dict.items() if k in allvarset})
+
+    @property 
+    def substitution(self):
+        '''A dictionary with variable descriptions, if no value matching the key the variable name is returned ''' 
+        return self._substitution
+    
+    @substitution.setter
+    def substitution(self,a_dict):
+    
+        self._substitution = {k:v for k,v in a_dict.items()}
+
     
     @property    
     def var_description_reverse(self):
@@ -5842,6 +5863,7 @@ class Json_Mixin():
 
             'model_description'     : self.model_description,
             'eviews_dict'           : self.eviews_dict,
+            'substitution'      : self.substitution, 
 
  
         }
@@ -5960,6 +5982,7 @@ class Json_Mixin():
         mmodel.reports    = input.get('reports',{} )
         mmodel.model_description = input.get('model_description', '')
         mmodel.eviews_dict = input.get('eviews_dict', {})
+        mmodel.var_interpollation = input.get('substitution',{})
         
         # mmodel.json_string = json_string
 

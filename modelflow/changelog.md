@@ -178,5 +178,8 @@ fix qoq_ar in reports
 download_github_repo nov can open in colab 
 display_toc_github for colab 
 2.35 released
-
+plot,table,text
+[].rplot 
+[].rtable 
+.vis.endo_nofit  
 
