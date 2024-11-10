@@ -1144,12 +1144,14 @@ class Org_model_Mixin():
         ipat = upat
         # breakpoint() 
         patlist = [apat  for p in ipat for apat in p.split('|' if p.startswith('!') else ' ' )] 
+       
+        # print(f'{patlist=}') 
         try:
-            patlist = [p.format_map(self.substitution) for p in patlist]
+            patlist = [self.string_substitution(p) for p in patlist]
         except Exception as e:
+            ...  
             print(e)
             print(f'{patlist=}') 
-            ...  
         patlist = [apat.upper() for apat in patlist]    
        # patlist = [self.var_groups[apat[1:]] if apat.startswith('#') else apat for apat in patlist0]
         try:
@@ -2799,17 +2801,19 @@ class Description_Mixin():
     
         self._var_description = self.defsub({k:v for k,v in a_dict.items() if k in allvarset})
 
-    @property 
-    def substitution(self):
-        '''A dictionary with variable descriptions, if no value matching the key the variable name is returned ''' 
-        return self._substitution
-    
-    @substitution.setter
-    def substitution(self,a_dict):
-    
-        self._substitution = {k:v for k,v in a_dict.items()}
+    def string_substitution(self,astring):
+        try:
+            return astring.format_map(self.substitution)
+        except:
+            print('No substitution performed')
+            print(f'String:{astring}')
+            print('Dictionary: ')
+            max_key_length = max(len(key) for key in self.substitution.keys())
+   # Print each key-value pair aligned
+            for key, value in self.substitution.items():
+               print(f"{key:<{max_key_length}} : {value}")
+            raise Exception("No match in dictionary to keyword")
 
-    
     @property    
     def var_description_reverse(self):
         return  {v.upper() : k for k,v in self.var_description.items()}
