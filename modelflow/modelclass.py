@@ -1110,7 +1110,7 @@ class Org_model_Mixin():
         return ''.join(udlist)
     
     # @lru_cache(maxsize=2048)
-    def vlist(self, pat):
+    def vlist(self, pat,debug=False):
         '''
         Returns a list of variable in the model matching the pattern, the pattern can be a list of patterns
 
@@ -1145,7 +1145,8 @@ class Org_model_Mixin():
         # breakpoint() 
         patlist = [apat  for p in ipat for apat in p.split('|' if p.startswith('!') else ' ' )] 
        
-        # print(f'{patlist=}') 
+        if debug: 
+            print(f'\nPattern list before substitution:\n{patlist}') 
         try:
             patlist = [self.string_substitution(p) for p in patlist]
         except Exception as e:
@@ -1154,6 +1155,9 @@ class Org_model_Mixin():
             print(f'{patlist=}') 
         patlist = [apat.upper() for apat in patlist]    
        # patlist = [self.var_groups[apat[1:]] if apat.startswith('#') else apat for apat in patlist0]
+        if debug: 
+            print(f'\nPattern list after substitution:\n{patlist}') 
+
         try:
             out = [v for  up in patlist  for v in sorted(
                 self.deslist(up[1:] ) if up.startswith('!')
@@ -1821,6 +1825,15 @@ class Model_help_Mixin():
 
         def __missing__(self, key):
             return key
+
+    @staticmethod
+    class defsub_braces(dict):
+        '''A subclass of dict.
+        if a *defsub* is indexed by a nonexisting keyword it just return the keyword sorounded by braces '''
+
+        def __missing__(self, key):
+            return f'{{{key}}}'
+
 
     def test_model(self, base_input, start=None, end=None, maxvar=1_000_000, maxerr=100, tol=0.0001, showall=False, dec=8, width=30, ref_df=None):
         '''
@@ -2800,6 +2813,16 @@ class Description_Mixin():
         allvarset = set(self.allvar.keys())
     
         self._var_description = self.defsub({k:v for k,v in a_dict.items() if k in allvarset})
+ 
+    @property 
+    def substitution(self):
+        '''A dictionary with variable descriptions, if no value matching the key the variable name is returned ''' 
+        return self._substitution
+    
+    @substitution.setter
+    def substitution(self,a_dict):
+  
+        self._substitution = self.defsub_braces({k: v for k,v in  a_dict.items() })
 
     def string_substitution(self,astring):
         try:
@@ -8388,7 +8411,7 @@ class Report_Mixin:
 
     def text(self,input= ''):
         from modelreport import get_DisplayTextDef
-        return get_DisplayTextDef(input)
+        return get_DisplayTextDef(self,input)
 
     def report_from_spec(self,json_str):
         from modelreport import  create_instance_from_json

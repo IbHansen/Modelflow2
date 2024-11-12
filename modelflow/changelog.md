@@ -182,4 +182,4 @@ plot,table,text
 [].rplot 
 [].rtable 
 .vis.endo_nofit  
-
+defered text substitution in vlist and reports title, and text

@@ -564,7 +564,7 @@ class DisplayDef:
         :return: A new DisplayDef instance with merged specifications.
         """
         if isinstance(other, str):
-                out = DisplayContainerDef(mmodel=self.mmodel,reports= [self]  + [get_DisplayTextDef(other)])
+                out = DisplayContainerDef(mmodel=self.mmodel,reports= [self]  + [get_DisplayTextDef(self.mmodel,other)])
 
         else:
       
@@ -582,7 +582,7 @@ class DisplayDef:
         """
         if isinstance(other, str):
             # If the left-hand side operand is a string, this method will be called
-                linstance =  get_DisplayTextDef(input_string = other)
+                linstance =  get_DisplayTextDef(self.mmodel,input_string = other)
           
             
                 out = DisplayContainerDef(mmodel=self.mmodel,reports= [linstance,self])
@@ -957,7 +957,7 @@ class DisplayVarTableDef(DisplayDef):
     @property 
     def show(self):
         if self.options.title: 
-            print(self.options.title)
+            print(self.mmodel.string_substitution(self.options.title))
         print(self.df_str_disp_transpose  if self.options.transpose else  self.df_str_disp)
         if self.options.foot: 
             print(self.options.foot)
@@ -1011,7 +1011,7 @@ class DisplayVarTableDef(DisplayDef):
             html_all = self.mmodel.ibsstyle(df,use_tooltip=False,dec=line.dec).to_html() 
             splitted_html = HTMLSplitData(html_all)
             if i == 0:
-                caption = f'<caption>{self.options.title}</caption>' if self.options.title else '' 
+                caption = f'<caption>{self.mmodel.string_substitution(self.options.title)}</caption>' if self.options.title else '' 
                 out = splitted_html.text_before_thead + caption + '<thead>' + splitted_html.thead+'\n'
                 
                 
@@ -1097,7 +1097,7 @@ class DisplayVarTableDef(DisplayDef):
                 df.index = newindex
                 tabformat = 'l'+'r'*(ncol-last_cols) + ( ('|'+'r'*last_cols) if last_cols else '') 
                 outlist = outlist + [df.style.format(lambda x:x) \
-                 .set_caption(self.options.title + ('' if i == 0 else ' - continued ')) \
+                 .set_caption(self.mmodel.string_substitution(self.options.title) + ('' if i == 0 else ' - continued ')) \
                  .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots')
                  .replace(r'\caption{',r'\caption{')] # to be used if no numbering 
                    
@@ -1144,7 +1144,7 @@ class DisplayVarTableDef(DisplayDef):
           tabformat = 'l'+'r'*len(thisdf.columns) 
     
           latex_df = (thisdf.style.format(lambda x:x)
-                   .set_caption(self.options.title) 
+                   .set_caption(self.mmodel.string_substitution(self.options.title)) 
                    .to_latex(hrules=True, position='ht', column_format=tabformat)
                    .replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ) 
           out = latex_df
@@ -1423,7 +1423,7 @@ class DisplayKeepFigDef(DisplayDef):
 
          
          if options.samefig: 
-             fig.suptitle(options.title ,fontsize=20) 
+             fig.suptitle(self.mmodel.string_substitution(options.title) ,fontsize=20) 
 
              if options.legend  and all_by_var and not self.base_last: 
                  handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
@@ -1433,7 +1433,7 @@ class DisplayKeepFigDef(DisplayDef):
          else:
             for v,fig in figs.items() :
                 if options.title: 
-                    fig.suptitle(options.title ,fontsize=20) 
+                    fig.suptitle(self.mmodel.string_substitution(options.title) ,fontsize=20) 
 
          
          
@@ -1538,7 +1538,7 @@ class DisplayTextDef(DisplayDef):
          :return: A new DisplayDef instance with merged specifications.
          """
          if isinstance(other, str):
-                 out = get_DisplayTextDef(other)
+                 out = get_DisplayTextDef(self.mmodel,other)
 
          elif  isinstance(other, self.__class__):
                  out = other
@@ -1561,13 +1561,13 @@ class DisplayTextDef(DisplayDef):
  
     @property 
     def latex(self) :
-        return self.latex_text
+        return self.mmodel.string_substitution(self.latex_text)
     
   
 
     @property
     def out_html(self):
-        return HTML(self.html_text)
+        return HTML(self.mmodel.string_substitution(self.html_text))
 
     @property 
     def sheetwidget(self):
@@ -1578,7 +1578,7 @@ class DisplayTextDef(DisplayDef):
 
     @property 
     def show(self):
-        print(self.text_text)
+        print(self.mmodel.string_substitution(self.text_text))
         
 
         
@@ -1598,7 +1598,7 @@ class DisplayContainerDef:
         :return: A new DisplayDef instance with merged specifications.
         """
         if isinstance(other, str):
-            out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [get_DisplayTextDef(other)])
+            out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [get_DisplayTextDef(self.mmodel,other)])
 
         else: 
             out = DisplayContainerDef(mmodel=self.mmodel,reports= self.reports + [other])
@@ -2048,7 +2048,7 @@ def split_text(input_string):
     first_part = input_string[:text_end]
     return first_part, latex_content, html_content, markdown_content
 
-def get_DisplayTextDef(input_string):
+def get_DisplayTextDef(mmodel,input_string):
     """
     Create a DisplayTextDef object based on the input string.
 
@@ -2063,7 +2063,7 @@ def get_DisplayTextDef(input_string):
     
     # Create a DisplayTextDef object with the extracted content
     
-    out = DisplayTextDef(spec=DisplaySpec(options=Options(
+    out = DisplayTextDef(mmodel=mmodel,spec=DisplaySpec(options=Options(
         text_text=text_obj.text_text,
         html_text=text_obj. html_text,
         latex_text=text_obj.latex_text, 
