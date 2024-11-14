@@ -42,6 +42,7 @@ from tqdm import tqdm
 import json 
 from pathlib import Path
 import gzip 
+import warnings
 
 
 from modelclass import model 
@@ -241,6 +242,8 @@ class GrabWfModel():
         disable_progress   : bool = False # Disable progress bar
         save_file          : bool = False # save information to file 
         model_description  :  str = '' # model description 
+        cty                : str = '' # country prefix like PAK 
+        cty_name           : str = '' # country name like Pakistan 
   
     '''
     
@@ -261,6 +264,8 @@ class GrabWfModel():
     disable_progress   : bool = False # Disable progress bar
     save_file          : bool = False # save information to file 
     model_description  :  str = '' # model description 
+    cty                : str = '' # country prefix like PAK 
+    cty_name           : str = '' # country name like Pakistan 
 
     def __post_init__(self):
         '''Process the model'''
@@ -345,11 +350,13 @@ class GrabWfModel():
         self.mmodel.model_description  = self.model_description 
 
         self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options'] 
+        self.mmodel.substitution= {'cty':self.cty if self.cty else self.modelname,
+                                   'cty_name' : self.cty_name if self.cty_name else self.modelname}
        
         # self.mmodel.set_var_description(self.model_all_about['var_description'])
        
         self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')
-        breakpoint()
+        # breakpoint()
         
         try:
             temp_start,temp_end  = self.mfmsa_start_end
@@ -357,7 +364,7 @@ class GrabWfModel():
             if  type(self.start) == type(None) or type(self.end)   == type(None):
                 raise Exception('Can not read start and end from MFMSA. Provide start and end in call ')
               
-        
+        self.missing_descriptions = [v for v in sorted(self.mmodel.allvar) if v == self.mmodel.var_description[v]]
         self.start = temp_start if type(self.start) == type(None) else self.start
         self.end   = temp_end   if type(self.end)   == type(None) else self.end 
         try: 
@@ -429,8 +436,10 @@ class GrabWfModel():
             print('*** No variable description in wf1 file',flush=True)
             this  = {}
         generic = self.wb_default_descriptions
+        print(f'var_description loaded from WF {len(this)=}')
+
         # breakpoint() 
-        this_both = {**generic,**this}         
+        this_both = {**this,**generic}         
         out = self.mmodel.enrich_var_description(this_both)
         return out 
     
@@ -448,11 +457,11 @@ class GrabWfModel():
                 
             lines = lines_all.split('\n') 
             alldes = {line.split(' ',1)[0] : line.split(' ',1)[1] for line in lines }
-            var_description_this = {resvar: des for  desvar, des in alldes.items() if ((resvar:= f'{self.modelname}{desvar}') in self.mmodel.allvar.keys()) }
-            var_description_wld = {desvar: des for  desvar, des in alldes.items() if desvar  in self.mmodel.allvar.keys()} 
+            var_description_this = {resvar: des for  desvar, des in alldes.items() if ((resvar:= f'{self.cty}{desvar}') in self.mmodel.allvar.keys()) }
+            var_description_wld  = {desvar: des for  desvar, des in alldes.items() if desvar  in self.mmodel.allvar.keys()} 
             
             var_description = {**var_description_this, **var_description_wld} 
-            print('Default WB var_description loaded')
+            print(f'Default WB var_description loaded {self.cty=} {len(var_description)=}')
             return var_description
         except:
             print('No default WB var_description loaded')
@@ -492,14 +501,14 @@ class GrabWfModel():
     def var_groups(self):
         print('Default WB var_group loaded')
 
-        return {'Headline': '???GDPpckn ???NRTOTLCN ???LMEMPTOTL ???BFFINCABDCD  ???BFBOPTOTLCD ???GGBALEXGRCN ???BNCABLOCLCD_ ???FPCPITOTLXN',
- 'National income accounts': '???NY*',
- 'National expenditure accounts': '???NE*',
- 'Value added accounts': '???NV*',
- 'Balance of payments exports': '???BX*',
- 'Balance of payments exports and value added ': '???BX* ???NV*',
- 'Balance of Payments Financial Account': '???BF*',
- 'General government fiscal accounts': '???GG*',
+        return {'Headline': '{cty}NYGDPMKTPXN {cty}NRTOTLCN {cty}LMUNRTOTL_ {cty}BFFINCABDCD  {cty}BFBOPTOTLCD {cty}GGBALEXGRCN {cty}GGDBTTOTLCN {cty}BNCABLOCLCD_ {cty}FPCPITOTLXN',
+ 'National income accounts': '{cty}NY*',
+ 'National expenditure accounts': '{cty}NE*',
+ 'Value added accounts': '{cty}NV*',
+ 'Balance of payments exports': '{cty}BX*',
+ 'Balance of payments exports and value added ': '{cty}BX* {cty}NV*',
+ 'Balance of Payments Financial Account': '{cty}BF*',
+ 'General government fiscal accounts': '{cty}GG*',
  'World all': 'WLD*',
  f'{self.modelname} all' : '*'}
     
@@ -535,14 +544,16 @@ class GrabWfModel():
         #% now set the values of the dummies   
         # breakpoint() 
         during_vars = self.mmodel.vlist('*during_*')
-        for varname,(dur,per) in ((v,v.split('_',1)) for v in during_vars):
-            df.loc[:,varname]=0
-            # print(varname,dur,per)
-            pers = per.split('_')
-            if len(pers) == 1:
-                df.loc[per_transform(pers[0]),varname] = 1
-            else:
-                df.loc[per_transform(pers[0]):per_transform(pers[1]),varname]=1.
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+            for varname,(dur,per) in ((v,v.split('_',1)) for v in during_vars):
+                df.loc[:,varname]=0
+                # print(varname,dur,per)
+                pers = per.split('_')
+                if len(pers) == 1:
+                    df.loc[per_transform(pers[0]),varname] = 1
+                else:
+                    df.loc[per_transform(pers[0]):per_transform(pers[1]),varname]=1.
         self.showduringvars = df[during_vars] 
         
         if self.make_fitted:
@@ -642,8 +653,8 @@ if __name__ == '__main__':
         mda_eviews_run_lines = ['Scalar _MDASBBREV_at_COEF_2 = _MDASBBREV.@COEF(+2)']
         
     
-        filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-        filedict = {f.stem[:3].lower():f for f in Path('C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
+        filedict = {f.stem[:3].lower():f for f in Path(r'C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
+        filedict = {f.stem[:3].lower():f for f in Path(r'C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
         modelname = 'pak'
         filename = filedict[modelname]
         

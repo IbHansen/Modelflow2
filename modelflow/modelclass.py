@@ -1295,7 +1295,7 @@ class Org_model_Mixin():
         dvalues = [float(get_a_value(self.lastdf, per, var, lag) -
                          get_a_value(self.basedf, per, var, lag)) for per in self.current_per]
         if pct:
-            pvalues = [(100*d/b if b != 0.0 else np.NAN)
+            pvalues = [(100*d/b if b != 0.0 else np.nan)
                        for b, d in zip(bvalues, dvalues)]
             df = pd.DataFrame([bvalues, lvalues, dvalues, pvalues], index=[
                               'Base', 'Last', 'Diff', 'Pct'], columns=self.current_per)
@@ -6009,7 +6009,7 @@ class Json_Mixin():
         mmodel.reports    = input.get('reports',{} )
         mmodel.model_description = input.get('model_description', '')
         mmodel.eviews_dict = input.get('eviews_dict', {})
-        mmodel.var_interpollation = input.get('substitution',{})
+        mmodel.substitution = input.get('substitution',{})
         
         # mmodel.json_string = json_string
 
