@@ -185,3 +185,4 @@ plot,table,text
 defered text substitution in vlist and reports title, and text
 fixes 3.12 in modelGrabwf2
 model.substitution set in modelgrabwf2
+suppress performance warning in modelgrabwf2
