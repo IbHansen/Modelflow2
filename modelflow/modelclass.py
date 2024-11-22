@@ -2975,10 +2975,13 @@ class Modify_Mixin():
         reports =  self.reports | another_model.reports ,
         equations_latex = self.equations_latex+ another_model.equations_latex ,
         eviews_dict = {**self.eviews_dict,**another_model.eviews_dict},
+        substitution = self.substitution | another_model.substitution, 
+
         model_description = f'''This model was created by combining the two models:{self.name} and {another_model.name}\n
         {self.name} description:\n{self.model_description}\n
         {another_model.name} description:\n{another_model.model_description}''')
         mnew.lastdf = pd.concat([self.lastdf,another_model.lastdf],axis=1).fillna(0.0 )
+        
         mnew.current_per = self.current_per
         return mnew     
     
@@ -3034,7 +3037,7 @@ class Modify_Mixin():
                           var_groups = self.var_groups , 
                           reports = self.reports , 
                           equations_latex='',
-                             
+                          substitution = self.substitution,   
                                       
                                       )
         print(f'\nThe model:"{self.name}" Has endogeneous variable flipped, new model name is:"{newmodelname}"')
@@ -3083,6 +3086,7 @@ class Modify_Mixin():
                           reports = self.reports , 
                           eviews_dict = neweviewsdict ,
                           equations_latex='',
+                          substitution = self.substitution
                                       
                                       )
         print(f'\nThe model:"{self.name}" Has equations deleted, new model name is:"{newmodelname}"')
@@ -3164,7 +3168,7 @@ class Modify_Mixin():
                                  model_description = self.model_description, 
                                  var_groups = self.var_groups , 
                                  reports = self.reports , 
-
+                                 substitution = self.substitution, 
                                  equations_latex='',
                                
                                       

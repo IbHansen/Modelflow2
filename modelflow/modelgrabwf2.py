@@ -516,7 +516,7 @@ class GrabWfModel():
  'Balance of Payments Financial Account': '{cty}BF*',
  'General government fiscal accounts': '{cty}GG*',
  'World all': 'WLD*',
- f'{self.modelname} all' : '*'}
+  'All variables' : '*'}
     
     
     @functools.cached_property
@@ -576,7 +576,8 @@ class GrabWfModel():
             df = self.mfitmodel.res(df,self.fit_start,self.fit_end)
         
         # breakpoint()
-        df_out = self.mmodel.insertModelVar(df).pipe(self.country_df_trans).fillna(0.0)
+        df = df.loc[:,[c for c in df.columns if c in self.mmodel.allvar_set]]
+        df_out = self.mmodel.insertModelVar(df).pipe(self.country_df_trans).astype('float64').fillna(0.0)
         
         
         return df_out
@@ -636,6 +637,8 @@ class GrabWfModel():
                 print(f"{v:{self.mmodel.maxnavlen}}, Max difference:{maxdiff:15.8f} Max Pct {maxpct:15.10f}% It is number {i:5} in the solveorder and error number {err}")
                 if showall:
                     print(f'{self.mmodel.allvar[v]["frml"]}')
+                    print(f'{self.mmodel.var_description[v]}')
+
                     print(f'\nResult of equation \n {check}\n')
                     if showinput:
                         print(f'\nEquation values before calculations: \n {self.mmodel.get_eq_values(v,last=False,showvar=1)} \n')
