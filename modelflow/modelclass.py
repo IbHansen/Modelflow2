@@ -6270,8 +6270,12 @@ class Solver_Mixin():
         if hasattr(self, 'oldkwargs'):
             newkwargs = {**self.oldkwargs, **kwargs}
         else:
-            newkwargs = kwargs
-
+            newkwargs  = kwargs
+            
+            
+        if 'reset_options' in newkwargs:
+            del newkwargs['reset_options']
+            
         self.oldkwargs = newkwargs.copy()
 
         self.save = newkwargs.get('save', self.save)
