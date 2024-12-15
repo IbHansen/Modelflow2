@@ -329,7 +329,6 @@ if __name__ == '__main__':
     normal('PCT_growth(a) = n(-1)',add_add_factor=0).fprint
     normal('a = movavg(pct(b),2)',add_add_factor=0).fprint
     normal('pct_growth(c) = pct_growth(d)',add_add_factor=0).fprint
-    (100 * ( (C) / (C(-1)) -1))
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
     normal('a = pct_growth(b)',add_add_factor=0).fprint

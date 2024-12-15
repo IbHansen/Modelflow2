@@ -246,14 +246,14 @@ class GrabWfModel():
         model_description  :  str = '' # model description 
         cty                : str = '' # country ISO code like PAK, default to 3 first letter in modelname 
         cty_name           : str = '' # country name like Pakistan, default to standard mapping in ISO standard 
-  
+        var_groups         : dict = field(default_factory=dict,init=False) # var_groups 
+
     '''
     
     filename           : any = ''  #wf1 name 
     modelname          : any = ''
     freq               : str = 'A'
     eviews_run_lines   : list =field(default_factory=list)
-    model_all_about    : dict = field(default_factory=dict,init=False)
     start              : any = None    # start of testing if not overruled by mfmsa
     end                : any = None    # end of testing if not overruled by mfmsa 
     country_trans      : any = lambda x:x[:]    # function which transform model specification
@@ -268,12 +268,18 @@ class GrabWfModel():
     model_description  : str = '' # model description 
     cty                : str = '' # country prefix like PAK 
     cty_name           : str = '' # country name like Pakistan 
+    var_groups         : dict = field(default_factory=dict)
+
+    model_all_about    : dict = field(default_factory=dict,init=False)
 
     def __post_init__(self):
         '''Process the model'''
         
         if self.test_frml: 
             self.rawmodel_org =self.test_frml 
+            self.modelname = self.modelname if self.modelname else 'Test'
+            self.cty = self.cty if self.cty else 'XXX'
+            self.cty_name = self.cty_name if self.cty_name else 'Text country'
         else:     
         # breakpoint()
             wf2name,self.modelname  = wf1_to_wf2(self.filename ,modelname=self.modelname,eviews_run_lines= self.eviews_run_lines) 
@@ -281,6 +287,7 @@ class GrabWfModel():
             
             print(f'\nProcessing the model:{self.modelname}',flush=True)
             self.rawmodel_org = self.model_all_about['frml']
+
             
         eviewsline  = self.rawmodel_org.split('\n')[:] 
         
@@ -344,48 +351,68 @@ class GrabWfModel():
         # breakpoint()
         self.fres =   ('\n'.join(self.rres))
         
-        self.mmodel = model(self.fmodel,modelname =self.model_all_about['modelname'],
-                      var_groups = self.var_groups, 
+        var_groups = self.var_groups if self.var_groups else self.var_groups_default 
+        
+        self.mmodel = model(self.fmodel,modelname =self.modelname,
+                      var_groups = var_groups, 
                       )
         self.mmodel.eviews_dict =  {v: f.eviews for v,f in  self.all_frml_dict.items()}        
         self.mmodel.var_description = self.var_description   
         self.mmodel.model_description  = self.model_description 
 
-        self.mmodel.wb_MFMSAOPTIONS = self.model_all_about['mfmsa_options'] 
         
-        cty = (self.cty if self.cty else 
-                  self.modelname[:min(len(self.modelname),3)])
+        if self.cty:
+            cty = self.cty 
+        else: 
+            try: 
+                cty = self.mfmsa_country
+            except: 
+                
+                cty = self.modelname[:min(len(self.modelname),3)]
+        
         cty_name = ( self.cty_name if self.cty_name else 
                     self.iso_countries.get(cty,'No Name')   )       
         self.mmodel.substitution= {'cty'      :cty,
                                    'cty_name' : cty_name } 
-       
+        
+        print(f'Country {cty}:{cty_name}')
+        
         # self.mmodel.set_var_description(self.model_all_about['var_description'])
        
-        self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.model_all_about["modelname"]}')
+        self.mres = model(self.fres,modelname = f'Calculation of add factors for {self.modelname}')
         # breakpoint()
-        
-        try:
-            temp_start,temp_end  = self.mfmsa_start_end
-        except: 
-            if  type(self.start) == type(None) or type(self.end)   == type(None):
-                raise Exception('Can not read start and end from MFMSA. Provide start and end in call ')
-              
-        self.missing_descriptions = [v for v in sorted(self.mmodel.allvar) if v == self.mmodel.var_description[v]]
-        self.start = temp_start if type(self.start) == type(None) else self.start
-        self.end   = temp_end   if type(self.end)   == type(None) else self.end 
-        try: 
-            if self.do_add_factor_calc:
-                self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
-            else: 
-                self.base_input = self.dfmodel
-        except Exception as e:
-            import traceback
+        if self.test_frml: 
             ...
-            print(f'We have a problem {e}')
-            traceback.print_exc()
-            
-        
+            print('inspect the test model')
+        else:     
+            try:
+                temp_start,temp_end  = self.mfmsa_start_end
+            except: 
+                if  type(self.start) == type(None) or type(self.end)   == type(None):
+                    raise Exception('Can not read start and end from MFMSA. Provide start and end in call ')
+                  
+            self.missing_descriptions = [v for v in sorted(self.mmodel.allvar) if v == self.mmodel.var_description[v]]
+            self.start = temp_start if type(self.start) == type(None) else self.start
+            self.end   = temp_end   if type(self.end)   == type(None) else self.end 
+
+            try: 
+                if self.do_add_factor_calc:
+                    self.base_input = self.mres.res(self.dfmodel,self.start,self.end)
+                else: 
+                    self.base_input = self.dfmodel
+            except Exception as e:
+                import traceback
+                ...
+                print(f'We have a problem {e}')
+                traceback.print_exc()
+                
+    
+    def print_frml(self):
+        for f,v in self.all_frml_dict.items() :
+            print('\n',f,'\n',v)
+
+    
+    
     @staticmethod
     def trans_eviews(rawmodel):
         '''
@@ -473,14 +500,29 @@ class GrabWfModel():
             print('No default WB var_description loaded')
             return {}
     
-    @functools.cached_property
+    @property
     def mfmsa_options(self):
         '''Grab the mfmsa options, a world bank speciality''' 
         options = self.model_all_about.get('mfmsa_options','')
         
         return options     
+
+    @property
+    def mfmsa_options_dict(self):
+        import xml
+        def xml_to_dict(element):
+            if len(element) == 0:  # If the element has no children
+                return element.text
+            return {child.tag: xml_to_dict(child) for child in element}
+        root = xml.etree.ElementTree.fromstring(self.mfmsa_options)
+
+        return xml_to_dict(root)
+
+
+        
     
-    @functools.cached_property
+    
+    @property
     def mfmsa_start_end(self):
         '''Finds the start and end from the MFMSA entry'''
         import xml
@@ -488,6 +530,16 @@ class GrabWfModel():
         start = (root.find('.//SolveStart').text)   
         end   = (root.find('.//SolveEnd').text)  
         return start,end 
+
+    @property
+    def mfmsa_country(self):
+        '''Finds the start and end from the MFMSA entry'''
+        import xml
+        root  = xml.etree.ElementTree.fromstring(self.mfmsa_options)
+        country = (root.find('.//iFace/country').text)   
+        return country
+
+
 
     @functools.cached_property
     def mfmsa_quasiIdentities(self):
@@ -504,7 +556,7 @@ class GrabWfModel():
         return quasiset      
             
     @property
-    def var_groups(self):
+    def var_groups_default(self):
         print('Default WB var_group loaded')
 
         return {'Headline': '{cty}NYGDPMKTPXN {cty}NRTOTLCN {cty}LMUNRTOTL_ {cty}BFFINCABDCD  {cty}BFBOPTOTLCD {cty}GGBALEXGRCN {cty}GGDBTTOTLCN {cty}BNCABLOCLCD_ {cty}FPCPITOTLXN',

@@ -186,3 +186,8 @@ defered text substitution in vlist and reports title, and text
 fixes 3.12 in modelGrabwf2
 model.substitution set in modelgrabwf2
 suppress performance warning in modelgrabwf2
+var_groups can be set in modelgrabwf2
+cty is taken from mfmsa in modelgrabwf2
+.mfmsa_options_dict returns a dict of the mfmsa 
+
+

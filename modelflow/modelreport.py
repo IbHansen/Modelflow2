@@ -638,7 +638,6 @@ class DisplayDef:
             
         
  
-        
                 
     
     def _ipython_display_(self):
@@ -1232,6 +1231,9 @@ class DisplayVarTableDef(DisplayDef):
                                    
         return out 
     
+    def __repr__(self):
+            return f"MyDataClass({self.options!r} {self.lines!r})"       
+    
 
 @dataclass
 class DisplayKeepFigDef(DisplayDef):
@@ -1642,7 +1644,9 @@ class DisplayContainerDef:
      
     def to_json(self,display_type):
 
-        display_spec_dict = {"display_type":display_type,  "options": self.options, "name":self.name,  "reports": [r.save_spec for r in self.reports]  }
+        display_spec_dict = {"display_type":display_type,  "options": self.options,
+                             "name":self.name, 
+                             "reports": [r.save_spec for r in self.reports]  }
         
         # Serialize the dictionary to a JSON string
         return json.dumps(display_spec_dict, indent=4)
@@ -2154,4 +2158,4 @@ if __name__ == '__main__':
     
     print(SplitTextResult('test'))
     print(SplitTextResult('test<latex>notest</latex<html>'))
-    print(get_DisplayTextDef('test'))
+    print(get_DisplayTextDef('kk','test'))
