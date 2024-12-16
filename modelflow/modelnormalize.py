@@ -26,13 +26,13 @@ from modelpattern import udtryk_parse, namepat
 class Normalized_frml:
     ''' class defining result from normalization of expression'''
     endo_var         : str = ''   
+    eviews           : str = ''   
     original         : str = ''   
     preprocessed     : str = '' 
     normalized       : str = '' 
     calc_add_factor  : str = '' 
     un_normalized    : str = '' 
     fitted           : str = '' 
-    eviews           : str = ''   
    
     def __str__(self):
         maxkey = max(len(k) for k in vars(self).keys())
@@ -259,9 +259,15 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
             
         out_fitted = f'{endo}_fitted = {res_rhs_fit}'.upper()  if make_fitted else ''
     
-        result = Normalized_frml(str(endo),ind_o,preprocessed,out_frml,out_a,fitted=out_fitted) 
-        
-        result.eviews=eviews
+        result = Normalized_frml(
+                    endo_var=str(endo),
+                    original=ind_o,
+                    preprocessed=preprocessed,
+                    normalized=out_frml,
+                    calc_add_factor=out_a,
+                    fitted=out_fitted,
+                    eviews=eviews)
+
         return result
     
     else: # no need to normalize  this equation 
@@ -269,20 +275,40 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
         out_fitted = f'{lhs}_fitted = {rhs}'.upper()  if make_fitted else ''
         if add_add_factor:
             if make_fixable :
-                result = Normalized_frml(lhs,ind_o,preprocessed,
-                    f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
+                result = Normalized_frml(
+                            endo_var=lhs,
+                            original=ind_o,
+                            preprocessed   = preprocessed,
+                            normalized     = f'{lhs} = ({rhs} + {lhs}{add_suffix})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D ', 
+                            calc_add_factor=f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',
+                            fitted=out_fitted,
+                            eviews=eviews)
             else:
-                result = Normalized_frml(lhs,ind_o,preprocessed,
-                    f'{lhs} = ({rhs} + {lhs}{add_suffix})                               ', f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted)
+                result = Normalized_frml(
+                            endo_var=lhs,
+                            original=ind_o,
+                            preprocessed   = preprocessed,
+                            normalized     =f'{lhs} = ({rhs} + {lhs}{add_suffix})                               ', 
+                            calc_add_factor=f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted,
+                            eviews=eviews)
         else:
             if make_fixable :
-                result = Normalized_frml(lhs,ind_o,preprocessed,
-                    f'{lhs} = ({rhs})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D',fitted=out_fitted)
+                result = Normalized_frml(
+                            endo_var=lhs,
+                            original=ind_o,
+                            preprocessed   = preprocessed,
+                            normalized     =f'{lhs} = ({rhs})* (1-{lhs}_D)+ {lhs}_X*{lhs}_D',
+                            fitted=out_fitted,
+                            eviews=eviews)
             else: 
-                result = Normalized_frml(lhs,ind_o,preprocessed,
-                    f'{lhs} = {rhs}',fitted=out_fitted)
+                result =Normalized_frml(
+                            endo_var=lhs,
+                            original=ind_o,
+                            preprocessed   = preprocessed,
+                            normalized     = f'{lhs} = {rhs}',
+                            fitted=out_fitted,
+                            eviews=eviews)
 
-        result.eviews=eviews
         return result
         
 def elem_trans(udtryk, df=None):

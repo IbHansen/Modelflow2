@@ -664,6 +664,28 @@ def check_syntax_udtryk(udtryk):
     except:
         return False
 
+def check_syntax_udtryk_new(udtryk):
+    '''Check syntax of an expression, pinpoint errors, and show error location.'''
+    try:
+        # Parse the original string without modifying it
+        ast.parse(udtryk)
+        return True, "No syntax errors found."
+    except SyntaxError as e:
+        # Extract the offending line from the original string
+        lines = udtryk.splitlines()
+        error_line = lines[e.lineno - 1] if e.lineno and e.lineno <= len(lines) else ""
+        marker = " " * (e.offset - 1) + "^" if e.offset else ""
+        
+        # Build the error message with context
+        error_message = (
+            f"Syntax error at line {e.lineno}, column {e.offset}: {e.msg}\n"
+            f"{error_line}\n{marker}"
+        )
+        return False, error_message
+    except Exception as e:
+        return False, f"Unexpected error: {e}"
+
+
 def normalize_a_frml(frml,show=False): 
     ''' Normalize and show a frml'''     
     new = normalize(frml,sym=True)

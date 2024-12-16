@@ -289,7 +289,7 @@ class GrabWfModel():
             self.rawmodel_org = self.model_all_about['frml']
 
             
-        eviewsline  = self.rawmodel_org.split('\n')[:] 
+        eviewsline  = [l.strip() for l in self.rawmodel_org.split('\n')[:] ]
         
         if '.@coef(' in    self.rawmodel_org :
             print('Estimated coifficients are substituted')
@@ -302,7 +302,7 @@ class GrabWfModel():
         bars = '{desc}: {percentage:3.0f}%|{bar}|{n_fmt}/{total_fmt}'
             
         orgline = rawmodel6.split('\n')
-        line_type = ['ident' if l.startswith('@IDENTITY') else 'stoc' for l in orgline]
+        line_type = ['ident' if l.strip().startswith('@IDENTITY') else 'stoc' for l in orgline]
         line = [l.replace('@IDENTITY ','').replace(' ','')  for l in orgline]
                         
         # breakpoint()
@@ -322,11 +322,13 @@ class GrabWfModel():
         
         syntaxlines = [f for f in tqdm(self.all_frml, 
                          desc='Syntax check',total=len(self.all_frml),bar_format=bars,disable=self.disable_progress)
-                       if not mp.check_syntax_udtryk(f.normalized)]
+                       if not mp.check_syntax_udtryk_new(f.normalized)[0]]
         if len(syntaxlines):
-            print(f'{len(syntaxlines)} Errors')
+            print(f'{len(syntaxlines)} Syntax errors. In these equations: ')
             for l in syntaxlines: 
-                l.fprint()
+                err,text = mp.check_syntax_udtryk_new(l.normalized)
+                print(text)
+                l.fprint
             raise Exception('Syntax error in frml  ')    
         # print(' ',flush=True)
 
@@ -407,9 +409,31 @@ class GrabWfModel():
                 traceback.print_exc()
                 
     
-    def print_frml(self):
+    def print_frml(self,pat='*'):
+        """
+        Print the formatted representation of equations in the model at hand 
+        whose endogeous variable name  match the specified pattern.
+    
+        Parameters:
+        -----------
+        pat : str, optional
+            A shell-style wildcard pattern used to filter keys in the `all_frml_dict`. 
+            Defaults to '*' (matches all keys).
+    
+        Behavior:
+        ---------
+        - Iterates over the normalized equations  in the `all_frml_dict` dictionary.
+        - For each endogenous variable , checks if it matches the given pattern using `fnmatch`.
+        - If a match is found, calls the `fprint` This will print the equation transformations 
+               """
+        
+        import fnmatch
+        print(f'\nEquations in the model matching {pat}')
         for f,v in self.all_frml_dict.items() :
-            print('\n',f,'\n',v)
+            if fnmatch.fnmatch(f, pat):  # Check if the key matches the pattern
+
+                v.fprint
+                print('\n')
 
     
     
