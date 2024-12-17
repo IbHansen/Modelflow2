@@ -365,6 +365,7 @@ class GrabWfModel():
         
         if self.cty:
             cty = self.cty 
+            
         else: 
             try: 
                 cty = self.mfmsa_country
@@ -376,6 +377,9 @@ class GrabWfModel():
                     self.iso_countries.get(cty,'No Name')   )       
         self.mmodel.substitution= {'cty'      :cty,
                                    'cty_name' : cty_name } 
+        
+        self.cty = cty 
+        self.cty_name = cty_name
         
         print(f'Country {cty}:{cty_name}')
         
@@ -409,31 +413,48 @@ class GrabWfModel():
                 traceback.print_exc()
                 
     
-    def print_frml(self,pat='*'):
+    def print_frml(self,pat='*',eviews=''):
         """
-        Print the formatted representation of equations in the model at hand 
-        whose endogeous variable name  match the specified pattern.
+ Print the formatted representation of equations in the model whose endogenous variable 
+    names match the specified pattern and optionally filter them based on the EViews formula specification.
+
+    Parameters:
+    -----------
+    pat : str, optional
+        A shell-style wildcard pattern used to filter keys in the `all_frml_dict`. 
+        Defaults to '*' (matches all keys).
     
-        Parameters:
-        -----------
-        pat : str, optional
-            A shell-style wildcard pattern used to filter keys in the `all_frml_dict`. 
-            Defaults to '*' (matches all keys).
-    
-        Behavior:
-        ---------
-        - Iterates over the normalized equations  in the `all_frml_dict` dictionary.
-        - For each endogenous variable , checks if it matches the given pattern using `fnmatch`.
-        - If a match is found, calls the `fprint` This will print the equation transformations 
+    eviews : str, optional
+        A string used to filter equations based on their EViews formula specification. 
+        Only equations containing the specified `eviews` string (case-insensitive) will be displayed.
+        If not provided, all equations matching the `pat` pattern will be shown.
+
+    Behavior:
+    ---------
+    - Retrieves endogenous variable names from the `all_frml_dict` dictionary that match the `pat` pattern.
+    - If the `eviews` parameter is specified, further filters equations whose EViews formula 
+      specification contains the `eviews` string (case-insensitive).
+    - Calls the `fprint` method for each matching equation to display its transformations.
+
+    Output:
+    -------
+    - Prints the equations matching the specified pattern and EViews filter.
+    - Displays a message if no matching equations are found.
                """
         
-        import fnmatch
-        print(f'\nEquations in the model matching {pat}')
-        for f,v in self.all_frml_dict.items() :
-            if fnmatch.fnmatch(f, pat):  # Check if the key matches the pattern
+        variables =  model.list_names([k for k in self.all_frml_dict.keys()] , pat, sort=True)
+        
+        if eviews:
+            variables = [v for v in variables if eviews.upper() in self.all_frml_dict[v].eviews.upper() ] 
+        
+        if len(variables):
+            print(f'\nEquations in the model matching {pat}')
+            for v in variables: 
+                    self.all_frml_dict[v].fprint
+                    print('\n')
+        else:
+            print(f'\nNo Equations in the model matching {pat}')
 
-                v.fprint
-                print('\n')
 
     
     
@@ -461,8 +482,13 @@ class GrabWfModel():
         # @ELEM and @DURING 
         rawmodel3 = nz.elem_trans(rawmodel2) 
         rawmodel4 = re.sub(r'@DURING\( *([0-9Q]+) *\)', r'during_\1',rawmodel3) 
-        rawmodel5 = re.sub(r'@DURING\( *([0-9Q]+) *([0-9Q]+) *\)', r'during_\1_\2',rawmodel4) 
-        
+        rawmodel50 = re.sub(r'@DURING\( *([0-9Q]+) *([0-9Q]+) *\)', r'during_\1_\2',rawmodel4) 
+        rawmodel5 =  re.sub(
+            r"@BETWEEN\(\s*(\w+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)",
+            r"(1.0*float(\2 <= \1 <= \3))",
+           rawmodel50
+              )
+        #rawmodel5 = rawmodel50
         # during check 
         ldur = '\n'.join(l for l in rawmodel5.split('\n') if '@DURING' in l)
         ldur2 = '\n'.join(l for l in rawmodel5.split('\n') if 'during' in l)
