@@ -2327,6 +2327,13 @@ class Model_help_Mixin():
         display(label,select_multiple, button, out)
 
 
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        copy_obj = cls.__new__(cls)
+        memo[id(self)] = copy_obj
+        for k, v in self.__dict__.items():
+            setattr(copy_obj, k, copy.deepcopy(v, memo))
+        return copy_obj
 
 
 
@@ -4508,8 +4515,9 @@ class Graph_Draw_Mixin():
 
         else:
             try:
-                display(SVG(filename=svgname))
-            except Error as e:
+                display(HTML(filename=svgname))
+            except Exception as e:
+                print('Error in display ',e)
                 display(Image(filename=pngname))
 
         if browser:
@@ -5814,11 +5822,14 @@ class Display_Mixin():
         except:
             print('modelflow_auto not run')
             
-import modelwidget_input
-
-Display_Mixin.keep_plot_widget.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
-Display_Mixin.keep_show.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
-Display_Mixin.df_plot.__doc__ =  Display_Mixin.keep_plot.__doc__
+try:
+    import modelwidget_input
+    
+    Display_Mixin.keep_plot_widget.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
+    Display_Mixin.keep_show.__doc__ =  modelwidget_input.keep_plot_widget.__doc__
+    Display_Mixin.df_plot.__doc__ =  Display_Mixin.keep_plot.__doc__
+except: 
+    print('No modelwidgets')    
 
 
 class Json_Mixin():

@@ -189,5 +189,7 @@ suppress performance warning in modelgrabwf2
 var_groups can be set in modelgrabwf2
 cty is taken from mfmsa in modelgrabwf2
 .mfmsa_options_dict returns a dict of the mfmsa 
-
+print_frml in modelGrabwf2
+incorporate @between in modelgrabwf2
+__deepcopy__ is implemented 
 

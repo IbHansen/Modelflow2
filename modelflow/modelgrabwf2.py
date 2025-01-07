@@ -247,6 +247,7 @@ class GrabWfModel():
         cty                : str = '' # country ISO code like PAK, default to 3 first letter in modelname 
         cty_name           : str = '' # country name like Pakistan, default to standard mapping in ISO standard 
         var_groups         : dict = field(default_factory=dict,init=False) # var_groups 
+        extra_var_descriptions : dict = field(default_factory=dict) # extra variable descriptions 
 
     '''
     
@@ -269,6 +270,7 @@ class GrabWfModel():
     cty                : str = '' # country prefix like PAK 
     cty_name           : str = '' # country name like Pakistan 
     var_groups         : dict = field(default_factory=dict)
+    extra_var_descriptions : dict = field(default_factory=dict)
 
     model_all_about    : dict = field(default_factory=dict,init=False)
 
@@ -448,8 +450,11 @@ class GrabWfModel():
             variables = [v for v in variables if eviews.upper() in self.all_frml_dict[v].eviews.upper() ] 
         
         if len(variables):
-            print(f'\nEquations in the model matching {pat}')
+            print(f'\nEquations in the model matching :{pat}')
+            print(f'And where eviews eq contains    :{eviews}',end='')
             for v in variables: 
+                    if v in self.var_description:
+                        print(self.var_description[v])
                     self.all_frml_dict[v].fprint
                     print('\n')
         else:
@@ -522,7 +527,7 @@ class GrabWfModel():
         print(f'var_description loaded from WF {len(this)=}')
 
         # breakpoint() 
-        this_both = {**this,**generic}         
+        this_both = this | generic | self.extra_var_descriptions         
         out = self.mmodel.enrich_var_description(this_both)
         return out 
     

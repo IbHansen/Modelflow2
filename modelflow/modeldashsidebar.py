@@ -7,7 +7,7 @@ Created on Fri May 14 22:46:21 2021
 
 import dash
 # from jupyter_dash import JupyterDash
-from jupyter_dash.comms import _send_jupyter_config_comm_request
+#from jupyter_dash.comms import _send_jupyter_config_comm_request
 try:
     from dash import Dash, callback, html, dcc, dash_table, Input, Output, State, MATCH, ALL
     import dash_bootstrap_components as dbc

@@ -9,9 +9,12 @@ To define Jupyter widgets  show variables.
 import pandas as pd
 import  ipywidgets as widgets  
 
-from  ipysheet import sheet, cell, current 
-from ipysheet.pandas_loader import from_dataframe, to_dataframe
-
+try:
+    from  ipysheet import sheet, cell, current 
+    from ipysheet.pandas_loader import from_dataframe, to_dataframe
+except:
+    ...
+    # print('No ipysheet in notebook version 7')
 from IPython.display import display, clear_output,Latex, Markdown
 from dataclasses import dataclass,field
 import matplotlib.pylab  as plt 

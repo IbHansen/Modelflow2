@@ -24,7 +24,19 @@ from modelpattern import udtryk_parse, namepat
 
 @dataclass
 class Normalized_frml:
-    ''' class defining result from normalization of expression'''
+    ''' 
+    Class defining the result from normalization of an expression.
+    
+    Attributes:
+        endo_var (str): The endogenous variable.
+        eviews (str): The EViews representation of the expression.
+        original (str): The original Business logic expression.
+        preprocessed (str): The preprocessed expression.
+        normalized (str): The normalized expression.
+        calc_add_factor (str): The calculated additional factor.
+        un_normalized (str): The un-normalized expression.
+        fitted (str): The fitted expression.
+    '''
     endo_var         : str = ''   
     eviews           : str = ''   
     original         : str = ''   
