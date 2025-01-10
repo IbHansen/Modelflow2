@@ -451,7 +451,7 @@ class GrabWfModel():
         
         if len(variables):
             print(f'\nEquations in the model matching :{pat}')
-            print(f'And where eviews eq contains    :{eviews}',end='')
+            print(f'And where eviews eq contains    :{eviews}')
             for v in variables: 
                     if v in self.var_description:
                         print(self.var_description[v])

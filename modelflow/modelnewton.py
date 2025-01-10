@@ -77,43 +77,44 @@ class diff_value(diff_value_base):
 class newton_diff():
     ''' 
     Class to handle Newton solving for un-normalized or normalized models, i.e., models of the form:
-    
-    0 = G(y,x)
-    y = F(y,x)
-    
+
+        0 = G(y, x)
+        y = F(y, x)
+
     This class provides functionalities to differentiate model equations, analyze eigenvalues and eigenvectors, 
-    and provide utilities for solving dynamic systems through various approaches.
+    and solve dynamic systems through various approaches.
+
+    **Provided Functions:**
     
-    Provided Functions:
-    - eigenvector_plot: Plot eigenvectors for a specified period.
-    - eigplot: Plot eigenvalues for a specific period in polar coordinates.
-    - eigplot_all: Plot all eigenvalues for specified periods in polar coordinates.
-    - eigplot_all0: Alternative method to plot all eigenvalues in polar coordinates.
-    - get_df_comp_dict: Get a dictionary of DataFrames representing companion matrices.
-    - get_df_eigen_dict: Get a dictionary of DataFrames containing eigenvalues and eigenvectors.
-    - get_diff_df_1per: Get a DataFrame of derivatives for one period.
-    - get_diff_df_tot: Get a DataFrame of stacked Jacobian matrices for the entire period range.
-    - get_diff_mat_1per: Get a dictionary of sparse matrices representing the Jacobian for one period.
-    - get_diff_mat_all_1per: Get a dictionary of all derivative matrices for one period, including all lags.
-    - get_diff_mat_tot: Get a sparse matrix representing the stacked Jacobian for the entire period range.
-    - get_diff_melted: Get a "melted" DataFrame of derivatives suitable for creating sparse matrices.
-    - get_diff_melted_var: Get a melted DataFrame of derivatives including variable information.
-    - get_diff_values_all: Get all derivative values in a structured format.
-    - get_diffmodel: Generate a model which calculates the partial derivatives of the original model.
-    - get_eigen_jackknife: Perform a jackknife analysis by computing eigenvalues with each variable excluded one at a time.
-    - get_eigen_jackknife_abs: Compute the absolute values of the largest eigenvalues from the jackknife analysis.
-    - get_eigen_jackknife_abs_select: Summarize the absolute largest eigenvalues for a specific year from the jackknife analysis.
-    - get_eigen_jackknife_df: Convert jackknife eigenvalue data into a DataFrame.
-    - get_eigenvalues: Calculate and return the eigenvectors based on the companion matrix for a dynamic system.
-    - get_feedback: Static method to return feedback on the max absolute eigenvector and its sign.
-    - get_solve1per: Get a solving function for one period using precomputed Jacobian matrices.
-    - get_solve1perlu: Get a LU decomposition-based solving function for one period.
-    - get_solvestacked: Get a solving function for the stacked system of equations.
-    - get_solvestacked_it: Get an iterative solving function for the stacked system using a specified solver.
-    - modeldiff: Differentiate model equations with respect to endogenous variables.
-    - show_diff: Display expressions for differential coefficients for specified variables.
-    - show_diff_latex: Display LaTeX-formatted differential expressions and possibly their values.
-    - show_stacked_diff: Show selected rows and columns of the stacked Jacobian as a DataFrame.
+    - **eigenvector_plot**: Plot eigenvectors for a specified period.
+    - **eigplot**: Plot eigenvalues for a specific period in polar coordinates.
+    - **eigplot_all**: Plot all eigenvalues for specified periods in polar coordinates.
+    - **eigplot_all0**: Alternative method to plot all eigenvalues in polar coordinates.
+    - **get_df_comp_dict**: Get a dictionary of DataFrames representing companion matrices.
+    - **get_df_eigen_dict**: Get a dictionary of DataFrames containing eigenvalues and eigenvectors.
+    - **get_diff_df_1per**: Get a DataFrame of derivatives for one period.
+    - **get_diff_df_tot**: Get a DataFrame of stacked Jacobian matrices for the entire period range.
+    - **get_diff_mat_1per**: Get a dictionary of sparse matrices representing the Jacobian for one period.
+    - **get_diff_mat_all_1per**: Get a dictionary of all derivative matrices for one period, including all lags.
+    - **get_diff_mat_tot**: Get a sparse matrix representing the stacked Jacobian for the entire period range.
+    - **get_diff_melted**: Get a "melted" DataFrame of derivatives suitable for creating sparse matrices.
+    - **get_diff_melted_var**: Get a melted DataFrame of derivatives including variable information.
+    - **get_diff_values_all**: Get all derivative values in a structured format.
+    - **get_diffmodel**: Generate a model to calculate the partial derivatives of the original model.
+    - **get_eigen_jackknife**: Perform a jackknife analysis by computing eigenvalues with each variable excluded one at a time.
+    - **get_eigen_jackknife_abs**: Compute the absolute values of the largest eigenvalues from the jackknife analysis.
+    - **get_eigen_jackknife_abs_select**: Summarize the absolute largest eigenvalues for a specific year from the jackknife analysis.
+    - **get_eigen_jackknife_df**: Convert jackknife eigenvalue data into a DataFrame.
+    - **get_eigenvalues**: Calculate and return eigenvectors based on the companion matrix for a dynamic system.
+    - **get_feedback**: Static method to return feedback on the max absolute eigenvector and its sign.
+    - **get_solve1per**: Get a solving function for one period using precomputed Jacobian matrices.
+    - **get_solve1perlu**: Get a LU decomposition-based solving function for one period.
+    - **get_solvestacked**: Get a solving function for the stacked system of equations.
+    - **get_solvestacked_it**: Get an iterative solving function for the stacked system using a specified solver.
+    - **modeldiff**: Differentiate model equations with respect to endogenous variables.
+    - **show_diff**: Display expressions for differential coefficients for specified variables.
+    - **show_diff_latex**: Display LaTeX-formatted differential expressions and possibly their values.
+    - **show_stacked_diff**: Show selected rows and columns of the stacked Jacobian as a DataFrame.
     '''
     
     
@@ -474,10 +475,26 @@ class newton_diff():
     
   
 
-    def get_diff_mat_tot(self,df=None):
-        ''' Fetch a stacked jacobimatrix for the whole model.current_per
-        
-        Returns a sparse matrix.''' 
+    def get_diff_mat_tot(self, df=None):
+        """
+        Generate a stacked Jacobian matrix for the entire model across the current period.
+    
+        This function constructs a sparse matrix representing the Jacobian for the specified 
+        period range, either normalized or unnormalized, depending on the model's configuration.
+    
+        Args:
+            df (pandas.DataFrame, optional): Input DataFrame for the calculations. If not provided, 
+                                             the model's internal DataFrame (`self.df`) is used.
+    
+        Returns:
+            scipy.sparse.csc_matrix: A sparse matrix of the stacked Jacobian for all periods in 
+                                     the model's `current_per`.
+    
+        Notes:
+            - The function uses melted data to filter and build the row and column indices for 
+              constructing the sparse matrix.
+            - If the model is normalized, an identity matrix is subtracted from the raw Jacobian.
+        """
         dmelt = self.get_diff_melted(periode=None,df=df)
         dmelt = dmelt.eval('''\
         keep = (@self.maxnumber >= lag+number) & (lag+number  >=0)
@@ -498,7 +515,30 @@ class newton_diff():
         return this 
     
     def get_diff_df_tot(self,periode=None,df=None):
-        #breakpoint()
+        """
+        Generate a DataFrame representation of the stacked Jacobian matrix for the entire model across the specified period.
+    
+        This function constructs a dense matrix representing the Jacobian for the specified 
+        period range, with variables and periods as multi-indexed rows and columns.
+    
+        Args:
+            periode (iterable, optional): The period range for which the Jacobian is calculated. 
+                                          Defaults to the model's `current_per` if not provided.
+            df (pandas.DataFrame, optional): Input DataFrame for the calculations. If not provided, 
+                                             the model's internal DataFrame (`self.df`) is used.
+    
+        Returns:
+            pandas.DataFrame: A DataFrame of the stacked Jacobian, with a multi-index of 
+                              (period, variable) for both rows and columns.
+    
+        Notes:
+            - The function first calculates the sparse stacked Jacobian matrix using 
+              `get_diff_mat_tot` and then converts it to a dense format.
+            - The resulting DataFrame includes all endogenous variables across all periods.
+            - The structure is useful for visualization or further manipulations where dense matrices 
+              are required.
+    
+        """
         stacked_mat = self.get_diff_mat_tot(df=df).toarray()
         colindex = pd.MultiIndex.from_product([self.mmodel.current_per,self.declared_endo_list],names=['per','var'])
         rowindex = pd.MultiIndex.from_product([self.mmodel.current_per,self.declared_endo_list],names=['per','var'])
@@ -507,8 +547,31 @@ class newton_diff():
     
     
     def get_diff_mat_1per(self,periode=None,df=None):
-        ''' fetch a dict of one periode sparse jacobimatrices '''
-        # breakpoint()
+        """
+        Generate a dictionary of sparse Jacobian matrices for a single period.
+        
+        This function computes the Jacobian matrix for the specified period, returning 
+        a dictionary where each key represents a period, and the corresponding value 
+        is a sparse matrix representing the Jacobian for that period.
+        
+        Args:
+            periode (iterable, optional): The period(s) for which the Jacobian is calculated. 
+                Defaults to the model's `current_per` if not provided.
+            df (pandas.DataFrame, optional): Input DataFrame for the calculations. If not provided, 
+                the model's internal DataFrame (`self.df`) is used.
+        
+        Returns:
+            dict: A dictionary where keys are periods (as timestamps) and values are sparse 
+                Jacobian matrices (`scipy.sparse.csc_matrix`) for each period.
+        
+        Notes:
+            - The Jacobian is calculated for endogenous variables only, with rows and columns 
+              corresponding to these variables.
+            - If the model is normalized, the identity matrix is subtracted from the raw Jacobian.
+            - The resulting sparse matrices are memory-efficient and suitable for solving 
+              systems of equations.
+        """
+            # breakpoint()
         dmelt = self.get_diff_melted(periode=periode,df=df)
 
         dmelt = dmelt.eval('''\
@@ -678,25 +741,25 @@ class newton_diff():
         This method computes the eigenvectors of a dynamic system represented by a companion matrix derived from Jacobian matrices for different periods. The computation involves handling missing values, optionally filling NaN values with zero, and the ability to drop specific variables from the calculation.
     
         Parameters:
-        - periode (optional): The period for which the eigenvectors are to be calculated. If None, defaults to the entire range.
-        - asdf (bool, optional): Determines the format of the matrices (DataFrame or sparse matrix). Defaults to True (DataFrame).
-        - filnan (bool, optional): If True, fills NaN values in the Jacobian matrices with zero. Defaults to False.
-        - silent (bool, optional): If False, prints detailed information about NaN values and other relevant details during the computation. Defaults to False.
-        - dropvar (optional): Specifies variables to be dropped from the calculation. If None, no variables are dropped. Defaults to None.
-        - dropvar_nr (int, optional): The number of variables to drop. Defaults to 0.
+            - periode (optional): The period for which the eigenvectors are to be calculated. If None, defaults to the entire range.
+            - asdf (bool, optional): Determines the format of the matrices (DataFrame or sparse matrix). Defaults to True (DataFrame).
+            - filnan (bool, optional): If True, fills NaN values in the Jacobian matrices with zero. Defaults to False.
+            - silent (bool, optional): If False, prints detailed information about NaN values and other relevant details during the computation. Defaults to False.
+            - dropvar (optional): Specifies variables to be dropped from the calculation. If None, no variables are dropped. Defaults to None.
+            - dropvar_nr (int, optional): The number of variables to drop. Defaults to 0.
     
         Returns:
-        dict: A dictionary with keys as dates and values as eigenvectors for each period, derived from the companion matrix of the system.
+            dict: A dictionary with keys as dates and values as eigenvectors for each period, derived from the companion matrix of the system.
     
         The function performs several steps:
-        - Computes the Jacobian matrices for the given period.
-        - Handles NaN values based on the 'filnan' parameter.
-        - Optionally drops specified variables from the calculation.
-        - Constructs the companion matrix from the modified Jacobian matrices.
-        - Calculates the eigenvectors from the companion matrix.
+            - Computes the Jacobian matrices for the given period.
+            - Handles NaN values based on the 'filnan' parameter.
+            - Optionally drops specified variables from the calculation.
+            - Constructs the companion matrix from the modified Jacobian matrices.
+            - Calculates the eigenvectors from the companion matrix.
     
         Note:
-        The companion matrix is crucial in analyzing the stability and dynamics of the system. The eigenvectors provide insights into the system's behavior over time.
+            The companion matrix is crucial in analyzing the stability and dynamics of the system. The eigenvectors provide insights into the system's behavior over time.
         """
         ...
          
@@ -812,13 +875,13 @@ Compute and cache eigenvalues for matrices with each variable excluded one at a 
 This function uses the jackknife technique to evaluate the impact of each variable on the system's stability by excluding each variable one by one from the eigenvector calculation. It caches the results for efficient repeated access.
 
 Parameters:
-- maxnames (int, optional): The maximum number of variables to consider for exclusion in the jackknife process. Defaults to 20.
+    - maxnames (int, optional): The maximum number of variables to consider for exclusion in the jackknife process. Defaults to 20.
 
 Returns:
-dict: A dictionary where keys are the names of variables excluded (or 'ALL' for no exclusion) and values are the corresponding eigenvectors.
+    dict: A dictionary where keys are the names of variables excluded (or 'ALL' for no exclusion) and values are the corresponding eigenvectors.
 
 Note:
-The function is computationally intensive and can take significant time for larger systems.
+    The function is computationally intensive and can take significant time for larger systems.
         """
         if not hasattr(self, 'eig_dic'):
             _ = self.get_eigenvalues (filnan = True,silent=False,asdf=1)
@@ -841,16 +904,16 @@ The function is computationally intensive and can take significant time for larg
     The jackknife analysis is performed by computing and caching eigenvalues for matrices with each variable excluded one at a time, up to a specified maximum number. This method uses the jackknife technique to evaluate the impact of each variable on the system's stability by excluding each variable one by one from the eigenvector calculation. The results are then flattened and transformed into a DataFrame for further analysis.
 
     Parameters:
-    - maxnames (int, optional): The maximum number of variables to consider for exclusion in the jackknife process. Defaults to 200,000.
-    - progressbar (bool, optional): If True, displays a progress bar during the computation of eigenvalues. Defaults to True.
+        - maxnames (int, optional): The maximum number of variables to consider for exclusion in the jackknife process. Defaults to 200,000.
+        - progressbar (bool, optional): If True, displays a progress bar during the computation of eigenvalues. Defaults to True.
 
     Returns:
-    pandas.DataFrame: A DataFrame containing the eigenvalues with additional columns for length, real, and imaginary parts. Each row represents an eigenvalue for a specific variable exclusion, year, and index.
+        pandas.DataFrame: A DataFrame containing the eigenvalues with additional columns for length, real, and imaginary parts. Each row represents an eigenvalue for a specific variable exclusion, year, and index.
 
     Note:
-    - The function is computationally intensive and can take significant time for larger systems.
-    - A progress bar can be displayed for monitoring the computation progress.
-    - The function is especially useful for detailed analysis and visualization of the eigenvalues obtained from the jackknife analysis.
+        - The function is computationally intensive and can take significant time for larger systems.
+        - A progress bar can be displayed for monitoring the computation progress.
+        - The function is especially useful for detailed analysis and visualization of the eigenvalues obtained from the jackknife analysis.
     """
         jackfile = Path('jackdf.csv')
         if (not refresh)  and jackfile.exists() and filecache:
@@ -892,14 +955,14 @@ The function is computationally intensive and can take significant time for larg
     This function calculates the absolute values of the largest eigenvalues for each set of eigenvalues obtained from the `get_eigen_jackknife` method. It focuses on the largest eigenvalues to understand the most significant influences on the system's stability.
 
     Parameters:
-    - largest (int, optional): The number of largest eigenvalues to consider. Defaults to 20.
-    - maxnames (int, optional): The maximum number of variables to exclude in the jackknife process. Defaults to 20.
+        - largest (int, optional): The number of largest eigenvalues to consider. Defaults to 20.
+        - maxnames (int, optional): The maximum number of variables to exclude in the jackknife process. Defaults to 20.
 
     Returns:
-    dict: A dictionary with the absolute values of the largest eigenvalues for each variable exclusion scenario.
+        dict: A dictionary with the absolute values of the largest eigenvalues for each variable exclusion scenario.
 
     Note:
-    This method helps in identifying the most impactful variables on the system's stability by focusing on the largest eigenvalues.
+        This method helps in identifying the most impactful variables on the system's stability by focusing on the largest eigenvalues.
         """
 
 
@@ -918,24 +981,24 @@ The function is computationally intensive and can take significant time for larg
         and optionally focuses on eigenvalues with imaginary parts if imag_only is True.
         
         Parameters:
-        - jackdf (DataFrame): A DataFrame containing jackknife analysis results,
-          including eigenvalues, their real and imaginary parts, and descriptions of
-          exclusions.
-        - eigenvalue_row (int, optional): The row index of the eigenvalue to analyze.
-          Defaults to 0, which typically represents the largest magnitude eigenvalue.
-        - periode (int/str, optional): The specific period (year) to analyze. If None,
-          the function processes the first year found in the DataFrame. Defaults to None.
-        - imag_only (bool, optional): If True, only considers eigenvalues with non-zero
-          imaginary parts for analysis. Defaults to False.
+            - jackdf (DataFrame): A DataFrame containing jackknife analysis results,
+              including eigenvalues, their real and imaginary parts, and descriptions of
+              exclusions.
+            - eigenvalue_row (int, optional): The row index of the eigenvalue to analyze.
+              Defaults to 0, which typically represents the largest magnitude eigenvalue.
+            - periode (int/str, optional): The specific period (year) to analyze. If None,
+              the function processes the first year found in the DataFrame. Defaults to None.
+            - imag_only (bool, optional): If True, only considers eigenvalues with non-zero
+              imaginary parts for analysis. Defaults to False.
         
         Returns:
-        DataFrame: A sorted DataFrame with the nth largest length (eigenvalue magnitude)
-        for each excluded variable or condition, including the year, exclusion identifier,
-        length (magnitude of the eigenvalue), description of the exclusion, and the real
-        and imaginary parts of the eigenvalue. The row for 'excluded == "NONE"' is moved to the front.
+            DataFrame: A sorted DataFrame with the nth largest length (eigenvalue magnitude)
+            for each excluded variable or condition, including the year, exclusion identifier,
+            length (magnitude of the eigenvalue), description of the exclusion, and the real
+            and imaginary parts of the eigenvalue. The row for 'excluded == "NONE"' is moved to the front.
         
         Raises:
-        Exception: If the specified period is not found in the DataFrame's years.
+            Exception: If the specified period is not found in the DataFrame's years.
         """        
         years = jackdf.year.unique()
     
@@ -972,15 +1035,15 @@ The function is computationally intensive and can take significant time for larg
         Optionally focuses on eigenvalues with imaginary parts if imag_only is True.
         
         Parameters:
-        - jackdf (DataFrame): A DataFrame containing the results of a jackknife analysis, including eigenvalues and their
-          descriptions. The DataFrame is expected to have at least the columns 'excluded', 'length', 'excluded_description',
-          'realvalue', and 'imagvalue'.
-        - eigenvalue_row (int, optional): Specifies the row index of the eigenvalue to analyze. Defaults to 0, which typically
-          corresponds to the largest magnitude eigenvalue.
-        - periode (int/str, optional): The specific period (year) to analyze. If None, the function processes data without
-          filtering by period. Defaults to None.
-        - imag_only (bool, optional): If True, only considers eigenvalues with non-zero imaginary parts for analysis.
-          Defaults to False.
+            - jackdf (DataFrame): A DataFrame containing the results of a jackknife analysis, including eigenvalues and their
+              descriptions. The DataFrame is expected to have at least the columns 'excluded', 'length', 'excluded_description',
+              'realvalue', and 'imagvalue'.
+            - eigenvalue_row (int, optional): Specifies the row index of the eigenvalue to analyze. Defaults to 0, which typically
+              corresponds to the largest magnitude eigenvalue.
+            - periode (int/str, optional): The specific period (year) to analyze. If None, the function processes data without
+              filtering by period. Defaults to None.
+            - imag_only (bool, optional): If True, only considers eigenvalues with non-zero imaginary parts for analysis.
+              Defaults to False.
         
         The function processes the input DataFrame to highlight the 'NONE' category in red and all other categories in blue.
         It then creates a Plotly FigureWidget to plot these data points as markers on a scatter plot. The y-axis tick labels are
@@ -991,8 +1054,8 @@ The function is computationally intensive and can take significant time for larg
         of each exclusion on the eigenvalue magnitude.
         
         Displays:
-        - An interactive Plotly scatter plot within the Jupyter notebook.
-        - A dynamic HTML widget that updates with detailed information about the hovered data point.
+            - An interactive Plotly scatter plot within the Jupyter notebook.
+            - A dynamic HTML widget that updates with detailed information about the hovered data point.
         """
         import plotly.graph_objs as go
         from ipywidgets import VBox, HTML, Textarea, Layout 
@@ -1108,15 +1171,15 @@ Select and summarize the absolute largest eigenvalues for a specific year from t
 This function focuses on a specific year and extracts the sum of the absolute largest eigenvalues obtained from the `get_eigen_jackknife_abs` method. It helps in understanding the aggregate impact of variable exclusions on the system's stability for a particular year.
 
 Parameters:
-- year (int, optional): The specific year to focus on. Defaults to 2023.
-- largest (int, optional): The number of largest eigenvalues to consider. Defaults to 20.
-- maxnames (int, optional): The maximum number of variables to exclude in the jackknife process. Defaults to 20.
+    - year (int, optional): The specific year to focus on. Defaults to 2023.
+    - largest (int, optional): The number of largest eigenvalues to consider. Defaults to 20.
+    - maxnames (int, optional): The maximum number of variables to exclude in the jackknife process. Defaults to 20.
 
 Returns:
-pandas.Series: A series sorted by the sum of the absolute largest eigenvalues for each variable exclusion scenario in the specified year.
+    pandas.Series: A series sorted by the sum of the absolute largest eigenvalues for each variable exclusion scenario in the specified year.
 
 Note:
-This method is useful for temporal analysis of the system's stability, focusing on the contributions of each variable in a specific year.
+    This method is useful for temporal analysis of the system's stability, focusing on the contributions of each variable in a specific year.
 """
 
         xx =  {v: sum(d[year]) for v,d in self.get_eigen_jackknife_abs(maxnames=maxnames,largest=largest).items() }    
@@ -1224,21 +1287,21 @@ The plots are arranged in a grid, with a maximum of two columns.
 
 Parameters
 ----------
-eig_dic : dict
-    A dictionary where keys are period identifiers and values are iterables of complex numbers 
-    representing eigenvalues.
-periode : iterable, optional
-    An iterable of period identifiers to plot. If `None` (default), eigenvalues for the current 
-    period in the model are plotted.
-size : tuple of int, optional
-    The size of each subplot in inches. Default is (4, 3).
-maxfig : int, optional
+    eig_dic : dict
+        A dictionary where keys are period identifiers and values are iterables of complex numbers 
+        representing eigenvalues.
+    periode : iterable, optional
+        An iterable of period identifiers to plot. If `None` (default), eigenvalues for the current 
+        period in the model are plotted.
+    size : tuple of int, optional
+        The size of each subplot in inches. Default is (4, 3).
+    maxfig : int, optional
     The maximum number of figures to display. Default is 6.
 
 Returns
 -------
-matplotlib.figure.Figure
-    A matplotlib Figure object containing the generated plots.
+    matplotlib.figure.Figure
+        A matplotlib Figure object containing the generated plots.
 
 
 
@@ -1395,27 +1458,27 @@ matplotlib.figure.Figure
         of the eigenvalues.
     
         Parameters:
-        - eig_dic (dict): A dictionary where keys are years (or time periods) and values are DataFrames
-                          containing the first row as eigenvalues and the subsequent rows as the corresponding
-                          eigenvectors of the companion matrix for each year.
+            - eig_dic (dict): A dictionary where keys are years (or time periods) and values are DataFrames
+                              containing the first row as eigenvalues and the subsequent rows as the corresponding
+                              eigenvectors of the companion matrix for each year.
     
         Side Effects:
-        - Displays interactive widgets including a dropdown for year selection, a plot output area,
-          and a slider for selecting specific eigenvalues. Additionally, displays textual information
-          about the selected eigenvalue and its eigenvectors.
-        - Utilizes Plotly for generating the polar plot and ipywidgets for interactive controls.
-        - The method defines and uses several inner functions to handle events like year change,
-          eigenvalue selection, and other interactions.
+            - Displays interactive widgets including a dropdown for year selection, a plot output area,
+              and a slider for selecting specific eigenvalues. Additionally, displays textual information
+              about the selected eigenvalue and its eigenvectors.
+            - Utilizes Plotly for generating the polar plot and ipywidgets for interactive controls.
+            - The method defines and uses several inner functions to handle events like year change,
+              eigenvalue selection, and other interactions.
     
         Returns:
-        - None. The method's primary function is to display interactive widgets and plots within a Jupyter
-          notebook environment.
+            - None. The method's primary function is to display interactive widgets and plots within a Jupyter
+              notebook environment.
     
         Note:
-        - This method is designed for use within a Jupyter notebook as it relies on IPython.display
-          for rendering and ipywidgets for interactivity.
-        - The actual plotting and widget setup are accomplished through several nested functions within
-          this method, making use of closures and nonlocal variables for state management.
+            - This method is designed for use within a Jupyter notebook as it relies on IPython.display
+              for rendering and ipywidgets for interactivity.
+            - The actual plotting and widget setup are accomplished through several nested functions within
+              this method, making use of closures and nonlocal variables for state management.
         """
 
         import plotly.graph_objects as go
@@ -1438,13 +1501,13 @@ matplotlib.figure.Figure
             their associated eigenvectors.
     
             Parameters:
-            - eigenvalues_vectors (dict): Dictionary containing DataFrames of eigenvalues and eigenvectors
-                                          indexed by year.
-            - year (str/int): The year for which to extract and process the eigenvalue vector.
+                - eigenvalues_vectors (dict): Dictionary containing DataFrames of eigenvalues and eigenvectors
+                                              indexed by year.
+                - year (str/int): The year for which to extract and process the eigenvalue vector.
     
             Returns:
-            - tuple: A tuple containing the significant eigenvalue and a DataFrame of the corresponding
-                     eigenvectors after processing.
+                - tuple: A tuple containing the significant eigenvalue and a DataFrame of the corresponding
+                         eigenvectors after processing.
             """
 
             
@@ -1595,9 +1658,9 @@ matplotlib.figure.Figure
                     corresponding to the hovered point and updates the information displayed to the user.
     
                     Parameters:
-                    - trace: The trace object associated with the hover event. Not used in the function body.
-                    - points: The points object containing information about the hovered point.
-                    - _: Placeholder for additional arguments. Not used in the function body.
+                        - trace: The trace object associated with the hover event. Not used in the function body.
+                        - points: The points object containing information about the hovered point.
+                        - _: Placeholder for additional arguments. Not used in the function body.
                     """
 
                     nonlocal lopenplot
@@ -1623,7 +1686,7 @@ matplotlib.figure.Figure
                     related to the selected eigenvector, including its description and formula.
     
                     Parameters:
-                    - change (dict): Contains details of the selection change in the dropdown widget.
+                        - change (dict): Contains details of the selection change in the dropdown widget.
                     """
 
                     # print(f'{change=}')
@@ -1654,7 +1717,7 @@ matplotlib.figure.Figure
                     the selected eigenvalue and its corresponding eigenvectors, and updates displayed information.
     
                     Parameters:
-                    - change (dict): Contains details of the slider value change.
+                        - change (dict): Contains details of the slider value change.
                     """
 
                     # print(f'{change.new=} ')
@@ -1692,7 +1755,7 @@ matplotlib.figure.Figure
             to display the eigenvalues and eigenvectors for the newly selected year.
     
             Parameters:
-            - change (dict): Contains details about the change event in the year dropdown.
+                - change (dict): Contains details about the change event in the year dropdown.
             """
 
             plot_eigenvalues_polar_vectors(change.new)
