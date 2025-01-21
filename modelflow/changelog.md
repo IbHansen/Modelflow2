@@ -192,4 +192,7 @@ cty is taken from mfmsa in modelgrabwf2
 print_frml in modelGrabwf2
 incorporate @between in modelgrabwf2
 __deepcopy__ is implemented 
+in modelreport catch error if no latex driver for pdf production
+small changes in attribution 
+
 

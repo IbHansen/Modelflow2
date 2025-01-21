@@ -2649,7 +2649,7 @@ class Dekomp_Mixin():
         return outdf.loc[from_var.upper(),:]
 
     def get_att_level(self, n, filter=False, lag=True, start='', end='',time_att=False):
-        ''' det attribution pct for a variable.
+        ''' det attribution for a variable.
          I little effort to change from multiindex to single node name'''
         tstart = self.current_per[0] if start =='' else start
         tend   = self.current_per[-1] if end =='' else end
@@ -2705,6 +2705,7 @@ class Dekomp_Mixin():
         # # breakpoint()
         # ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
         #     lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
+        print(f'{self.current_per=}')
         ddf0 = self.get_att_pct(varnavn,lag=lag,time_att=time_att) if pct else  self.get_att_level(varnavn,lag=lag)
         if rename:
             ddf0 = ddf0.rename(index= self.var_description)
@@ -2738,12 +2739,14 @@ class Dekomp_Mixin():
             show (TYPE): dict of matplotlib figs .
 
         '''
-
+        start = self.current_per[0]
+        end = self.current_per[1]
         def show_dekom(Variable, Pct, Periode, Threshold=0.0):
             print(self.allvar[Variable]['frml'].replace('  ', ' '))
-            self.dekomp_plot(Variable, pct=Pct, threshold=Threshold)
-            self.dekomp_plot_per(
-                Variable, pct=Pct, threshold=Threshold, per=Periode, sort=True)
+            display(self.dekomp_plot(Variable, pct=Pct, threshold=Threshold))
+            print('33333')
+            display(self.dekomp_plot_per(
+                Variable, pct=Pct, threshold=Threshold, per=Periode, sort=True))
 
         xvar = var.upper() if var.upper() in self.endogene else sorted(
             list(self.endogene))[0]
@@ -2752,7 +2755,7 @@ class Dekomp_Mixin():
                               Variable=ip.Dropdown(options=sorted(
                                   self.endogene), value=xvar),
                               Pct=ip.Checkbox(
-                                  description='Percent growth', value=False),
+                                  description='Percent contribution', value=False),
                               Periode=ip.Dropdown(options=self.current_per),
                               Threshold=(0.0, 10.0, 1.))
         return show
@@ -5724,6 +5727,14 @@ class Display_Mixin():
                 # print(notebook)
                 display(HTML(
                     f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
+                
+                # try:
+                #     # Replace with your method of opening a notebook
+                #     # Example: Using jupyter command-line to open the notebook
+                #     import subprocess
+                #     subprocess.Popen(["jupyter", "notebook", str(notebook)])
+                # except Exception as e:
+                #     print(f"Error opening notebook {notebook}: {e}")
 
 
     @staticmethod

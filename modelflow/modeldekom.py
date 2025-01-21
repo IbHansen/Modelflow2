@@ -75,9 +75,55 @@ def attribution(model,experiments,start='',end='',save='',maxexp=10000,showtime=
 def attribution_new(model,experiments,start='',end='',save='',maxexp=10000,showtime=False,
                 summaryvar=['*']
                 ,silent=False,msilent=True,type='level'):
-    """ Calculates an attribution analysis on a model 
-    accepts a dictionary with experiments. the key is experiment name, the value is a list 
-    of variables which has to be reset to the values in the baseline dataframe. """  
+    """
+    Performs attribution analysis on a model and returns the decomposition of differences
+    between baseline and experimental scenarios in terms of 'level' or 'growth'.
+
+    This function calculates the impact of resetting specified variables to their baseline
+    values across multiple experiments and returns the resulting differences.
+
+    Parameters:
+        model (object): The model instance to perform attribution analysis on. 
+            It should support methods like `vlist`, `lastdf`, and `basedf`.
+        experiments (dict): A dictionary where keys are experiment names, and values
+            are lists of variables to reset to baseline values.
+        start (str, optional): The start period for the analysis. Defaults to an empty string.
+        end (str, optional): The end period for the analysis. Defaults to an empty string.
+        save (str, optional): If provided, saves the resulting data to a file with this name
+            (appends '_level' and '_growth' to distinguish the types). Defaults to an empty string.
+        maxexp (int, optional): Maximum number of experiments to process. Defaults to 10,000.
+        showtime (bool, optional): Whether to display timing information for the operation. Defaults to `False`.
+        summaryvar (list, optional): List of variables to include in the analysis output.
+            Defaults to `['*']`, which includes all variables.
+        silent (bool, optional): If `True`, suppresses print statements. Defaults to `False`.
+        msilent (bool, optional): If `True`, suppresses print statements from the model. Defaults to `True`.
+        type (str, optional): The type of analysis to perform, either 'level' or 'growth'. Defaults to 'level'.
+
+    Returns:
+        dict: A dictionary containing two DataFrames:
+            - 'level': Decomposition of differences in levels for the specified variables.
+            - 'growth': Decomposition of differences in growth rates (percentage change).
+
+    Example:
+        # Example usage with a model and experiments
+        results = attribution_new(
+            model=my_model,
+            experiments={
+                'experiment1': ['variable1', 'variable2'],
+                'experiment2': ['variable3']
+            },
+            start='2020Q1',
+            end='2021Q4',
+            summaryvar=['variable_summary'],
+            type='growth'
+        )
+        
+        # Access the level results
+        level_results = results['level']
+        
+        # Access the growth results
+        growth_results = results['growth']
+    """
     summaryout = model.vlist(summaryvar)
     adverseny = model.lastdf
     base = model.basedf
@@ -171,9 +217,68 @@ def AggImpact(impact):
 
 
 class totdif():
-    ''' Class to make modelvide attribution analysis 
-    
-    '''
+    """
+    A class for performing model-wide attribution analysis.
+
+    This class is designed to analyze and attribute differences in model outputs
+    based on experiments that alter specified variables. It provides methods
+    to decompose, visualize, and explain the impacts of different variable changes
+    on model outputs.
+
+    Parameters:
+        model (object): The model instance to perform attribution analysis on.
+            The model should implement methods like `exodif`, `current_per`, and `vlist`.
+        summaryvar (str or list, optional): Variables to summarize in the analysis.
+            Defaults to '*', which includes all variables.
+        desdic (dict, optional): A dictionary mapping variable names to descriptions,
+            used for labeling and visualization. Defaults to an empty dictionary.
+        experiments (dict, optional): A dictionary where keys are experiment names
+            and values are lists of variables to be reset to baseline values.
+            Defaults to None, which uses all variables with differences.
+
+    Attributes:
+        diffdf (pd.DataFrame): DataFrame containing differences between baseline and adverse scenarios.
+        diffvar (Index): List of variables with differences, obtained from the model's `exodif` method.
+        go (bool): Flag indicating whether there are variables to attribute to.
+        experiments (dict): Dictionary mapping variable names to experiment names. Defaults to all variables with differences.
+        model: Reference to the model being analyzed.
+        start (str): Start period of the analysis.
+        end (str): End period of the analysis.
+        desdic (dict): Dictionary for describing variables in visualizations.
+        summaryvar (str or list): Variables to summarize in the output.
+        summaryout: Processed list of summary variables obtained from the model's `vlist` method.
+        res (dict): Results of the attribution analysis for both 'level' and 'growth' perspectives.
+
+    Methods:
+        explain_last(pat='', top=0.9, title='', use='level', threshold=0.0, ysize=5):
+            Visualizes the decomposition for the last period.
+
+        explain_sum(pat='', top=0.9, title='', use='level', threshold=0.0, ysize=5):
+            Visualizes the summed decomposition over all periods.
+
+        explain_per(pat='', per='', top=0.9, title='', use='level', threshold=0.0, ysize=5):
+            Visualizes the decomposition for a specific period.
+
+        explain_all(pat='', stacked=True, kind='bar', top=0.9, title='', use='level',
+                    threshold=0.0, resample='', axvline=None):
+            Visualizes the decomposition for all periods with optional customization.
+
+        totexplain(pat='*', vtype='all', stacked=True, kind='bar', per='', top=0.9, title='',
+                   use='level', threshold=0.0, ysize=10, **kwargs):
+            A wrapper method that selects the appropriate visualization based on the type of data to attribute.
+
+    Example:
+        # Initialize the `totdif` class with a model and run attribution analysis
+        td = totdif(model=my_model, summaryvar='*', desdic=description_dict)
+        
+        # Visualize the last period's decomposition
+        fig = td.explain_last(pat='variable_pattern', use='level')
+        fig.show()
+
+        # Summed decomposition visualization
+        fig = td.explain_sum(top=0.8, title='Cumulative Impact')
+        fig.show()
+    """
     
     def __init__(self, model,summaryvar='*',desdic={},experiments = None):
        
@@ -368,7 +473,13 @@ class totdif():
                             ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
                         else:
                             tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
-                            ax.xaxis.set_major_locator(plt.MaxNLocator(10))
+                            if len(tempdf.index) < 9:
+                                ax.set_xticks(range(len(tempdf.index)))
+                                ax.set_xticklabels(tempdf.index, rotation=0)
+                            else:
+                                ax.xaxis.set_major_locator(plt.MaxNLocator(10))
+
+                            # ax.xaxis.set_major_locator(plt.MaxNLocator(6))
                     ax.set_ylabel(name,fontsize='x-large')
 #                ax.set_xticklabels(tempdf.index.tolist(), rotation = 45,fontsize='x-large')
 ##                ax.xaxis.set_minor_locator(plt.NullLocator())

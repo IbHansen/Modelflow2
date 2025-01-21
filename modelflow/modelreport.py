@@ -553,8 +553,11 @@ class DisplayDef:
    
    
     def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,typesetter='xelatex  -interaction=batchmode -no-shell-escape'):
-        repo = LatexRepo(self.latex ,name=self.name)
-        return repo.pdf(pdfopen,show,width,height,typesetter)
+        try:
+            repo = LatexRepo(self.latex ,name=self.name)
+            return repo.pdf(pdfopen,show,width,height,typesetter)
+        except: 
+            return None 
 
     def __add__(self, other):
         """
@@ -790,7 +793,7 @@ class LatexRepo:
         if xx0.returncode: 
              wb.open(latex_dir.absolute(), new=1)
  
-             raise Exception(f'Error creating PDF file, {xx0.returncode}, look in the latex file, {latex_file}')
+             raise Exception(f'Error creating PDF file, {xx0.returncode}, is latex installed. If so look in the latex file, {latex_file}')
              
         if pdfopen:
             fileurl = f'file://{pdf_file.resolve()}'
@@ -1481,17 +1484,17 @@ class DisplayKeepFigDef(DisplayDef):
         Saves a collection of matplotlib figures to a specified directory.
 
         Parameters:
-        - location (str): The base folder in which to save the charts. Defaults to './graph'.
-        - experimentname (str): A subfolder under 'location' where charts are saved. Defaults to 'experiment1'.
-        - addname (str): An additional name added to each figure filename. Defaults to an empty string.
-        - extensions (list): A list of string file extensions for saving the figures. Defaults to ['svg'].
-        - xopen (bool): If True, open the saved figure locations in a web browser.
+            - location (str): The base folder in which to save the charts. Defaults to './graph'.
+            - experimentname (str): A subfolder under 'location' where charts are saved. Defaults to 'experiment1'.
+            - addname (str): An additional name added to each figure filename. Defaults to an empty string.
+            - extensions (list): A list of string file extensions for saving the figures. Defaults to ['svg'].
+            - xopen (bool): If True, open the saved figure locations in a web browser.
 
         Returns:
-        str: The absolute path to the folder where figures are saved.
+            str: The absolute path to the folder where figures are saved.
 
         Raises:
-        Exception: If the folder cannot be created or a figure cannot be saved/opened.
+            Exception: If the folder cannot be created or a figure cannot be saved/opened.
         '''
 
         return self.mmodel.savefigs(figs=self.figs,**kwargs)
@@ -1626,9 +1629,12 @@ class DisplayContainerDef:
         return out
     
     def pdf(self,pdfopen=False,show=True,width=WIDTH,height=HEIGHT,typesetter='xelatex  -interaction=batchmode -no-shell-escape'):
-        repo = LatexRepo(self.latex ,name=self.name)
-        return repo.pdf(pdfopen,show,width,height,typesetter)
-
+        try: 
+            repo = LatexRepo(self.latex ,name=self.name)
+            out =  repo.pdf(pdfopen,show,width,height,typesetter)
+        except:
+            out= None
+            
     @property
     def spec_list(self):
         out = [r.save_spec for r in self.reports]  
