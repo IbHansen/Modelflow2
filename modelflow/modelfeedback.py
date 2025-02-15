@@ -156,16 +156,16 @@ print("The remaning part is a DAG             :",nx.is_directed_acyclic_graph(G_
 #%%
 import random
 
-    def fitness(G, node_set):
-        """
-        Calculates the fitness of a set of nodes to remove from the graph.
-        """
-        H = G.copy()
-        H.remove_nodes_from([node for node in H if node not in node_set])
-        try:
-            return len(nx.find_cycle(H))
-        except nx.NetworkXNoCycle:
-            return float('inf')
+def fitness(G, node_set):
+    """
+    Calculates the fitness of a set of nodes to remove from the graph.
+    """
+    H = G.copy()
+    H.remove_nodes_from([node for node in H if node not in node_set])
+    try:
+        return len(nx.find_cycle(H))
+    except nx.NetworkXNoCycle:
+        return float('inf')
 
 
 def find_feedback_set(G, pop_size=100, elite_size=20, mutation_rate=0.01, generations=100):
