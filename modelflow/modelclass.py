@@ -2130,7 +2130,7 @@ class Model_help_Mixin():
                     if not silent:  print(f'Repo downloaded to "{extract_to}"' )
                     
         except Exception as e:
-                raise Exception( f'No download of {kwargs.get("description",repo_name)}:\n{e} ') 
+                raise Exception( f'No download of {repo_name}:\nurl:{url}:\n{e} ') 
                 return f"An error occurred: {e}"
                    
                     
