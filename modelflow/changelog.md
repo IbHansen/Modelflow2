@@ -194,5 +194,6 @@ incorporate @between in modelgrabwf2
 __deepcopy__ is implemented 
 in modelreport catch error if no latex driver for pdf production
 small changes in attribution 
+new conda and pypi packaging, uploaded version 2.51 
 
 
