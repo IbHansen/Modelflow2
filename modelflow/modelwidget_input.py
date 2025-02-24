@@ -46,8 +46,14 @@ from copy import copy
 import pandas as pd
 import  ipywidgets as widgets  
 
-from  ipysheet import sheet, cell, current 
-from ipysheet.pandas_loader import from_dataframe, to_dataframe
+# from  ipysheet import sheet, cell, current 
+# from ipysheet.pandas_loader import from_dataframe, to_dataframe
+
+try:
+    from ipydatagrid import DataGrid
+except Exception as e: 
+    print( 'no update sheets',e)
+
 
 from IPython.display import display, clear_output,Latex, Markdown
 from dataclasses import dataclass,field
@@ -192,7 +198,7 @@ class sheetwidget(singelwidget):
         ...
         super().__init__(widgetdef)    
         # print(f'{self.content=}')
-        self.df_var =self.content             # input dataframe to update
+        self.df_var =self.content['df']             # input dataframe to update
         self.trans  = widgetdef.get('trans',lambda x:x)    # Translation of variable names 
         self.transpose  = widgetdef.get('transpose',False)# if the dataframs should be transpossed 
         # print(f'{self.transpose=}')
@@ -202,21 +208,25 @@ class sheetwidget(singelwidget):
         newnamedf = self.df_var.copy().rename(columns=self.trans)
         self.org_df_var = newnamedf.T if self.transpose else newnamedf
         
-        self.wsheet = sheet(from_dataframe(self.org_df_var),column_resizing=True,row_headers=False)
-        
-        self.org_values = [c.value for c in self.wsheet.cells]
+        # self.wsheet = sheet(from_dataframe(self.org_df_var),column_resizing=True,row_headers=False)
+        column_widths = {col: max(len(col), 10) * 9 for col in self.org_df_var.columns}  # Adjust column width dynamically
+
+        self.wsheet = DataGrid(self.org_df_var, 
+                                  column_widths=column_widths, enable_filters=False,enable_sort=False,
+                                  editable=True, index_name = 'year')
+        self.org_values = self.org_df_var.copy()
         # breakpoint()
         self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.heading) else self.wsheet
 
 
     def update_df(self,df,current_per=None):
-        # breakpoint()
-        self.df_new_var = to_dataframe(self.wsheet).T if self.transpose else to_dataframe(self.wsheet) 
-        self.df_new_var.columns = self.df_var.columns
-        self.df_new_var.index = self.df_var.index
+        updated_df = pd.DataFrame(self.data_grid.data)
+        if self.transpose:
+            updated_df = updated_df.T
         
-        df.loc[self.df_new_var.index,self.df_new_var.columns] =  df.loc[ self.df_new_var.index,self.df_new_var.columns] + self.df_new_var 
-        pass
+        updated_df.columns = self.df_var.columns
+        updated_df.index = self.df_var.index
+        df.loc[updated_df.index, updated_df.columns] = df.loc[updated_df.index, updated_df.columns] + updated_df 
         return df
     
     
@@ -747,6 +757,7 @@ class keep_plot_widget:
     select_height : str = '200px'
     vline : any = None
     var_groups : dict = field(default_factory=dict)
+    prefix_dict : dict = field(default_factory=dict) 
     use_var_groups : bool = True
     add_var_name : bool = False
     short : any = 0
@@ -756,6 +767,7 @@ class keep_plot_widget:
     switch : bool = False
     use_smpl : bool = False
     init_dif : bool = False
+    
 
   
     
