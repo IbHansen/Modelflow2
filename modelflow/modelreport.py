@@ -279,7 +279,7 @@ class Options:
     chunk_size: int = 0  
     timeslice: List = field(default_factory=list)
     max_cols: int = 6
-    last_cols: int = 1
+    last_cols: int = 3
     
     ncol : int = 2
     samefig :bool = False 
