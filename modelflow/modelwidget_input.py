@@ -220,19 +220,21 @@ class sheetwidget(singelwidget):
         column_widths = {col: max(len(str(col))+4,max_len) * 9 for col in self.org_df_var.columns}
         renderers={col: TextRenderer(format= fmt,horizontal_alignment='right') for col in self.org_df_var.columns}
 
-
+        renderers['index'] = TextRenderer(horizontal_alignment='left')
         self.wsheet = DataGrid(self.org_df_var,
-                            column_widths = column_widths,
+                               column_widths = column_widths,
                                # auto_fit_columns=True, auto_fit_params={'area': 'all'},
-                               row_index_width=200,
+                             #  row_index_width=200,
                              #  layout=Layout(width='1500px'),
-                                enable_filters=False, enable_sort=False,
-                             #   editable=True, index_name='year',
-                                renderers = renderers, 
+                             #    index_columns_widths=[200],
+                                 enable_filters=False, enable_sort=False,
+                                editable=True, index_name='year',
+                               renderers = renderers, 
                             #    header_align={'index': 'left'}
                             )
-        # self.datawidget = VBox([self.wexp, self.wsheet]) if len(self.heading) else self.wsheet
-        self.datawidget =self.wsheet
+        # self.wsheet.row_headers_manager.sizes = {0: 200}
+        self.datawidget = VBox([self.wexp, self.wsheet]) if len(self.heading) else self.wsheet
+        #self.datawidget =self.wsheet
         self.org_values = self.org_df_var.copy()
 
     def update_df(self, df: pd.DataFrame, current_per=None):
@@ -279,7 +281,8 @@ class slidewidget(singelwidget):
                                          step=cont.get('step', 0.01),
                                          layout={'width': '60%'}, style={'description_width': '40%'},
                                          readout_format=f":>,.{cont.get('dec', 2)}f",
-                                         continuous_update=False
+                                         continuous_update=False,
+                                         
                                          )
                      for des, cont in self.content.items()]
 
