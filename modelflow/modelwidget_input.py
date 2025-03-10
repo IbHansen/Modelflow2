@@ -219,12 +219,11 @@ class sheetwidget(singelwidget):
         max_len= len(f'{max_value:{fmt}}')
         column_widths = {col: max(len(str(col))+4,max_len) * 9 for col in self.org_df_var.columns}
         renderers={col: TextRenderer(format= fmt,horizontal_alignment='right') for col in self.org_df_var.columns}
-
         renderers['index'] = TextRenderer(horizontal_alignment='left')
         self.wsheet = DataGrid(self.org_df_var,
                                column_widths = column_widths,
+                               row_header_width = 500 , 
                                # auto_fit_columns=True, auto_fit_params={'area': 'all'},
-                             #  row_index_width=200,
                              #  layout=Layout(width='1500px'),
                              #    index_columns_widths=[200],
                                  enable_filters=False, enable_sort=False,
@@ -245,11 +244,27 @@ class sheetwidget(singelwidget):
         updated_df.columns = self.df_var.columns
         updated_df.index = self.df_var.index
         df.loc[updated_df.index, updated_df.columns] = df.loc[updated_df.index, updated_df.columns] + updated_df
-        return df
 
     def reset(self, g: Any):
         self.wsheet.data = self.org_values
       
+# from dataclasses import dataclass, field
+from typing import Callable, Any
+# import pandas as pd
+import ipydatagrid as gd
+# from ipydatagrid.renderer import TextRenderer
+# from ipywidgets import HBox, VBox, Layout, widgets
+
+# @dataclass
+# class singelwidget:
+#     content: dict = field(default_factory=dict)
+#     widgetdef: dict = field(default_factory=dict)
+#     heading: str = field(default="")
+
+#     def __post_init__(self):
+#         pass
+
+
 
 @dataclass
 class slidewidget(singelwidget):
@@ -919,13 +934,16 @@ class keep_plot_widget:
         gross_selectfrom = []        
         def changeselectfrom(g):
             nonlocal gross_selectfrom
+            # print(f'{wselectfrom.value=}')
+            # print(f'{keepvar=}')
             _selectfrom = [s.upper() for s in self.mmodel.vlist(wselectfrom.value) if s in keepvar  ] if self.selectfrom else keepvar
             gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v)
                                  for v in _selectfrom] 
             try: # Only if this is done after the first call
                 selected_vars.options=gross_selectfrom
                 selected_vars.value  = [gross_selectfrom[0][1]]
-            except: 
+            except Exception as e:
+                # print(e)
                 ...
         wselectfrom.observe(changeselectfrom,names='value',type='change')   
         self.wxopen.observe(self.trigger,names='value',type='change')
@@ -997,12 +1015,13 @@ class keep_plot_widget:
                 self.prefix_dict = self.mmodel.var_groups
             else: 
                 self.prefix_dict = {}
+                self.prefix_dict = {k:v for k,v in self.prefix_dict.items() }
         else: 
                 self.prefix_dict = {}
                 
         
         select_prefix = [(iso,c) for iso,c in self.prefix_dict.items()]
-        # print(select_prefix)
+        # print(f'{select_prefix=}')
         i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
                                       max=maxper, layout=Layout(width='75%'), description='Show interval')
         selected_vars = SelectMultiple( options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),
@@ -1034,7 +1053,7 @@ class keep_plot_widget:
        
         
         def get_prefix(g):
-            from modelclass import model
+            # from modelclass import model
             ''' this function is triggered when the prefix selection is changed. Used only when a  prefix_dict has ben set. 
             
             g['new]'] contains the new prefix
@@ -1060,9 +1079,9 @@ class keep_plot_widget:
                                                 
                                                 for n in new_prefix]))
             else: 
-                gross_selectfrom_vars = [variable for des,variable in gross_selectfrom ]
-                gross_pat  = ' '.join([ppat for ppat in new_prefix])
-                selected_match_var = set(model.list_names(gross_selectfrom_vars,gross_pat))
+                gross_selectfrom_vars = [self.mmodel.string_substitution(variable) for des,variable in gross_selectfrom ]
+                gross_pat             = ' '.join([self.mmodel.string_substitution(ppat) for ppat in new_prefix])
+                selected_match_var = set(self.mmodel.list_names(gross_selectfrom_vars,gross_pat))
                 
                 selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
                                         if variable in selected_match_var)
