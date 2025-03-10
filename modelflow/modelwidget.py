@@ -9,17 +9,20 @@ To define Jupyter widgets  show variables.
 import pandas as pd
 import  ipywidgets as widgets  
 
-try:
-    from  ipysheet import sheet, cell, current 
-    from ipysheet.pandas_loader import from_dataframe, to_dataframe
-except:
-    ...
-    # print('No ipysheet in notebook version 7')
+# try:
+#     from  ipysheet import sheet, cell, current 
+#     from ipysheet.pandas_loader import from_dataframe, to_dataframe
+# except:
+#     ...
+#     print('No ipysheet ')
 from IPython.display import display, clear_output,Latex, Markdown
 from dataclasses import dataclass,field
 import matplotlib.pylab  as plt 
 
-
+try:
+    from ipydatagrid import DataGrid
+except Exception as e: 
+    print( 'no update sheets',e)
 
 from modelclass import insertModelVar
 from modelclass import model 
@@ -74,41 +77,36 @@ class tabwidget:
 
 @dataclass
 class sheetwidget:
-    ''' class defining a widget which updates from a sheet '''
-    df_var         : pd.DataFrame = field(default_factory=pd.DataFrame)        # definition 
-    trans          : any = lambda x : x      # renaming of variables 
-    transpose      : bool = False            # orientation of dataframe 
-    expname      : str =  "Carbon tax rate, US$ per tonn "
-   
+    ''' Class defining a widget with a data grid (using ipydatagrid) '''
+    df_var: pd.DataFrame = field(default_factory=pd.DataFrame)
+    trans: any = lambda x: x  # Translation of variable names
+    transpose: bool = False  # If the dataframe should be transposed
+    heading: str = ""
     
     def __post_init__(self):
-        ...
-        
-        self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
-
-    
         newnamedf = self.df_var.copy().rename(columns=self.trans)
-        self.org_df_var = self.newnamedf.T if self.transpose else newnamedf
-        
-        self.wsheet = sheet(from_dataframe(self.org_df_var),column_resizing=True)
-        self.org_values = [c.value for c in self.wsheet.cells]
-        self.datawidget=widgets.VBox([self.wexp,self.wsheet]) if len(self.expname) else self.wsheet
+        self.org_df_var = newnamedf.T if self.transpose else newnamedf
 
-    def update_df(self,df,current_per=None):
-        # breakpoint()
-        self.df_new_var = to_dataframe(self.wsheet).T if self.transpose else to_dataframe(self.wsheet) 
-        self.df_new_var.columns = self.df_var.columns
-        self.df_new_var.index = self.df_var.index
+        column_widths = {col: max(len(col), 10) * 9 for col in self.org_df_var.columns}  # Adjust column width dynamically
+        self.data_grid = DataGrid(pd.DataFrame(self.org_df_var), 
+                                  column_widths=column_widths, enable_filters=False,enable_sort=False,
+                                  editable=True, index_name = 'year')
+        self.org_values = self.org_df_var.copy()
+
+        self.datawidget = widgets.VBox([widgets.Label(value=self.heading), self.data_grid]) if len(self.heading) else self.data_grid
+
+    def update_df(self, df, current_per=None):
+        updated_df = pd.DataFrame(self.data_grid.data)
+        if self.transpose:
+            updated_df = updated_df.T
         
-        df.loc[self.df_new_var.index,self.df_new_var.columns] =  df.loc[ self.df_new_var.index,self.df_new_var.columns] + self.df_new_var 
-        pass
+        updated_df.columns = self.df_var.columns
+        updated_df.index = self.df_var.index
+        df.loc[updated_df.index, updated_df.columns] = df.loc[updated_df.index, updated_df.columns] + updated_df
         return df
-    
-    
-    def reset(self,g):
-        for c,v in zip(self.wsheet.cells,self.org_values):
-            c.value = v
-        
+
+    def reset(self, g):
+        self.data_grid.data = pd.DataFrame(self.org_values)
 
 
 @dataclass
