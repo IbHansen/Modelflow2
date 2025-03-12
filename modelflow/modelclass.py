@@ -2390,13 +2390,24 @@ class Dekomp_Mixin():
         mfrml = model(self.allvar[varnavn]['frml'],
                       funks=self.funks)   # calculate the formular
         print_per = mfrml.smpl(start_, end_, altdf_)
+         
+        old_start, old_end = altdf_.index.slice_locs(
+            print_per[0], print_per[-1])
+        new_start = max(0, old_start-1)
+        new_end = min(len(self.basedf.index), old_end)
+        calc_per = self.basedf.index[new_start:new_end]
+
+        # print(print_per)
+        # print(calc_per)
+
+
         vars = mfrml.allvar.keys()
         varterms = [(term.var, int(term.lag) if term.lag else 0)
                     for term in mfrml.allvar[varnavn]['terms'] if term.var and not (term.var == varnavn and term.lag == '')]
         # now we have droped dublicate terms and sorted
         sterms = sorted(set(varterms), key=lambda x: varterms.index(x))
         # find all the eksperiments to be performed
-        eksperiments = [(vt, t) for vt in sterms for t in print_per]
+        eksperiments = [(vt, t) for vt in sterms for t in calc_per]
         if time_att:
             ...
             smallalt = altdf_.loc[:, vars].copy(deep=True)   # for speed
@@ -2420,10 +2431,8 @@ class Dekomp_Mixin():
             alldf[e], e[1], e[1], silent=True) for e in eksperiments}
         # dataframes with the effect of each update
         diffres = {e: smallalt - allres[e] for e in eksperiments}
-        diffres_growth = {e: smallalt.pct_change() - allres[e].pct_change() for e in eksperiments}
         # we are only interested in the efect on the left hand variable
         res        = {e: diffres[e].loc[e[1], varnavn] for e in eksperiments}
-        res_growth = {e: diffres_growth[e].loc[e[1], varnavn] for e in eksperiments}
     # the resulting dataframe
         multi = pd.MultiIndex.from_tuples([e[0] for e in eksperiments], names=[
                                           'Variable', 'lag']).drop_duplicates()
@@ -2431,10 +2440,21 @@ class Dekomp_Mixin():
         att_level = pd.DataFrame(index=multi, columns=print_per)
         for e in eksperiments:
             att_level.at[e[0], e[1]] = res[e]
-            
-        att_growth = pd.DataFrame(index=multi, columns=print_per)
+        att_level = att_level.loc[:,print_per]    
+
+        experiment_values_dict = {e: allres[e].loc[e[1], varnavn] for e in eksperiments} 
+        experiment_values = pd.DataFrame(index=multi, columns=calc_per).astype(float)
         for e in eksperiments:
-            att_growth.at[e[0], e[1]] = res_growth[e]*100.
+            experiment_values.at[e[0], e[1]] = experiment_values_dict[e]
+            
+        original_values_dict   = {e: alldf[e].loc[e[1] , varnavn] for e in eksperiments} 
+        original_values = pd.DataFrame(index=multi, columns=calc_per).astype(float)
+        for e in eksperiments:
+            original_values.at[e[0], e[1]] = original_values_dict[e]
+            
+        
+        att_growth = ((original_values.pct_change(axis=1) - experiment_values.pct_change(axis=1))*100.).loc[:,print_per]
+
 
     #  a dataframe with some summaries
         diff_level = pd.DataFrame(index=multi, columns=print_per)
@@ -2462,30 +2482,33 @@ class Dekomp_Mixin():
 
     
     #
-        att_pct = (att_level / (difendo[print_per]) *(abs(difendo[print_per])>0.000001) * 100).sort_values(
+        att_pct = (att_level / (difendo[print_per]) *((abs(difendo[print_per])>0.001)) * 100.).sort_values(
             print_per[-1], ascending=False)       # each contrinution in pct of total change
+        # att_pct = (att_level / (difendo[print_per]) *
+        #            ((abs(difendo) > 0.001))).sort_values(
+        #     print_per[-1], ascending=False)       # each contrinution in pct of total change
         # breakpoint()
         residual = att_pct.sum() - 100
         att_pct.loc[('Total', 0), print_per] = att_pct.sum()
         att_pct.loc[('Residual', 0), print_per] = residual
         if lprint:
             print('\nFormula        :', mfrml.allvar[varnavn]['frml'], '\n')
-            print(diff_level.to_string(
+            print(diff_level.to_string(na_rep=' ',
                 float_format=lambda x: '{0:10.2f}'.format(x)))
-            print('\n Contributions to differende for ', varnavn)
-            print(att_level.to_string(
+            print('\n Contributions to difference for ', varnavn)
+            print(att_level.to_string(na_rep=' ',
                 float_format=lambda x: '{0:10.2f}'.format(x)))
-            print('\n Share of contributions to differende for ', varnavn)
-            print(att_pct.to_string(
-                float_format=lambda x: '{0:10.0f}%'.format(x)))
+            print('\n Share of contributions to difference for ', varnavn)
+            print(att_pct.to_string(na_rep=' ',
+                float_format=lambda x: '{0:9.0f}%'.format(x)))
             
             print('\n Difference in growth rate', varnavn)
-            print(print(diff_growth.to_string(
-                float_format=lambda x: '{0:10.1f}%'.format(x))))
+            print(print(diff_growth.to_string(na_rep=' ',
+                float_format=lambda x: '{0:9.1f}%'.format(x))))
             
             print('\n Contribution to growth rate', varnavn)
-            print(att_growth.to_string(
-                float_format=lambda x: '{0:10.1f}%'.format(x)))
+            print(att_growth.to_string(na_rep=' ',
+                float_format=lambda x: '{0:9.1f}%'.format(x)))
 
         att_pct = att_pct[att_pct.columns].astype(float)
         dekomp_res_name  = namedtuple('dekompres', 'diff_level, att_level, att_pct, ,diff_growth , att_growth')
@@ -2705,7 +2728,7 @@ class Dekomp_Mixin():
         # # breakpoint()
         # ddf0 = join_name_lag(xx[2] if pct else xx[1]).pipe(
         #     lambda df: df.loc[[i for i in df.index if i != 'Total'], :])
-        print(f'{self.current_per=}')
+        # print(f'{self.current_per=}')
         ddf0 = self.get_att_pct(varnavn,lag=lag,time_att=time_att) if pct else  self.get_att_level(varnavn,lag=lag)
         if rename:
             ddf0 = ddf0.rename(index= self.var_description)

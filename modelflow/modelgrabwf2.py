@@ -482,7 +482,8 @@ class GrabWfModel():
         rawmodel2 = rawmodel1.replace('^','**').replace('""',' ').replace('"',' ').\
             replace('@EXP','exp').replace('@RECODE','recode').replace('@MOVAV','movavg').replace('@LOGIT','logit_inverse') \
             .replace('@MEAN(@PC(','@AVERAGE_GROWTH((').replace('@PCY','PCT_GROWTH').replace('@PC','PCT_GROWTH')\
-            .replace('@PMAX','MAX').replace('@TREND','EVIEWS_TREND').replace('@ABS','ABS')       
+            .replace('@PMAX','MAX').replace('@TREND','EVIEWS_TREND').replace('@ABS','ABS').replace('@SQRT(','SQRT(')\
+             .replace('@PMAX(','MAX(') .replace('@CNORM(','NORMCDF(')   
         # @ELEM and @DURING 
         # @ELEM and @DURING 
         rawmodel3 = nz.elem_trans(rawmodel2) 
