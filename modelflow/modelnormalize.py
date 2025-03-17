@@ -233,8 +233,10 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
         endo_name = the_endo.upper() if the_endo else endovar(lhs)
         endo = sympify(endo_name,clash)
         a_name = f'{endo_name}{add_suffix}' if add_add_factor else ''
-        thiseq = f'({lhs}-(__RHS__ {"+" if add_add_factor else ""}{a_name}))'  if endo_lhs else \
-                 f'({lhs}- ({rhs}  {"+" if add_add_factor else ""}{a_name}))'
+        # thiseq = f'({lhs}-(__RHS__ {"+" if add_add_factor else ""}{a_name}))'  if endo_lhs else \
+        #          f'({lhs}- ({rhs}  {"+" if add_add_factor else ""}{a_name}))'
+        thiseq = f'({lhs}-(__RHS__ ))'  if endo_lhs else \
+                 f'({lhs}- ({rhs} ))'
         # print(thiseq)         
         transeq = pastestring(thiseq,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
         kat=sympify(transeq,clash)  
@@ -255,17 +257,20 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
                     stripstring(str(endo_frml_fit[0]),post)
                     
         if make_fixable :
-            out_frml   = f'{endo} = ({res_rhs}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
+            # out_frml   = f'{endo} = ({res_rhs}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
+            out_frml   = f'{endo} = ({res_rhs} {"+" if add_add_factor else ""}{a_name}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
         else: 
-            out_frml   = f'{endo} = {res_rhs}'.upper() 
+            # out_frml   = f'{endo} = {res_rhs}'.upper() 
+            out_frml   = f'{endo} = {res_rhs} {"+" if add_add_factor else ""}{a_name}'.upper() 
             
         
         if add_add_factor:
-            a_sym = sympify(a_name,clash)
-            a_frml     = solve(kat,a_sym,simplify=False,rational=False)
-            res_rhs_a  = stripstring(str(a_frml[0]),post).replace('__RHS__',f' (({rhs.strip()})) ')
-            out_a      = f'{a_name} = {res_rhs_a}'.upper()
+            # a_sym = sympify(a_name,clash)
+            # a_frml     = solve(kat,a_sym,simplify=False,rational=False)
+            # res_rhs_a  = stripstring(str(a_frml[0]),post).replace('__RHS__',f' (({rhs.strip()})) ')
+            # out_a      = f'{a_name} = {res_rhs_a}'.upper()
             # breakpoint()
+            out_a      = f'{a_name} = {res_rhs} - {endo}'
         else:
             out_a = ''
             
@@ -301,7 +306,8 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
                             original=ind_o,
                             preprocessed   = preprocessed,
                             normalized     =f'{lhs} = ({rhs} + {lhs}{add_suffix})                               ', 
-                            calc_add_factor=f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',fitted=out_fitted,
+                            calc_add_factor=f'{lhs}{add_suffix} = ({lhs}) - ({rhs})',
+                            fitted=out_fitted,
                             eviews=eviews)
         else:
             if make_fixable :
@@ -359,30 +365,31 @@ def elem_trans(udtryk, df=None):
          
     return udtryk_up            
 if __name__ == '__main__':
+    normal('dlog(c) = e',add_add_factor=True).fprint
 
+    if 0: 
+        normal('DELRFF=RFF-RFF(-1)',add_add_factor=1,add_suffix= '_AERR').fprint
+        normal('a = n(-1)',add_add_factor=0,make_fitted = 1).fprint
+        normal('a+b = c',add_add_factor=1,make_fitted=1).fprint
+        normal('PCT_growth(a) = n(-1)',add_add_factor=0).fprint
+        normal('a = movavg(pct(b),2)',add_add_factor=0).fprint
+        normal('pct_growth(c) = pct_growth(ccd)',add_add_factor=0).fprint
+        normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
+        normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
+        normal('a = pct_growth(b)',add_add_factor=0).fprint
+        normal("DLOG(SAUNECONGOVTXN) = -0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
+        normal("D(a,0,1) = b").fprint
+        normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
+        normal('a = D( LOG(QLHP(+1)))').fprint
+        normal('a = gamma+ f+O',the_endo='f',endo_lhs=False,make_fixable =True).fprint
+        # breakpoint()
+        normal('zlhp-zlhp(-1)  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_add_factor=1,make_fitted=1,make_fixable=1).fprint
+        fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')
+    #%%
     
-    normal('DELRFF=RFF-RFF(-1)',add_add_factor=1,add_suffix= '_AERR').fprint
-    normal('a = n(-1)',add_add_factor=0,make_fitted = 1).fprint
-    normal('a+b = c',add_add_factor=1,make_fitted=1).fprint
-    normal('PCT_growth(a) = n(-1)',add_add_factor=0).fprint
-    normal('a = movavg(pct(b),2)',add_add_factor=0).fprint
-    normal('pct_growth(c) = pct_growth(d)',add_add_factor=0).fprint
-    normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
-    normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
-    normal('a = pct_growth(b)',add_add_factor=0).fprint
-    normal("DLOG(SAUNECONGOVTXN) = -0.323583422052*(LOG(SAUNECONGOVTXN(-1))-GOVSHAREWB*LOG(SAUNEYWRPGOVCN(-1))-(1-GOVSHAREWB)*LOG(SAUNECONPRVTXN(-1)))+0.545415878897*DLOG(SAUNECONGOVTXN(-1))+(1-0.545415878897)*(GOVSHAREWB)*DLOG(SAUNEYWRPGOVCN) +(1-0.545415878897)*(1-GOVSHAREWB)*DLOG(SAUNECONPRVTXN)-1.56254616684-0.0613991001064*@DURING(""2011"")").fprint
-    normal("D(a,0,1) = b").fprint
-    normal('a = D( LOG(QLHP(+1)), 0, 1 )').fprint
-    normal('a = D( LOG(QLHP(+1)))').fprint
-    normal('a = gamma+ f+O',the_endo='f',endo_lhs=False,make_fixable =True).fprint
-    # breakpoint()
-    normal('zlhp-zlhp(-1)  =  81 * D( LOG(QLHP(1))     ,0, 1) ',add_add_factor=1,make_fitted=1,make_fixable=1).fprint
-    fixleads('zlhp - ddd =  81 * D( LOG(QLHP(1)),0,1) ')
-#%%
-
-    elem_trans('DLOG(PAKNVRENPRODXN)=DLOG((WLDHYDROPOWER*PAKPANUSATLS)/(@ELEM(WLDHYDROPOWER,2011)*@ELEM(PAKPANUSATLS,2011)))-0.00421833463034*DUMH')
-    fixleads('a = b(1) + v(33)'.upper(),1)  
-    fixleads(' 0.2121303706720161 * D( LOG(QLHP), 0, 1 )           + -0.04133299713432281 * D( LOG(QLHP(1)), 0, 1 )           + 0.9805787292172398 * ZLHP(1)           + -0.1948471451936957 * ZLHP(2) ')     
-    xx = normal('a = n(-1)',add_add_factor=0,make_fitted = 1)
-    xx.eviews = 'ffff '
-    normal('a_{b} = D( LOG(QLHP_{ee}(+1)), 0, 1 )').fprint
+        elem_trans('DLOG(PAKNVRENPRODXN)=DLOG((WLDHYDROPOWER*PAKPANUSATLS)/(@ELEM(WLDHYDROPOWER,2011)*@ELEM(PAKPANUSATLS,2011)))-0.00421833463034*DUMH')
+        fixleads('a = b(1) + v(33)'.upper(),1)  
+        fixleads(' 0.2121303706720161 * D( LOG(QLHP), 0, 1 )           + -0.04133299713432281 * D( LOG(QLHP(1)), 0, 1 )           + 0.9805787292172398 * ZLHP(1)           + -0.1948471451936957 * ZLHP(2) ')     
+        xx = normal('a = n(-1)',add_add_factor=0,make_fitted = 1)
+        xx.eviews = 'ffff '
+        normal('a_{b} = D( LOG(QLHP_{ee}(+1)), 0, 1 )').fprint
