@@ -5005,7 +5005,7 @@ class Display_Mixin():
                 dfs = self.keep_var_dict(pat, start, end, start_ofset, end_ofset)
                 
             if showtype == 'growth':
-                dfs = {v: vdf.pct_change()*100. for v, vdf in dfs.items()}
+                dfs = {v: vdf.astype('float').pct_change()*100. for v, vdf in dfs.items()}
         
             elif showtype == 'change':
                 dfs = {v: vdf.diff() for v, vdf in dfs.items()}
@@ -5071,7 +5071,7 @@ class Display_Mixin():
                 
                 
             if showtype == 'growth':
-                dfs = {v: vdf.pct_change()*100. for v, vdf in dfs.items()}
+                dfs = {v: vdf.astype('float').pct_change()*100. for v, vdf in dfs.items()}
 
             elif showtype ==  'qoq_ar':
                 dfs = {v: ((1.+vdf.pct_change())**4.-1.)*100. for v, vdf in dfs.items()}
