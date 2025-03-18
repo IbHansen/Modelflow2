@@ -258,10 +258,10 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
                     
         if make_fixable :
             # out_frml   = f'{endo} = ({res_rhs}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
-            out_frml   = f'{endo} = ({res_rhs} {"+" if add_add_factor else ""}{a_name}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
+            out_frml   = f'{endo} = ({res_rhs} {"+ " if add_add_factor else ""}{a_name}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
         else: 
             # out_frml   = f'{endo} = {res_rhs}'.upper() 
-            out_frml   = f'{endo} = {res_rhs} {"+" if add_add_factor else ""}{a_name}'.upper() 
+            out_frml   = f'{endo} = {res_rhs} {"+ " if add_add_factor else ""}{a_name}'.upper() 
             
         
         if add_add_factor:
@@ -270,7 +270,7 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
             # res_rhs_a  = stripstring(str(a_frml[0]),post).replace('__RHS__',f' (({rhs.strip()})) ')
             # out_a      = f'{a_name} = {res_rhs_a}'.upper()
             # breakpoint()
-            out_a      = f'{a_name} = {res_rhs} - {endo}'
+            out_a      = f'{a_name} = {endo} - ({res_rhs})'
         else:
             out_a = ''
             
