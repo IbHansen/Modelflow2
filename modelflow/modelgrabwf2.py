@@ -223,33 +223,81 @@ def wf2_to_clean(wf2name,modelname='',save_file = False,freq='A'):
 
 @dataclass
 class GrabWfModel():
-    '''This class takes a world bank model specification, variable data and variable description
-    and transform it to ModelFlow business language
-    
-    args:
-        filename           : any = ''  #wf1 name 
-        modelname          : any = ''  
-        freq               : str = 'A'
-        eviews_run_lines   : list =field(default_factory=list)
-        model_all_about    : dict = field(default_factory=dict)
-        start              : any = None    # start of testing if not overruled by mfmsa
-        end                : any = None    # end of testing if not overruled by mfmsa 
-        country_trans      : any = lambda x:x[:]    # function which transform model specification
-        country_df_trans   : any = lambda x:x     # function which transforms initial dataframe 
-        make_fitted        : bool = False # if True, a clean equation for fittet variables is created
-        fit_start          : any = 2000   # start of fittet model 
-        fit_end            : any = None  # end of fittet model unless overruled by mfmsa
-        do_add_factor_calc : bool = True  # calculate the add factors 
-        test_frml          : str =''    # a testmodel as string if used no wf processing 
-        disable_progress   : bool = False # Disable progress bar
-        save_file          : bool = False # save information to file 
-        model_description  :  str = '' # model description 
-        cty                : str = '' # country ISO code like PAK, default to 3 first letter in modelname 
-        cty_name           : str = '' # country name like Pakistan, default to standard mapping in ISO standard 
-        var_groups         : dict = field(default_factory=dict,init=False) # var_groups 
-        extra_var_descriptions : dict = field(default_factory=dict) # extra variable descriptions 
+    """
+    This class takes a World Bank model specification, variable data, and variable description,
+    and transforms it into ModelFlow business language.
 
-    '''
+    Args:
+        filename           : any = ''        # wf1 name 
+        modelname          : any = ''  
+        freq               : str = 'A'  
+        eviews_run_lines   : list = field(default_factory=list)  
+        model_all_about    : dict = field(default_factory=dict)  
+        start              : any = None      # start of testing if not overruled by mfmsa  
+        end                : any = None      # end of testing if not overruled by mfmsa  
+        country_trans      : any = lambda x:x[:]  # function which transforms model specification  
+        country_df_trans   : any = lambda x:x     # function which transforms initial dataframe  
+        make_fitted        : bool = False   # if True, a clean equation for fitted variables is created  
+        fit_start          : any = 2000     # start of fitted model  
+        fit_end            : any = None     # end of fitted model unless overruled by mfmsa  
+        do_add_factor_calc : bool = True    # calculate the add factors  
+        test_frml          : str = ''       # a test model as string; if used, no wf processing  
+        disable_progress   : bool = False   # disable progress bar  
+        save_file          : bool = False   # save information to file  
+        model_description  : str = ''       # model description  
+        cty                : str = ''       # country ISO code like PAK, defaults to first 3 letters of modelname  
+        cty_name           : str = ''       # country name like Pakistan, default via ISO mapping  
+        var_groups         : dict = field(default_factory=dict, init=False)  # variable groups  
+        extra_var_descriptions : dict = field(default_factory=dict)  # extra variable descriptions  
+
+    Methods:
+        __post_init__():
+            Initialize and process the model, transform equations, perform syntax checks,
+            and set up the model and data for simulation and analysis.
+
+        print_frml(pat='*', eviews=''):
+            Print model equations matching a wildcard pattern and optional EViews content filter.
+
+        trans_eviews(rawmodel):
+            (staticmethod) Convert EViews-style equations into ModelFlow syntax.
+
+        var_description (property):
+            Return enriched variable descriptions combining WF1 file, WB defaults, and extras.
+
+        wb_default_descriptions (property):
+            Load default World Bank variable descriptions from an online repository.
+
+        mfmsa_options (property):
+            Return the raw MFMSA options XML string.
+
+        mfmsa_options_dict (property):
+            Parse and return MFMSA options as a nested dictionary.
+
+        mfmsa_start_end (property):
+            Retrieve start and end periods from MFMSA metadata.
+
+        mfmsa_country (property):
+            Retrieve the country ISO code from MFMSA metadata.
+
+        mfmsa_quasiIdentities (property):
+            Return a set of quasi-identity variable names from MFMSA.
+
+        var_groups_default (property):
+            Provide default variable groupings for World Bank models.
+
+        dfmodel (property):
+            Return the transformed and enriched dataframe for model calculation.
+
+        __call__():
+            Return the processed model object and base input dataframe.
+
+        test_model(start=None, end=None, maxvar=1_000_000, maxerr=100, tol=0.0001, 
+                   showall=False, showinput=False, nofit=True):
+            Compare model calculations against input data to validate model fidelity.
+
+        iso_countries (property):
+            Return a dictionary mapping ISO country codes to country names.
+    """
     
     filename           : any = ''  #wf1 name 
     modelname          : any = ''
