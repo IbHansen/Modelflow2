@@ -167,12 +167,17 @@ def preprocess(udtryk,funks=[]):
     while  pct_match := funk_in('PCT_GROWTH',udtryk_up):
         forpc,pcudtryk,efterpc=funk_find_arg(pct_match,udtryk_up)
         udtryk_up=f'{forpc} (100 * ( ({pcudtryk}) / ({lagone(pcudtryk,funks=funks)}) -1)) {efterpc}'           
+
+    while  pct_match := funk_in('PCY',udtryk_up):
+        forpc,pcudtryk,efterpc=funk_find_arg(pct_match,udtryk_up)
+        udtryk_up=f'{forpc} (100 * ( ({pcudtryk}) / ({lagone(pcudtryk,funks=funks,laglead=-4)}) -1)) {efterpc}'           
          
     while  diff_match := funk_in('DIFF' , udtryk_up):
         fordif,difudtryk_up,efterdif=funk_find_arg(diff_match,udtryk_up)
         udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif  
          
     while  diff_match := funk_in('D' , udtryk_up):
+        print(f'{udtryk_up} on D')
         fordif,difudtryk_up,efterdif=funk_find_arg(diff_match,udtryk_up)
         difudtryk_up = difudtryk_up.replace(' ','').replace(',0,1','') if difudtryk_up.endswith(',0,1')  else difudtryk_up
         udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif  
