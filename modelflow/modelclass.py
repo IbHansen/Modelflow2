@@ -332,7 +332,7 @@ class BaseModel():
         self.endogene_true = self.endogene if self.normalized else {
             v for v in self.exogene if v+'___RES' in self.endogene}
 
-        
+        self.check_endo_rhs() 
         # dummy variables  for variables for which to calculate adjustment variables 
         
         
@@ -1070,8 +1070,19 @@ class BaseModel():
                           len(self.endogene))
         return '<\n'+out+'>'
 
-
-#
+    def check_endo_rhs(self):
+        if self.normalized: 
+            for i,endovar in enumerate(sorted(self.endogene)):
+                if i >= 2000000000000000 :break
+                this_term = self.allvar[endovar]['terms']
+                ap = self.allvar[endovar]['assigpos']
+                lhs       = {t.var for t in this_term[:ap] if t.var}
+                rhs_nolag = {t.var for t in this_term[ap:] if t.var and not t.lag}
+                both = lhs & rhs_nolag
+                if both: 
+                    print('\n\n*** PROBLEM **')
+                    print(self.allvar[endovar]['frml'])
+                    raise Exception (f'ERROR in frml for {endovar} this is on right hand side un-lagged {both}')
 
 
 class Org_model_Mixin():
