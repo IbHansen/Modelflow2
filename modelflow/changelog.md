@@ -198,7 +198,7 @@ new conda and pypi packaging, uploaded version 2.51
 modelwidget_input can handle string substitution 
 dekomp of growth rates are fixed
 in modelgrabwf2 .replace('@PMAX(','MAX(') .replace('@CNORM(','NORMCDF(') to croatia model 
-
-
-
 Version 2.53 uploaded 
+in normalize PCY to percent on 4 lags 
+in modelclass check for current periode endogenous variable on right hand side. 
+Version 2.54 uploaded 
