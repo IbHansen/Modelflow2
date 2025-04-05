@@ -202,3 +202,4 @@ Version 2.53 uploaded
 in normalize PCY to percent on 4 lags 
 in modelclass check for current periode endogenous variable on right hand side. 
 Version 2.54 uploaded 
+vars to _vars in modelclass  get keep 

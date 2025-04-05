@@ -4938,14 +4938,14 @@ class Display_Mixin():
             return
         allvars = list({c for k, df in self.keep_solutions.items()
                        for c in df.columns})
-        vars = self.vlist_names(allvars, pat)
+        _vars = self.list_names(allvars, pat)
         res = {}
         with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):
             # print(f'{self.current_per[-1]=}')
             for solver, solution in self.keep_solutions.items():
-                outv = pd.concat([solution.loc[self.current_per, v] for v in vars ], axis=1)
+                outv = pd.concat([solution.loc[self.current_per, v] for v in _vars ], axis=1)
                 if trans: 
-                    outv.columns = [self.var_description[v] for v  in vars]
+                    outv.columns = [self.var_description[v] for v  in _vars]
                 outv.columns.names = ['Variable']
                 res[solver] = outv
         return res
@@ -4972,10 +4972,12 @@ class Display_Mixin():
             return
         allvars = list({c for k, df in self.keep_solutions.items()
                        for c in df.columns})
-        vars = self.vlist_names(allvars, pat)
+        _vars = self.list_names(allvars, pat)
+        # print(f'xx {pat=}  {vars=}    {allvars=}')        
+
         res = {}
         with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):
-            for v in vars:
+            for v in _vars:
                 # print(f'{v=}')
                 outv = pd.concat([solution.loc[self.current_per, v]
                                  for solver, solution in self.keep_solutions.items()], axis=1)
@@ -5070,6 +5072,7 @@ class Display_Mixin():
                 
     """
             # breakpoint()
+            # print(f'{pat=}')
             if showtype == 'growth':
                 start_ofset = -1
             else:
@@ -5080,7 +5083,8 @@ class Display_Mixin():
             else: 
                 dfs = self.keep_var_dict(pat, start, end, start_ofset, trans=False)
                 
-                
+            # print(f'{dfs=}')
+
             if showtype == 'growth':
                 dfs = {v: vdf.astype('float').pct_change()*100. for v, vdf in dfs.items()}
 

@@ -613,10 +613,12 @@ class DisplayDef:
     
         # Combine options using the existing __add__ method of DisplaySpec
         new_spec = self.spec + other.spec
-    
+        # print(f'{self.spec=}')
+        # print(f'{new_spec=}')
         # Merge names if they differ, separated by a comma
         new_name = self.name if self.name == other.name else f"{self.name}_{other.name}"
-    
+        # print(f'{new_name=}')
+ 
         # Create a new DisplayDef with the combined specifications
         return self.__class__(mmodel=self.mmodel, spec=new_spec, name=new_name)
 
@@ -1271,6 +1273,7 @@ class DisplayKeepFigDef(DisplayDef):
             # textdf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[line.centertext]).T
             outlist = []    
         else: 
+            # print(f'{line.pat=}')
             locallinedfdict = self.mmodel.keep_get_plotdict_new(
                                pat=line.pat,
                                showtype=line.showtype,
