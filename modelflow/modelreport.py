@@ -373,6 +373,11 @@ class Line:
     datatype_desc :str = ''
     ax_title_template :str = ''
     textlinetype :str = ''
+    lmodel : any = None
+    smpl : tuple = ('','')
+    scenarios : str  =''
+    decorate : bool = True 
+
 
     # default_ax_title_template :str = field(init=False) 
     # default_ax_title_template_df :str = field(init=False)
@@ -387,6 +392,8 @@ class Line:
         self.diftype                       = config.diftype
         self.default_ax_title_template     = config.ax_title_template
         self.default_ax_title_template_df  = config.ax_title_template_df
+        self.base_last = not self.scenarios
+
 
         valid_showtypes = {'level', 'growth', 'change', 'basedf', 'gdppct' ,'textline','qoq_ar'}
         valid_diftypes = {'nodif', 'dif', 'difpct', 'basedf', 'lastdf'}
@@ -396,6 +403,35 @@ class Line:
         
         if self.diftype not in valid_diftypes:
             raise ValueError(f"diftype must be one of {valid_diftypes}, got {self.diftype}")
+            
+        try:
+            self.var_description = self.lmodel.defsub(self.lmodel.var_description | self.options.custom_description )
+        except: 
+            self.var_description = {}
+            
+
+    def get_rowdes(self,df,row=True):
+        thisdf = df.copy() if row else df.copy().T
+        if self.rename:
+            rowdes = [self.var_description[v] for v in thisdf.index]
+        else: 
+            rowdes = [v for v in thisdf.index]
+            
+        if self.decorate :
+            match self.showtype:
+                case 'growth':
+                    rowdes = [f'{des}, % growth' for des in    rowdes]
+        
+                case 'gdppct':
+                    rowdes = [f'{des.split(",")[0].split("mill")[0]}, % of GDP' for des in    rowdes]
+                    
+        
+                case _:
+                    rowdes = rowdes
+        # print(f'get_rowdes {line=}')            
+        thisdf.index = rowdes 
+        dfout = thisdf if row else thisdf.T 
+        return dfout 
 
 
 @dataclass
@@ -523,28 +559,6 @@ class DisplayDef:
         out = new_spec.to_json(display_type) 
         return out
 
-    def get_rowdes(self,df,line,row=True):
-        thisdf = df.copy() if row else df.copy().T
-        if self.options.rename or line.rename:
-            rowdes = [self.var_description[v] for v in thisdf.index]
-        else: 
-            rowdes = [v for v in thisdf.index]
-            
-        if self.options.decorate :
-            match line.showtype:
-                case 'growth':
-                    rowdes = [f'{des}, % growth' for des in    rowdes]
-        
-                case 'gdppct':
-                    rowdes = [f'{des.split(",")[0].split("mill")[0]}, % of GDP' for des in    rowdes]
-                    
-        
-                case _:
-                    rowdes = rowdes
-        # print(f'get_rowdes {line=}')            
-        thisdf.index = rowdes 
-        dfout = thisdf if row else thisdf.T 
-        return dfout 
 
 
 
@@ -1249,14 +1263,12 @@ class DisplayKeepFigDef(DisplayDef):
         self.base_last = not self.options.scenarios
         # print(self.options.scenarios)
         # print(self.base_last)
-        with self.mmodel.keepswitch(scenarios=self.options.scenarios,base_last = self.base_last):
 
-            with self.mmodel.set_smpl(*self.options.smpl):
 
-                self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
-                    
-                self.figs = self.make_figs(showfig=False)
-                self.report_smpl = self.get_report_smpl
+        self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
+            
+        self.figs = self.make_figs(showfig=False)
+        self.report_smpl = self.get_report_smpl
 
         
         self.chart_names = list(self.figs.keys() )
@@ -1273,37 +1285,38 @@ class DisplayKeepFigDef(DisplayDef):
             # textdf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[line.centertext]).T
             outlist = []    
         else: 
-            # print(f'{line.pat=}')
-            locallinedfdict = self.mmodel.keep_get_plotdict_new(
-                               pat=line.pat,
-                               showtype=line.showtype,
-                               diftype = line.diftype,
-                               by_var=line.by_var)
-            
-            # print(f'before {locallinedfdict.keys()=}')
-            if self.base_last or line.diftype == 'basedf':
-                if line.by_var :
-                    if line.diftype == 'basedf':
-                        locallinedfdict = {k: df.iloc[:,[0]] for k,df in locallinedfdict.items()  }
-                    else: 
-                        locallinedfdict = {k: df.iloc[:,[-1]] for k,df in locallinedfdict.items()  }
-                else: 
-                    if line.diftype == 'basedf':
-                        first_key = next(iter(locallinedfdict))    # First key
-                        locallinedfdict =  {first_key: locallinedfdict[first_key]}
-                    else: 
-                        last_key = next(reversed(locallinedfdict)) # Last key
-                        locallinedfdict =  {last_key: locallinedfdict[last_key]}
-                        
+            with line.lmodel.keepswitch(scenarios=line.scenarios,base_last = line.base_last):
+                with line.lmodel.set_smpl(*self.options.smpl):
+                    locallinedfdict = line.lmodel.keep_get_plotdict_new(
+                                       pat=line.pat,
+                                       showtype=line.showtype,
+                                       diftype = line.diftype,
+                                       by_var=line.by_var)
                     
-
-            # print(f'after {locallinedfdict.keys()=}')
-
-            outlist = [{'line':line, 'key':k ,
-                            'df' : self.get_rowdes(df.loc[self.mmodel.current_per,:],line,row=False) 
-                            } for k,df in locallinedfdict.items()  ]    
-            
-        return(outlist)
+                    # print(f'before {locallinedfdict.keys()=}')
+                    if line.base_last or line.diftype == 'basedf':
+                        if line.by_var :
+                            if line.diftype == 'basedf':
+                                locallinedfdict = {k: df.iloc[:,[0]] for k,df in locallinedfdict.items()  }
+                            else: 
+                                locallinedfdict = {k: df.iloc[:,[-1]] for k,df in locallinedfdict.items()  }
+                        else: 
+                            if line.diftype == 'basedf':
+                                first_key = next(iter(locallinedfdict))    # First key
+                                locallinedfdict =  {first_key: locallinedfdict[first_key]}
+                            else: 
+                                last_key = next(reversed(locallinedfdict)) # Last key
+                                locallinedfdict =  {last_key: locallinedfdict[last_key]}
+                                
+                            
+        
+                    # print(f'after {locallinedfdict.keys()=}')
+        
+                    outlist = [{'line':line, 'key':k ,
+                                    'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
+                                    } for k,df in locallinedfdict.items()  ]    
+                
+            return(outlist)
 
     def make_figs(self,showfig=True):
     # def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
