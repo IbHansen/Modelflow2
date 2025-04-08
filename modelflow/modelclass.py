@@ -332,8 +332,8 @@ class BaseModel():
         self.endogene_true = self.endogene if self.normalized else {
             v for v in self.exogene if v+'___RES' in self.endogene}
 
-        self.check_endo_rhs() 
-        # dummy variables  for variables for which to calculate adjustment variables 
+        # self.check_endo_rhs() 
+        # sdummy variables  for variables for which to calculate adjustment variables 
         
         
         self.fix_dummy =  sorted(vx+'_D' for vx in self.endogene 
@@ -1071,7 +1071,9 @@ class BaseModel():
         return '<\n'+out+'>'
 
     def check_endo_rhs(self):
-        if self.normalized: 
+        #breakpoint() 
+        if self.normalized and not self.istopo: 
+            errors = []
             for i,endovar in enumerate(sorted(self.endogene)):
                 if i >= 2000000000000000 :break
                 this_term = self.allvar[endovar]['terms']
@@ -1079,12 +1081,11 @@ class BaseModel():
                 lhs       = {t.var for t in this_term[:ap] if t.var}
                 rhs_nolag = {t.var for t in this_term[ap:] if t.var and not t.lag}
                 both = lhs & rhs_nolag
-                if both: 
-                    print('\n\n*** PROBLEM **')
-                    print(self.allvar[endovar]['frml'])
-                    raise Exception (f'ERROR in frml for {endovar} this is on right hand side un-lagged {both}')
-
-
+                if both:
+                    errors = errors + [f"{endovar} in: {self.allvar[endovar]['frml']}"]
+            if errors:
+               print('Potential problem in model, Left hand side unlagged on right hand')
+               print(*errors,sep='\n')
 class Org_model_Mixin():
     ''' This mixin enrich the Basemodel class with different utility methods. 
 
@@ -4938,7 +4939,7 @@ class Display_Mixin():
             return
         allvars = list({c for k, df in self.keep_solutions.items()
                        for c in df.columns})
-        _vars = self.list_names(allvars, pat)
+        _vars = self.vlist_names(allvars, pat)
         res = {}
         with self.set_smpl(start, end) as a, self.set_smpl_relative(start_ofset, end_ofset):
             # print(f'{self.current_per[-1]=}')
@@ -4972,7 +4973,7 @@ class Display_Mixin():
             return
         allvars = list({c for k, df in self.keep_solutions.items()
                        for c in df.columns})
-        _vars = self.list_names(allvars, pat)
+        _vars = self.vlist_names(allvars, pat)
         # print(f'xx {pat=}  {vars=}    {allvars=}')        
 
         res = {}
@@ -6104,6 +6105,7 @@ class Json_Mixin():
             mmodel.current_per = current_per 
             mmodel.basedf = lastdf.copy()  
             return mmodel, lastdf
+        mmodel.check_endo_rhs
 
 class Zip_Mixin():
     '''This experimental class zips a dumped file '''
@@ -8764,8 +8766,8 @@ if __name__ == '__main__':
 #%%  test 
     smallmodel = '''
 frml <> a = c + b $ 
-frml <> d1 = x + 3 * a(-1)+ c **2 +a  $ 
-frml <> d3 = x + 3 * a(-1)+c **3 $  
+frml <> d1 = x + 3 * a(-1)+ c **2 +a+ d3 $ 
+frml <> d3 = x + 3 * a(-1)+c **3 +d1 + d3 $ 
 Frml <> xx = 0.5 * c +a$
 frml <CALC_ADJUST> a_a = a-(c+b)$
 frml <CALC_ADJUST> b_a = a-(c+b)$'''
@@ -8773,24 +8775,27 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
            'X': 'Eksport <æøåÆØÅ>;',
            'C': 'Forbrug'}
     mmodel = model(smallmodel, var_description=des, svg=1, browser=1)
-    df = pd.DataFrame(
-        {'X': [0.2, 0.2, 0.2], 'C': [2.0, 3., 5.],'R': [2., 1., 0.4],
-         'PPP': [0.4, 0., 0.4]})
-    df2 = df.copy()
-    df2.loc[:,'C'] = [5, 10, 20]
+    mmodel.check_endo_rhs()
+#%% 
+    if 1:   
+        df = pd.DataFrame(
+            {'X': [0.2, 0.2, 0.2], 'C': [2.0, 3., 5.],'R': [2., 1., 0.4],
+             'PPP': [0.4, 0., 0.4]})
+        df2 = df.copy()
+        df2.loc[:,'C'] = [5, 10, 20]
+        
+        xx = mmodel(df)
+        yy = mmodel(df2)
+        
+        # zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
+        mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True)
+        alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
+        result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=0) # simulates the model 
+        diff_level, att_level, att_pct, diff_growth, att_growth = tup = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
     
-    xx = mmodel(df)
-    yy = mmodel(df2)
     
-    # zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
-    mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True)
-    alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
-    result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=0) # simulates the model 
-    diff_level, att_level, att_pct, diff_growth, att_growth = tup = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
-
-
-    fb_nodes,dag_nodes = mpak.get_minimal_feedback_set(mpak.endograph)
-    print(f'Number of endogenous: {len(mpak.endogene)}, Number of variables in  simultaneuous block {len(mpak.coreorder)}')
-    print(f'Number of variables in "minimum" feedback set: {len(fb_nodes)}')
-    print(f'Number of variables in "DAG" graph           : {len(dag_nodes)}')
-    # mtest,bk = model.modelload(r'ibstestnozip')
+        fb_nodes,dag_nodes = mpak.get_minimal_feedback_set(mpak.endograph)
+        print(f'Number of endogenous: {len(mpak.endogene)}, Number of variables in  simultaneuous block {len(mpak.coreorder)}')
+        print(f'Number of variables in "minimum" feedback set: {len(fb_nodes)}')
+        print(f'Number of variables in "DAG" graph           : {len(dag_nodes)}')
+        # mtest,bk = model.modelload(r'ibstestnozip')
