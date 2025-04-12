@@ -286,8 +286,8 @@ class Options:
     size: tuple = (10, 6)
     legend: bool = True
     transpose : bool = False
-    scenarios : str  =''
-    smpl : tuple = ('','')
+#    scenarios : str  =''
+#    smpl : tuple = ('','')
     landscape : bool = False
     
     samey : bool = False
@@ -1262,7 +1262,7 @@ class DisplayKeepFigDef(DisplayDef):
     
     def __post_init__(self):
         super().__post_init__()  # Call the parent class's __post_init__
-        self.base_last = not self.options.scenarios
+        # self.base_last = not self.options.scenarios
         # print(self.options.scenarios)
         # print(self.base_last)
 
@@ -1288,7 +1288,7 @@ class DisplayKeepFigDef(DisplayDef):
             outlist = []    
         else: 
             with line.lmodel.keepswitch(scenarios=line.scenarios,base_last = line.base_last):
-                with line.lmodel.set_smpl(*self.options.smpl):
+                with line.lmodel.set_smpl(*line.smpl):
                     locallinedfdict = line.lmodel.keep_get_plotdict_new(
                                        pat=line.pat,
                                        showtype=line.showtype,
@@ -1358,8 +1358,9 @@ class DisplayKeepFigDef(DisplayDef):
              # print(f'{size=}  {figsize=}')
              fig = plt.figure(figsize=figsize)
              #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
+             one_legend = options.legend and all_by_var
              
-             if options.legend and all_by_var: 
+             if one_legend: 
                  extra_row = 1 
                  row_heights = [1] * xrow + [0.5]  # Assuming equal height for all plot rows, and half for the legend
 
@@ -1374,7 +1375,7 @@ class DisplayKeepFigDef(DisplayDef):
 
 # Create axes for the plots
              axes = [fig.add_subplot(gs[i, j]) for i in range(xrow) for j in range(xcol)]
-             if options.legend and all_by_var and not self.base_last: 
+             if one_legend: 
                  legend_ax = fig.add_subplot(gs[-1, :])  # Span the legend axis across the bottom
              
              figs = {self.name : fig}
@@ -1397,6 +1398,7 @@ class DisplayKeepFigDef(DisplayDef):
              v = item['key']
              df = item['df']
              line = item['line']
+             line_model  = line.lmodel
              
              mul = line.mul
              by_var= line.by_var
@@ -1418,8 +1420,8 @@ class DisplayKeepFigDef(DisplayDef):
              var_name = v
              var_description = self.var_description[v]
              
-             default_title = line.default_ax_title_template_df if self.base_last  else line.default_ax_title_template 
-             if self.base_last:
+             default_title = line.default_ax_title_template_df if line.base_last  else line.default_ax_title_template 
+             if line.base_last:
                  ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template_df
              else:
                  ax_title_template = line.ax_title_template if line.ax_title_template else line.default_ax_title_template
@@ -1430,7 +1432,7 @@ class DisplayKeepFigDef(DisplayDef):
              # title=(f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
              # if (line.diftype in {'difpct'}) else f'{dftype}:')
 
-             self.mmodel.plot_basis_ax(axes[i], v , df*mul, legend=options.legend,
+             line_model.plot_basis_ax(axes[i], v , df*mul, legend=options.legend,
                                      scale='linear', trans=self.var_description if self.options.rename else {},
                                      ax_title = ax_title ,
                                      yunit=line.yunit,
@@ -1438,7 +1440,7 @@ class DisplayKeepFigDef(DisplayDef):
                                      xlabel='',kind = line.kind ,samefig=options.samefig and all_by_var,
                                      dec=dec)
              
-             if options.legend and self.base_last and  axes[i].get_legend() is not None:
+             if options.legend and line.base_last and  axes[i].get_legend() is not None:
                  axes[i].get_legend().remove()
                  
          for ax in axes[number:]:
@@ -1446,9 +1448,9 @@ class DisplayKeepFigDef(DisplayDef):
 
          
          if options.samefig: 
-             fig.suptitle(self.mmodel.string_substitution(options.title) ,fontsize=20) 
+             fig.suptitle(line_model.string_substitution(options.title) ,fontsize=20) 
 
-             if options.legend  and all_by_var and not self.base_last: 
+             if one_legend: 
                  handles, labels = axes[0].get_legend_handles_labels()  # Assuming the first ax has the handles and labels
                  legend_ax.legend(handles, labels, loc='center', ncol=3 if True else len(labels), fontsize='large')
                  legend_ax.axis('off')  # Hide the axis
@@ -1459,7 +1461,7 @@ class DisplayKeepFigDef(DisplayDef):
          else:
             for v,fig in figs.items() :
                 if options.title: 
-                    fig.suptitle(self.mmodel.string_substitution(options.title) ,fontsize=20) 
+                    fig.suptitle(line_model.string_substitution(options.title) ,fontsize=20) 
             if options.samey:
                 unify_y_limits_across_figs(figs)
          

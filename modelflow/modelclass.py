@@ -8438,7 +8438,7 @@ class Report_Mixin:
         return tab
 
     def plot(self, pat='#Headline',title='',datatype='growth',custom_description = {},by_var = True,mul=1.0 , 
-             ax_title_template='',**kwargs):     
+             ax_title_template='',smpl=('',''),**kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8472,7 +8472,8 @@ class Report_Mixin:
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = [Line(pat=pat, datatype=datatype, lmodel=self,scenarios=scenarios,
-                          by_var = by_var,mul=mul,ax_title_template=ax_title_template) , 
+                          by_var = by_var,mul=mul,ax_title_template=ax_title_template,
+                          smpl=smpl ) , 
             ]
         )
         figs = DisplayKeepFigDef (mmodel=self, spec = figspec)
