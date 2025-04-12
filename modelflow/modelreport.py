@@ -259,7 +259,7 @@ class Options:
         html_text (str): Text for an HTML output. Default is an empty string.
         text_text (str): Text for a plain text output. Default is an empty string.
         markdown_text (str): Text for a Markdown output. Default is an empty string.
-    
+        samey (bool ): same ymin and ymax
     
     Methods:
         __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
@@ -289,6 +289,8 @@ class Options:
     scenarios : str  =''
     smpl : tuple = ('','')
     landscape : bool = False
+    
+    samey : bool = False
     
     latex_text :str =''
     html_text :str =''
@@ -1451,11 +1453,15 @@ class DisplayKeepFigDef(DisplayDef):
                  legend_ax.legend(handles, labels, loc='center', ncol=3 if True else len(labels), fontsize='large')
                  legend_ax.axis('off')  # Hide the axis
 
+             if options.samey:
+                 unify_y_limits(fig)
+
          else:
             for v,fig in figs.items() :
                 if options.title: 
                     fig.suptitle(self.mmodel.string_substitution(options.title) ,fontsize=20) 
-
+            if options.samey:
+                unify_y_limits_across_figs(figs)
          
          
          if showfig:
@@ -2112,8 +2118,54 @@ def insert_centered_row(html_text, centered_text, num_columns):
     
     return modified_html_text
 
+def unify_y_limits(fig):
+    """
+    Set the same ymin and ymax across all axes in a matplotlib figure.
 
-from dataclasses import dataclass
+    Parameters:
+        fig (matplotlib.figure.Figure): The figure whose axes will be adjusted.
+    """
+    axes = fig.get_axes()
+
+    # Filter out any axes that might not have valid data (optional, depending on use case)
+    if not axes:
+        return
+
+    # Determine global ymin and ymax across all axes
+    ymins = [ax.get_ylim()[0] for ax in axes]
+    ymaxs = [ax.get_ylim()[1] for ax in axes]
+
+    ymin = min(ymins)
+    ymax = max(ymaxs)
+
+    # Set uniform y-limits
+    for ax in axes:
+        ax.set_ylim(ymin, ymax)
+
+def unify_y_limits_across_figs(fig_dict):
+    """
+    Set the same ymin and ymax across all figures in a dictionary,
+    assuming each figure contains exactly one Axes.
+
+    Parameters:
+        fig_dict (dict): A dictionary where each value is a matplotlib.figure.Figure.
+    """
+    axes = [fig.get_axes()[0] for fig in fig_dict.values() if fig.get_axes()]
+    
+    if not axes:
+        return
+
+    # Compute global ymin and ymax
+    ymins = [ax.get_ylim()[0] for ax in axes]
+    ymaxs = [ax.get_ylim()[1] for ax in axes]
+
+    ymin = min(ymins)
+    ymax = max(ymaxs)
+
+    # Apply to all
+    for ax in axes:
+        ax.set_ylim(ymin, ymax)
+        # ax.figure.canvas.draw_idle()
 
 @dataclass
 class SplitTextResult:
