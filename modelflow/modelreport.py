@@ -534,6 +534,50 @@ class DisplayDef:
         self.timeslice = self.options.timeslice if self.options.timeslice else []
         
     
+    def make_df(self, line):   
+        with line.lmodel.keepswitch(scenarios=line.scenarios,base_last = line.base_last):
+            with line.lmodel.set_smpl(*line.smpl):
+                
+                if line.textlinetype  in ['textline']:                
+                    linedf = pd.DataFrame(np.nan , index=line.lmodel.current_per, columns=[line.centertext]).T
+                    outlist = [{'line':line, 'key':'textline' ,
+                                    'df' : linedf} ]    
+                
+                
+                else:                    
+                    locallinedfdict = line.lmodel.keep_get_plotdict_new(
+                                       pat=line.pat,
+                                       showtype=line.showtype,
+                                       diftype = line.diftype,
+                                       by_var=line.by_var)
+                    
+                    # print(f'before {locallinedfdict.keys()=}')
+                    if line.base_last or line.diftype == 'basedf':
+                        if line.by_var :
+                            if line.diftype == 'basedf':
+                                locallinedfdict = {k: df.iloc[:,[0]] for k,df in locallinedfdict.items()  }
+                            else: 
+                                locallinedfdict = {k: df.iloc[:,[-1]] for k,df in locallinedfdict.items()  }
+                        else: 
+                            if line.diftype == 'basedf':
+                                first_key = next(iter(locallinedfdict))    # First key
+                                locallinedfdict =  {first_key: locallinedfdict[first_key]}
+                            else: 
+                                last_key = next(reversed(locallinedfdict)) # Last key
+                                locallinedfdict =  {last_key: locallinedfdict[last_key]}
+                                
+                            
+        
+                    # print(f'after {locallinedfdict.keys()=}')
+        
+                    outlist = [{'line':line, 'key':k ,
+                                    'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
+                                    } for k,df in locallinedfdict.items()  ]    
+            
+        return(outlist)
+
+    
+    
     def set_name(self,name):
         self.name = name.replace(' ','_')
         self.options.name = self.name 
@@ -1282,43 +1326,47 @@ class DisplayKeepFigDef(DisplayDef):
         return 
     
             
-    def make_df(self, line):   
-        if line.textlinetype  in ['textline']:                
-            # textdf = pd.DataFrame(float('nan'), index=self.mmodel.current_per, columns=[line.centertext]).T
-            outlist = []    
-        else: 
-            with line.lmodel.keepswitch(scenarios=line.scenarios,base_last = line.base_last):
-                with line.lmodel.set_smpl(*line.smpl):
-                    locallinedfdict = line.lmodel.keep_get_plotdict_new(
-                                       pat=line.pat,
-                                       showtype=line.showtype,
-                                       diftype = line.diftype,
-                                       by_var=line.by_var)
+    # def make_df(self, line):   
+    #     with line.lmodel.keepswitch(scenarios=line.scenarios,base_last = line.base_last):
+    #         with line.lmodel.set_smpl(*line.smpl):
+                
+    #             if line.textlinetype  in ['textline']:                
+    #                 linedf = pd.DataFrame(np.nan , index=line.lmodel.current_per, columns=[line.centertext]).T
+    #                 outlist = [{'line':line, 'key':'textline' ,
+    #                                 'df' : linedf} ]    
+                
+                
+    #             else:                    
+    #                 locallinedfdict = line.lmodel.keep_get_plotdict_new(
+    #                                    pat=line.pat,
+    #                                    showtype=line.showtype,
+    #                                    diftype = line.diftype,
+    #                                    by_var=line.by_var)
                     
-                    # print(f'before {locallinedfdict.keys()=}')
-                    if line.base_last or line.diftype == 'basedf':
-                        if line.by_var :
-                            if line.diftype == 'basedf':
-                                locallinedfdict = {k: df.iloc[:,[0]] for k,df in locallinedfdict.items()  }
-                            else: 
-                                locallinedfdict = {k: df.iloc[:,[-1]] for k,df in locallinedfdict.items()  }
-                        else: 
-                            if line.diftype == 'basedf':
-                                first_key = next(iter(locallinedfdict))    # First key
-                                locallinedfdict =  {first_key: locallinedfdict[first_key]}
-                            else: 
-                                last_key = next(reversed(locallinedfdict)) # Last key
-                                locallinedfdict =  {last_key: locallinedfdict[last_key]}
+    #                 # print(f'before {locallinedfdict.keys()=}')
+    #                 if line.base_last or line.diftype == 'basedf':
+    #                     if line.by_var :
+    #                         if line.diftype == 'basedf':
+    #                             locallinedfdict = {k: df.iloc[:,[0]] for k,df in locallinedfdict.items()  }
+    #                         else: 
+    #                             locallinedfdict = {k: df.iloc[:,[-1]] for k,df in locallinedfdict.items()  }
+    #                     else: 
+    #                         if line.diftype == 'basedf':
+    #                             first_key = next(iter(locallinedfdict))    # First key
+    #                             locallinedfdict =  {first_key: locallinedfdict[first_key]}
+    #                         else: 
+    #                             last_key = next(reversed(locallinedfdict)) # Last key
+    #                             locallinedfdict =  {last_key: locallinedfdict[last_key]}
                                 
                             
         
-                    # print(f'after {locallinedfdict.keys()=}')
+    #                 # print(f'after {locallinedfdict.keys()=}')
         
-                    outlist = [{'line':line, 'key':k ,
-                                    'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
-                                    } for k,df in locallinedfdict.items()  ]    
-                
-            return(outlist)
+    #                 outlist = [{'line':line, 'key':k ,
+    #                                 'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
+    #                                 } for k,df in locallinedfdict.items()  ]    
+            
+    #     return(outlist)
 
     def make_figs(self,showfig=True):
     # def keep_plot(self, pat='*', start='', end='', start_ofset=0, end_ofset=0, showtype='level',
@@ -1395,9 +1443,14 @@ class DisplayKeepFigDef(DisplayDef):
          
          
          for i,item in enumerate(dfsres):
+             
              v = item['key']
              df = item['df']
              line = item['line']
+             if line.textlinetype  in ['textline']:
+                 # not relevant for charts 
+                 continue 
+             
              line_model  = line.lmodel
              
              mul = line.mul
