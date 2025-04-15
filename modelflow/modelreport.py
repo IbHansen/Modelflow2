@@ -365,7 +365,7 @@ class Line:
     scale : str = 'linear'
     kind : str = 'line'
     centertext : str = ''
-    rename: bool = False
+    rename: bool = True
     dec: int = 2
     pat : str = '#Headline'
     latexfont :str =''
@@ -379,6 +379,8 @@ class Line:
     smpl : tuple = ('','')
     scenarios : str  =''
     decorate : bool = True 
+    custom_description: Dict[str, str] = field(default_factory=dict)
+
 
 
     # default_ax_title_template :str = field(init=False) 
@@ -407,7 +409,7 @@ class Line:
             raise ValueError(f"diftype must be one of {valid_diftypes}, got {self.diftype}")
             
         try:
-            self.var_description = self.lmodel.defsub(self.lmodel.var_description | self.options.custom_description )
+            self.var_description = self.lmodel.defsub(self.lmodel.var_description | self.custom_description )
         except: 
             self.var_description = {}
             
@@ -430,8 +432,8 @@ class Line:
         
                 case _:
                     rowdes = rowdes
-        # print(f'get_rowdes {line=}')            
         thisdf.index = rowdes 
+        # print(f'get_rowdes {thisdf=}')            
         dfout = thisdf if row else thisdf.T 
         return dfout 
 
@@ -532,17 +534,18 @@ class DisplayDef:
         self.name = (self.name if self.name else self.options.name).replace(' ','_') 
         self.options.name = self.name 
         self.timeslice = self.options.timeslice if self.options.timeslice else []
-        
+
     
     def make_df(self, line):   
+        self.unitline = self.lines[0].centertext
         with line.lmodel.keepswitch(scenarios=line.scenarios,base_last = line.base_last):
             with line.lmodel.set_smpl(*line.smpl):
                 
                 if line.textlinetype  in ['textline']:                
                     linedf = pd.DataFrame(np.nan , index=line.lmodel.current_per, columns=[line.centertext]).T
-                    outlist = [{'line':line, 'key':'textline' ,
-                                    'df' : linedf} ]    
-                
+                    outlist = [{'line':line, 'key':line.centertext ,
+                                    'df' : linedf.T} ]    
+            
                 
                 else:                    
                     locallinedfdict = line.lmodel.keep_get_plotdict_new(
@@ -616,7 +619,8 @@ class DisplayDef:
         try:
             repo = LatexRepo(self.latex ,name=self.name)
             return repo.pdf(pdfopen,show,width,height,typesetter)
-        except: 
+        except Exception as e: 
+            print(f'Exception in pdf {e}')
             return None 
 
     def __add__(self, other):
@@ -905,16 +909,20 @@ class DisplayVarTableDef(DisplayDef):
         super().__post_init__()  # Call the parent class's __post_init__
 
         
-        with self.mmodel.set_smpl(*self.options.smpl):
-            self.dfs = [self.make_var_df(line).astype('float')  for line in self.lines ] 
-            self.report_smpl = self.get_report_smpl
-        
+        # with self.mmodel.set_smpl(*self.options.smpl):
+        #     self.dfs = [self.make_var_df(line).astype('float')  for line in self.lines ] 
+        #     self.report_smpl = self.get_report_smpl
+        self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
+        # print(f'{self.dfs=}')
+       
         if self.options.transpose:
-            self.df = self.dfs[-1].T
+            self.df = self.dfs[-1]['df']
             ...
         else:    
-            self.df     = pd.concat( self.dfs ) 
-            # assert 1==2
+            self.df     = pd.concat( [l['df'].T for l in self.dfs],axis=0 ) 
+        # print(f'{self.df=}')
+            
+            
         return 
 
     def make_var_df(self, line):   
@@ -983,7 +991,7 @@ class DisplayVarTableDef(DisplayDef):
         else:
             df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
     
-            format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            format_decimal = [  dfs_elem['line'].dec for dfs_elem in self.dfs for row in range(len(dfs_elem['df'].T))]
             for i, dec in enumerate(format_decimal):
                   df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
       
@@ -993,8 +1001,10 @@ class DisplayVarTableDef(DisplayDef):
 
     @property    
     def df_str_disp(self):
-        center = [ (line.textlinetype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+        center = [ (df['line'].textlinetype == 'textline' and df['line'].centertext !='' )  for df  in self.dfs for row in range(len(df['df'].T))]
         center_index = [index+1 for index, value in enumerate(center) if value]
+        # print(f'{center=}')
+        # print(f'{center_index=}')
 
         width = self.options.width
         thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str 
@@ -1072,7 +1082,7 @@ class DisplayVarTableDef(DisplayDef):
         def tab_to_html(i,df,line):
             nonlocal endhtml
             out = ''
-            html_all = self.mmodel.ibsstyle(df,use_tooltip=False,dec=line.dec).to_html() 
+            html_all = line.lmodel.ibsstyle(df,use_tooltip=False,dec=line.dec).to_html() 
             splitted_html = HTMLSplitData(html_all)
             if i == 0:
                 caption = f'<caption>{self.mmodel.string_substitution(self.options.title)}</caption>' if self.options.title else '' 
@@ -1108,11 +1118,21 @@ class DisplayVarTableDef(DisplayDef):
             if self.options.transpose:
                 out = insert_centered_row(out,self.unitline,len(self.df.columns))
 
-        else:    
-           thisdfs = [(i,df.loc[:,self.timeslice] if self.timeslice else df, line) for i,(df,line) in 
-             enumerate(zip(self.dfs,self.lines))]
-            
-           out = '\n'.join([tab_to_html(i,df,line) for i,df,line in thisdfs])+'\n'
+        else:   
+           # print(f'{self.dfs=}')
+
+           # thisdfs = [(i,(df['df'].T.loc[:,self.timeslice]  
+           #             if self.timeslice else 
+           #                df['df'].T).pipe(lambda d: d.set_index(pd.Index([df['key']]))), df['line']) 
+           #             for i,df in enumerate(self.dfs)]
+           thisdfs = [(i,df['df'].T.loc[:,self.timeslice]  
+                       if self.timeslice else 
+                          df['df'].T, df['line']) 
+                       for i,df in enumerate(self.dfs)]
+           # print(f'{thisdfs=}')
+ 
+           out = '\n'.join([tab_to_html(i,df,line) 
+                            for i,df,line in thisdfs])+'\n'
            if self.options.foot:               
                foot = f"<tfoot><tr><td colspan='5' style='text-align: left;'>{self.options.foot}</td></tr></tfoot>"
            else:
@@ -1135,7 +1155,7 @@ class DisplayVarTableDef(DisplayDef):
     @property
     def latex_straight(self): 
             last_cols = 0 
-            rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            rowlines  = [ dfs_elem['line'] for  dfs_elem  in self.dfs for row in range(len(dfs_elem['df'].T))]
             if self.timeslice: 
                 dfs = [self.df_str.loc[:,self.timeslice]]
             else:    

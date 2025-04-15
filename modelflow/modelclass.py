@@ -5101,14 +5101,14 @@ class Display_Mixin():
             elif showtype ==  'gdppct':
                 if by_var: 
                     linevars = list(dfs.keys())
-                    gdpvars = [self.findgdpvar(v) for v in linevars]
+                    gdpvars = ' '.join([self.findgdpvar(v) for v in linevars])
                     dfgdp = self.keep_get_dict(gdpvars, start, end, start_ofset,trans=False)
                     denominvalues    = [dfgdp[v]  for v in gdpvars ]
 
                 else: 
                     firstdf = next(iter(dfs.values()))
                     linevars = list(firstdf.columns)
-                    gdpvars = [self.findgdpvar(v) for v in linevars]
+                    gdpvars = ' '.join([self.findgdpvar(v) for v in linevars])
                     dfgdp = self.keep_var_dict(gdpvars, start, end, start_ofset,trans=False)
                     denominvalues    = [df  for df in dfgdp.values() ]
 
@@ -8384,7 +8384,9 @@ class Report_Mixin:
     
 
 
-    def table(self, pat='#Headline',title='Table',datatype='growth',col_desc='',custom_description = {},dec=2,heading='',mul=1.0,**kwargs):     
+    def table(self, pat='#Headline',title='Table',datatype='growth',
+              col_desc='',custom_description = {},
+              dec=2,heading='',mul=1.0,rename=True,**kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8424,14 +8426,14 @@ class Report_Mixin:
 
         config =   DatatypeAccessor(datatype)    
         this_col_desc = col_desc if col_desc else config.col_desc
-        headingline = [Line(textlinetype='textline',centertext=heading)] if heading else [] 
-        unitline   =  [] if this_col_desc.strip() == '' else [ Line(textlinetype='textline',centertext=f'--- {this_col_desc} ---')]  
+        headingline = [Line(textlinetype='textline',centertext=heading,lmodel=self)] if heading else [] 
+        unitline   =  [] if this_col_desc.strip() == '' else [ Line(textlinetype='textline',centertext=f'--- {this_col_desc} ---',lmodel=self)]  
                
         tabspec = DisplaySpec(
             options = Options(decorate=False,name='A_small_table', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = headingline + unitline + [
-                 Line(datatype=datatype ,pat=pat,dec=dec, mul=mul ) , 
+                 Line(datatype=datatype ,pat=pat,dec=dec, mul=mul,lmodel=self,by_var=False,rename=rename ) , 
             ]
         )
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
