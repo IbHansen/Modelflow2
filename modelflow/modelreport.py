@@ -67,7 +67,7 @@ import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 import numpy as np
 
-from dataclasses import dataclass, field, fields, asdict
+from dataclasses import dataclass, field, fields, asdict,replace
 from typing import Any, List, Dict,  Optional , Tuple
 from copy import deepcopy
 import json
@@ -75,8 +75,8 @@ import  ipywidgets as widgets
 from io import StringIO
 
 from IPython.display import display, clear_output,Latex, Markdown,HTML , IFrame
-
-
+import logging
+from pprint import pprint, pformat
 
 
 
@@ -88,12 +88,17 @@ WIDTH = '100%'
 HEIGHT = '400px'
 
 
-from dataclasses import dataclass, field, fields, MISSING
+from dataclasses import dataclass, field, fields, MISSING, is_dataclass
 from typing import Dict, List
 from copy import deepcopy
 
 
 from modelwidget import fig_to_image,tabwidget,htmlwidget_fig, htmlwidget_df,htmlwidget_text,htmlwidget_style
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(funcName)s [line %(lineno)d]:\n%(message)s'
+)
 
 def track_fields():
     """
@@ -435,7 +440,7 @@ class Line:
         thisdf.index = rowdes 
         # print(f'get_rowdes {thisdf=}')            
         dfout = thisdf if row else thisdf.T 
-        return dfout 
+        return dfout*self.mul 
 
 
 @dataclass
@@ -506,7 +511,7 @@ class DisplaySpec:
         """
         # Convert DisplaySpec instance to dictionary
         
-        display_spec_dict = {"display_type":display_type,  "options": asdict(self.options), "lines": [asdict(line) for line in self.lines]}
+        display_spec_dict = {"display_type":display_type,  "options": asdict(self.options), "lines": [custom_asdict(line) for line in self.lines]}
         # print(display_spec_dict)
         # Serialize the dictionary to a JSON string
         return json.dumps(display_spec_dict, indent=4)
@@ -537,6 +542,8 @@ class DisplayDef:
 
     
     def make_df(self, line):   
+        logging.getLogger().setLevel(logging.DEBUG)                            
+        
         self.unitline = self.lines[0].centertext
         with line.lmodel.keepswitch(scenarios=line.scenarios,base_last = line.base_last):
             with line.lmodel.set_smpl(*line.smpl):
@@ -554,7 +561,17 @@ class DisplayDef:
                                        diftype = line.diftype,
                                        by_var=line.by_var)
                     
-                    # print(f'before {locallinedfdict.keys()=}')
+                    outlist_heading = [
+                        {'line':replace(line,textlinetype='textline',centertext=k), 'key': line.lmodel.var_description[k] if line.by_var else k ,
+                                        'df' : pd.DataFrame(np.nan , index=line.lmodel.current_per, 
+                                           columns=[line.lmodel.var_description[k] if line.by_var else k]).T.T} for k,df in locallinedfdict.items()  ]
+                    outlist_content = [
+                    {'line':line, 'key':k ,
+                                    'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
+                                    } for k,df in locallinedfdict.items()  ]    
+                    
+                    outlist = [item for pair in zip(outlist_heading, outlist_content) for item in pair]
+
                     if line.base_last or line.diftype == 'basedf':
                         if line.by_var :
                             if line.diftype == 'basedf':
@@ -568,15 +585,19 @@ class DisplayDef:
                             else: 
                                 last_key = next(reversed(locallinedfdict)) # Last key
                                 locallinedfdict =  {last_key: locallinedfdict[last_key]}
+                        outlist = [{'line':line, 'key':k ,
+                                    'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
+                                    } for k,df in locallinedfdict.items()  ]    
                                 
-                            
         
                     # print(f'after {locallinedfdict.keys()=}')
         
-                    outlist = [{'line':line, 'key':k ,
-                                    'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
-                                    } for k,df in locallinedfdict.items()  ]    
-            
+                        outlist = [{'line':line, 'key':k ,
+                                        'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
+                                        } for k,df in locallinedfdict.items()  ]    
+                    # logging.debug(f'before {locallinedfdict.keys()=}')
+                logging.getLogger().setLevel(logging.INFO)                            
+
         return(outlist)
 
     
@@ -600,7 +621,7 @@ class DisplayDef:
     @property
     def save_spec(self):
         display_type = self.__class__.__name__
-        new_spec = self.spec + Options(smpl = self.report_smpl)
+        new_spec = self.spec # + Options(smpl = self.report_smpl)
         # print(f"\n{Options(smpl = self.report_smpl)=}")
         # print(f"\n{new_spec=}")
         # print(f"\n{new_spec=}")
@@ -913,7 +934,7 @@ class DisplayVarTableDef(DisplayDef):
         #     self.dfs = [self.make_var_df(line).astype('float')  for line in self.lines ] 
         #     self.report_smpl = self.get_report_smpl
         self.dfs = [f for line in self.lines  for f in self.make_df(line) ] 
-        # print(f'{self.dfs=}')
+        # pprint(self.dfs)
        
         if self.options.transpose:
             self.df = self.dfs[-1]['df']
@@ -1001,16 +1022,36 @@ class DisplayVarTableDef(DisplayDef):
 
     @property    
     def df_str_disp(self):
-        center = [ (df['line'].textlinetype == 'textline' and df['line'].centertext !='' )  for df  in self.dfs for row in range(len(df['df'].T))]
-        center_index = [index+1 for index, value in enumerate(center) if value]
-        # print(f'{center=}')
+        center_lines = [ (dfs_elem['line'].textlinetype == 'textline' and dfs_elem['line'].centertext !='' )  for dfs_elem  in self.dfs for row in range(len(dfs_elem['df'].T))]
+        center_index = [index+1 for index, value in enumerate(center_lines) if value]
+        # print(f'{center_lines=}')
         # print(f'{center_index=}')
-
+        data_lines = [ (dfs_elem['line'].textlinetype !='textline'  )  for dfs_elem  in self.dfs for row in range(len(dfs_elem['df'].T))]
+        data_index = [index+1 for index, value in enumerate(data_lines) if value]
+        # print(f'{data_lines=}')
+        # print(f'{data_index=}')
+        try:
+            max_data_lines_index_len = max(
+                len(str(idx)) for idx, flag in zip(self.df.index, data_lines) if flag
+                )
+        except:
+            max_data_lines_index_len = 10
+        
+        try:
+            max_center_lines_index_len = max(
+            len(str(idx)) for idx, flag in zip(self.df.index, center_lines) if flag
+            )
+        except: 
+            max_center_lines_index_len = max_data_lines_index_len
+            
+        # print(f'{max_data_lines_index_len=}')
+        # print(f'{max_center_lines_index_len=}')
         width = self.options.width
         thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str 
             
         rawdata = thisdf.to_string(max_cols= self.options.max_cols).split('\n')
-        data = center_title_under_years(rawdata,center_index)
+        data = center_title_under_years(rawdata,center_index,0,
+                                  max_center_lines_index_len,  max_data_lines_index_len)
         # print(*data,sep='\n')
         # rawdata[0],rawdata[1] = rawdata[1],rawdata[0]
         out = '\n'.join(data)
@@ -1032,7 +1073,8 @@ class DisplayVarTableDef(DisplayDef):
     def show(self):
         if self.options.title: 
             print(self.mmodel.string_substitution(self.options.title))
-        print(self.df_str_disp_transpose  if self.options.transpose else  self.df_str_disp)
+        print(self.df_str_disp_transpose  if self.options.transpose 
+              else  self.df_str_disp)
         if self.options.foot: 
             print(self.options.foot)
 
@@ -1173,7 +1215,7 @@ class DisplayVarTableDef(DisplayDef):
             outlist = [] 
             for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
-                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i]+'}}'  
+                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i].replace(r'$',r'\$')+'}}'  
                             if line.textlinetype == 'textline'
                             else df.index[i]
                     for i, line  in enumerate(rowlines)]    
@@ -1409,7 +1451,9 @@ class DisplayKeepFigDef(DisplayDef):
          plt.ioff() 
 
             
-         dfsres = self.dfs
+         dfsres = [dfs_elem for dfs_elem in self.dfs 
+                   if not dfs_elem['line'].textlinetype  in ['textline']
+                   ]
          
          
 
@@ -1473,7 +1517,6 @@ class DisplayKeepFigDef(DisplayDef):
              
              line_model  = line.lmodel
              
-             mul = line.mul
              by_var= line.by_var
              aspct = ' as pct ' if line.diftype in {'difpct'} else ' '
              dftype = line.showtype.capitalize()
@@ -1505,7 +1548,7 @@ class DisplayKeepFigDef(DisplayDef):
              # title=(f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
              # if (line.diftype in {'difpct'}) else f'{dftype}:')
 
-             line_model.plot_basis_ax(axes[i], v , df*mul, legend=options.legend,
+             line_model.plot_basis_ax(axes[i], v , df, legend=options.legend,
                                      scale='linear', trans=self.var_description if self.options.rename else {},
                                      ax_title = ax_title ,
                                      yunit=line.yunit,
@@ -1866,7 +1909,9 @@ class HTMLSplitData:
 
         return text_before_thead, thead, tbody, text_after_tbody
 
-def center_title_under_years(data, title_row_index=[1],year_row_index = 0):
+def center_title_under_years(data, title_row_index=[1],year_row_index = 0,
+                                  max_center_lines_index_len=20,  
+                                  max_data_lines_index_len=20):
     """
     Center a title (specified by its index in the list) under the years row in a list of strings.
     
@@ -1882,6 +1927,7 @@ def center_title_under_years(data, title_row_index=[1],year_row_index = 0):
     start_index = len(year_row) - len(year_row.lstrip())
     end_index = len(year_row.rstrip())
     
+    
     # Calculate the total space available for centering
     total_space = end_index - start_index
     
@@ -1893,8 +1939,12 @@ def center_title_under_years(data, title_row_index=[1],year_row_index = 0):
         # Replace the original title in the list with the centered title
         # Ensuring that the centered title is positioned correctly relative to the entire line
         adjusted_data[row_index] = f"{year_row[:start_index]}{centered_title}{year_row[end_index:]}"
+    
+    new_data = [row[:max_data_lines_index_len+2] + row[max_center_lines_index_len:]
+                for row in adjusted_data] 
         
-    return adjusted_data
+    
+    return new_data
 
 
 def create_instance_from_json(mmodel,json_str: str):
@@ -1928,7 +1978,7 @@ def create_instance_from_json(mmodel,json_str: str):
         
         # Process options and lines
         options = Options(**data['options'])
-        lines = [Line(**line) for line in data['lines']]
+        lines = [replace(Line(**line), lmodel=mmodel) for line in data['lines']]
         
         # Create DisplaySpec instance
         spec = DisplaySpec(options=options, lines=lines)
@@ -2241,7 +2291,46 @@ def unify_y_limits_across_figs(fig_dict):
     for ax in axes:
         ax.set_ylim(ymin, ymax)
         # ax.figure.canvas.draw_idle()
+        
+def custom_asdict(obj):
+    """
+Recursively converts a dataclass object to a dictionary,
+including only the fields explicitly declared in the dataclass.
 
+Special case:
+- If a field is named 'lmodel', its value will be replaced with
+  the class name of the object, lowercased (e.g., 'LModel' → 'lmodel').
+
+Supports:
+- Nested dataclasses
+- Lists and dictionaries containing dataclasses or serializable objects
+
+Parameters:
+    obj (Any): A dataclass instance or a nested structure (list/dict)
+               containing dataclasses.
+
+Returns:
+    dict | list | primitive: A fully serialized representation of the
+                             dataclass structure, with custom handling
+                             for the 'lmodel' field.
+"""
+
+    if is_dataclass(obj):
+        result = {}
+        for f in fields(obj):  # Only declared dataclass fields
+            key = f.name
+            value = getattr(obj, key)
+            if key == 'lmodel':
+                result[key] = value.__class__.__name__.lower()
+            else:
+                result[key] = custom_asdict(value)
+        return result
+    elif isinstance(obj, list):
+        return [custom_asdict(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {k: custom_asdict(v) for k, v in obj.items()}
+    else:
+        return obj
 @dataclass
 class SplitTextResult:
     input_string: str

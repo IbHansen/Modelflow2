@@ -1196,11 +1196,17 @@ class Org_model_Mixin():
     @staticmethod
     def list_names(input, pat, sort=True):
         '''returns a list of variable in input  matching the pattern'''
+        
+        if type(pat) == list:
+            tpat = ' '.join(pat)
+        else:
+            tpat = pat
+            
         if sort:
-            out = [v for up in pat.split()
+            out = [v for up in tpat.split()
                    for v in sorted(fnmatch.filter(input, up.upper()))]
         else:
-            out = [v for up in pat.split()
+            out = [v for up in tpat.split()
                    for v in fnmatch.filter(input, up.upper())]
         return out
 
@@ -8386,7 +8392,8 @@ class Report_Mixin:
 
     def table(self, pat='#Headline',title='Table',datatype='growth',
               col_desc='',custom_description = {},
-              dec=2,heading='',mul=1.0,rename=True,**kwargs):     
+              dec=2,heading='',mul=1.0,rename=True,
+              scenarios='',by_var = False,**kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8433,7 +8440,8 @@ class Report_Mixin:
             options = Options(decorate=False,name='A_small_table', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = headingline + unitline + [
-                 Line(datatype=datatype ,pat=pat,dec=dec, mul=mul,lmodel=self,by_var=False,rename=rename ) , 
+                 Line(datatype=datatype ,pat=pat,dec=dec, mul=mul,lmodel=self,by_var=by_var,
+                      rename=rename,scenarios=scenarios ) , 
             ]
         )
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)
