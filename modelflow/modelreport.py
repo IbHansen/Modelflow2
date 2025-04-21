@@ -279,7 +279,7 @@ class Options:
     rename: bool = True
     decorate: bool = True
     width: int = 20
-    custom_description: Dict[str, str] = field(default_factory=dict)
+    # custom_description: Dict[str, str] = field(default_factory=dict)
     title: str = ''
     chunk_size: int = 0  
     timeslice: List = field(default_factory=list)
@@ -561,16 +561,6 @@ class DisplayDef:
                                        diftype = line.diftype,
                                        by_var=line.by_var)
                     
-                    outlist_heading = [
-                        {'line':replace(line,textlinetype='textline',centertext=k), 'key': line.lmodel.var_description[k] if line.by_var else k ,
-                                        'df' : pd.DataFrame(np.nan , index=line.lmodel.current_per, 
-                                           columns=[line.lmodel.var_description[k] if line.by_var else k]).T.T} for k,df in locallinedfdict.items()  ]
-                    outlist_content = [
-                    {'line':line, 'key':k ,
-                                    'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
-                                    } for k,df in locallinedfdict.items()  ]    
-                    
-                    outlist = [item for pair in zip(outlist_heading, outlist_content) for item in pair]
 
                     if line.base_last or line.diftype == 'basedf':
                         if line.by_var :
@@ -588,7 +578,22 @@ class DisplayDef:
                         outlist = [{'line':line, 'key':k ,
                                     'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
                                     } for k,df in locallinedfdict.items()  ]    
-                                
+                    
+                    else:
+                        if line.diftype == 'basedf':
+                            raise Exception('No < >base if scenarios selectd')
+                        else:     
+                            outlist_heading = [
+                                {'line':replace(line,textlinetype='textline',centertext=k), 'key': line.lmodel.var_description[k] if line.by_var else k ,
+                                                'df' : pd.DataFrame(np.nan , index=line.lmodel.current_per, 
+                                                   columns=[line.lmodel.var_description[k] if line.by_var else k]).T.T} for k,df in locallinedfdict.items()  ]
+                            outlist_content = [
+                            {'line':line, 'key':k ,
+                                            'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
+                                            } for k,df in locallinedfdict.items()  ]    
+                            
+                            outlist = [item for pair in zip(outlist_heading, outlist_content) for item in pair]
+    
         
                     # print(f'after {locallinedfdict.keys()=}')
         
@@ -678,9 +683,6 @@ class DisplayDef:
             return NotImplemented
 
 
-        # out = DisplayContainerDef(mmodel=self.mmodel,reports= [linstance,self])
-    
-        # Create a new DisplayDef with the combined specifications
         return out 
 
 
@@ -1532,9 +1534,9 @@ class DisplayKeepFigDef(DisplayDef):
              #     if (line.diftype in {'difpct','dif'}) else f'{dftype}:')
 
              
-             compare = f"{list(self.mmodel.keep_solutions.keys())[0] }" if by_var else f"{df.columns[0] }" 
+             compare = f"{list(line_model.keep_solutions.keys())[0] }" if by_var else f"{df.columns[0] }" 
              var_name = v
-             var_description = self.var_description[v]
+             var_description = line.var_description[v]
              
              default_title = line.default_ax_title_template_df if line.base_last  else line.default_ax_title_template 
              if line.base_last:
