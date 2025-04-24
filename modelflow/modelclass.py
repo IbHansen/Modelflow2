@@ -8395,7 +8395,7 @@ class Report_Mixin:
     def table(self, pat='#Headline',title='Table',datatype='growth',
               col_desc='',custom_description = {},
               dec=2,heading='',mul=1.0,rename=True,
-              scenarios='',by_var = False,**kwargs):     
+              scenarios='',by_var = False,smpl=('',''),**kwargs):     
         """
         Generates a table display configuration based on specified parameters and data types, including dynamic 
         adjustments of display options using both standard and keyword arguments.
@@ -8432,17 +8432,19 @@ class Report_Mixin:
         
 
 
-
+        smpl_model = (self.current_per[0],self.current_per[-1])
+        this_smpl = smpl if smpl != ('','') else smpl_model 
+        
         config =   DatatypeAccessor(datatype)    
         this_col_desc = col_desc if col_desc else config.col_desc
-        headingline = [Line(textlinetype='textline',centertext=heading,lmodel=self)] if heading else [] 
-        unitline   =  [] if this_col_desc.strip() == '' else [ Line(textlinetype='textline',centertext=f'--- {this_col_desc} ---',lmodel=self)]  
+        headingline = [Line(textlinetype='textline',centertext=heading,lmodel=self,smpl=this_smpl)] if heading else [] 
+        unitline   =  [] if this_col_desc.strip() == '' else [ Line(textlinetype='textline',centertext=f'--- {this_col_desc} ---',lmodel=self,smpl=this_smpl)]  
                
         tabspec = DisplaySpec(
             options = Options(decorate=False,name='A_small_table', 
-                              custom_description=custom_description,title =title,width=5) + kwargs,
+                              custom_description=custom_description,title =title,width=5,rename=rename) + kwargs,
             lines = headingline + unitline + [
-                 Line(datatype=datatype ,pat=pat,dec=dec, mul=mul,lmodel=self,by_var=by_var,
+                 Line(datatype=datatype ,pat=pat,dec=dec, mul=mul,lmodel=self,by_var=by_var,smpl=this_smpl,
                       rename=rename,scenarios=scenarios ) , 
             ]
         )
@@ -8479,13 +8481,17 @@ class Report_Mixin:
         config =   DatatypeAccessor(datatype, **kwargs)    
         # print(config.showtype,config.diftype,config.ax_title_template_df)
         scenarios = kwargs.get('scenarios','')
-               
+        
+        smpl_model = (self.current_per[0],self.current_per[-1])
+        this_smpl = smpl if smpl != ('','') else smpl_model 
+
+        
         figspec = DisplaySpec(
             options = Options(decorate=False,name='A_plot', 
                               custom_description=custom_description,title =title,width=5) + kwargs,
             lines = [Line(pat=pat, datatype=datatype, lmodel=self,scenarios=scenarios,
                           by_var = by_var,mul=mul,ax_title_template=ax_title_template,
-                          smpl=smpl ) , 
+                          smpl=this_smpl ) , 
             ]
         )
         figs = DisplayKeepFigDef (mmodel=self, spec = figspec)
