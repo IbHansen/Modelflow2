@@ -67,7 +67,8 @@ import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 import numpy as np
 
-from dataclasses import dataclass, field, fields, asdict,replace
+from dataclasses import dataclass, field, fields, asdict,replace, MISSING, is_dataclass
+from typing import Dict, List
 from typing import Any, List, Dict,  Optional , Tuple
 from copy import deepcopy
 import json
@@ -88,8 +89,6 @@ WIDTH = '100%'
 HEIGHT = '400px'
 
 
-from dataclasses import dataclass, field, fields, MISSING, is_dataclass
-from typing import Dict, List
 from copy import deepcopy
 
 
@@ -265,6 +264,7 @@ class Options:
         text_text (str): Text for a plain text output. Default is an empty string.
         markdown_text (str): Text for a Markdown output. Default is an empty string.
         samey (bool ): same ymin and ymax
+        tab (bool)  :  display figures as tabs (True) , or accordium (False) default False
     
     Methods:
         __add__(other): Merges this Options instance with another 'Options' instance or a dictionary. It returns a new Options
@@ -285,6 +285,7 @@ class Options:
     timeslice: List = field(default_factory=list)
     max_cols: int = 6
     last_cols: int = 3
+    tab : bool = False 
     
     ncol : int = 2
     samefig :bool = False 
@@ -292,7 +293,7 @@ class Options:
     legend: bool = True
     transpose : bool = False
 #    scenarios : str  =''
-#    smpl : tuple = ('','')
+    # smpl : tuple = ('','')
     landscape : bool = False
     
     samey : bool = False
@@ -443,6 +444,10 @@ class Line:
         return dfout*self.mul 
 
 
+    def refresh(self):
+        self.__post_init__()
+
+
 @dataclass
 class DisplaySpec:
     """
@@ -530,16 +535,13 @@ class DisplayDef:
         self.options = self.spec.options
         self.lines = self.spec.lines 
         
-        try:
-            self.var_description = self.mmodel.defsub(self.mmodel.var_description | self.options.custom_description )
-        except: 
-            self.var_description = {}
             
             
         self.name = (self.name if self.name else self.options.name).replace(' ','_') 
         self.options.name = self.name 
         self.timeslice = self.options.timeslice if self.options.timeslice else []
-
+        self.lines = [replace(l,rename=self.options.rename,smpl=l.smpl) for l in self.lines]
+        # print(f'__post_init__ {[l.smpl for l in self.lines]=}')
     
     def make_df(self, line):   
         logging.getLogger().setLevel(logging.DEBUG)                            
@@ -562,7 +564,7 @@ class DisplayDef:
                                        by_var=line.by_var)
                     
 
-                    if line.base_last or line.diftype == 'basedf':
+                    if line.base_last:
                         if line.by_var :
                             if line.diftype == 'basedf':
                                 locallinedfdict = {k: df.iloc[:,[0]] for k,df in locallinedfdict.items()  }
@@ -584,9 +586,11 @@ class DisplayDef:
                             raise Exception('No < >base if scenarios selectd')
                         else:     
                             outlist_heading = [
-                                {'line':replace(line,textlinetype='textline',centertext=k), 'key': line.lmodel.var_description[k] if line.by_var else k ,
+                                {'line':replace(line,textlinetype='textline',centertext=k), 'key': k  ,
                                                 'df' : pd.DataFrame(np.nan , index=line.lmodel.current_per, 
-                                                   columns=[line.lmodel.var_description[k] if line.by_var else k]).T.T} for k,df in locallinedfdict.items()  ]
+                                                   columns=[line.lmodel.var_description[k] if line.by_var else k])} for k,df in locallinedfdict.items()  ]
+                                                   # columns=[line.lmodel.var_description[k] if line.by_var else k])} for k,df in locallinedfdict.items()  ]
+
                             outlist_content = [
                             {'line':line, 'key':k ,
                                             'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
@@ -594,13 +598,8 @@ class DisplayDef:
                             
                             outlist = [item for pair in zip(outlist_heading, outlist_content) for item in pair]
     
-        
-                    # print(f'after {locallinedfdict.keys()=}')
-        
-                        outlist = [{'line':line, 'key':k ,
-                                        'df' : line.get_rowdes(df.loc[line.lmodel.current_per,:],row=False) 
-                                        } for k,df in locallinedfdict.items()  ]    
                     # logging.debug(f'before {locallinedfdict.keys()=}')
+                # logging.debug(f'before\n {outlist=}')
                 logging.getLogger().setLevel(logging.INFO)                            
 
         return(outlist)
@@ -738,14 +737,29 @@ class DisplayDef:
       
 
     def set_options(self,**kwargs):
+        legal = set([f.name for f in fields(Options) ] + ['smpl','scenarios'])
+        for k in kwargs.keys() :
+            if k not in legal: 
+                print('legal (but not nessecary right in this case) options:',*legal,sep='\n')
+                raise Exception(f'{k} is not legal'  )
         spec = self.spec + kwargs
+        if 'smpl' in kwargs: 
+            spec.lines = [replace(l,smpl=kwargs['smpl']) for l in spec.lines]
+        if 'scenarios' in kwargs: 
+            spec.lines = [replace(l,scenarios=kwargs['scenarios']) for l in spec.lines]
+        if 'smpl' in kwargs or 'scenarios' in kwargs:
+            for l in spec.lines:
+                l.refresh()    
         try:
             #We want to keep the smpl which shere used originaly if it is a tab
-            with self.mmodel.set_smpl(self.df.columns[0],self.df.columns[-1]):
+            # with self.mmodel.set_smpl(self.df.columns[0],self.df.columns[-1]):
                 out = self.__class__(mmodel=self.mmodel,spec= spec) 
         except: 
                 out = self.__class__(mmodel=self.mmodel,spec= spec) 
-
+                
+        # print(f'{kwargs=}')
+        # print(f'set options {[l.smpl for l in out.lines]=}')
+ 
         return out 
 
     def figwrap(self,chart,pgf=False):
@@ -1129,15 +1143,19 @@ class DisplayVarTableDef(DisplayDef):
             html_all = line.lmodel.ibsstyle(df,use_tooltip=False,dec=line.dec).to_html() 
             splitted_html = HTMLSplitData(html_all)
             if i == 0:
-                caption = f'<caption>{self.mmodel.string_substitution(self.options.title)}</caption>' if self.options.title else '' 
+                caption = f'<caption>{line.lmodel.string_substitution(self.options.title)}</caption>' if self.options.title else '' 
                 out = splitted_html.text_before_thead + caption + '<thead>' + splitted_html.thead+'\n'
                 
                 
                 endhtml = splitted_html.text_after_tbody
 
             if (line.textlinetype == 'textline' and line.centertext !='' ):
+                to_center = line.centertext
+                if line.by_var : 
+                    if self.options.rename:
+                        to_center = line.var_description[line.centertext]
                 col0 = '<tr><td <th class="row_heading level0 row0" >  </td>'
-                out = out + '\n'+col0 + f"<td colspan='{len(df.columns)}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{line.centertext}</td></tr>"
+                out = out + '\n'+col0 + f"<td colspan='{len(df.columns)}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{to_center}</td></tr>"
 
             else: 
                 out = out + splitted_html.tbody
@@ -1226,7 +1244,7 @@ class DisplayVarTableDef(DisplayDef):
                 tabformat = 'l'+'r'*(ncol-last_cols) + ( ('|'+'r'*last_cols) if last_cols else '') 
                 outlist = outlist + [df.style.format(lambda x:x) \
                  .set_caption(self.mmodel.string_substitution(self.options.title) + ('' if i == 0 else ' - continued ')) \
-                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots')
+                 .to_latex(hrules=True, position='ht', column_format=tabformat).replace('%',r'\%').replace('$',r'\$').replace('...',r'\dots')
                  .replace(r'\caption{',r'\caption{')] # to be used if no numbering 
                    
             # print(outlist)
@@ -1496,9 +1514,16 @@ class DisplayKeepFigDef(DisplayDef):
 
          else:
              if 1:
-                 keys = format_list_with_numbers([f'{self.var_description[dr["key"]]}, {dr["line"].showtype} '+
-                                                  f'{dr["line"].diftype} '.replace('nodif','') for dr in dfsres ])
-                 #print(f'{keys}=')
+                 if self.options.rename:
+                     keys = format_list_with_numbers([f'{dr["line"].var_description[dr["key"]]}, {dr["line"].showtype} '+
+                                                  f'{dr["line"].diftype} '.replace('nodif','') 
+                                                  for dr in dfsres ])
+                 else: 
+                     keys = format_list_with_numbers([f'{dr["key"]}, {dr["line"].showtype} '+
+                                                  f'{dr["line"].diftype} '.replace('nodif','') 
+                                                  for dr in dfsres ])
+                     
+                 # print(f'{keys}=')
              else:
                  keys = format_list_with_numbers([dr['key'] for dr in dfsres ])
              ... 
@@ -1549,9 +1574,8 @@ class DisplayKeepFigDef(DisplayDef):
              # print(v,ax_title_template)    
              # title=(f'Difference{aspct}to "{df.columns[0] if not by_var else list(self.mmodel.keep_solutions.keys())[0] }" for {dftype}:' 
              # if (line.diftype in {'difpct'}) else f'{dftype}:')
-
              line_model.plot_basis_ax(axes[i], v , df, legend=options.legend,
-                                     scale='linear', trans=self.var_description if self.options.rename else {},
+                                     scale='linear', trans=line.var_description if self.options.rename else {},
                                      ax_title = ax_title ,
                                      yunit=line.yunit,
                                      ylabel='Percent' if (line.showtype in {'growth','gdppct'} or line.diftype in {'difpct'})else ylabel,
@@ -1650,7 +1674,7 @@ class DisplayKeepFigDef(DisplayDef):
     @property 
     def out_html(self):
         figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
-        out = tabwidget(figlist,tab=False,selected_index=0)
+        out = tabwidget(figlist,tab=self.options.tab,selected_index=0)
         return out.datawidget 
     
     
@@ -1942,7 +1966,7 @@ def center_title_under_years(data, title_row_index=[1],year_row_index = 0,
         # Ensuring that the centered title is positioned correctly relative to the entire line
         adjusted_data[row_index] = f"{year_row[:start_index]}{centered_title}{year_row[end_index:]}"
     
-    new_data = [row[:max_data_lines_index_len+2] + row[max_center_lines_index_len:]
+    new_data = [row[:max_data_lines_index_len] + row[max_data_lines_index_len:]
                 for row in adjusted_data] 
         
     
@@ -2324,6 +2348,10 @@ Returns:
             value = getattr(obj, key)
             if key == 'lmodel':
                 result[key] = value.__class__.__name__.lower()
+            elif key == 'smpl':
+                start,end = value
+                # print(f'smpl {value=} {(str(start),str(end))=} ')
+                result[key] = (str(start),str(end)) 
             else:
                 result[key] = custom_asdict(value)
         return result
