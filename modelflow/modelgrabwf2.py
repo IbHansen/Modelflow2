@@ -87,6 +87,7 @@ def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
         wf1= wfpath.absolute()
     # wf2 = wf1.with_suffix('.wf2')
     wf2 = (wf1.resolve().parent / (wf1.stem + '_modelflow')).with_suffix('.wf2')
+    wf2linked = (wf1.resolve().parent / (wf1.stem + '_modelflow_linked')).with_suffix('.wf2')
     # breakpoint()
     eviewsapp = evp.GetEViewsApp(instance='new',showwindow=True)
     print(f'\nReading {wf1}')
@@ -100,6 +101,8 @@ def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
     for eviewsline in eviews_run_lines:
         print(f'Eviewsline to run :{eviewsline}')
         evp.Run(eviewsline,eviewsapp)
+    evp.Run(fr'wfsave(jf) "{wf2linked}"',eviewsapp)
+    
     evp.Run(f'{modelname}.unlink @all',eviewsapp)
     print(f'The model: {modelname} is unlinked ')
     evp.Run(fr'wfsave(jf) "{wf2}"',eviewsapp)
