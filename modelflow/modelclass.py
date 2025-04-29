@@ -4724,7 +4724,13 @@ class Display_Mixin():
             xpct = '%' if percent else ''
             styles = [
             {'selector': '.row_heading, .corner',
-             'props': [('position', 'sticky'), ('left', '0'), ('background', 'white')]},
+             'props': [
+            ('position', 'sticky'),
+            ('left', '0'),
+            ('background', 'white'),
+            ('text-align', 'left'),             # 👈 this is the fix
+            ('padding-left', '8px')            # optional: more readable
+        ]             },
             {'selector': '.col_heading',
              'props': [('position', 'sticky'), ('top', '0'), ('background', 'white')]}
               ]

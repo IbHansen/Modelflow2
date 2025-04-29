@@ -1140,7 +1140,13 @@ class DisplayVarTableDef(DisplayDef):
         def tab_to_html(i,df,line):
             nonlocal endhtml
             out = ''
-            html_all = line.lmodel.ibsstyle(df,use_tooltip=False,dec=line.dec).to_html() 
+            styled = line.lmodel.ibsstyle(df, use_tooltip=False, dec=line.dec)
+            
+            # Inject left-align styling for the index
+            
+            
+            html_all = styled.to_html()
+            
             splitted_html = HTMLSplitData(html_all)
             if i == 0:
                 caption = f'<caption>{line.lmodel.string_substitution(self.options.title)}</caption>' if self.options.title else '' 
