@@ -8451,7 +8451,7 @@ class Report_Mixin:
                               custom_description=custom_description,title =title,width=5,rename=rename) + kwargs,
             lines = headingline + unitline + [
                  Line(datatype=datatype ,pat=pat,dec=dec, mul=mul,lmodel=self,by_var=by_var,smpl=this_smpl,
-                      rename=rename,scenarios=scenarios ) , 
+                      rename=rename,scenarios=scenarios,decorate = False ) , 
             ]
         )
         tab = DisplayVarTableDef (mmodel=self, spec = tabspec)

@@ -1067,7 +1067,8 @@ class DisplayVarTableDef(DisplayDef):
             
         rawdata = thisdf.to_string(max_cols= self.options.max_cols).split('\n')
         data = center_title_under_years(rawdata,center_index,0,
-                                  max_center_lines_index_len,  max_data_lines_index_len)
+                                  max_center_lines_index_len=max_center_lines_index_len, 
+                                  max_data_lines_index_len = max_data_lines_index_len)
         # print(*data,sep='\n')
         # rawdata[0],rawdata[1] = rawdata[1],rawdata[0]
         out = '\n'.join(data)
@@ -1075,12 +1076,17 @@ class DisplayVarTableDef(DisplayDef):
 
     @property    
     def df_str_disp_transpose(self):
-        
+        max_data_lines_index_len = max(len(str(i)) for i in self.df_str.index)
+        # print(f'{max_data_lines_index_len=}')
         
         rawdata = self.df_str.to_string(max_cols= self.options.max_cols).split('\n')
         data = [self.unitline ] +rawdata 
+        # print(f'{max_center_lines_index_len=}')
+
         data[0],data[1] = data[1],data[0]
-        data = center_title_under_years(data,title_row_index=[1],year_row_index=0)
+        data = center_title_under_years(data,title_row_index=[1],year_row_index=0,
+                                  max_center_lines_index_len=max_data_lines_index_len+1, 
+                                  max_data_lines_index_len = max_data_lines_index_len)
         out = '\n'.join(data)
         return out       
 
@@ -1241,7 +1247,7 @@ class DisplayVarTableDef(DisplayDef):
             outlist = [] 
             for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
-                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i].replace(r'$',r'\$')+'}}'  
+                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i].replace(r'$',r'$')+'}}'  
                             if line.textlinetype == 'textline'
                             else df.index[i]
                     for i, line  in enumerate(rowlines)]    
@@ -1275,7 +1281,7 @@ class DisplayVarTableDef(DisplayDef):
         latex_df = (multi_df.style.format(lambda x:x)
                  .set_caption(self.options.title) 
                  .to_latex(hrules=True, position='ht', column_format=tabformat)
-                 .replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ) 
+                 .replace('%',r'\%').replace('$',r'\$').replace('...',r'\dots') ) 
         out = latex_df
         data = out.split('\n')
         # print(*[f'{i} {d}' for i,d in enumerate(data)],sep='\n')
@@ -1298,7 +1304,7 @@ class DisplayVarTableDef(DisplayDef):
           latex_df = (thisdf.style.format(lambda x:x)
                    .set_caption(self.mmodel.string_substitution(self.options.title)) 
                    .to_latex(hrules=True, position='ht', column_format=tabformat)
-                   .replace('%',r'\%').replace('US$',r'US\$').replace('...',r'\dots') ) 
+                   .replace('%',r'\%').replace('$',r'\$').replace('...',r'\dots') ) 
           out = latex_df
           data = out.split('\n')
           # print(*[f'{i} {d}' for i,d in enumerate(data)],sep='\n')
@@ -1962,7 +1968,9 @@ def center_title_under_years(data, title_row_index=[1],year_row_index = 0,
     
     # Calculate the total space available for centering
     total_space = end_index - start_index
-    
+    # print(f'xxx {max_data_lines_index_len=}')
+    # print(f'xxx {max_center_lines_index_len=}')
+
     # Center the title within this space
     for row_index in title_row_index:
         title = adjusted_data[row_index].replace('...','   ').strip()  # Remove leading and trailing spaces
@@ -1972,9 +1980,11 @@ def center_title_under_years(data, title_row_index=[1],year_row_index = 0,
         # Ensuring that the centered title is positioned correctly relative to the entire line
         adjusted_data[row_index] = f"{year_row[:start_index]}{centered_title}{year_row[end_index:]}"
     
-    new_data = [row[:max_data_lines_index_len] + row[max_data_lines_index_len:]
+    new_data = [row[:max_data_lines_index_len] + '  ' + row[max_center_lines_index_len:]
                 for row in adjusted_data] 
         
+    # print('\n'.join(adjusted_data))
+    # print('\n'.join(new_data))
     
     return new_data
 
