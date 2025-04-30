@@ -1054,9 +1054,9 @@ class DisplayVarTableDef(DisplayDef):
             max_data_lines_index_len = 10
         
         try:
-            max_center_lines_index_len = max(
+            max_center_lines_index_len = max(max_data_lines_index_len,max(
             len(str(idx)) for idx, flag in zip(self.df.index, center_lines) if flag
-            )
+            ))
         except: 
             max_center_lines_index_len = max_data_lines_index_len
             
