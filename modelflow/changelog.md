@@ -207,3 +207,7 @@ check_endo_rhs was to restrictive fixed
   Version 2.55 uploaded 
 fix in build process
 Version 2.56 uploaded 
+Reporting revised now model is in line, tables can handle scenarios and by_var, ibsstyle left allign row labels
+reporting fixed show row label length 
+reporting tab or accodium in figures. 
+

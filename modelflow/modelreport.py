@@ -1085,7 +1085,7 @@ class DisplayVarTableDef(DisplayDef):
 
         data[0],data[1] = data[1],data[0]
         data = center_title_under_years(data,title_row_index=[1],year_row_index=0,
-                                  max_center_lines_index_len=max_data_lines_index_len+1, 
+                                  max_center_lines_index_len=max_data_lines_index_len, 
                                   max_data_lines_index_len = max_data_lines_index_len)
         out = '\n'.join(data)
         return out       
