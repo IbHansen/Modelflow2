@@ -1836,7 +1836,6 @@ class Model_help_Mixin():
     
         return False
 
-    @staticmethod
     class defsub(dict):
         '''A subclass of dict.
         if a *defsub* is indexed by a nonexisting keyword it just return the keyword '''
@@ -1844,7 +1843,6 @@ class Model_help_Mixin():
         def __missing__(self, key):
             return key
 
-    @staticmethod
     class defsub_braces(dict):
         '''A subclass of dict.
         if a *defsub* is indexed by a nonexisting keyword it just return the keyword sorounded by braces '''

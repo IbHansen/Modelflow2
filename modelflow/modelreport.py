@@ -810,6 +810,7 @@ class LatexRepo:
 \usepackage{graphicx}
 \usepackage{pgf}
 \usepackage{lscape}
+\usepackage{amsmath}
 \begin{document}
 
 '''
