@@ -352,7 +352,7 @@ class BaseModel():
         self.v_nr = sorted([(v, self.allvar[v]['frmlnumber'])
                            for v in self.endogene], key=lambda x: x[1])
         self.nrorder = [v[0] for v in self.v_nr]
-        
+        self.org_equations = '\n'.join(self.allvar[v]['frml'] for v in self.nrorder)
         if self.straight:  # no sequencing
             self.istopo = False
             self.solveorder = self.nrorder
