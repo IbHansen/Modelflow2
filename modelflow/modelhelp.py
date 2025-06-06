@@ -119,7 +119,8 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',end='',create=1, l
                 outputserie=pd.Series(np.NaN,current_per) 
             outputserie.name=var
             databank[var] = databank[var].astype('float')   # to prevent error in the future 
-            databank.loc[current_per,var]=outputserie
+            databank.loc[current_per,var]=outputserie.astype('float')
+
             if lprint:
                 print('Update',operator,inputdata,start,end)
                 forspalte=str(max(6,len(var)))
