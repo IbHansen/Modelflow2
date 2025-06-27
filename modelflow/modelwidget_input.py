@@ -52,7 +52,8 @@ import  ipywidgets as widgets
 try:
     from ipydatagrid import DataGrid, TextRenderer
 except Exception as e: 
-    print( 'no update sheets',e)
+    ... 
+    # print( 'no update sheets',e)
 
 
 from IPython.display import display, clear_output,Latex, Markdown
@@ -251,7 +252,7 @@ class sheetwidget(singelwidget):
 # from dataclasses import dataclass, field
 from typing import Callable, Any
 # import pandas as pd
-import ipydatagrid as gd
+# import ipydatagrid as gd
 # from ipydatagrid.renderer import TextRenderer
 # from ipywidgets import HBox, VBox, Layout, widgets
 

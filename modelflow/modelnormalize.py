@@ -177,7 +177,7 @@ def preprocess(udtryk,funks=[]):
         udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif  
          
     while  diff_match := funk_in('D' , udtryk_up):
-        print(f'{udtryk_up} on D')
+        # print(f'{udtryk_up} on D')
         fordif,difudtryk_up,efterdif=funk_find_arg(diff_match,udtryk_up)
         difudtryk_up = difudtryk_up.replace(' ','').replace(',0,1','') if difudtryk_up.endswith(',0,1')  else difudtryk_up
         udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif  

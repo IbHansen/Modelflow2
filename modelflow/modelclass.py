@@ -1830,7 +1830,14 @@ class Model_help_Mixin():
     
         return False
 
-    @staticmethod
+    @staticmethod 
+    def is_running_in_colab():
+        try:
+            return 'google.colab' in str(get_ipython())
+        except: 
+            return False
+
+    # @staticmethod
     class defsub(dict):
         '''A subclass of dict.
         if a *defsub* is indexed by a nonexisting keyword it just return the keyword '''
@@ -1838,7 +1845,7 @@ class Model_help_Mixin():
         def __missing__(self, key):
             return key
 
-    @staticmethod
+    # @staticmethod
     class defsub_braces(dict):
         '''A subclass of dict.
         if a *defsub* is indexed by a nonexisting keyword it just return the keyword sorounded by braces '''
@@ -2196,7 +2203,7 @@ class Model_help_Mixin():
             
             filelist = (list(dir.glob('*readme.ipynb')) 
                     + [f for f in sorted(dir.glob('*.ipynb')) 
-                       if not f.stem.endswith('readme')])
+                       if not f.stem.lower() .endswith('readme')])
             
             for i, notebook in enumerate(filelist):
                 # print(notebook)    
@@ -2259,7 +2266,8 @@ class Model_help_Mixin():
                                      destination  = destination ,
                                      go = go , 
                                      silent=silent,
-                                     replace = replace  
+                                     replace = replace,  
+                                     colab=model.is_running_in_colab() 
                                     )
 
 
@@ -2422,11 +2430,12 @@ class Dekomp_Mixin():
         eksperiments = [(vt, t) for vt in sterms for t in calc_per]
         if time_att:
             ...
-            smallalt = altdf_.loc[:, vars].copy(deep=True)   # for speed
-            smallbase = smallalt.shift().copy()  # for speed
+            smallalt = altdf_.loc[:, vars].copy(deep=True).astype('float')   # for speed
+            smallbase = smallalt.shift().copy().astype('float')  # for speed
         else:    
-            smallalt = altdf_.loc[:, vars].copy(deep=True)   # for speed
-            smallbase = basedf_.loc[:, vars].copy(deep=True)  # for speed
+            smallalt = altdf_.loc[:, vars].copy(deep=True).astype('float')   # for speed
+            smallbase = basedf_.loc[:, vars].copy(deep=True).astype('float')  # for speed
+        # print(f'{smallalt.dtypes=}')    
         # make a dataframe for each experiment
         alldf = {e: smallalt.copy() for e in eksperiments}
         for e in eksperiments:
@@ -2481,7 +2490,8 @@ class Dekomp_Mixin():
         
     # a dataframe  with summaries of growth
         diff_growth_index = diff_level.index[:-1]
-        diff_growth = pd.DataFrame(index=diff_growth_index, columns=print_per)
+        diff_growth = pd.DataFrame(0.0,index=diff_growth_index, columns=print_per)
+        # print(diff_growth.dtypes)
         diff_growth.loc[diff_growth.index[0],print_per] = smallbase.loc[:,varnavn].pct_change().loc[print_per] * 100.
         diff_growth.loc[diff_growth.index[1],print_per] = smallalt.loc[:,varnavn].pct_change().loc[print_per] * 100. 
         diff_growth.loc[diff_growth.index[2],print_per] = (diff_growth.loc[diff_growth.index[1],print_per]-

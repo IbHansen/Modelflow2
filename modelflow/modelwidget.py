@@ -22,7 +22,8 @@ import matplotlib.pylab  as plt
 try:
     from ipydatagrid import DataGrid
 except Exception as e: 
-    print( 'no update sheets',e)
+    ...
+    # print( 'no update sheets',e)
 
 from modelclass import insertModelVar
 from modelclass import model 
