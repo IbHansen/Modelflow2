@@ -209,7 +209,9 @@ fix in build process
 Version 2.56 uploaded 
 delete staticmethod in class defsub
 create def is_running_in_colab and use it in load worldbank
-Version 2.57 uploaded 
+Version 2.57 uploaded ver
 ...readme.ipynb in display_toc_github will be forcet to lewer case  
 Version 2.58 uploaded (the pinned as modelflow_book)
 astype('float') in dekomp, as it triggers a future warning 
+use_fbmin set to False as order can be different in different runs if True 
+Version 2.59 uploaded 

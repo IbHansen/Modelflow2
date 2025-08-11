@@ -142,7 +142,7 @@ class BaseModel():
                  tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= False,
                  var_description={}, model_description = '', 
                  var_groups = {}, reports = {}, equations_latex='', 
-                 eviews_dict = {},use_fbmin= True,
+                 eviews_dict = {},use_fbmin= False,
                  substitution = {},
                  **kwargs):
         ''' initialize a model'''
@@ -2430,11 +2430,11 @@ class Dekomp_Mixin():
         eksperiments = [(vt, t) for vt in sterms for t in calc_per]
         if time_att:
             ...
-            smallalt = altdf_.loc[:, vars].copy(deep=True).astype('float')   # for speed
-            smallbase = smallalt.shift().copy().astype('float')  # for speed
+            smallalt = altdf_.loc[:, vars].copy(deep=True).astype('float64')   # for speed
+            smallbase = smallalt.shift().copy().astype('float64')  # for speed
         else:    
-            smallalt = altdf_.loc[:, vars].copy(deep=True).astype('float')   # for speed
-            smallbase = basedf_.loc[:, vars].copy(deep=True).astype('float')  # for speed
+            smallalt = altdf_.loc[:, vars].copy(deep=True).astype('float64')   # for speed
+            smallbase = basedf_.loc[:, vars].copy(deep=True).astype('float64')  # for speed
         # print(f'{smallalt.dtypes=}')    
         # make a dataframe for each experiment
         alldf = {e: smallalt.copy() for e in eksperiments}
@@ -3478,7 +3478,10 @@ class Graph_Mixin():
                     self.fbaut    =  {k:v for k,v in sorted( a.items(), key=lambda x: x[1], reverse=True)}
                     
                     self.fblist = [v for v in self.fbhubs.keys()]
-                except:    
+                except Exception as e:  
+                    if  self.use_fbmin:
+
+                        print(f'In minimum feedback order {e} ')
                     ...
             if  self.use_fbmin:
                 
