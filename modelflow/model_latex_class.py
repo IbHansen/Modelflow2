@@ -185,7 +185,7 @@ def defunk(funk, subs , streng,startp='{',slutp='}'):
 def findindex(ind):
     ''' find the index variables on the left hand side. meaning variables braced by {} '''
     lhs=ind.split('=')[0]
-    return  re.findall('\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
+    return  re.findall(r'\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
 
 def doableold(ind,show=False):
     ''' find all dimensions in the left hand side of = and and decorate with the nessecary do .. enddo ''' 
@@ -230,7 +230,7 @@ def findallindex(ind0):
     
     this function find frmlname and index variables on the left hand side. meaning variables braced by {} '''
     if ind0.startswith('<'):
-        frmlname = re.findall('\<.*?\>',ind0)[0]
+        frmlname = re.findall(r'\<.*?\>',ind0)[0]
         ind = ind0[ind0.index('>')+1:].strip()
     else:
         frmlname='<>'
@@ -247,7 +247,7 @@ def findallindex(ind0):
         rest = ind.strip() 
         
     lhs=rest.split('=')[0]
-    do_indicies =   re.findall('__\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
+    do_indicies =   re.findall(r'__\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
     
     do_indicies_dict = {ind : all_do_condition.get(ind) for ind in do_indicies}             
         
@@ -446,12 +446,12 @@ Raises:
                r'\s*\\times\s*':'*' ,
                r'\s*\\cdot\s*':'*' ,
                r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
-               r'\\sum_{('+pt.namepat+')}\(' : r'sum(\1,',
+               r'\\sum_{('+pt.namepat+r')}\(' : r'sum(\1,',
                r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \2=1,',
                
-               r'\\max_{('+pt.namepat+')}\(' : r'lmax(\1,',
+               r'\\max_{('+pt.namepat+r')}\(' : r'lmax(\1,',
                r"\\max_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmax(\1 \2=1,',
-               r'\\min_{('+pt.namepat+')}\(' : r'lmin(\1,',
+               r'\\min_{('+pt.namepat+r')}\(' : r'lmin(\1,',
                r"\\min_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmin(\1 \2=1,',
                
                 }

@@ -215,3 +215,4 @@ Version 2.58 uploaded (the pinned as modelflow_book)
 astype('float') in dekomp, as it triggers a future warning 
 use_fbmin set to False as order can be different in different runs if True 
 Version 2.59 uploaded 
+some r' ' in model_latex_class
