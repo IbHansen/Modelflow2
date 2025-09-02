@@ -3426,14 +3426,16 @@ class Graph_Mixin():
             this = self.endograph.copy()
 
             while True:
-                new = [v for v, indegree in this.in_degree() if indegree == 0]
+                new = sorted( [v for v, indegree in this.in_degree() if indegree == 0])
                 if len(new) == 0:
                     break
+                # print(f'new = {new}')
                 self._prevar = self._prevar+new
                 this.remove_nodes_from(new)
-
+            # print(f'self._prevar = {self._prevar}')
+            
             while True:
-                new = [v for v, outdegree in this.out_degree() if outdegree == 0]
+                new = sorted([v for v, outdegree in this.out_degree() if outdegree == 0])
                 if len(new) == 0:
                     break
                 self._epivar = new + self._epivar

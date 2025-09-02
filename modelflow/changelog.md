@@ -216,3 +216,7 @@ astype('float') in dekomp, as it triggers a future warning
 use_fbmin set to False as order can be different in different runs if True 
 Version 2.59 uploaded 
 some r' ' in model_latex_class
+sort when finding pre and epi variables to make the order deterministic 
+
+Version 2.59 uploaded 
+Version 2.60 uploaded 
