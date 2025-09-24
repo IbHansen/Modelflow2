@@ -22,6 +22,8 @@ from sympy import solve, sympify
 import ast
 
 
+
+
 from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar
 
 
@@ -65,6 +67,7 @@ class safesub(dict):
                 print(f'Wrong key or value in list ofset:<{key}>') 
                 raise
         return '{' + key +'}' 
+
 
 
 def sub(text, katalog):
@@ -268,7 +271,7 @@ def tofrml(expressions,sep='\n'):
     ''' a function, wich adds FRML to all expressions seperated by <sep>  
     if no start is specified the max lag will be used ''' 
         
-    notrans = {'DO','ENDDO','LIST','FRML'}
+    notrans = {'DO','ENDDO','LIST','FRML','DOABLE'}
         
     def trans(eq):
         test= eq.strip().upper()+'        '
@@ -440,7 +443,7 @@ def sumunroll(in_equations,listin=False):
                     xvar=''
                     lig=''
                     
-                current_dict = liste_dict[sumover]
+                current_dict = liste_dict[sumover.strip()]
                 ibsud = sub_frml(current_dict, sumled, '+', xvar=xvar,lig=lig,sep='')
                 value = forsum + '(' + ibsud + ')' + eftersum
             nymodel.append(command + ' ' + value)
@@ -489,7 +492,7 @@ def funkunroll(in_equations,funk='MAX',listin=False,replacefunk=''):
                     xvar=''
                     lig=''
                     
-                current_dict = liste_dict[sumover]
+                current_dict = liste_dict[sumover.strip()]
                 # print(f'{value=}')
                 ibsud = sub_frml(current_dict, sumled, ',', xvar=xvar,lig=lig,sep='')
                 value = forsum + 'xxxx_funk_ibhansen(' + ibsud + ')' + eftersum  # as we dont replace the funk name 
@@ -837,6 +840,28 @@ def explode(model,norm=True,sym=False,funks=[],sep='\n'):
    
     return udrullet
 
+def explode_new(model,norm=True,sym=False,funks=[],sep='\n'):
+    '''prepares a model from a model template. 
+    
+    Returns a expanded model which is ready to solve
+    
+    Eksempel: model = udrul_model(MinModel.txt)'''
+    # breakpoint()
+    udrullet=tofrml(model,sep=sep) 
+    udrullet = doable_unroll(udrullet,funks)
+    udrullet = dounloop(udrullet)        #  we unroll the do loops 
+    # modellist = list_extract(udrullet) 
+    # if norm : udrullet = normalize(udrullet,sym,funks=funks ) # to save time if we know that normalization is not needed 
+    # udrullet = lagarray_unroll(udrullet,funks=funks )
+    # udrullet = exounroll(udrullet)    # finaly the exogeneous and adjustment terms - if present -  are handled 
+    # # breakpoint() 
+    # udrullet = sumunroll(udrullet,listin=modellist)    # then we unroll the sum 
+    # udrullet = creatematrix(udrullet,listin=modellist)
+    # udrullet = createarray(udrullet,listin=modellist)
+    # udrullet = argunroll(udrullet,listin=modellist)
+   
+    return udrullet
+
 
 def modelprint(ind, title=' A model', udfil='', short=0):
     ''' prettyprinter for a a model. 
@@ -1035,7 +1060,7 @@ def doablekeep(formulars):
                    out.append([exp+ ' $ \n'])
     return ''.join(chain(*listout,*out))
 ##%%
-def doable(formulars,funks=[]):
+def doable(formulars,funks=[],replace_usd=True):
     ''' takes index in the lhs and creates a do loop around the line
     on the right side you can use %0_, %1_ an so on to indicate the index, just to awoid typing to much
     
@@ -1072,19 +1097,12 @@ def doable(formulars,funks=[]):
                     out.append(f'{lhsvar_stub}{sumname} = {sumlist} $ \n\n')
         elif len(exp) : 
             out.append(exp+ ' $ \n')
-    return ''.join(out).replace('$','')   # the replace is a quick fix 
+    if replace_usd:
+        res = ''.join(out).replace('$','')   # the replace is a quick 
+    else:  
+        res = ''.join(out)        
+    return res 
 
-#% test doable
-frml = '''
-list sectors_list = sectors : a b
-list banks_list   = banks : hest ko
-
-    a__{banks}__{sectors} = b 
-<sum= all>    b__{sectors}__{banks}  = b
-<sum= all>    diff(xx__{sectors}__{banks})  = 42 
-        '''.upper()
-testfrml = (doable(frml))
-# print(explode(testfrml))
 
 ##%%
 def findindex_gams(ind00):
@@ -1164,7 +1182,7 @@ def eksempel(ind):
     modelprint(abe, 'Unrolled model')
     modelprint(ko,  'Historic model')
 # print('Hej fra modelmanipulation')
-if __name__ == '__main__' and 1 :
+if __name__ == '__main__' and 0 :
     #%%
     print(sub_frml(a['bankdic'],'Dette er {bank}'))
     print(sub_frml(a['bankdic'],'Dette er {bank}',sep=' and '))
@@ -1196,7 +1214,7 @@ if __name__ == '__main__' and 1 :
     split_frml ('FRML <res> ib =1+gris $')
     find_statements('   FRML x ib    =1+gris $    frml <exo> hane= 27*ged$')
     find_statements('! FRML x ib =1+gris $ \n frml <exo> hane=27*ged $')
-    find_statements('FRML x ib =1+gris*(ko+1) $ ! Comment \n frml <exo> hane= ged $')
+    find_statements('FRML <x> ib =1+gris*(ko+1) $ ! Comment \n frml <exo> hane= ged $')
     sub('O {who} of {from}',{'who':'Knights','from':'Ni'})
     sub('O {who} of {from}, , we have brought you your {weed}',{'who':'Knights','from':'Ni'})
     sub_frml({'weed':['scrubbery','herring']},'we have brought you your {weed}')
@@ -1348,7 +1366,7 @@ enddo $
     print(tofrml('a=b \n c=55 ',sep='\n'))
     #%%
     model      = '''\
-!jjjfj
+! jjjfj
 list alist = al : a b c  
 a = c(-1) + b(-1)  
 x = 0.5 * c 
@@ -1357,7 +1375,7 @@ d = x + 3 * a(-1)
     print(tofrml(model))
     
     
-    #%% testtofrml
+    # testtofrml
     mtest = ''' 
     list banklist = bank    : ib      soren  marie /
                     country : denmark sweden denmark  $
@@ -1371,3 +1389,150 @@ d = x + 3 * a(-1)
     
     print(tofrml(mtest))
     print(explode(mtest))
+#%%
+from dataclasses import dataclass, field
+from typing import List, Optional, Any
+from pprint import pformat
+import textwrap
+
+#% test doable
+frml = '''
+list sectors_list = sectors : a b
+list banks_list   = banks : hest ko
+
+    a__{banks}__{sectors} = b 
+<sum= all>    b__{sectors}__{banks}  = b
+<sum= all>    diff(xx__{sectors}__{banks})  = 42 
+        '''.upper()
+testfrml = (doable(frml))
+# print(explode(testfrml))
+
+def doable_unroll(in_equations,funks=[]):
+    ''' expands all sum(list,'expression') in a model
+    returns a new model'''
+    import model_latex_class as ml 
+    from modelhelp import debug_var
+    nymodel = []
+    equations = in_equations[:].upper()  # we want do change the e
+
+    for comment, command, value in find_statements(equations):
+        # print('>>',comment,'<',command,'>',value)
+        # debug_var(comment,command,value)
+        if comment:
+            nymodel.append(comment)
+        else:
+            if command == 'DOABLE':
+                unrolled = ml.doable(value)
+                nymodel.append(unrolled + ' ')
+                # debug_var(unrolled)
+
+            else:     
+                nymodel.append(command + ' ' + value)
+    equations = '\n'.join(nymodel)
+    # debug_var(equations)
+    return equations
+ 
+@dataclass
+class Mexplode:
+    original: str
+    sep: str = '\n'
+    funks: List[Any] = field(default_factory=list)
+
+    org_frml: str = field(init=False)
+    post_doable: str = field(init=False)
+    post_do: str = field(init=False)    
+    post_sum: str = field(init=False) 
+    expanded_frml : str = field(init=False)
+    
+    def __post_init__(self):      
+        '''prepares a model from a model template. 
+        
+        Returns a expanded model which is ready to solve
+        
+        Eksempel: model = udrul_model(MinModel.txt)'''
+        print('start')
+        # breakpoint()
+        self.org_frml  = tofrml(self.original,sep=self.sep) 
+        self.org_frml  = self.original 
+        self.post_doable = doable_unroll(self.org_frml.upper() ,self.funks)
+        self.post_do  = dounloop(self.post_doable)        #  we unroll the do loops 
+        
+        
+        self.modellist = list_extract(self.post_do) 
+        self.post_sum = sumunroll(self.post_do,listin=self.modellist)    # then we unroll the sum 
+        
+        self.expanded_frml =  self.post_sum 
+        # if norm : udrullet = normalize(udrullet,sym,funks=funks ) # to save time if we know that normalization is not needed 
+        # udrullet = lagarray_unroll(udrullet,funks=funks )
+        # udrullet = exounroll(udrullet)    # finaly the exogeneous and adjustment terms - if present -  are handled 
+        # # breakpoint() 
+        # udrullet = sumunroll(udrullet,listin=modellist)    # then we unroll the sum 
+        # udrullet = creatematrix(udrullet,listin=modellist)
+        # udrullet = createarray(udrullet,listin=modellist)
+        # udrullet = argunroll(udrullet,listin=modellist)
+       
+        return 
+
+    def __str__(self):
+        maxkey = max(len(k) for k in vars(self).keys())
+        # output = "\n".join([f'{k.capitalize():<{maxkey}} :\n {f}' for k,f in vars(self).items() if len(f)])
+        output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n {f}'
+                            for k,f in {'org_frml':self.org_frml,
+                                        'expanded_frml':self.expanded_frml }.items() 
+                                                               if len(f)])
+        return output
+
+
+    def __repr__(self) -> str:
+        def fmt(value: Any) -> str:
+            # Show multiline strings as real blocks (no quotes)
+            if isinstance(value, str) and '\n' in value:
+                return "\n" + textwrap.indent(value.rstrip(), "  ")
+            # Pretty containers
+            if isinstance(value, (list, tuple, set, dict)):
+                return pformat(value, width=100, compact=False)
+            # defaultdict / custom objects get pformat fallback via repr-str mix:
+            try:
+                from collections import defaultdict
+                if isinstance(value, defaultdict):
+                    return pformat(value, width=100, compact=False)
+            except Exception:
+                pass
+            # Everything else
+            return repr(value)
+
+        items = vars(self)
+        w = max(len(k) for k in items) if items else 0
+        lines = []
+        for k, v in items.items():
+            rendered = fmt(v)
+            if rendered.startswith("\n"):  # multiline block
+                lines.append(f"{k:<{w}} :{rendered}")
+            else:
+                lines.append(f"{k:<{w}} : {rendered}")
+        return f"{self.__class__.__name__}(\n  " + "\n  ".join(lines) + "\n)"
+if __name__ == '__main__' and 1 :
+
+    pass
+
+   
+    print('test')
+    tlists = '''LIST BANKS = BANKS    : IB      SOREN  MARIE /
+                COUNTRY : DENMARK SWEDEN DENMARK  /
+                SELECTED : 1 0 1
+                $
+     LIST SECTORS   = SECTORS  : NFC SME HH             $
+     ''' 
+    
+    xx = '''
+    doable  <HEST,sum=abe> [banks=country=sweden,sektors=sektors]  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
+    doable  <HEST,sum=goat> [banks=country=denmark,sektors=sektors]  LOSS2__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
+    do sectors $
+       frml x_{sectors} = 42 $
+    enddo $   
+    
+    '''.upper() 
+    # xx = 'doabel  <HEST,sum=abe>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs} $'.upper() 
+    
+    res = Mexplode(tlists+xx)
+    print(res)

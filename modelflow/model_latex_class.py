@@ -24,6 +24,7 @@ import modelmanipulation as mp
 from modelclass import model 
 import modelpattern as pt 
 from modelnormalize import normal 
+from modelhelp import debug_var
 
 def rebank(model):
     ''' All variable names are decorated by a {bank}
@@ -234,14 +235,18 @@ def findallindex(ind0):
         ind = ind0[ind0.index('>')+1:].strip()
     else:
         frmlname='<>'
-        ind=ind0.strip()
+        ind=ind0.strip()                                        
     # print(f'{ind=}')
     # breakpoint()    
     if ind.startswith('['):
         do_conditions = ind[1:ind.index(']')]
         rest = ind[ind.index(']')+1:].strip() 
-        all_do_condition = {condition.split('=')[0] : condition.split('=')[1] for condition in do_conditions.split(',')}
+        
+        all_do_condition = {condition.split('=',1)[0] : 
+                            condition.split('=',1)[1].replace('=',' = ') 
+                            for condition in do_conditions.split(',')}
         # print(f'{do_conditions=}')
+        # print(f'{all_do_condition=}')
     else:
         all_do_condition = dict()
         rest = ind.strip() 
@@ -258,32 +263,98 @@ def do_list(do_index,do_condition):
     
     
     if do_condition:
-        out = f'do {do_index} {do_condition} = 1 $'
+        if '=' in do_condition:
+            out = f'do {do_index} {do_condition} $'
+        else:    
+            out = f'do {do_index} {do_condition} = 1 $'
     else:
         out = f'do {do_index}  $'
     return out
+#%%
 
-def doable(ind,show=False):
+def sum_lists(do_index,do_condition):
+    '''     do do_index_list do_condition = 1 $ '''
+    
+    
+    if do_condition:
+        if '=' in do_condition:
+            out = f' {do_condition}'
+        else:    
+            out = f' {do_condition} = 1'
+    else:
+        out = f''
+    return out
+
+
+def doable(ind,funks=[],show=False):
     ''' find all dimensions in the left hand side of = and and decorate with the nessecary do .. enddo ''' 
+
+    def endovar(f,funks=[]):  # Finds the first variable in a expression
+        # print(f)
+        for t in pt.udtryk_parse(f,funks=funks):
+            if t.var:
+                ud=t.var
+                break
+        return ud
+
     
     if show:
          print('\nBefore doable',ind,sep='\n')
 
-    frmlname,do_indicies_dict,rest = findallindex(ind)  # all the index variables 
+    frmlname,do_indicies_dict,rest = findallindex(ind.upper() )  # all the index variables 
+    # debug_var(frmlname,do_indicies_dict,rest)
     # breakpoint()
-    # print(f'{do_indicies_dict=}*******************')
+    if show:
+        print(f'{do_indicies_dict=}*******************')
     if do_indicies_dict : 
         pre = ' '.join([do_list(i,c) for i,c in do_indicies_dict.items() ]) 
         # print(f'{pre=}*******************')
 
         post = 'enddo $ '*len(do_indicies_dict)
-        out = f'{pre}\n  frml    {frmlname} {rest} $\n{post}'
+        out = [f'{pre}\n  frml    {frmlname} {rest} $\n{post}']
     else:
-        out=f'frml {frmlname} {rest.strip()} $'
-        
+        out=[f'frml {frmlname} {rest.strip()} $']
+    print()     
+    if ind.startswith('<'):
+        sumname = mp.kw_frml_name(frmlname, 'sum')
+        if sumname:
+            sep = ']' if ']' in ind else '>'
+            lhs= ind.split(sep,1)[1].split('=',1)[0].strip() 
+            # debug_var(lhs,)
+            lhsvar = endovar(lhs,funks=funks)
+            lhsvar_stub = lhsvar.split('{',1)[0]
+            sums  = ''.join([f'sum({i}{sum_lists(i,c)},' for i,c in  do_indicies_dict.items() ])+lhsvar+')'*len(do_indicies_dict)
+            out.append(f'frml {frmlname} {lhsvar_stub}{sumname} = {sums} $ \n\n')
+    out_str = '\n'.join(out).upper() 
     if show:
-         print('\nAfter doable',out,sep='\n')
-    return out
+         print('\nAfter doable',out_str,sep='\n')
+    return out_str
+# xx = doable('<sum=_sum,HEST>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() 
+#     ,show=True)
+xx = doable('<sum=abe,HEST> [banks=country = denmark ] LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() ,show=True)
+#%%
+def normalize_lists(text: str) -> str:
+    """
+    Finds all LIST ... $ blocks (possibly spanning multiple lines)
+    and rewrites them so that each block is on a single line
+    with clean spacing.
+
+    Will NOT match across another line starting with LIST.
+    """
+    pattern = re.compile(
+        r'LIST'                     # start marker
+        r'((?:(?!^\s*LIST).)*?)'    # content: anything, but stop if line starts with LIST
+        r'\$',                      # end marker
+        flags=re.DOTALL | re.MULTILINE
+    )
+
+    def replacer(match):
+        content = match.group(1)
+        flattened = " ".join(content.split())
+        return f"LIST {flattened} "
+
+    return pattern.sub(replacer, text)
+
 
 @dataclass 
 class a_latex_model:
