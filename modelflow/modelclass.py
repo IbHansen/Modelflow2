@@ -6505,6 +6505,9 @@ class Solver_Mixin():
                                 
                         if not silent:
                             print(f'Importing {jitfile}')    
+                            print('modelsource in sys.path?', any(str(Path('modelsource').resolve().parent) == p for p in sys.path))
+                            print('is package?', Path('modelsource/__init__.py').exists())
+                            print('jit exists?', Path('modelsource/PAK_sim_jit_jitsolver.py').exists())
                         m1 = importlib.import_module('.'+jitfile.stem,jitfile.parent.name)
 
                         pro_jit, core_jit, epi_jit = m1.prolog, m1.core, m1.epilog

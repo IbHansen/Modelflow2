@@ -1476,7 +1476,7 @@ class Mexplode:
     def __str__(self):
         maxkey = max(len(k) for k in vars(self).keys())
         # output = "\n".join([f'{k.capitalize():<{maxkey}} :\n {f}' for k,f in vars(self).items() if len(f)])
-        output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n {f}'
+        output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n{f}'
                             for k,f in {'org_frml':self.org_frml,
                                         'expanded_frml':self.expanded_frml }.items() 
                                                                if len(f)])
@@ -1517,19 +1517,21 @@ if __name__ == '__main__' and 1 :
 
    
     print('test')
-    tlists = '''LIST BANKS = BANKS    : IB      SOREN  MARIE /
-                COUNTRY : DENMARK SWEDEN DENMARK  /
-                SELECTED : 1 0 1
-                $
-     LIST SECTORS   = SECTORS  : NFC SME HH             $
+    tlists = '''
+LIST BANKS = BANKS    : IB      SOREN  MARIE /
+            COUNTRY : DENMARK SWEDEN DENMARK  /
+            SELECTED : 1 0 1
+            $
+LIST SECTORS   = SECTORS  : NFC SME HH             $
+    
      ''' 
     
     xx = '''
-    doable  <HEST,sum=abe> [banks=country=sweden,sektors=sektors]  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
-    doable  <HEST,sum=goat> [banks=country=denmark,sektors=sektors]  LOSS2__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
-    do sectors $
-       frml x_{sectors} = 42 $
-    enddo $   
+doable  <HEST,sum=abe>  [banks=country=sweden, sektors=sektors]  LOSS__{BANKS}__{SECTORs}  = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
+doable  <HEST,sum=goat> [banks=country=denmark,sektors=sektors]  LOSS2__{BANKS}__{SECTORs} = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
+do sectors $
+   frml x_{sectors} = 42 $
+enddo $   
     
     '''.upper() 
     # xx = 'doabel  <HEST,sum=abe>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs} $'.upper() 
