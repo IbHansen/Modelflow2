@@ -1061,7 +1061,9 @@ if __name__ == '__main__':
         modelname = 'pak'
         filename = filedict[modelname]
         
-        
+        filename = Path(r'C:/modelflow manual raw models/mar/wfs/marsolnccdr1.wf1')
+        modelname = 'mar'
+
         eviews_run_lines= globals().get(f'{modelname}_eviews_run_lines',[])
         country_trans    =  globals().get(f'{modelname}_trans'   ,lambda x : x[:])
         country_df_trans =  globals().get(f'{modelname}_df_trans',lambda x : x)
@@ -1069,19 +1071,19 @@ if __name__ == '__main__':
         
         cmodel = GrabWfModel(filename, 
                             # eviews_run_lines= eviews_run_lines,
-                            freq='A',
+                            freq='Q',
                             country_trans    =  country_trans,
                             country_df_trans =  country_df_trans,
                             make_fitted = True,
                             do_add_factor_calc=True,
-                            start = 2020,
-                            end = 2100, 
-                            fit_start = 2000,          # Start of calculation of fittet model in baseline 
-                            fit_end   = 2030           # end of calc for fittted model, if None taken from mdmfsa options  
+                            start = '2021Q1',
+                            end = '2030q4', 
+                            fit_start = '2015Q1',          # Start of calculation of fittet model in baseline 
+                            fit_end   = '2020Q4'           # end of calc for fittted model, if None taken from mdmfsa options  
                             ) 
         # assert 1==2
         if 0:
-            cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=0)
+            cmodel.test_model(cmodel.start,cmodel.end,maxerr=100,tol=0.001,showall=1)
     
             
         grab_lookat = cmodel           
@@ -1090,7 +1092,7 @@ if __name__ == '__main__':
         lookat_equations  = mlookat.equations   
         lookat_all_frml_dict = grab_lookat.all_frml_dict
         base_input = cmodel.base_input
-        mlookat(base_input,2020,2022)
+        mlookat(base_input,'2021q1','2030q4')
         
         #%%
         re.sub(r'@DURING\( *([0-9q]+) *\)', r'during_\1','0.755095546689654*@DURING("2020q4")'.replace('"',' ')) 
