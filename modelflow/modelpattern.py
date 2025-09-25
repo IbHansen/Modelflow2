@@ -15,9 +15,19 @@ import re
 import inspect 
 from collections import namedtuple
 from collections import defaultdict
+from typing import NamedTuple, Optional
 
 
 import modelBLfunk
+
+class FrmlParts(NamedTuple):
+    """Parsed components of a FRML statement."""
+    whole: str       # The full matched FRML line (up to and incl. $)
+    frml: str        # Literal 'FRML' (case-insensitive)
+    frmlname: str    # The FRML name (must include <...>)
+    expression: str  # The RHS expression text including trailing '$'
+
+
 
 # names and lags 
 namepat_ng  = r'(?:[A-Za-z_{][A-Za-z_{}0-9]*)'     # a name non grouped
@@ -51,7 +61,8 @@ numpat      = r'((?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)'
 dollarpat   = r'([$]'
 upat        = r'([^$]*\$)'          # resten frem til $
 frmlpat     = r'(FRML [^$]*\$)'     # A FORMULAR for splitting a model in formulars
-optionpat   = r'(?:[<][^>]*[>])?'   # 0 eller en optioner omsluttet af <>
+optionpat   =   r'(?:[<][^>]*[>])?'   # 0 eller en optioner omsluttet af <>
+optionpat_req = r'(?:[<][^>]*[>])'  # required <...> block
 
 #White space 
 ws          = r'[\s]+'              # 0 or more white spaces 
@@ -59,6 +70,16 @@ ws2         = r'[\s]*'              # 1 or more white spaces
 
 splitpat    = namepat + ws + \
     '(' + namepat_ng + '?' + ws2 + optionpat + ')' + ws + upat  # Splits a formular
+splitpat_reqopts = (
+    f"{namepat}{ws}"                    # 1) FRML (name token)
+    f"({optionpat_req})"  # 2) frmlname MUST include <...>
+    f"{ws}{upat}"                       # 3) everything up to next $
+)
+
+
+
+
+
 # for splitting a model in commands and values
 statementpat =  commentpat + '|' + namepat + ws2 + upat
 
@@ -106,6 +127,30 @@ def split_frml(frml):
     else:
         return frml
 
+
+def split_frml_reqopts(frml: str) -> Optional[FrmlParts]:
+    """
+    Splits a FRML string where the FRML name MUST include <...> options.
+
+    Returns:
+        FrmlParts named tuple on match, else None.
+    """
+    m = re.search(splitpat_reqopts, frml, flags=re.IGNORECASE)
+    if not m:
+        raise ValueError(
+            f" FRML does not match required pattern "
+            f"'FRML <...> ...$' → got: {frml!r}"
+        )
+    expr = m.group(3)
+    if expr.strip().endswith("$"):
+        expr = expr[:-1].strip() 
+    
+    return FrmlParts(
+        whole=m.group(0),
+        frml=m.group(1),
+        frmlname=m.group(2),
+        expression=expr
+    )
 
 def find_statements(a_model):
     ''' splits a modeltest into comments and statements   

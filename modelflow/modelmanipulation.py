@@ -24,7 +24,7 @@ import ast
 
 
 
-from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar
+from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts
 
 
 class oldsafesub(dict):
@@ -1462,6 +1462,8 @@ class Mexplode:
         self.post_sum = sumunroll(self.post_do,listin=self.modellist)    # then we unroll the sum 
         
         self.expanded_frml =  self.post_sum 
+        self.expanded_frml_list = find_frml(self.expanded_frml) 
+        self.expanded_frml_split = [split_frml_reqopts(frml) for frml in self.expanded_frml_list]
         # if norm : udrullet = normalize(udrullet,sym,funks=funks ) # to save time if we know that normalization is not needed 
         # udrullet = lagarray_unroll(udrullet,funks=funks )
         # udrullet = exounroll(udrullet)    # finaly the exogeneous and adjustment terms - if present -  are handled 
@@ -1534,7 +1536,7 @@ LIST SECTORS   = SECTORS  : NFC SME HH             $
 doable  <HEST,sum=abe>  [banks=country=sweden, sektors=sektors]  LOSS__{BANKS}__{SECTORs}  = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
 doable  <HEST,sum=goat> [banks=country=denmark,sektors=sektors]  LOSS2__{BANKS}__{SECTORs} = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
 do sectors $
-   frml x_{sectors} = 42 $
+   frml <> x_{sectors} = 42 $
 enddo $   
     
     '''.upper() 
