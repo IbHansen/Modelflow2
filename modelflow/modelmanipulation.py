@@ -1482,7 +1482,11 @@ class Mexplode:
                                                                if len(f)])
         return output
 
-
+    @property
+    def showlist(self): 
+        print ( pformat(self.modellist, width=100, compact=False))
+    
+    
     def __repr__(self) -> str:
         def fmt(value: Any) -> str:
             # Show multiline strings as real blocks (no quotes)
