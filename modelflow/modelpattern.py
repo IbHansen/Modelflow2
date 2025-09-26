@@ -70,11 +70,11 @@ ws2         = r'[\s]*'              # 1 or more white spaces
 
 splitpat    = namepat + ws + \
     '(' + namepat_ng + '?' + ws2 + optionpat + ')' + ws + upat  # Splits a formular
-splitpat_reqopts = (
+splitpat_reqopts = re.compile(
     f"{namepat}{ws}"                    # 1) FRML (name token)
     f"({optionpat_req})"  # 2) frmlname MUST include <...>
     f"{ws}{upat}"                       # 3) everything up to next $
-)
+, flags=re.IGNORECASE)
 
 
 
@@ -135,7 +135,7 @@ def split_frml_reqopts(frml: str) -> Optional[FrmlParts]:
     Returns:
         FrmlParts named tuple on match, else None.
     """
-    m = re.search(splitpat_reqopts, frml, flags=re.IGNORECASE)
+    m = re.search(splitpat_reqopts, frml)
     if not m:
         raise ValueError(
             f" FRML does not match required pattern "

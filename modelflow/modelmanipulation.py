@@ -25,6 +25,7 @@ import ast
 
 
 from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts
+from modelhelp import debug_var
 
 
 class oldsafesub(dict):
@@ -283,12 +284,14 @@ def tofrml(expressions,sep='\n'):
             return eq  
         else:
             return ('FRML ' + (eq if test.startswith('<') else ' <> ' +eq) +' $' )
+        
+    # debug_var(expressions)    
     if '$' in expressions:
         return expressions
     else: 
 #        exp = re.sub(commentchar+'!(.*)\n',r'!\1\n',expressions)        
         eqlist =  [trans(e)  for e in expressions.split(sep)]
-    
+    # debug_var(expressions.split(sep))   
     return '\n'.join(eqlist)
 
 
@@ -1389,7 +1392,8 @@ d = x + 3 * a(-1)
     
     print(tofrml(mtest))
     print(explode(mtest))
-#%%
+#%% next generation
+
 from dataclasses import dataclass, field
 from typing import List, Optional, Any
 from pprint import pformat
@@ -1407,11 +1411,123 @@ list banks_list   = banks : hest ko
 testfrml = (doable(frml))
 # print(explode(testfrml))
 
+
+def clean_espressions(original_statements:str) -> str : 
+
+
+    def normalize_lists(text: str) -> str:
+        """
+        Finds all LIST ... $ blocks (possibly spannin
+        and rewrites them so that each block is on a 
+        with clean spacing.
+    
+        Will NOT match across another line starting w
+        """
+        pattern = re.compile(
+            r'LIST'                     # start marke
+            r'((?:(?!^\s*LIST).)*?)'    # content: an
+            r'\$',                      # end marker
+            flags=re.DOTALL | re.MULTILINE
+        )
+    
+        def replacer(match):
+            content = match.group(1)
+            flattened = " ".join(content.split())
+            return f"LIST {flattened} "
+    
+        return pattern.sub(replacer, text)
+
+    
+    def restore_lists(text: str) -> str:
+        """
+        Restores flattened LIST ... $ blocks with:
+          - each '/' section on its own line
+          - names aligned before the colon (per block)
+          - values after ':' aligned in vertical columns (per block)
+          - '$' on its own line with a trailing newline
+        Additionally:
+          - Validates that all sublists (rows) have the same number of value tokens.
+            Raises ValueError with details if lengths differ.
+        """
+        pattern = re.compile(r'LIST\s+.*?\$', flags=re.DOTALL)
+    
+        def restorer(match):
+            block = match.group(0)
+    
+            if '=' not in block:
+                return block  # Non-standard; leave unchanged
+    
+            head, tail = block.split('=', 1)
+            head = head.rstrip()
+            tail = tail.rsplit('$', 1)[0].strip()
+    
+            # Extract list label (text after 'LIST' up to '='), used for error messages
+            m_label = re.match(r'\s*LIST\s+(.*?)\s*$', head, flags=re.DOTALL)
+            list_label = m_label.group(1).strip() if m_label else head.strip()
+    
+            # Split sections (sub-lists) by '/'
+            raw_parts = [p.strip() for p in tail.split('/') if p.strip()]
+    
+            # Parse "NAME : RHS" and tokenize RHS
+            rows = []
+            for p in raw_parts:
+                if ':' in p:
+                    name, rhs = p.split(':', 1)
+                    name = name.strip()
+                    tokens = rhs.strip().split()
+                else:
+                    name = ""
+                    tokens = p.split()
+                rows.append((name, tokens))
+    
+            if not rows:
+                return f"{head} =\n$\n"
+    
+            # --- Validation: all rows must have same number of tokens ---
+            lengths = [len(toks) for _, toks in rows]
+            if len(set(lengths)) > 1:
+                details = ", ".join(f"{name or '<unnamed>'}:{n}" for (name, _), n in zip(rows, lengths))
+                raise ValueError(
+                    f"LIST '{list_label}' has inconsistent sublist lengths "
+                    f"(expected uniform columns). Lengths -> {details}"
+                )
+    
+            # Width for the name column (before ':')
+            name_width = max(len(n) for n, _ in rows) if rows else 0
+    
+            # Determine column widths for aligned values
+            max_cols = lengths[0] if lengths else 0
+            col_widths = [0] * max_cols
+            for _, toks in rows:
+                for j, tok in enumerate(toks):
+                    if len(tok) > col_widths[j]:
+                        col_widths[j] = len(tok)
+    
+            def fmt_values(tokens):
+                cells = [f"{tokens[j]:<{col_widths[j]}}" for j in range(max_cols)]
+                return " ".join(cells).rstrip()
+    
+            def fmt_line(name, tokens):
+                left = f"{name:<{name_width}} :" if name_width > 0 else ":"
+                return f"{left} {fmt_values(tokens)}".rstrip()
+    
+            lines = []
+            lines.append("    " + fmt_line(*rows[0]))
+            for name, toks in rows[1:]:
+                lines.append("  / " + fmt_line(name, toks))
+    
+            return f"{head} =\n" + "\n".join(lines) + "\n$\n"
+    
+        return pattern.sub(restorer, text)
+    
+    temp_list_statements = normalize_lists(original_statements.upper())
+    org_frml_statements  = restore_lists(tofrml(temp_list_statements)) 
+    return org_frml_statements
+
 def doable_unroll(in_equations,funks=[]):
     ''' expands all sum(list,'expression') in a model
     returns a new model'''
     import model_latex_class as ml 
-    from modelhelp import debug_var
     nymodel = []
     equations = in_equations[:].upper()  # we want do change the e
 
@@ -1434,7 +1550,7 @@ def doable_unroll(in_equations,funks=[]):
  
 @dataclass
 class Mexplode:
-    original: str
+    original_statements: str
     sep: str = '\n'
     funks: List[Any] = field(default_factory=list)
 
@@ -1451,10 +1567,8 @@ class Mexplode:
         
         Eksempel: model = udrul_model(MinModel.txt)'''
         print('start')
-        # breakpoint()
-        self.org_frml  = tofrml(self.original,sep=self.sep) 
-        self.org_frml  = self.original 
-        self.post_doable = doable_unroll(self.org_frml.upper() ,self.funks)
+        self.clean_frml_statements = clean_espressions(self.original_statements)
+        self.post_doable = doable_unroll(self.clean_frml_statements ,self.funks)
         self.post_do  = dounloop(self.post_doable)        #  we unroll the do loops 
         
         
@@ -1479,7 +1593,7 @@ class Mexplode:
         maxkey = max(len(k) for k in vars(self).keys())
         # output = "\n".join([f'{k.capitalize():<{maxkey}} :\n {f}' for k,f in vars(self).items() if len(f)])
         output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n{f}'
-                            for k,f in {'org_frml':self.org_frml,
+                            for k,f in {'original_statements':self.original_statements,
                                         'expanded_frml':self.expanded_frml }.items() 
                                                                if len(f)])
         return output
@@ -1542,5 +1656,16 @@ enddo $
     '''.upper() 
     # xx = 'doabel  <HEST,sum=abe>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs} $'.upper() 
     
-    res = Mexplode(tlists+xx)
-    print(res)
+    # res = Mexplode(tlists+xx)
+    # print(res)
+# breakpoint()     
+res2 = Mexplode('''
+         LIST BANKS = BANKS    : IB      SOREN  MARIE /
+                     COUNTRY : DENMARK SWEDEN DENMARK  /
+                     SELECTED : 1 1 0 $
+         LIST SECTORS   = SECTORS  : NFC SME HH             $
+         LIST test   = t  : 100*104             
+a = b
+c = 33 
+''')
+print(res2)
