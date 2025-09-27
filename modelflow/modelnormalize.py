@@ -243,9 +243,9 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
         # print(thiseq)         
         transeq = pastestring(thiseq,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
         kat=sympify(transeq,clash)  
-        # breakpoint()
         
         endo_frml  = solve(kat,endo  ,simplify=False,rational=False,warn=False)
+        # breakpoint()
         res_rhs    =stripstring(str(endo_frml[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
                     stripstring(str(endo_frml[0]),post)
         if make_fitted:            
