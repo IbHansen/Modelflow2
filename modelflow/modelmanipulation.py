@@ -1474,12 +1474,12 @@ def clean_expressions(original_statements: str) -> str:
 
         return '\n'.join(out)
 
-    flattened = normalize_lists(up)
+    flattened = up if '$' in up else normalize_lists(up) 
 
     # ---------- 3) tofrml ----------
     # Your existing function; assumed available in scope.
     frml_added = tofrml(flattened)
-
+    # debug_var(frml_added)
     # ---------- 4) restore_lists ----------
     def restore_lists(text: str) -> str:
         """
@@ -1570,7 +1570,8 @@ def clean_expressions(original_statements: str) -> str:
 
             # Validate equal token counts
             lengths = [len(toks) for _, toks in rows]
-            if len(set(lengths)) > 1:
+            if len(set(lengths)) > 1: 
+                       
                 list_label_m = re.match(r'\s*LIST\s+(.*?)\s*$', head, flags=re.DOTALL)
                 list_label = (list_label_m.group(1).strip() if list_label_m else head.strip()) or "LIST"
                 details = ", ".join(f"{(nm or '<unnamed>')}:{cnt}" for (nm, _), cnt in zip(rows, lengths))
@@ -1646,26 +1647,24 @@ import modelnormalize as nz
 @dataclass
 class Mexplode:
     
-    original_statements: str = field(default="", metadata={"description": "Input expressions"})
-    funks: List[Any] = field(default_factory=list, metadata={"description": "List of user specified functions to be used in model "})
+    original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
+    normal_frml           : str       = field(default="",        metadata={"description": "Output normalized expressions"})
     
-    clean_frml_statements: str = field(init=False, metadata={"description": "With frml and nice lists "})
-    post_doable: str = field(init=False, metadata={"description": "Expanded after doable "})
-    post_do: str = field(init=False, metadata={"description": "Frmls after do expansion "})
-    post_sum: str = field(init=False, metadata={"description": "Frmls after expanding sums"})
-    expanded_frml: str = field(init=False, metadata={"description": ""})
-    normal_expressions: List[Any] = field(init=False, metadata={"description": "List of normal expressions"})
-
+    normal_main           : str       = field(init=False,        metadata={"description": "Normalized frmls"})
+    normal_fit            : str       = field(init=False,        metadata={"description": "Normalized frmls for fitted values"})
+    normal_calc_add       : str       = field(init=False,        metadata={"description": "Normalized frmls to calculate add factors"})
     
-    # original_statements: str
-    # funks: List[Any] = field(default_factory=list)
-
-    # org_frml: str = field(init=False)
-    # post_doable: str = field(init=False)
-    # post_do: str = field(init=False)    
-    # post_sum: str = field(init=False) 
-    # expanded_frml : str = field(init=False)
-    # normal_expressions : List[Any]  = field(init=False)
+    clean_frml_statements : str       = field(init=False,        metadata={"description": "With frml and nice lists"})
+    post_doable           : str       = field(init=False,        metadata={"description": "Expanded after doable"})
+    post_do               : str       = field(init=False,        metadata={"description": "Frmls after do expansion"})
+    post_sum              : str       = field(init=False,        metadata={"description": "Frmls after expanding sums"})
+    expanded_frml         : str       = field(init=False,        metadata={"description": "frmls after expanding "})
+    normal_expressions    : List[Any] = field(init=False,        metadata={"description": "List of normal expressions"})
+    list_specification    : str       = field(init=False,        metadata={"description": "All list specifications in string "})
+    modellist             : str       = field(init=False,        metadata={"description": "The lists defined in string as a dictionary"})
+    
+    funks                 : List[Any] = field(default_factory=list, metadata={"description": "List of user specified functions to be used in model"})
+       
     
     def __post_init__(self):      
         '''prepares a model from a model template. 
@@ -1674,6 +1673,7 @@ class Mexplode:
         
         Eksempel: model = udrul_model(MinModel.txt)'''
         self.clean_frml_statements = clean_expressions(self.original_statements)
+        # debug_var(self.clean_frml_statements)
         self.post_doable = doable_unroll(self.clean_frml_statements ,self.funks)
         self.post_do  = dounloop(self.post_doable)        #  we unroll the do loops 
         
@@ -1694,7 +1694,7 @@ class Mexplode:
                           make_fixable  = kw_frml_name(parts.frmlname, 'EXO'),
                           make_fitted  = kw_frml_name(parts.frmlname, 'FIT'),
                           the_endo     = kw_frml_name(parts.frmlname, 'ENDO'),
-                          endo_lhs     = kw_frml_name(parts.frmlname, 'ENDO_LHS',False),
+                          endo_lhs     = False if 'FALSE' == kw_frml_name(parts.frmlname, 'ENDO_LHS',default='1') else True
                           )
                         )  
                        
@@ -1706,30 +1706,61 @@ class Mexplode:
         # udrullet = creatematrix(udrullet,listin=modellist)
         # udrullet = createarray(udrullet,listin=modellist)
         # udrullet = argunroll(udrullet,listin=modellist)
-        self.frml_main_list = [f'FRML {parts.frmlname} {normal.normalized} $'
+        self.normal_main = '\n'.join([f'FRML {parts.frmlname} {normal.normalized} $'
                           for parts, normal in self.normal 
-                          ]
-        self.frml_fit_list = [f'FRML <FIT>  {normal.fitted } $ '
-                          for parts, normal in self.normal 
-                          ]
-        self.frml_calc_add_list = [f'FRML <CALC_ADD_FACTOR>  {normal.fitted } $ '
-                          for parts, normal in self.normal 
-                          ]
+                          ])
+        self.normal_fit = '\n'.join([f'FRML <FIT>  {normal.fitted } $ '
+                          for parts, normal in self.normal if len(normal.fitted)
+                          ])
+        self.normal_calc_add = '\n'.join([f'FRML <CALC_ADD_FACTOR>  {normal.calc_add_factor } $ '
+                          for parts, normal in self.normal if len(normal.calc_add_factor)
+                          ])
+        
+        self.normal_frml = '\n'.join( [self.normal_main,self.normal_fit,self.normal_calc_add]) 
+      
+        self.lists = self.get_lists()
         return 
-
-    def __str__(self):
-        maxkey = max(len(k) for k in vars(self).keys())
-        # output = "\n".join([f'{k.capitalize():<{maxkey}} :\n {f}' for k,f in vars(self).items() if len(f)])
-        output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n{f}'
-                            for k,f in {'original_statements':self.original_statements,
-                                        'expanded_frml':self.expanded_frml }.items() 
-                                                               if len(f)])
-        return output
+    
+     
+    def get_lists (self) -> str:
+        """
+        Extract all LIST statements (ending with $) from clean_frml_statements.
+        Returns them as a single string, separated by newlines.
+        """
+        if not getattr(self, "clean_frml_statements", ""):
+            return ""
+    
+        # split by '$' and strip spaces/newlines
+        statements = [stmt.strip() + " $" 
+                      for stmt in self.clean_frml_statements.split("$") 
+                      if stmt.strip()]
+    
+        # filter for LIST statements
+        list_statements = [stmt for stmt in statements if stmt.upper().startswith("LIST ")]
+        return "\n".join(list_statements)
+    
+    
+        def __str__(self):
+            maxkey = max(len(k) for k in vars(self).keys())
+            # output = "\n".join([f'{k.capitalize():<{maxkey}} :\n {f}' for k,f in vars(self).items() if len(f)])
+            output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n{f}'
+                                for k,f in {'original_statements':self.original_statements,
+                                            'Result':self.normal_frml }.items() 
+                                                                   if len(f)])
+            return output
 
     @property
-    def showlist(self): 
+    def showlists(self): 
         print ( pformat(self.modellist, width=100, compact=False))
-   
+    @property
+    def showmodellist(self): 
+        print ( pformat(self.modellist, width=100, compact=False))
+
+    @property
+    def show(self): 
+        print (self.normal_frml)
+    
+
     def __getattr__(self, attr):
      if attr.startswith("show"):
          prop = attr[4:].lower()
@@ -1745,7 +1776,7 @@ class Mexplode:
                     print(frml)  # uses Normalized_frml.__str__
              else:
 
-                 print(f"{prop.capitalize()}: {value}")
+                 print(f"{prop.capitalize()}: \n{value}")
          else:
             import inspect
             # --- guess varname only if property not found ---
@@ -1763,7 +1794,16 @@ class Mexplode:
                     pass
             # -------------------------------------------------
 
-            options = "\n".join(f"{varname}.show{f}" for f in fieldnames)
+
+            left_parts = [f"{varname}.show{f.name}" for f in field_defs]
+            maxlen = max(len(lp) for lp in left_parts)
+            options = "\n".join(
+                f"{lp.ljust(maxlen)}  # {f.metadata.get('description')}"
+                if f.metadata.get("description")
+                else lp
+                for lp, f in zip(left_parts, field_defs)
+            )
+
             print(f"No such property '{prop}'. Try one of:\n{options}")
          return None
 

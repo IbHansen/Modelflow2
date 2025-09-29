@@ -21,6 +21,8 @@ from IPython.display import SVG, display, Image, IFrame, HTML
 
 from modelmanipulation import lagone, find_arg,pastestring,stripstring
 from modelpattern import udtryk_parse, namepat
+from modelhelp import debug_var
+
 
 @dataclass
 class Normalized_frml:
@@ -232,60 +234,73 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
     ind = preprocessed.upper().replace('LOG(','log(').replace('EXP(','exp(')
     lhs,rhs=ind.strip().split('=',1)
     lhs = lhs.strip()
+    # debug_var(len(udtryk_parse(lhs)))
     if len(udtryk_parse(lhs)) >=2 or not endo_lhs : # we have an expression on the left hand side 
-        clash = getclash(ind)
-        
-        endo_name = the_endo.upper() if the_endo else endovar(lhs)
-        endo = sympify(endo_name,clash)
-        a_name = f'{endo_name}{add_suffix}' if add_add_factor else ''
-        thiseq = f'({lhs}-(__RHS__ {"+" if add_add_factor else ""}{a_name}))'  if endo_lhs else \
-                 f'({lhs}- ({rhs}  {"+" if add_add_factor else ""}{a_name}))'
-        # print(thiseq)         
-        transeq = pastestring(thiseq,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
-        kat=sympify(transeq,clash)  
-        
-        endo_frml  = solve(kat,endo  ,simplify=False,rational=False,warn=False)
-        # breakpoint()
-        res_rhs    =stripstring(str(endo_frml[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
-                    stripstring(str(endo_frml[0]),post)
-        if make_fitted:            
-            thiseq_fit = f'({lhs}-__RHS__ )'  if endo_lhs else \
-                     f'({lhs}- {rhs} )'
-            transeq_fit = pastestring(thiseq_fit,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
-            kat_fit=sympify(transeq_fit,clash)  
-            # breakpoint()
+        try:
+            clash = getclash(ind)
             
-            endo_frml_fit  = solve(kat_fit,endo  ,simplify=False,rational=False,warn=False)
-            res_rhs_fit    =stripstring(str(endo_frml_fit[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
-                    stripstring(str(endo_frml_fit[0]),post)
-                    
-        if make_fixable :
-            out_frml   = f'{endo} = ({res_rhs}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
-        else: 
-            out_frml   = f'{endo} = {res_rhs}'.upper() 
-            
-        
-        if add_add_factor:
-            a_sym = sympify(a_name,clash)
-            a_frml     = solve(kat,a_sym,simplify=False,rational=False)
-            res_rhs_a  = stripstring(str(a_frml[0]),post).replace('__RHS__',f' (({rhs.strip()})) ')
-            out_a      = f'{a_name} = {res_rhs_a}'.upper()
-            # breakpoint()
-        else:
-            out_a = ''
-            
-        out_fitted = f'{endo}_fitted = {res_rhs_fit}'.upper()  if make_fitted else ''
+            endo_name = the_endo.upper() if the_endo else endovar(lhs)
+            endo = sympify(endo_name,clash)
+            a_name = f'{endo_name}{add_suffix}' if add_add_factor else ''
+            thiseq = f'({lhs}-(__RHS__ {"+" if add_add_factor else ""}{a_name}))'  if endo_lhs else \
+                     f'({lhs}- ({rhs}  {"+" if add_add_factor else ""}{a_name}))'
+            # print(thiseq)   
     
-        result = Normalized_frml(
-                    endo_var=str(endo),
-                    original=ind_o,
-                    preprocessed=preprocessed,
-                    normalized=out_frml,
-                    calc_add_factor=out_a,
-                    fitted=out_fitted,
-                    eviews=eviews)
+            transeq = pastestring(thiseq,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
+            kat=sympify(transeq,clash)  
+            # debug_var(endo_name,thiseq,endo_lhs)
 
-        return result
+            endo_frml  = solve(kat,endo  ,simplify=False,rational=False,warn=False)
+            # breakpoint()
+            res_rhs    =stripstring(str(endo_frml[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
+                        stripstring(str(endo_frml[0]),post)
+            if make_fitted:            
+                thiseq_fit = f'({lhs}-__RHS__ )'  if endo_lhs else \
+                         f'({lhs}- {rhs} )'
+                transeq_fit = pastestring(thiseq_fit,post,onlylags=True).replace('LOG(','log(').replace('EXP(','exp(')
+                kat_fit=sympify(transeq_fit,clash)  
+                # breakpoint()
+                
+                endo_frml_fit  = solve(kat_fit,endo  ,simplify=False,rational=False,warn=False)
+                res_rhs_fit    =stripstring(str(endo_frml_fit[0]),post).replace('__RHS__',f' ({rhs.strip()}) ') if endo_lhs else \
+                        stripstring(str(endo_frml_fit[0]),post)
+                        
+            if make_fixable :
+                out_frml   = f'{endo} = ({res_rhs}) * (1-{endo}_D)+ {endo}_X*{endo}_D '.upper() 
+            else: 
+                out_frml   = f'{endo} = {res_rhs}'.upper() 
+                
+            
+            if add_add_factor:
+                a_sym = sympify(a_name,clash)
+                a_frml     = solve(kat,a_sym,simplify=False,rational=False)
+                res_rhs_a  = stripstring(str(a_frml[0]),post).replace('__RHS__',f' (({rhs.strip()})) ')
+                out_a      = f'{a_name} = {res_rhs_a}'.upper()
+                # breakpoint()
+            else:
+                out_a = ''
+                
+            out_fitted = f'{endo}_fitted = {res_rhs_fit}'.upper()  if make_fitted else ''
+        
+            result = Normalized_frml(
+                        endo_var=str(endo),
+                        original=ind_o,
+                        preprocessed=preprocessed,
+                        normalized=out_frml,
+                        calc_add_factor=out_a,
+                        fitted=out_fitted,
+                        eviews=eviews)
+    
+            return result
+        except Exception as e: 
+            print(f'Problem normalizing:\n{ind}')
+            if not endo_lhs:
+                print('When trying to normalize a right hand side variable the normalizing is more difficult.')
+                print('Especially with user defined functions, that might be the problem \n')
+            debug_var(endo_name,thiseq,endo_lhs)
+            print('The error message:',e)
+            
+            raise Exception('problem normalizing')
     
     else: # no need to normalize  this equation 
         out_frml = preprocessed 
