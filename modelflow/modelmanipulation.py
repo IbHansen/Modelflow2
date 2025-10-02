@@ -1643,6 +1643,7 @@ def doable_unroll(in_equations,funks=[]):
     return equations
 
 import modelnormalize as nz 
+from functools import cached_property
  
 @dataclass
 class Mexplode:
@@ -1760,6 +1761,11 @@ class Mexplode:
     def show(self): 
         print (self.normal_frml)
     
+    @cached_property
+    def mmodel(self): 
+        from modelclass import model 
+        return  model(self.normal_frml,funks=self.funks)
+
 
     def __getattr__(self, attr):
      if attr.startswith("show"):
