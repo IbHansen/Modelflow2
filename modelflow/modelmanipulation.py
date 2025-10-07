@@ -1719,7 +1719,7 @@ class Mexplode:
         
         self.normal_frml = '\n'.join( [self.normal_main,self.normal_fit,self.normal_calc_add]) 
       
-        self.lists = self.get_lists()
+        self.list_specification = self.get_lists()
         return 
     
      
@@ -1741,25 +1741,27 @@ class Mexplode:
         return "\n".join(list_statements)
     
     
-        def __str__(self):
-            maxkey = max(len(k) for k in vars(self).keys())
-            # output = "\n".join([f'{k.capitalize():<{maxkey}} :\n {f}' for k,f in vars(self).items() if len(f)])
-            output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n{f}'
-                                for k,f in {'original_statements':self.original_statements,
-                                            'Result':self.normal_frml }.items() 
-                                                                   if len(f)])
-            return output
+    def __str__(self):
+        # maxkey = max(len(k) for k in vars(self).keys())
+        # # output = "\n".join([f'{k.capitalize():<{maxkey}} :\n {f}' for k,f in vars(self).items() if len(f)])
+        # output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n{f}'
+        #                     for k,f in {#'original_statements':self.original_statements,
+        #                                 'Result':self.normal_frml }.items() 
+        #                                                        if len(f)])
+        return self.normal_frml.strip()
+        return output
 
     @property
     def showlists(self): 
         print ( pformat(self.modellist, width=100, compact=False))
+        
     @property
     def showmodellist(self): 
         print ( pformat(self.modellist, width=100, compact=False))
 
     @property
     def show(self): 
-        print (self.normal_frml)
+        print (self.normal_frml.strip())
     
     @cached_property
     def mmodel(self): 

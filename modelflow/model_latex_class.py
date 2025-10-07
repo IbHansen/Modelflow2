@@ -242,8 +242,8 @@ def findallindex(ind0):
         do_conditions = ind[1:ind.index(']')]
         rest = ind[ind.index(']')+1:].strip() 
         
-        all_do_condition = {condition.split('=',1)[0] : 
-                            condition.split('=',1)[1].replace('=',' = ') 
+        all_do_condition = {condition.split(' ',1)[0] : 
+                            condition.split(' ',1)[1].replace('=',' = ') 
                             for condition in do_conditions.split(',')}
         # print(f'{do_conditions=}')
         # print(f'{all_do_condition=}')
@@ -331,7 +331,7 @@ def doable(ind,funks=[],show=False):
     return out_str
 # xx = doable('<sum=_sum,HEST>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() 
 #     ,show=True)
-xx = doable('<sum=abe,HEST> [banks=country = denmark ] LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() ,show=True)
+# xx = doable('<sum=abe,HEST> [banks=country = denmark ] LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() ,show=True)
 #%%
 def normalize_lists(text: str) -> str:
     """
