@@ -123,14 +123,14 @@ def app_run(app,jupyter=False,debug=False,port=5000,inline=False):
     # print(f'{jupyter=} {inline=}')   
     if jupyter:
         if inline:
-            xx = app.run_server(debug=debug,port=port,mode='inline')
+            xx = app.run(debug=debug,port=port,mode='inline')
         else:     
             if first_call or  1:
                 Timer(1, open_browser).start()   
                 first_call = False
             # print('ko')   
 
-            xx =app.run_server(debug=debug,port=port,jupyter_mode='external')
+            xx =app.run(debug=debug,port=port,jupyter_mode='external')
             # print('gris')   
 
             # print(f'{xx=}')
@@ -138,7 +138,7 @@ def app_run(app,jupyter=False,debug=False,port=5000,inline=False):
     else:    
         Timer(1, open_browser).start()            
 
-        xx = app.run_server(debug=debug,port=port,mode="external")
+        xx = app.run(debug=debug,port=port,mode="external")
         
     
 
