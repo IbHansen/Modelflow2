@@ -556,8 +556,9 @@ class DisplayDef:
         try:
             repo = LatexRepo(self.latex ,name=self.name)
             return repo.pdf(pdfopen,show,width,height,typesetter)
-        except: 
-            return None 
+        except Exception as e:
+            print(f"⚠️ Warning: PDF generation failed: {e}")
+            return None
 
     def __add__(self, other):
         """
