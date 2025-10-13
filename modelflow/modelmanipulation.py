@@ -1690,9 +1690,9 @@ class Mexplode:
         
         self.normal = [(parts,
                         nz.normal(parts.expression,
-                          add_add_factor= kw_frml_name(parts.frmlname, 'STOC'),
-                          add_suffix     = kw_frml_name(parts.frmlname, 'add_suffix','_A'),
-                          make_fixable  = kw_frml_name(parts.frmlname, 'EXO'),
+                          add_add_factor= kw_frml_name(parts.frmlname, 'ADD') or kw_frml_name(parts.frmlname, 'STOC'),
+                          add_suffix     = kw_frml_name(parts.frmlname, 'ADD_SUFFIX','_A'),
+                          make_fixable  = kw_frml_name(parts.frmlname, 'EXO')or kw_frml_name(parts.frmlname, 'STOC'),
                           make_fitted  = kw_frml_name(parts.frmlname, 'FIT'),
                           the_endo     = kw_frml_name(parts.frmlname, 'ENDO'),
                           endo_lhs     = False if 'FALSE' == kw_frml_name(parts.frmlname, 'ENDO_LHS',default='1') else True
@@ -1762,6 +1762,10 @@ class Mexplode:
     @property
     def show(self): 
         print (self.normal_frml.strip())
+
+    @property
+    def draw(self): 
+        self.mmodel.drawmodel() 
     
     @cached_property
     def mmodel(self): 
