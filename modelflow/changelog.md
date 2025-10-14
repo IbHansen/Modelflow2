@@ -222,3 +222,6 @@ Version 2.59 uploaded
 Version 2.60 uploaded 
 
 app.run_serve to app.run 
+warning when pdf is not generated in report 
+
+Version 2.61 uploaded 

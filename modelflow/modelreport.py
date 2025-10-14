@@ -796,7 +796,7 @@ class LatexRepo:
         if xx0.returncode: 
              wb.open(latex_dir.absolute(), new=1)
  
-             raise Exception(f'Error creating PDF file, {xx0.returncode}, is latex installed. If so look in the latex file, {latex_file}')
+             raise Exception(f'Error creating PDF file, {xx0.returncode},\n is latex installed?. If so look in the latex file, {latex_file}')
              
         if pdfopen:
             fileurl = f'file://{pdf_file.resolve()}'
