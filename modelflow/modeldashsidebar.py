@@ -115,32 +115,46 @@ def app_setup(jupyter=False):
         app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     return app                 
 
-def app_run(app,jupyter=False,debug=False,port=5000,inline=False):
-    global first_call
-    def open_browser(port=port):
-    	webbrowser.open_new(f"http://localhost:{port}")
-    
-    # print(f'{jupyter=} {inline=}')   
-    if jupyter:
-        if inline:
-            xx = app.run(debug=debug,port=port,mode='inline')
-        else:     
-            if first_call or  1:
-                Timer(1, open_browser).start()   
-                first_call = False
-            # print('ko')   
-
-            xx =app.run(debug=debug,port=port,jupyter_mode='external')
-            # print('gris')   
-
-            # print(f'{xx=}')
-
-    else:    
-        Timer(1, open_browser).start()            
-
-        xx = app.run(debug=debug,port=port,mode="external")
         
     
+def app_run(app, jupyter=False, debug=False, port=5000, inline=False):
+    """Run app and handle Colab / Jupyter mode properly."""
+    global first_call
+
+    def open_browser(port=port):
+        webbrowser.open_new(f"http://localhost:{port}")
+
+    if jupyter:
+        # ✅ Colab / Jupyter mode
+        if inline:
+            # Works in Colab inline iframe
+            app.run(
+                mode="inline",
+                port=port,
+                debug=debug,
+                serve_kernel_port_as_iframe=True,
+                use_reloader=False
+            )
+        else:
+            # External mode, still opens new tab if kernel supports it
+            if first_call:
+                Timer(1, open_browser).start()
+                first_call = False
+            app.run(
+                mode="external",
+                port=port,
+                debug=debug,
+                use_reloader=False
+            )
+    else:
+        # ✅ Normal desktop mode
+        Timer(1, open_browser).start()
+        app.run(
+            mode="external",
+            port=port,
+            debug=debug,
+            use_reloader=False
+        )
 
 
 def get_stack(df,v='Guess it',heading='Yes',pct=True,threshold=0.5,desdict = {}):
@@ -453,4 +467,4 @@ if __name__ == "__main__":
         _ = madam(scenarie)
         
     
-    _ =  Dash_graph(madam,'FY',debug = 0,all=1,filter=30,show_trigger=True,jupyter=True,up=1,port=5006)
+    _ =  Dash_graph(madam,'FY',debug = 0,all=1,filter=30,show_trigger=True,jupyter=False,up=1,port=5006)
