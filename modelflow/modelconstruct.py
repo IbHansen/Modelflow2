@@ -467,6 +467,63 @@ class Mexplode:
             else:
                 lines.append(f"{k:<{w}} : {rendered}")
         return f"{self.__class__.__name__}(\n  " + "\n  ".join(lines) + "\n)"
+
+# -*- coding: utf-8 -*-
+"""
+Extension to modelconstruct.py
+Adds Lexplode dataclass and addition support for Mexplode and Lexplode.
+"""
+
+from dataclasses import dataclass, field
+from typing import List
+
+# We assume Mexplode is defined elsewhere in modelconstruct.py
+# from modelconstruct import Mexplode
+
+@dataclass
+class Lexplode:
+    """Container for multiple Mexplode instances.
+
+    Enables combination of several model explosions using + operations.
+    """
+
+    mexplodes: List['Mexplode'] = field(default_factory=list)
+
+    def __add__(self, other):
+        if isinstance(other, Mexplode):
+            return Lexplode(self.mexplodes + [other])
+        elif isinstance(other, Lexplode):
+            return Lexplode(self.mexplodes + other.mexplodes)
+        else:
+            return NotImplemented
+
+    __radd__ = __add__
+
+    def __str__(self):
+        joined = "\n\n".join(str(m) for m in self.mexplodes)
+        return f"Lexplode containing {len(self.mexplodes)} Mexplode instances:\n{joined}"
+
+    def __repr__(self):
+        return f"Lexplode(mexplodes={self.mexplodes!r})"
+
+
+# --- Extend Mexplode with __add__ and __radd__ ---
+def _mexplode_add(self, other):
+    if isinstance(other, Mexplode):
+        return Lexplode([self, other])
+    elif isinstance(other, Lexplode):
+        return Lexplode([self] + other.mexplodes)
+    else:
+        return NotImplemented
+
+Mexplode.__add__ = _mexplode_add
+Mexplode.__radd__ = _mexplode_add
+
+
+
+
+
+
 if __name__ == '__main__' and 1 :
 
     pass
