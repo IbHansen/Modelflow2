@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 '''
-This module defines several magic jupyter functions\:
+This module defines several magic jupyter functions:
 
 :graphviz: Draw Graphviz graph
 :dataframe: Create Pandas Dataframe    
@@ -24,6 +24,7 @@ from model_latex import latextotxt
 from modelclass import model
 from modelmanipulation import explode
 from model_latex_class import a_latex_model
+from modelconstruct import Mexplode, extract_model_from_markdown
 
 
 def get_options(line,defaultname = 'test'):
@@ -52,6 +53,8 @@ def get_options(line,defaultname = 'test'):
     opt = {o : False if ( v== '0' or v=='False')  else v for o,v in opt.items()}
     
     return name,opt           
+
+
 try:
     # this is to 
 
@@ -370,5 +373,190 @@ try:
             display(df)
             if melt: display(df_melted)
         return 
+    
+    
+
+    @register_cell_magic
+    def mdmodel_old(line, cell):
+        """
+        %%mdmodel <name> [options...]
+        
+        Takes Markdown input containing model equations starting with '>'
+        and creates a Mexplode instance in the global namespace.
+        """
+        ip = get_ipython()
+        name, options = get_options(line)
+    
+        model_code = extract_model_from_markdown(cell)
+        model = Mexplode(model_code)
+        
+        # Assign to the global namespace
+        ip.push({name: model})
+        
+        # Optional: display documentation and model preview
+        display(Markdown(cell))
+        print(f"✅ Created Mexplode model: {name}")
+        print(model)
+
+    from IPython.core.magic import register_cell_magic
+    
+
+    import ast
+    
+
+    def render_markdown_model(cell: str, style: str = "mixed") -> str:
+        """
+        Render Markdown model content.
+    
+        Parameters
+        ----------
+        cell : str
+            Original Markdown cell text.
+        style : str, optional
+            "mixed" : Markdown prose + code lines fenced (default)
+            "plain" : Raw Markdown (no transformation)
+        """
+        if style == "plain":
+            return cell
+    
+        # --- Mixed mode: Markdown prose + code blocks for model lines ---
+        lines = cell.strip().split('\n')
+        rendered_lines = []
+        in_code = False
+    
+        def start_code():
+            nonlocal in_code
+            if not in_code:
+                rendered_lines.append('```text')
+                in_code = True
+    
+        def end_code():
+            nonlocal in_code
+            if in_code:
+                rendered_lines.append('```')
+                in_code = False
+    
+        for line in lines:
+            stripped = line.strip()
+    
+            if stripped.startswith(('>')):
+                start_code()
+                rendered_lines.append(line)
+            else:
+                end_code()
+                rendered_lines.append(line)
+    
+        end_code()
+        return '\n'.join(rendered_lines)
+    
+    
+    @register_cell_magic
+    def mdmodel(line, cell):
+        """
+        %%mdmodel <name> [options...]
+        
+        Creates or extends a Markdown-based Mexplode model.
+        You can split a model into multiple cells (segments) using 'segment=<name>'.
+        
+        Options:
+          segment=<segname>     Define a named segment of the model (e.g., 'list1', 'core', etc.)
+          all=True              Combine all stored segments to form the model
+          display=True          Show full model info after creation
+          render=False          Skip Markdown rendering of the cell content
+          render_style=<style>  "mixed" (default), "plain"
+          replacements=<expr>   Python variable name or literal Python expression/list/tuple
+        """
+        ip = get_ipython()
+        user_ns = ip.user_ns
+        
+        name, options = get_options(line)
+
+        # Handle replacements argument (variable name or literal)
+        replacements = None
+        
+        if 'replacements' in options:
+            repl_arg = options['replacements']
+            try:
+                replacements = ast.literal_eval(repl_arg)
+            except (ValueError, SyntaxError):
+                if repl_arg in ip.user_ns:
+                    replacements = ip.user_ns[repl_arg]
+                else:
+                    print(f"⚠️ Warning: replacements '{repl_arg}' not found or invalid.")
+                    replacements = None
+
+
+
+    
+        # Handle segmented models
+        if options.get('segment', False):
+            dict_name = f"{name}_dict"
+        
+            # Create or reuse the per-model dict in user namespace
+            if dict_name not in user_ns:
+                user_ns[dict_name] = {}
+        
+            segment_name = options.get('segment', 'rest')
+            user_ns[dict_name][segment_name] = cell
+        
+            # Handle display of list/text segments
+            if segment_name.startswith(('list', 'text')):
+                render_style = options.get('render_style', 'mixed')
+                rendered_md = render_markdown_model(cell, style=render_style)
+                display(Markdown(rendered_md))
+                return
+        
+            # Combine text according to 'all' option
+            if options.get('all', False):
+                model_text = '\n'.join(user_ns[dict_name].values())
+            else:
+                model_text = '\n'.join([
+                    txt for seg, txt in user_ns[dict_name].items()
+                    if seg.startswith('list')
+                ]) + cell
+            
+                # --- Core model creation ---
+        else:
+                # Combine any stored pieces or just use this cell
+                if f'{name}_dict' in globals():
+                    model_text = '\n'.join(globals()[f'{name}_dict'].values())
+                else:
+                    model_text = cell
+
+                
+ 
+        model_code = extract_model_from_markdown(model_text)
+    
+    
+        # Create the model
+        if replacements is not None:
+            model = Mexplode(model_code, replacements=replacements)
+        else:
+            model = Mexplode(model_code)
+    
+        # Store globally
+        user_ns[name] =model
+    
+        # --- Rendering section ---
+        if options.get('render', True) and not options.get('display', False):
+            render_style = options.get('render_style', 'mixed')
+            rendered_md = render_markdown_model(cell, style=render_style)
+            display(Markdown(rendered_md))
+    
+        # --- Optional full display ---
+        if options.get('display', False):
+            render_style = options.get('render_style', 'mixed')
+            rendered_md = render_markdown_model(cell, style=render_style)
+            display(Markdown(rendered_md))
+            if f'{name}_dict' in globals():
+                segs = list(globals()[f'{name}_dict'].keys())
+                print(f"Model `{name}` built from segments: {', '.join(segs)}")
+            print(f"✅ Created Mexplode model: {name}")
+            print(model)
+    
+        return
+
+
+
 except:
     print('no magic')

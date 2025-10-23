@@ -242,8 +242,8 @@ def findallindex(ind0):
         do_conditions = ind[1:ind.index(']')]
         rest = ind[ind.index(']')+1:].strip() 
         
-        all_do_condition = {condition.split(' ',1)[0] : 
-                            condition.split(' ',1)[1].replace('=',' = ') 
+        all_do_condition = {condition.strip().split(' ',1)[0].strip() : 
+                            condition.strip().split(' ',1)[1].strip().replace('=',' = ') 
                             for condition in do_conditions.split(',')}
         # print(f'{do_conditions=}')
         # print(f'{all_do_condition=}')
@@ -314,7 +314,7 @@ def doable(ind,funks=[],show=False):
         out = [f'{pre}\n  frml    {frmlname} {rest} $\n{post}']
     else:
         out=[f'frml {frmlname} {rest.strip()} $']
-    print()     
+    # print()     
     if ind.startswith('<'):
         sumname = mp.kw_frml_name(frmlname, 'sum')
         if sumname:

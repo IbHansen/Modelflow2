@@ -8,7 +8,11 @@ Created on Thu Oct 16 09:43:04 2025
 #%% next generation
 
 from dataclasses import dataclass, field, fields 
-from typing import List, Optional, Any
+from typing import List, Optional, Any ,  Union
+import re
+from IPython.display import display, Math, Latex, Markdown , Image, SVG, display_svg,IFrame    
+
+
 from pprint import pformat
 import textwrap
 
@@ -240,6 +244,7 @@ def doable_unroll(in_equations,funks=[]):
     import model_latex_class as ml 
     nymodel = []
     equations = in_equations[:].upper()  # we want do change the e
+    # debug_var(equations)
 
     for comment, command, value in find_statements(equations):
         # print('>>',comment,'<',command,'>',value)
@@ -258,19 +263,361 @@ def doable_unroll(in_equations,funks=[]):
     # debug_var(equations)
     return equations
 
+# Simple extractor
+def extract_model_from_markdown(md_text: str) -> str:
+    """Extracts model lines (starting with '>') from Markdown."""
+    return "\n".join(
+        re.findall(r'^[>]\s?(.*)', md_text, flags=re.MULTILINE)
+    ).strip()
+
+
+def apply_replacements(formulas: str, replacements: Union[tuple[str, str], list[tuple[str, str]]]) -> str:
+    """
+    Apply one or more string replacements to a formula string.
+
+    Parameters
+    ----------
+    formulas : str
+        The input string containing one or more formulas.
+    replacements : tuple[str, str] or list[tuple[str, str]]
+        Either a single (pattern, replacement) tuple or
+        a list of such tuples.
+
+        Example:
+            ('__dim', '__{banks}__{country}__{ports}')
+        or:
+            [
+                ('__dim', '__{banks}__{country}__{ports}'),
+                ('GDP', 'GDP_REAL')
+            ]
+
+    Returns
+    -------
+    str
+        The modified formula string after all replacements have been applied.
+        If no replacements are given or replacements is empty, the original
+        string is returned unchanged.
+    """
+    if not replacements:
+        return formulas
+
+    # Ensure replacements is a list of tuples
+    if isinstance(replacements, tuple) and len(replacements) == 2 and isinstance(replacements[0], str):
+        replacements = [replacements]
+
+    updated = formulas
+    for old, new in replacements:
+        updated = updated.replace(old, new)
+    return updated
+
+def mfmod_list_to_markdown(text: str) -> str:
+    """
+    Convert MFMod-style list definitions (EViews/ModelFlow format) into
+    aligned Markdown tables, while keeping all other lines unchanged.
+
+    Example:
+        Input:
+            >list ages = ages : age_0 * age_11 
+            >list sexes = sexes : female male /  
+            >             fertile : 1 0
+            other stuff
+
+        Output:
+            (Markdown tables for lists with blank line before each)
+            other stuff
+
+    Behavior:
+    - Detects lines starting with '>list' as list definitions.
+    - Parses sublists separated by '/' and items separated by whitespace.
+    - Renders Markdown tables with aligned columns and clear '|'.
+    - Leaves all non-list lines unchanged (including indentation).
+    - Adds one blank line before each rendered list.
+    """
+
+    lines = text.splitlines()
+    output = []
+
+    # Temporary buffers for list parsing
+    current_list = None
+    current_entries = []
+    inside_list = False
+    raw_block = []  # keep original lines for fallback
+
+    def flush():
+        """
+        Finalize the current list block:
+        - If successfully parsed → render as Markdown table.
+        - If invalid → output raw block unchanged.
+        - Always reset list state.
+        """
+        nonlocal current_list, current_entries, inside_list, raw_block
+        if current_list and current_entries:
+            # Add a blank line before each table unless we’re at the top
+            if output and output[-1].strip():
+                output.append("")
+            output.append(render_list_table(current_list, current_entries))
+            output.append("")  # 👈 ensures a blank line after the table
+
+        elif inside_list and raw_block:
+            # List start detected but not parsed → keep original text
+            if output and output[-1].strip():
+                output.append("")
+            output.extend(raw_block)
+
+        # Reset for next possible list
+        current_list, current_entries, inside_list, raw_block = None, [], False, []
+
+    # --- Main parsing loop ---
+    for line in lines:
+        stripped = line.strip()
+
+        # Case 1: Start of new list definition
+        if stripped.startswith(">list"):
+            flush()  # finish any previous list
+            inside_list = True
+            raw_block = [line]
+
+            # Try to extract list name and right-hand content
+            match = re.match(r'>list\s+(\w+)\s*=\s*(.*)', stripped)
+            if match:
+                current_list, rest = match.groups()
+                current_entries.extend(parse_sublists(rest))
+            else:
+                # only name, content may follow later
+                current_list = stripped.replace('>list', '').strip()
+
+        # Case 2: Continuation lines (e.g., '> fertile : 1 0')
+        elif inside_list and stripped.startswith(">") and not stripped.startswith(">list"):
+            raw_block.append(line)
+            content = stripped[1:].strip()
+            current_entries.extend(parse_sublists(content))
+
+        # Case 3: A non-'>' line ends the list block
+        elif inside_list and not stripped.startswith(">"):
+            flush()
+            output.append(line)
+
+        # Case 4: Outside of any list
+        else:
+            if inside_list:
+                flush()
+            output.append(line)
+
+    # Handle any unfinished list at the end
+    flush()
+
+    return "\n".join(output)
+
+
+def mfmod_list_to_codeblock(text: str) -> str:
+    """
+    Wrap MFMod-style list definitions (lines starting with '>list' and following '>' lines)
+    inside triple backticks with 'text' language tag so they render as fixed-width blocks
+    in Jupyter Book. All non-list lines are left unchanged.
+
+    Example:
+        Input:
+            >list ages = ages : age_0 * age_11 
+            >list sexes = sexes : female male /  
+            >             fertile : 1 0
+            other stuff
+
+        Output:
+            ```text
+            >list ages = ages : age_0 * age_11 
+            ```
+            ```text
+            >list sexes = sexes : female male /  
+            >             fertile : 1 0
+            ```
+            other stuff
+    """
+    lines = text.splitlines()
+    output = []
+    inside_block = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(">list"):  # start of new block
+            if inside_block:  # close previous
+                output.append("```")
+                inside_block = False
+            if output and output[-1].strip():
+                output.append("")  # blank line before
+            output.append("```text")
+            output.append(line)
+            inside_block = True
+        elif inside_block and stripped.startswith(">"):  # continuation
+            output.append(line)
+        elif inside_block:  # end of block
+            output.append("```")
+            inside_block = False
+            output.append(line)
+        else:
+            output.append(line)
+
+    if inside_block:  # close any open block
+        output.append("```")
+
+    return "\n".join(output)
+
+
+def parse_sublists(text: str) -> list[tuple[str, list[str]]]:
+    """
+    Parse a text fragment defining one or more sublists into a list of tuples.
+
+    Example:
+        'sexes : female male / fertile : 1 0'
+        → [('sexes', ['female', 'male']), ('fertile', ['1', '0'])]
+    """
+    result = []
+    for part in [p.strip() for p in text.split('/') if p.strip()]:
+        if ':' not in part:
+            continue
+        sub, vals = [p.strip() for p in part.split(':', 1)]
+        result.append((sub, vals.split()))
+    return result
+
+
+def render_list_table(list_name: str, entries: list[tuple[str, list[str]]]) -> str:
+    """
+    Render one parsed list into a Markdown table, preserving structure.
+
+    Example:
+        [('ages', ['age_0', '*', 'age_11'])] →
+            > list
+            | **list name** | **sublist name** ||| |
+            |:------------------|:-------------------------------------------|-:|-:|-:|
+            | ages              | ages     | age_0 | * | age_11 |
+    """
+    if not entries:
+        return ""
+
+    # Determine max number of value columns
+    max_cols = max(len(e[1]) for e in entries)
+    pipes = "   |" * max_cols
+
+    # Header and alignment lines (exact Markdown structure)
+    header = f"\n| **list name** | **sublist name** {pipes} |\n"
+    header += (
+        f"|:------------------|:-------------------------------------------|"
+        + "|".join(["---:" for _ in range(max_cols)])
+        + "|\n"
+    )
+
+    # Align sublist names to the longest one for consistent look
+    max_sub_len = max(len(sub) for sub, _ in entries)
+
+    rows = []
+    first = True
+    for sublist, items in entries:
+        # Only show list name once
+        list_cell = list_name if first else ""
+        first = False
+
+        # Pad with blanks if some sublists have fewer entries
+        padded_items = items + [""] * (max_cols - len(items))
+        row = f"| {list_cell:<18}| {sublist:<{max_sub_len}} | " + " | ".join(padded_items) + " |"
+        rows.append(row)
+
+    return header + "\n".join(rows)
+import re
+
+def mfmod_list_to_codeblock(text: str) -> str:
+    """
+    Wrap any consecutive lines starting with '>' (including '>list' definitions)
+    in fenced code blocks (```text) so they render in fixed-width font
+    in Jupyter Book. All other lines remain unchanged.
+
+    Example
+    -------
+    Input:
+        >list ages = ages : age_0 * age_11 
+        >list sexes = sexes : female male /  
+        >             fertile : 1 0
+        other stuff
+
+    Output:
+        ```text
+        >list ages = ages : age_0 * age_11 
+        >list sexes = sexes : female male /  
+        >             fertile : 1 0
+        ```
+        other stuff
+    """
+    lines = text.splitlines()
+    output = []
+    inside_block = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Lines starting with '>' belong to a code block
+        if stripped.startswith(">"):
+            if not inside_block:
+                # add a blank line before starting a block if previous line not blank
+                if output and output[-1].strip():
+                    output.append("")
+                output.append("```text")
+                inside_block = True
+            output.append(line)
+        else:
+            # close any open block before non-'>' line
+            if inside_block:
+                output.append("```")
+                inside_block = False
+            output.append(line)
+
+    # close any unclosed block at end
+    if inside_block:
+        output.append("```")
+
+    return "\n".join(output)
+
 import modelnormalize as nz 
 from functools import cached_property
+
+@dataclass
+class BaseExplode:
+    """Common parent for Mexplode and Lexplode."""
+    original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
+    normal_frml           : str       = field(default="",init=False,         metadata={"description": "Output normalized expressions"})
+
+    funks: List[Any] = field(default_factory=list)
+    
+    
+
+    @property
+    def show(self): 
+        print (self.normal_frml.strip())
+
+    @property
+    def draw(self): 
+        self.mmodel.drawmodel() 
+    
+    @cached_property
+    def mmodel(self): 
+        from modelclass import model 
+        return  model(self.normal_frml,funks=self.funks)
+    
+    def __str__(self):
+        return self.normal_frml.strip()
+
+
  
 @dataclass
-class Mexplode:
+class Mexplode(BaseExplode):
     
-    original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
-    normal_frml           : str       = field(default="",        metadata={"description": "Output normalized expressions"})
+    # original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
+    # normal_frml           : str       = field(default="",        metadata={"description": "Output normalized expressions"})
     
     normal_main           : str       = field(init=False,        metadata={"description": "Normalized frmls"})
     normal_fit            : str       = field(init=False,        metadata={"description": "Normalized frmls for fitted values"})
     normal_calc_add       : str       = field(init=False,        metadata={"description": "Normalized frmls to calculate add factors"})
-    
+    replacements  : Union[tuple[str, str], list[tuple[str, str]]]       = field(default_factory=list, metadata={"description": "list of string tupels with string replacements"})
+    list_defs             : str       = field(default="",        metadata={"description": "Lists definitions"})
+    name             : str       = field(default="",        metadata={"description": "A optional name for this (sub) model"})
+
     clean_frml_statements : str       = field(init=False,        metadata={"description": "With frml and nice lists"})
     post_doable           : str       = field(init=False,        metadata={"description": "Expanded after doable"})
     post_do               : str       = field(init=False,        metadata={"description": "Frmls after do expansion"})
@@ -279,9 +626,8 @@ class Mexplode:
     normal_expressions    : List[Any] = field(init=False,        metadata={"description": "List of normal expressions"})
     list_specification    : str       = field(init=False,        metadata={"description": "All list specifications in string "})
     modellist             : str       = field(init=False,        metadata={"description": "The lists defined in string as a dictionary"})
-    
     funks                 : List[Any] = field(default_factory=list, metadata={"description": "List of user specified functions to be used in model"})
-       
+    type_input            : str       = field(default= 'modelflow'     ,metadata={"description": "Originaal as type modelflow or markdown"})
     
     def __post_init__(self):      
         '''prepares a model from a model template. 
@@ -289,9 +635,24 @@ class Mexplode:
         Returns a expanded model which is ready to solve
         
         Eksempel: model = udrul_model(MinModel.txt)'''
-        self.clean_frml_statements = clean_expressions(self.original_statements)
-        # debug_var(self.clean_frml_statements)
+        
+        if   any(e.startswith('>') for e in self.original_statements.split('\n')) :
+          self.type_input = 'markdown' 
+          extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
+          self.markdown_model = Markdown(mfmod_list_to_codeblock(self.original_statements))
+        else:   
+           self.type_input = 'modelflow'  
+           extracted_frml = self.list_defs+self.original_statements
+           self.markdown_model = ''
+        
+        self.clean_frml_statements = clean_expressions(
+                apply_replacements(extracted_frml,self.replacements)
+                ).strip().upper()
+       # debug_var(extract_model_from_markdown(self.original_statements))
+        
+        
         self.post_doable = doable_unroll(self.clean_frml_statements ,self.funks)
+        # assert 1==2
         self.post_do  = dounloop(self.post_doable)        #  we unroll the do loops 
         
         
@@ -303,7 +664,6 @@ class Mexplode:
         self.expanded_frml_split = [split_frml_reqopts(frml) for frml in self.expanded_frml_list]
   
 # def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True, =False,make_fitted=False,eviews=''):
-        
         self.normal = [(parts,
                         nz.normal(parts.expression,
                           add_add_factor= kw_frml_name(parts.frmlname, 'ADD') or kw_frml_name(parts.frmlname, 'STOC'),
@@ -357,16 +717,11 @@ class Mexplode:
         return "\n".join(list_statements)
     
     
-    def __str__(self):
-        # maxkey = max(len(k) for k in vars(self).keys())
-        # # output = "\n".join([f'{k.capitalize():<{maxkey}} :\n {f}' for k,f in vars(self).items() if len(f)])
-        # output = "\n---\n".join([f'{k.capitalize():<{maxkey}} :\n{f}'
-        #                     for k,f in {#'original_statements':self.original_statements,
-        #                                 'Result':self.normal_frml }.items() 
-        #                                                        if len(f)])
-        return self.normal_frml.strip()
-        return output
-
+    
+    @property
+    def showmd(self):
+        display(self.markdown_model) 
+    
     @property
     def showlists(self): 
         print ( pformat(self.modellist, width=100, compact=False))
@@ -375,18 +730,6 @@ class Mexplode:
     def showmodellist(self): 
         print ( pformat(self.modellist, width=100, compact=False))
 
-    @property
-    def show(self): 
-        print (self.normal_frml.strip())
-
-    @property
-    def draw(self): 
-        self.mmodel.drawmodel() 
-    
-    @cached_property
-    def mmodel(self): 
-        from modelclass import model 
-        return  model(self.normal_frml,funks=self.funks)
 
 
     def __getattr__(self, attr):
@@ -437,8 +780,15 @@ class Mexplode:
 
      raise AttributeError(f"'{type(self).__name__}' object has no attribute '{attr}'") 
  
-   
- 
+    def __add__ (self, other):
+        if isinstance(other, Mexplode):
+            return Lexplode(mexplodes=[self, other])
+        elif isinstance(other, Lexplode):
+            return Lexplode(mexplodes= [self] + other.mexplodes)
+        else:
+            return NotImplemented
+
+
     def __repr__(self) -> str:
         def fmt(value: Any) -> str:
             # Show multiline strings as real blocks (no quotes)
@@ -474,108 +824,118 @@ Extension to modelconstruct.py
 Adds Lexplode dataclass and addition support for Mexplode and Lexplode.
 """
 
-from dataclasses import dataclass, field
-from typing import List
 
-# We assume Mexplode is defined elsewhere in modelconstruct.py
-# from modelconstruct import Mexplode
 
 @dataclass
-class Lexplode:
+class Lexplode(BaseExplode):
     """Container for multiple Mexplode instances.
 
     Enables combination of several model explosions using + operations.
     """
 
     mexplodes: List['Mexplode'] = field(default_factory=list)
+    
+    
+    # def __post_init__(self):      
+        
+    #     self.normal_frml = '\n'.join(m.normal_frml.strip() for m in self.mexplodes)
 
+    @cached_property
+    def normal_frml(self) -> str:
+        """Compute and cache concatenated normal_frml lazily on first access."""
+        return "\n".join(m.normal_frml.strip() for m in self.mexplodes)
+        
+        
     def __add__(self, other):
         if isinstance(other, Mexplode):
-            return Lexplode(self.mexplodes + [other])
+            return Lexplode(mexplodes=self.mexplodes + [other])
         elif isinstance(other, Lexplode):
-            return Lexplode(self.mexplodes + other.mexplodes)
+            return Lexplode(mexplodes=self.mexplodes + other.mexplodes)
         else:
             return NotImplemented
 
-    __radd__ = __add__
-
-    def __str__(self):
-        joined = "\n\n".join(str(m) for m in self.mexplodes)
-        return f"Lexplode containing {len(self.mexplodes)} Mexplode instances:\n{joined}"
 
     def __repr__(self):
         return f"Lexplode(mexplodes={self.mexplodes!r})"
 
-
-# --- Extend Mexplode with __add__ and __radd__ ---
-def _mexplode_add(self, other):
-    if isinstance(other, Mexplode):
-        return Lexplode([self, other])
-    elif isinstance(other, Lexplode):
-        return Lexplode([self] + other.mexplodes)
-    else:
-        return NotImplemented
-
-Mexplode.__add__ = _mexplode_add
-Mexplode.__radd__ = _mexplode_add
+    # __str__(self):
+        
 
 
 
 
 
 
-if __name__ == '__main__' and 1 :
 
+if __name__ == '__main__' :
+#%%
     pass
+    if 1: 
+        res3 = Mexplode('''
+        <endo=f,stoc> a = gamma+ f+O       
+        <endo=f> a = gamma+ f+O       
+        <endo=x,stoc,endo_lhs> a+x = gamma+ f+O       
+        <endo=x,stoc> a+x = gamma+ f+O   
+        <fit,exo,stoc> c = b*42    
+        
+        ''')   
+        
+        res3.shownormal_expressions 
+        tlists = '''
+    LIST BANKS = BANKS    : IB      SOREN  MARIE /
+                COUNTRY : DENMARK SWEDEN DENMARK  /
+                SELECTED : 1 0 1
+                $
+    LIST SECTORS   = SECTORS  : NFC SME HH             $
+        
+         ''' 
+        
+        xx = '''
+    doable  <HEST,sum=abe>  [banks=country=sweden, sektors=sektors]  LOSS__{BANKS}__{SECTORs}  = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
+    doable  <HEST,sum=goat> [banks=country=denmark,sektors=sektors]  LOSS2__{BANKS}__{SECTORs} = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
+    do sectors $
+       frml <> x_{sectors} = 42 $
+    enddo $   
+        
+        '''.upper() 
+        # xx = 'doabel  <HEST,sum=abe>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs} $'.upper() 
+        
+        # res = Mexplode(tlists+xx)
+        # print(res)
+    # breakpoint()     
+        res2 = Mexplode('''
+                 LIST BANKS = BANKS    : IB      SOREN  MARIE /
+                             COUNTRY : DENMARK SWEDEN DENMARK  /
+                             SELECTED : 1 1 0 
+                 LIST SECTORS   = SECTORS  : NFC SME HH             
+                 LIST test   = t  : 100*104             
+        a = b
+        c = 33 
+        £ test
+        doable  <HEST,sum=goat> [banks country=denmark]  LOSS2__{BANKS}__{SECTORs} = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}
+        do banks 
+           £ sector {country}
+           frml <> x_{banks} = 42 
+        enddo
+        
+        ''')
+    
+        print(res2+res3)
+        
+    if 1: 
+        test1= Mexplode('a=1')
+        test2= Mexplode('b=2')
+        test3= Mexplode('c=3')
+        print(test1+(test2+test3))
+        print(test1)
 
-    res3 = Mexplode('''
-    <endo=f,stoc> a = gamma+ f+O       
-    <endo=f> a = gamma+ f+O       
-    <endo=x,stoc,endo_lhs> a+x = gamma+ f+O       
-    <endo=x,stoc> a+x = gamma+ f+O   
-    <fit,exo,stoc> c = b*42    
+        text = """>list ages = ages : age_0 * age_11 
+>list sexes = sexes   : female male /  
+>             fertile :     1     0
+other stuf 
+and yes 
+> dekdkd"""
     
-    ''')   
-    
-    res3.shownormal_expressions 
-    tlists = '''
-LIST BANKS = BANKS    : IB      SOREN  MARIE /
-            COUNTRY : DENMARK SWEDEN DENMARK  /
-            SELECTED : 1 0 1
-            $
-LIST SECTORS   = SECTORS  : NFC SME HH             $
-    
-     ''' 
-    
-    xx = '''
-doable  <HEST,sum=abe>  [banks=country=sweden, sektors=sektors]  LOSS__{BANKS}__{SECTORs}  = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
-doable  <HEST,sum=goat> [banks=country=denmark,sektors=sektors]  LOSS2__{BANKS}__{SECTORs} = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}$
-do sectors $
-   frml <> x_{sectors} = 42 $
-enddo $   
-    
-    '''.upper() 
-    # xx = 'doabel  <HEST,sum=abe>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs} $'.upper() 
-    
-    # res = Mexplode(tlists+xx)
-    # print(res)
-# breakpoint()     
-    res2 = Mexplode('''
-             LIST BANKS = BANKS    : IB      SOREN  MARIE /
-                         COUNTRY : DENMARK SWEDEN DENMARK  /
-                         SELECTED : 1 1 0 
-             LIST SECTORS   = SECTORS  : NFC SME HH             
-             LIST test   = t  : 100*104             
-    a = b
-    c = 33 
-    £ test
-    doable  <HEST,sum=goat> [banks country=denmark]  LOSS2__{BANKS}__{SECTORs} = HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}
-    do banks 
-       £ sector {country}
-       frml <> x_{banks} = 42 
-    enddo
-    
-    ''')
 
 
-
+        print(text2:=mfmod_list_to_markdown(text))
