@@ -270,7 +270,6 @@ def do_list(do_index,do_condition):
     else:
         out = f'do {do_index}  $'
     return out
-#%%
 
 def sum_lists(do_index,do_condition):
     '''     do do_index_list do_condition = 1 $ '''
@@ -332,7 +331,6 @@ def doable(ind,funks=[],show=False):
 # xx = doable('<sum=_sum,HEST>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() 
 #     ,show=True)
 # xx = doable('<sum=abe,HEST> [banks=country = denmark ] LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() ,show=True)
-#%%
 def normalize_lists(text: str) -> str:
     """
     Finds all LIST ... $ blocks (possibly spanning multiple lines)

@@ -10,7 +10,7 @@ Created on Thu Oct 16 09:43:04 2025
 from dataclasses import dataclass, field, fields 
 from typing import List, Optional, Any ,  Union
 import re
-from IPython.display import display, Math, Latex, Markdown , Image, SVG, display_svg,IFrame    
+from IPython.display import display, Math, Latex, Markdown , Image, SVG, display_svg,IFrame
 
 
 from pprint import pformat
@@ -19,6 +19,8 @@ import textwrap
 from modelmanipulation import tofrml,dounloop, sumunroll, list_extract
 from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts
 from modelhelp import debug_var
+from model_latex_class import a_latex_model
+from modelreport import LatexRepo
 
 def clean_expressions(original_statements: str) -> str:
     """
@@ -582,7 +584,7 @@ class BaseExplode:
     """Common parent for Mexplode and Lexplode."""
     original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
     normal_frml           : str       = field(default="",init=False,         metadata={"description": "Output normalized expressions"})
-
+    markdown_model        :  str       = field(default="",init=False,         metadata={"description": "As markdown"})
     funks: List[Any] = field(default_factory=list)
     
     
@@ -603,6 +605,9 @@ class BaseExplode:
     def __str__(self):
         return self.normal_frml.strip()
 
+    @property    
+    def render(self):
+        display(Markdown(self.markdown_model))
 
  
 @dataclass
@@ -616,7 +621,7 @@ class Mexplode(BaseExplode):
     normal_calc_add       : str       = field(init=False,        metadata={"description": "Normalized frmls to calculate add factors"})
     replacements  : Union[tuple[str, str], list[tuple[str, str]]]       = field(default_factory=list, metadata={"description": "list of string tupels with string replacements"})
     list_defs             : str       = field(default="",        metadata={"description": "Lists definitions"})
-    name             : str       = field(default="",        metadata={"description": "A optional name for this (sub) model"})
+    modelname             : str       = field(default="",        metadata={"description": "A optional name for this (sub) model"})
 
     clean_frml_statements : str       = field(init=False,        metadata={"description": "With frml and nice lists"})
     post_doable           : str       = field(init=False,        metadata={"description": "Expanded after doable"})
@@ -637,11 +642,16 @@ class Mexplode(BaseExplode):
         Eksempel: model = udrul_model(MinModel.txt)'''
         
         if   any(e.startswith('>') for e in self.original_statements.split('\n')) :
-          self.type_input = 'markdown' 
-          extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
-          self.markdown_model = Markdown(mfmod_list_to_codeblock(self.original_statements))
+            self.type_input = 'markdown' 
+            extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
+            self.markdown_model = (mfmod_list_to_codeblock(self.original_statements))
+
+        elif  self.type_input == 'latex': 
+            extracted_frml = a_latex_model(self.list_defs+self.original_statements).model_template
+            self.latex_model = self.original_statements
+            self.markdown_model =  fr'{self.original_statements}'
+            
         else:   
-           self.type_input = 'modelflow'  
            extracted_frml = self.list_defs+self.original_statements
            self.markdown_model = ''
         
@@ -718,10 +728,7 @@ class Mexplode(BaseExplode):
     
     
     
-    @property
-    def showmd(self):
-        display(self.markdown_model) 
-    
+     
     @property
     def showlists(self): 
         print ( pformat(self.modellist, width=100, compact=False))
@@ -731,6 +738,13 @@ class Mexplode(BaseExplode):
         print ( pformat(self.modellist, width=100, compact=False))
 
 
+    def pdf(self,**kwargs):
+        pre= r'''
+{\setlength{\parskip}{1em}
+ \setlength{\parindent}{0pt}
+ ''' 
+            
+        return LatexRepo(fr'{pre} {self.original_statements}   }}').pdf(**kwargs) 
 
     def __getattr__(self, attr):
      if attr.startswith("show"):
@@ -785,6 +799,17 @@ class Mexplode(BaseExplode):
             return Lexplode(mexplodes=[self, other])
         elif isinstance(other, Lexplode):
             return Lexplode(mexplodes= [self] + other.mexplodes)
+        else:
+            return NotImplemented
+
+    def __radd__(self, other):
+        # handle reversed order
+        if other == 0:
+            return self
+        if isinstance(other, Mexplode):
+            return Lexplode(mexplodes=[other, self])
+        elif isinstance(other, Lexplode):
+            return Lexplode(mexplodes=other.mexplodes + [self])
         else:
             return NotImplemented
 
@@ -851,6 +876,16 @@ class Lexplode(BaseExplode):
             return Lexplode(mexplodes=self.mexplodes + [other])
         elif isinstance(other, Lexplode):
             return Lexplode(mexplodes=self.mexplodes + other.mexplodes)
+        else:
+            return NotImplemented
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        if isinstance(other, Mexplode):
+            return Lexplode(mexplodes=[other] + self.mexplodes)
+        elif isinstance(other, Lexplode):
+            return Lexplode(mexplodes=other.mexplodes + self.mexplodes)
         else:
             return NotImplemented
 

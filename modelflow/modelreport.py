@@ -772,7 +772,7 @@ class LatexRepo:
         
 
         # Now open the file for writing within the newly created directory
-        with open(latex_file, 'wt') as f:
+        with open(latex_file, 'wt', encoding='utf-8') as f:
             f.write(self.latexwrap())  # Assuming tab.fulllatexwidget is the content you want to write
             
             
@@ -801,8 +801,11 @@ class LatexRepo:
             fileurl = f'file://{pdf_file.resolve()}'
             # print(fileurl)
             wb.open(fileurl , new=2)
-             
+        # from modelhelp import debug_var 
         if show:
+             # debug_var(show,pdf_file)
+             # debug_var(IFrame(pdf_file, width=width, height=height))
+
              return IFrame(pdf_file, width=width, height=height)
 
 
