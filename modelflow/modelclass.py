@@ -2074,6 +2074,8 @@ class Model_help_Mixin():
                              repo_name: str = 'wb-repos',
                              branch: str = 'main', 
                              destination  = './wb-repos',
+                             subfolder = '',
+
                              go = True, 
                              colab=False,
                              silent=True,
@@ -2106,12 +2108,21 @@ class Model_help_Mixin():
             Copy files from src to dst if they do not already exist in dst.
             src and dst are Path objects or strings representing the source and destination directories.
             """
+            # src_path = Path(src) / subfolder
             src_path = Path(src)
+
             dst_path = Path(dst)
-            
+            # print(f'Source {src_path.resolve()=}')
+           
             for item in src_path.glob('**/*'):  # **/* means all files and directories recursively
+                # print(f'{item=}')
                 if item.is_file():  # Only proceed if it's a file
                     relative_path = item.relative_to(src_path)
+                    # print(f'{relative_path.parts=}')
+                    if subfolder: 
+                        # print(f'{relative_path.parts[1]} = {subfolder}') 
+                        if relative_path.parts[1] != subfolder  : 
+                            continue 
                     relative_path_parts_except_first = relative_path.parts[1:]
                     relative_path_except_first = Path(*relative_path_parts_except_first)
                     destination_file = dst_path / relative_path_except_first
@@ -2153,7 +2164,7 @@ class Model_help_Mixin():
                 return f"An error occurred: {e}"
                    
                     
-        new_location =Path(destination) 
+        new_location =Path(destination)
         
         # if reset: 
         #     if new_location.exists() and new_location.is_dir():
@@ -2162,6 +2173,9 @@ class Model_help_Mixin():
         
         
         copy_new_files_only(extract_to,new_location)
+        if not silent:
+            print(f'Start in : {new_location/subfolder}')
+            print(f'Models copied to: {new_location.resolve()}')
         shutil.rmtree(extract_to)
         if go:
             if colab: 
@@ -2169,22 +2183,66 @@ class Model_help_Mixin():
                 colab=colab,
                 owner = owner,
                 repo_name = repo_name,
-                branch = branch, 
+                branch = branch, skipdir=2  if subfolder else 1
                                         
                                          )
             else:            
-                model.display_toc_github('**Avaiable notebooks**',folder=new_location,colab=False)
+                model.display_toc_github('**Avaiable notebooks**',folder=new_location,
+                                         colab=False, skipdir=2  if subfolder else 1,
+                                                                 
+                                                                                        )
             
 
         return 
+
+    @staticmethod
+    def Worldbank_Models(owner: str = "worldbank",
+                              repo_name: str = 'MFMod-ModelFlow',
+                              branch: str = 'main', 
+                              destination  = './WorldbankModels',
+                              subfolder = 'models',
+                              go = True, 
+                              silent=True,
+                              replace = False ,
+                             ):
+         """
+         Download an entire GitHub repository and extract it to a specified location.
      
+         Parameters:
+           owner: The owner of the GitHub repository.
+           repo_name: The name of the repository.
+           branch: The branch to download.
+           destination: The local path where the repository should be extracted.
+           go: display toc of notebooks 
+           silent: keep silent 
+     
+         Returns:
+           A message indicating whether the download was successful or not.
+         """
+         
+         return  model.download_github_repo(owner = owner,
+                                      repo_name = repo_name,
+                                      branch  = branch, 
+                                      destination  = destination ,
+                                      subfolder = subfolder, 
+                                      go = go , 
+                                      silent=silent,
+                                      replace = replace,  
+                                      colab=model.is_running_in_colab() 
+                                     )
+    
+                
+
+
+
     @staticmethod
     def display_toc_github(text='**Jupyter notebooks**',folder='.',all=False,nocwd=False,
                                colab=True,
                                 owner: str = "IbHansen",
                                repo_name: str = 'wb-repos',
                                branch: str = 'main', 
-                               destination  = './wb-repos',                     
+                               destination  = './wb-repos', 
+                               skipdir = 1,
                            
                            ):
         '''In a jupyter notebook this function displays a clickable table of content of all 
@@ -2213,7 +2271,7 @@ class Model_help_Mixin():
                     blanks = ''.join(
                         ['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))
                     if len(dir.parts):
-                        thisdir = Path(*dir.parts[1:])
+                        thisdir = Path(*dir.parts[skipdir:])
                         display(HTML(f'{blanks}<b>{str(thisdir)}</b>'))
                     else:
                         display(
@@ -2236,41 +2294,7 @@ class Model_help_Mixin():
 
         
 
-    @staticmethod
-    def Worldbank_Models(owner: str = "worldbank",
-                             repo_name: str = 'MFMod-ModelFlow',
-                             branch: str = 'main', 
-                             destination  = './WorldbankModels',
-                             go = True, 
-                             silent=True,
-                             replace = False ,
-                            ):
-        """
-        Download an entire GitHub repository and extract it to a specified location.
-    
-        Parameters:
-          owner: The owner of the GitHub repository.
-          repo_name: The name of the repository.
-          branch: The branch to download.
-          destination: The local path where the repository should be extracted.
-          go: display toc of notebooks 
-          silent: keep silent 
-    
-        Returns:
-          A message indicating whether the download was successful or not.
-        """
-        
-        return  model.download_github_repo(owner = owner,
-                                     repo_name = repo_name,
-                                     branch  = branch, 
-                                     destination  = destination ,
-                                     go = go , 
-                                     silent=silent,
-                                     replace = replace,  
-                                     colab=model.is_running_in_colab() 
-                                    )
-
-
+   
 
 
     @staticmethod

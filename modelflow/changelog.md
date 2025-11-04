@@ -225,3 +225,8 @@ app.run_serve to app.run
 warning when pdf is not generated in report 
 
 Version 2.61 uploaded 
+download_github_repo now accept a subfolder, so models and other stuf can be in one repo 
+used in Worldbank_Models
+
+
+Version 2.61 uploaded 
