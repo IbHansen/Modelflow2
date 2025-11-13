@@ -441,6 +441,10 @@ def sumunroll(in_equations,listin=False):
                 if '=' in suminit:
                     sumover,remain = suminit.split(' ',1)
                     xvar,lig =remain.replace(' ','').split('=')
+                elif ' ' in suminit.strip():
+                    sumover,remain = suminit.split(' ',1)
+                    xvar =remain.replace(' ','')
+                    lig = '1' 
                 else:
                     sumover = suminit
                     xvar=''

@@ -258,6 +258,39 @@ def findallindex(ind0):
         
     return frmlname,do_indicies_dict,rest
 
+
+def findallindex(ind0):   #old 
+    ''' 
+     - an equation looks like this
+     - <frmlname> [do_condition,...] lhs = rhs
+     - indicies are identified as __{} on the left hand side. 
+    
+    this function find frmlname and index variables on the left hand side. meaning variables braced by {} '''
+    if ind0.startswith('<'):
+        frmlname = re.findall(r'\<.*?\>',ind0)[0]
+        ind = ind0[ind0.index('>')+1:].strip()
+    else:
+        frmlname='<>'
+        ind=ind0.strip()
+    # print(f'{ind=}')
+    # breakpoint()    
+    if ind.startswith('['):
+        do_conditions = ind[1:ind.index(']')]
+        rest = ind[ind.index(']')+1:].strip() 
+        all_do_condition = {condition.split('=',1)[0] : condition.split('=',1)[1].replace('=',' = ')  for condition in do_conditions.split(',')}
+        # print(f'{do_conditions=}')
+    else:
+        all_do_condition = dict()
+        rest = ind.strip() 
+        
+    lhs=rest.split('=')[0]
+    do_indicies =   re.findall(r'__\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
+    
+    do_indicies_dict = {ind : all_do_condition.get(ind) for ind in do_indicies}             
+        
+    return frmlname,do_indicies_dict,rest
+
+
 def do_list(do_index,do_condition):
     '''     do do_index_list do_condition = 1 $ '''
     
