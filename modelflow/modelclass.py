@@ -7980,7 +7980,7 @@ class Solver_Mixin():
         newton_col = [databank.columns.get_loc(c)
                       for c in self.newton_diff_implicit.endovar]
 
-        newton_col_update = [databank.columns.get_loc(c)
+        newton_col_unknown = [databank.columns.get_loc(c)
                       for c in self.newton_diff_implicit.declared_endo_list]
     
         convvar = self.list_names(self.newton_diff_implicit.endovar, conv)
@@ -8020,18 +8020,17 @@ class Solver_Mixin():
                 self.pronew2d(values, outvalues, row, alfa)
                 for iteration in range(max_iterations):
                     with self.timer(f'sim per:{self.periode} it:{iteration}', timeit) as _:
-                        # before = values[row, newton_col]
-                        before_update = values[row, newton_col_update]
+                        before = values[row, newton_col] # eqs
+                        before_unknown = values[row, newton_col_unknown] # Unknown 
                         # Evaluate model
                         self.solvenew2d(values, outvalues, row, alfa)
     
-                        fval = outvalues[row, newton_col]
-                        y_decl = before_update
-                        y_at_rows = y_decl[self.row_to_col_idx]    # shape = (#eq rows)
+                        after = outvalues[row, newton_col]
+                        after_unknown = outvalues[row, newton_col_unknown]
 
                         # --- Compute residuals: mix normalized and implicit
-                        residual = np.where(self.is_residual_row, fval - y_at_rows, fval)
-                        debug_var(fval, y_at_rows, residual)   
+                        residual = np.where(self.is_residual_row, after_unknown - before_unknown, after)
+                        debug_var(before, before_unknown,after,after_unknown,  residual)   
 
                         newton_conv = np.abs(residual).sum()
                         if not silent:
@@ -8055,7 +8054,7 @@ class Solver_Mixin():
                         update = self.newton_solver_implicit(residual)
                         damp = newtonalfa if iteration <= newtonnodamp else 1.0
                         debug_var(residual,update)
-                        values[row, newton_col_update] = before_update - damp * update
+                        values[row, newton_col_unknown] = before_unknown - damp * update
                     df_now = pd.DataFrame(values, index=databank.index,
                                               columns=databank.columns)
                     self.df_iterations=pd.concat([self.df_iterations,df_now])
