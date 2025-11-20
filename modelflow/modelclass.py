@@ -8029,7 +8029,7 @@ class Solver_Mixin():
                         after_unknown = outvalues[row, newton_col_unknown]
 
                         # --- Compute residuals: mix normalized and implicit
-                        residual = np.where(self.is_residual_row, after_unknown - before_unknown, after)
+                        residual = np.where(self.is_residual_row,  after,after_unknown - before_unknown)
                         debug_var(before, before_unknown,after,after_unknown,  residual)   
 
                         newton_conv = np.abs(residual).sum()
