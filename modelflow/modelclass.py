@@ -105,6 +105,7 @@ import modeljupyter as mj
 from modelhelp import cutout, update_var
 from modelnormalize import normal
 from modeldekom import totdif
+from modelhelp import debug_var
 
 
 # functions used in BL language
@@ -7240,6 +7241,8 @@ class Solver_Mixin():
             # breakpoint()
             self.newton_1per_solver = self.newton_1per_diff.get_solve1per(
                 df=databank, periode=[self.current_per[0]])[self.current_per[0]]
+            
+            
 
         newton_col = [databank.columns.get_loc(
             c) for c in self.newton_1per_diff.endovar]
@@ -7896,6 +7899,208 @@ class Solver_Mixin():
         if not silent:
             print(self.name + ' solved  ')
         return outdf
+
+    def newton_implicit(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0,
+                        stats=False, first_test=1, newton_absconv=0.001, max_iterations=20,
+                        conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False,
+                        newton_reset=1, dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5,
+                        chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False,
+                        init=False, newtonalfa=1.0, newtonnodamp=0, forcenum=False,
+                        fairopt={'fair_max_iterations ': 1}, **kwargs):
+        """
+        Unified Newton solver that handles both normalized (y=f(y,x))
+        and implicit residual (y___RES=f(y,x)) equations.
+        """
+    
+        starttimesetup = time.time()
+        fair_max_iterations = {**fairopt, **kwargs}.get('fair_max_iterations ', 1)
+        sol_periode = self.smpl(start, end, databank)
+        self.check_sim_smpl(databank)
+    
+        newdata, databank = self.is_newdata(databank)
+    
+        # Create evaluators
+        self.pronew2d, self.solvenew2d, self.epinew2d = self.makelos(
+            databank, solvename='newton',
+            ljit=ljit, stringjit=stringjit, transpile_reset=transpile_reset,
+            chunk=chunk, newdata=newdata
+        )
+    
+        values = databank.values.copy()
+        outvalues = np.empty_like(values)
+    
+        # --- Setup derivative solver
+        if not hasattr(self, 'newton_diff_implicit') or newton_reset:
+# --- Determine endovar (the full equation list)
+            endovar = (
+                self.coreorder
+                if hasattr(self, 'coreorder') and len(self.coreorder)
+                else self.solveorder
+            )
+            
+            # --- Derive declared endogenous list (the actual unknowns)
+            self.declared_endo_list = [
+                v[:-6] if v.endswith('___RES') else v
+                for v in endovar
+            ]
+            
+            # --- Build helper arrays for implicit/normalized distinction
+            self.is_residual_row = np.array(
+                [v.endswith('___RES') for v in endovar], dtype=bool
+            )
+            self.row_to_col_idx = np.array([
+                self.declared_endo_list.index(v[:-6] if v.endswith('___RES') else v)
+                for v in endovar
+            ], dtype=int)
+            
+            # --- Optional: sanity check
+            if not silent:
+                print(f"Endovar (eqs): {endovar}")
+                print(f"Declared endogenous: {self.declared_endo_list}")
+                print(f"Residual mask: {self.is_residual_row}")
+                print(f"Row→col mapping: {self.row_to_col_idx}")
+            
+            self.newton_diff_implicit = newton_diff(
+                self, forcenum=forcenum, df=databank, endovar=endovar,
+                ljit=lnjit, nchunk=chunk, onlyendocur=True, silent=silent)
+
+
+
+
+    
+            # Build the one-period solver
+            self.newton_solver_implicit = self.newton_diff_implicit.get_solve1per(
+            df=databank,
+            periode=[self.current_per[0]],
+            is_residual_eq=self.is_residual_row
+              )[self.current_per[0]]
+
+    
+    
+        newton_col = [databank.columns.get_loc(c)
+                      for c in self.newton_diff_implicit.endovar]
+
+        newton_col_update = [databank.columns.get_loc(c)
+                      for c in self.newton_diff_implicit.declared_endo_list]
+    
+        convvar = self.list_names(self.newton_diff_implicit.endovar, conv)
+        convplace = [databank.columns.get_loc(c) for c in convvar]
+        endoplace = [databank.columns.get_loc(c)
+                     for c in list(self.endogene)]
+    
+        convergence = True
+        ittotal = 0
+        endtimesetup = time.time()
+        starttime = time.time()
+        self.df_iterations = pd.DataFrame(values, index=databank.index,
+                              columns=databank.columns)
+        if ldumpvar:
+            self.dumplist = []
+            self.dump = self.list_names(self.newton_diff_implicit.endovar, dumpvar)
+            dumpplac = [databank.columns.get_loc(v) for v in self.dump]
+
+        # --- FAIR outer loop (if used)
+        for fairiteration in range(fair_max_iterations):
+            if fair_max_iterations >= 2 and not silent:
+                print(f'Fair-Taylor iteration: {fairiteration}')
+    
+            for self.periode in sol_periode:
+                row = databank.index.get_loc(self.periode)
+    
+                if init:
+                    for c in endoplace:
+                        values[row, c] = values[row-1, c]
+    
+                if ldumpvar:
+                    self.dumplist.append(
+                        [fairiteration, self.periode, 0] + [values[row, p] for p in dumpplac]
+                    )
+    
+                # --- Newton iterations
+                self.pronew2d(values, outvalues, row, alfa)
+                for iteration in range(max_iterations):
+                    with self.timer(f'sim per:{self.periode} it:{iteration}', timeit) as _:
+                        # before = values[row, newton_col]
+                        before_update = values[row, newton_col_update]
+                        # Evaluate model
+                        self.solvenew2d(values, outvalues, row, alfa)
+    
+                        fval = outvalues[row, newton_col]
+                        y_decl = before_update
+                        y_at_rows = y_decl[self.row_to_col_idx]    # shape = (#eq rows)
+
+                        # --- Compute residuals: mix normalized and implicit
+                        residual = np.where(self.is_residual_row, fval - y_at_rows, fval)
+                        debug_var(fval, y_at_rows, residual)   
+
+                        newton_conv = np.abs(residual).sum()
+                        if not silent:
+                            print(
+                                f'\nIteration {iteration:>2} | {self.periode} | Residual sum: {newton_conv:,.6f}'
+                            )
+    
+                        if newton_conv <= newton_absconv:
+                            break
+    
+                        # --- Optional Jacobian refresh for non-linear cases
+                        if iteration != 0 and nonlin and not (iteration % nonlin):
+                            if not silent:
+                                print(f'Updating solver, iteration {iteration}')
+                            df_now = pd.DataFrame(values, index=databank.index,
+                                                  columns=databank.columns)
+                            self.newton_solver_implicit = self.newton_diff_implicit.get_solve1per(
+                                df_now, periode=[self.periode], is_residual_eq=self.is_residual_row
+                                          )[self.periode]
+                        # --- Update step
+                        update = self.newton_solver_implicit(residual)
+                        damp = newtonalfa if iteration <= newtonnodamp else 1.0
+                        debug_var(residual,update)
+                        values[row, newton_col_update] = before_update - damp * update
+                    df_now = pd.DataFrame(values, index=databank.index,
+                                              columns=databank.columns)
+                    self.df_iterations=pd.concat([self.df_iterations,df_now])
+                    ittotal += 1
+                    # breakpoint()         
+    
+                    if ldumpvar:
+                        self.dumplist.append(
+                            [fairiteration, self.periode, iteration + 1] +
+                            [values[row, p] for p in dumpplac]
+                        )
+    
+                # Post-iteration evaluation
+                self.epinew2d(values, values, row, alfa)
+                if not silent:
+                    if newton_conv > newton_absconv:
+                        print(f'{self.periode} not converged in {iteration} iterations')
+                    else:
+                        print(f'{self.periode} solved in {iteration} iterations')
+    
+        # --- Optional dumping of iterations
+        if ldumpvar:
+            self.dumpdf = pd.DataFrame(self.dumplist)
+            self.dumpdf.columns = ['fair', 'per', 'iteration'] + self.dump
+            if fair_max_iterations <= 2:
+                self.dumpdf.drop('fair', axis=1, inplace=True)
+    
+        # --- Build output dataframe
+        outdf = pd.DataFrame(values, index=databank.index, columns=databank.columns)
+    
+        # --- Statistics
+        if stats:
+            numberfloats = self.calculate_freq[-1][1] * ittotal
+            endtime = time.time()
+            self.simtime = endtime - starttime
+            self.setuptime = endtimesetup - starttimesetup
+            print(f'Setup time (s): {self.setuptime:>15,.2f}')
+            print(f'Total iterations: {ittotal:>15,}')
+            print(f'Simulation time (s): {self.simtime:>15,.2f}')
+    
+        if not silent:
+            print(self.name + ' solved (newton_implicit)')
+    
+        return outdf
+        
 
     def res(self, databank, start='', end='', debug=False, timeit=False, silent=False,
             chunk=None, ljit=0, stringjit=False, transpile_reset=False, alfa=1, stats=0, samedata=False, **kwargs):

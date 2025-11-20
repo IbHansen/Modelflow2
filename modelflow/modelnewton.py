@@ -146,7 +146,7 @@ class newton_diff():
 
         """
         self.df          = df if type(df) == pd.DataFrame else mmodel.lastdf 
-        self.endovar     = sorted(mmodel.endogene if endovar == None else endovar)
+        self.endovar     = sorted(mmodel.endogene) if endovar == None else endovar
         self.endoandexo = endoandexo
         self.mmodel      = mmodel
         self.onlyendocur = onlyendocur
@@ -618,6 +618,19 @@ class newton_diff():
         self.jacsparsedic = self.get_diff_mat_1per(df=df,periode=periode)
         self.solvelusparsedic = {p: sp.sparse.linalg.factorized(jac) for p,jac in self.jacsparsedic.items()}
         return self.solvelusparsedic
+    
+    
+    def get_solve1per(self,df=None,periode=None,is_residual_eq=None):
+#        if update or not hasattr(self,'stacked'):
+        # breakpoint()
+        if is_residual_eq is not None :
+           diag_mask = (~is_residual_eq).astype(float) 
+           temp = self.get_diff_mat_1per(df=df,periode=periode)
+           self.jacsparsedic  = { p: jac - diag_mask for p,jac in temp.items()  }
+        else: 
+            self.jacsparsedic = self.get_diff_mat_1per(df=df,periode=periode)
+        self.solvelusparsedic = {p: sp.sparse.linalg.factorized(jac) for p,jac in self.jacsparsedic.items()}
+        return self.solvelusparsedic
 
      
     def get_solvestacked(self,df=''):
@@ -716,6 +729,87 @@ class newton_diff():
                         outdic[date]['exo'][f'lag={lag}'] = this 
                          
         return outdic
+
+    def get_mixed_structure(self):
+        """
+        Returns tuple:
+          - is_residual_row: bool array (len = n_rows) where rows ending with '___RES' are True
+          - row_to_col_idx: int array mapping each row’s base variable to declared_endo_list index
+          - col_indexer: dict name->col index for declared_endo_list
+        """
+        row_names = np.array(self.endovar, dtype=str)
+        is_residual_row = np.char.endswith(row_names, '___RES')
+    
+        def base_name(r):
+            return r[:-6] if r.endswith('___RES') else r
+    
+        declared = list(self.declared_endo_list)
+        col_pos = {v: i for i, v in enumerate(declared)}
+    
+        row_to_col_idx = np.array([col_pos.get(base_name(r), -1) for r in row_names], dtype=int)
+        if (row_to_col_idx < 0).any():
+            bad = [row_names[i] for i in np.where(row_to_col_idx < 0)[0]]
+            raise Exception(f'Row(s) not mappable to declared endo: {bad}')
+    
+        return is_residual_row, row_to_col_idx, col_pos
+    
+    
+    def get_diff_mat_1per_mixed(self, periode=None, df=None):
+        """
+        Build J for one period:
+          rows = all equations (normalized + ___RES)
+          cols = declared_endo_list (true unknowns)
+        Subtract -I only on normalized rows.
+        """
+        dmelt = self.get_diff_melted(periode=periode, df=df).copy()
+        dmelt = dmelt.eval('keep = (lag == 0)').query('keep')
+    
+        n_rows = len(self.endovar)
+        n_cols = len(self.declared_endo_list)
+        col_pos = {v: i for i, v in enumerate(self.declared_endo_list)}
+    
+        def base_name(v):
+            return v[:-6] if v.endswith('___RES') else v
+    
+        dmelt = dmelt.assign(
+            row=lambda x: x['var'],
+            col=lambda x: x['pvar'].apply(lambda p: col_pos.get(base_name(p), -1))
+        )
+        if (dmelt['col'] < 0).any():
+            bad = dmelt.loc[dmelt['col'] < 0, 'pvar'].unique().tolist()
+            raise Exception(f'Unmapped derivative columns in mixed J: {bad}')
+    
+        values = dmelt['value'].astype(float).values
+        rows = dmelt['row'].values
+        cols = dmelt['col'].values
+        raw = sp.sparse.csc_matrix((values, (rows, cols)), shape=(n_rows, n_cols))
+    
+        is_residual_row, row_to_col_idx, _ = self.get_mixed_structure()
+        diag_rows = np.where(~is_residual_row)[0]
+        diag_cols = row_to_col_idx[~is_residual_row]
+        correction = sp.sparse.coo_matrix(
+            (np.ones_like(diag_rows, dtype=float), (diag_rows, diag_cols)),
+            shape=(n_rows, n_cols)
+        ).tocsc()
+    
+        mixed = raw - correction
+        per = self.mmodel.current_per if periode is None else periode
+        if hasattr(per, '__iter__') and len(per):
+            key = per[0]
+        else:
+            key = per
+        return {key: mixed}
+    
+    
+    def get_solve1per_mixed(self, df=None, periode=None):
+        """Factorized solver for mixed Jacobian (rows=all eqs, cols=declared endos)."""
+        self.jacsparsedic_mixed = self.get_diff_mat_1per_mixed(df=df, periode=periode)
+        self.solvelusparsedic_mixed = {
+            p: sp.sparse.linalg.factorized(jac) for p, jac in self.jacsparsedic_mixed.items()
+        }
+        return self.solvelusparsedic_mixed
+    
+
 
     def get_diff_values_all(self,periode=None,df=None,asdf=False):
         ''' stuff the values of derivatives into nested dic '''
@@ -1349,7 +1443,7 @@ Returns
         plt.close('all')
         plt.ioff()
     
-        _per_first = periode if periode is not None else self.model.current_per
+        _per_first = periode if periode is not None else self.mmodel.current_per
     
         if hasattr(_per_first, '__iter__'):
             _per = _per_first

@@ -1141,20 +1141,26 @@ def un_normalize_expression(frml) :
     else the lhs_varriable is used in <endo=> 
     ''' 
     frml_name,frml_index,frml_rest = findindex_gams(frml.upper())
-    this_endo = kw_frml_name(frml_name.upper(), 'ENDO')
-    # breakpoint()
-    lhs,rhs  = frml_rest.split('=')
-    if this_endo: 
-        lhs_var = this_endo.strip()
-        frml_name_out = frml_name
-    else:
-        lhs_var = lhs.strip()
-        # frml_name_out = f'<endo={lhs_var}>' if frml_name == '<>' else f'{frml_name[:-1]},endo={lhs_var}>'
-        frml_name_out = frml_name[:]
-    # print(this_endo)
-    new_rest = f'{lhs_var}___res = ( {rhs.strip()} ) - ( {lhs.strip()} )'
-    return f'{frml_name_out} {frml_index if len(frml_index) else ""} {new_rest}'
- 
+    
+    if kw_frml_name(frml_name.upper(), 'IMPLICIT'): 
+        
+        this_endo = kw_frml_name(frml_name.upper(), 'ENDO')
+        # breakpoint()
+        lhs,rhs  = frml_rest.split('=')
+        if this_endo: 
+            lhs_var = this_endo.strip()
+            frml_name_out = frml_name
+        else:
+            lhs_var = lhs.strip()
+            # frml_name_out = f'<endo={lhs_var}>' if frml_name == '<>' else f'{frml_name[:-1]},endo={lhs_var}>'
+            frml_name_out = frml_name[:]
+        # print(this_endo)
+        new_rest = f'{lhs_var}___res = ( {rhs.strip()} ) - ( {lhs.strip()} )'
+        res =  f'{frml_name_out} {frml_index if len(frml_index) else ""} {new_rest}'
+        return res 
+        
+    else: 
+         return frml
 
 def un_normalize_model(in_equations,funks=[]):
     ''' un normalize a model '''
