@@ -330,6 +330,10 @@ class BaseModel():
         # breakpoint()
         self.normalized = not all((v.endswith('___RES')
                                   for v in self.endogene))
+        self.hybrid = self.normalized and  any((v.endswith('___RES')
+                                  for v in self.endogene))
+
+
         self.endogene_true = self.endogene if self.normalized else {
             v for v in self.exogene if v+'___RES' in self.endogene}
 
@@ -8030,7 +8034,7 @@ class Solver_Mixin():
 
                         # --- Compute residuals: mix normalized and implicit
                         residual = np.where(self.is_residual_row,  after,after_unknown - before_unknown)
-                        debug_var(before, before_unknown,after,after_unknown,  residual)   
+                        # debug_var(before, before_unknown,after,after_unknown,  residual)   
 
                         newton_conv = np.abs(residual).sum()
                         if not silent:
@@ -8053,11 +8057,14 @@ class Solver_Mixin():
                         # --- Update step
                         update = self.newton_solver_implicit(residual)
                         damp = newtonalfa if iteration <= newtonnodamp else 1.0
-                        debug_var(residual,update)
+                        # df0 =self.newton_diff_implicit.get_diff_df_1per()[1]
+                        
+                        # debug_var(residual,update, df0, df,inv_df,inv_inv_df)
+                        # debug_var(residual,update)
                         values[row, newton_col_unknown] = before_unknown - damp * update
-                    df_now = pd.DataFrame(values, index=databank.index,
-                                              columns=databank.columns)
-                    self.df_iterations=pd.concat([self.df_iterations,df_now])
+                        df_now = pd.DataFrame(values, index=databank.index,
+                                                  columns=databank.columns)
+                        self.df_iterations=pd.concat([self.df_iterations,df_now])
                     ittotal += 1
                     # breakpoint()         
     

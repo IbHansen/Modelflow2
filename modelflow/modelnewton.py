@@ -508,7 +508,10 @@ class newton_diff():
         indicies = (dmelt.row,dmelt.col)
 
         raw = self.stacked = sp.sparse.csc_matrix((values,indicies ),shape=(size, size))
-        if self.mmodel.normalized:
+        if self.mmodel.hybrid:
+            this = raw
+ 
+        elif self.mmodel.normalized:
             this = raw - sp.sparse.identity(size,format='csc')
         else:
             this = raw
@@ -587,7 +590,10 @@ class newton_diff():
             raw = sp.sparse.csc_matrix((values,indicies ), shape=(self.nvar, self.nvar))
             # breakpoint()
 #csc_matrix((data, (row_ind, col_ind)), [shape=(M, N)]) 
-            if self.mmodel.normalized:
+            if self.mmodel.hybrid:
+                  this = raw
+       
+            elif self.mmodel.normalized:
                 this = raw -sp.sparse.identity(self.nvar,format='csc')
             else:
                 this = raw
@@ -624,7 +630,7 @@ class newton_diff():
 #        if update or not hasattr(self,'stacked'):
         # breakpoint()
         if is_residual_eq is not None :
-           diag_mask = (~is_residual_eq).astype(float) 
+           diag_mask = sp.sparse.diags((~is_residual_eq).astype(float))
            temp = self.get_diff_mat_1per(df=df,periode=periode)
            self.jacsparsedic  = { p: jac - diag_mask for p,jac in temp.items()  }
         else: 
