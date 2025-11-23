@@ -508,10 +508,8 @@ class newton_diff():
         indicies = (dmelt.row,dmelt.col)
 
         raw = self.stacked = sp.sparse.csc_matrix((values,indicies ),shape=(size, size))
-        if self.mmodel.hybrid:
-            this = raw
  
-        elif self.mmodel.normalized:
+        if self.mmodel.normalized:
             this = raw - sp.sparse.identity(size,format='csc')
         else:
             this = raw
@@ -590,10 +588,8 @@ class newton_diff():
             raw = sp.sparse.csc_matrix((values,indicies ), shape=(self.nvar, self.nvar))
             # breakpoint()
 #csc_matrix((data, (row_ind, col_ind)), [shape=(M, N)]) 
-            if self.mmodel.hybrid:
-                  this = raw
        
-            elif self.mmodel.normalized:
+            if self.mmodel.normalized:
                 this = raw -sp.sparse.identity(self.nvar,format='csc')
             else:
                 this = raw

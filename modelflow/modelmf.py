@@ -18,7 +18,7 @@ from modelclass import model
 import modelvis as mv
 
 
-if not hasattr(pd.DataFrame,'mf') or 1:
+if not hasattr(pd.DataFrame,'mf'):
     @pd.api.extensions.register_dataframe_accessor("mf")
     class mf():
         '''A class to extend Pandas Dataframes with ModelFlow functionalities
