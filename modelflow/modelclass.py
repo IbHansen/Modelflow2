@@ -7905,200 +7905,6 @@ class Solver_Mixin():
             print(self.name + ' solved  ')
         return outdf
 
-    def newton_implicit(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0,
-                        stats=False, first_test=1, newton_absconv=0.001, max_iterations=20,
-                        conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False,
-                        newton_reset=1, dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5,
-                        chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False,
-                        init=False, newtonalfa=1.0, newtonnodamp=0, forcenum=False,
-                        fairopt={'fair_max_iterations ': 1}, **kwargs):
-        """
-        Unified Newton solver that handles both normalized (y=f(y,x))
-        and implicit residual (y___RES=f(y,x)) equations.
-        """
-    
-        starttimesetup = time.time()
-        fair_max_iterations = {**fairopt, **kwargs}.get('fair_max_iterations ', 1)
-        sol_periode = self.smpl(start, end, databank)
-        self.check_sim_smpl(databank)
-    
-        newdata, databank = self.is_newdata(databank)
-    
-        # Create evaluators
-        self.pronew2d, self.solvenew2d, self.epinew2d = self.makelos(
-            databank, solvename='newton',
-            ljit=ljit, stringjit=stringjit, transpile_reset=transpile_reset,
-            chunk=chunk, newdata=newdata
-        )
-    
-        values = databank.values.copy()
-        outvalues = np.empty_like(values)
-    
-        # --- Setup derivative solver
-        if not hasattr(self, 'newton_diff_implicit') or newton_reset:
-# --- Determine endovar (the full equation list)
-            endovar = (
-                self.coreorder
-                if hasattr(self, 'coreorder') and len(self.coreorder)
-                else self.solveorder
-            )
-            
-            # --- Derive declared endogenous list (the actual unknowns)
-            self.declared_endo_list = [
-                v[:-6] if v.endswith('___RES') else v
-                for v in endovar
-            ]
-            
-            # --- Build helper arrays for implicit/normalized distinction
-            self.is_residual_eq = np.array(
-                [v.endswith('___RES') for v in endovar], dtype=bool
-            )
-
-            
-            # --- Optional: sanity check
-            if not silent:
-                print(f"Endovar (eqs): {endovar}")
-                print(f"Declared endogenous: {self.declared_endo_list}")
-                print(f"Residual mask: {self.is_residual_eq}")
-            
-            self.newton_diff_implicit = newton_diff(
-                self, forcenum=forcenum, df=databank, endovar=endovar,
-                ljit=lnjit, nchunk=chunk, onlyendocur=True, silent=silent)
-
-
-
-
-    
-            # Build the one-period solver
-            self.newton_solver_implicit = self.newton_diff_implicit.get_solve1per(
-            df=databank,
-            periode=[self.current_per[0]],
-            is_residual_eq=self.is_residual_eq
-              )[self.current_per[0]]
-
-    
-    
-        newton_col = [databank.columns.get_loc(c)
-                      for c in self.newton_diff_implicit.endovar]
-
-        newton_col_unknown = [databank.columns.get_loc(c)
-                      for c in self.newton_diff_implicit.declared_endo_list]
-    
-        convvar = self.list_names(self.newton_diff_implicit.endovar, conv)
-        convplace = [databank.columns.get_loc(c) for c in convvar]
-        endoplace = [databank.columns.get_loc(c)
-                     for c in list(self.endogene)]
-        
-        convergence = True
-        ittotal = 0
-        endtimesetup = time.time()
-        starttime = time.time()
-        if ldumpvar:
-            self.dumplist = []
-            self.dump = self.list_names(self.newton_diff_implicit.endovar, dumpvar)
-            dumpplac = [databank.columns.get_loc(v) for v in self.dump]
-
-        # --- FAIR outer loop (if used)
-        for fairiteration in range(fair_max_iterations):
-            if fair_max_iterations >= 2 and not silent:
-                print(f'Fair-Taylor iteration: {fairiteration}')
-    
-            for self.periode in sol_periode:
-                row = databank.index.get_loc(self.periode)
-    
-                if init:
-                    for c in endoplace:
-                        values[row, c] = values[row-1, c]
-    
-                if ldumpvar:
-                    self.dumplist.append(
-                        [fairiteration, self.periode, 0] + [values[row, p] for p in dumpplac]
-                    )
-    
-                # --- Newton iterations
-                self.pronew2d(values, values, row, alfa)
-                for iteration in range(max_iterations):
-                    with self.timer(f'sim per:{self.periode} it:{iteration}', timeit) as _:
-                        before = values[row, newton_col] # eqs
-                        before_unknown = values[row, newton_col_unknown] # Unknown 
-                        # Evaluate model
-                        self.solvenew2d(values, outvalues, row, alfa)
-    
-                        after = outvalues[row, newton_col]
-                        after_unknown = outvalues[row, newton_col_unknown]
-
-                        # --- Compute residuals: mix normalized and implicit
-                        residual = np.where(self.is_residual_eq,  after,after_unknown - before_unknown)
-                        # debug_var(before, before_unknown,after,after_unknown,  residual)   
-
-                        newton_conv = np.abs(residual).sum()
-                        if not silent:
-                            print(
-                                f'\nIteration {iteration:>2} | {self.periode} | Residual sum: {newton_conv:,.6f}'
-                            )
-    
-                        if newton_conv <= newton_absconv:
-                            break
-    
-                        # --- Optional Jacobian refresh for non-linear cases
-                        if iteration != 0 and nonlin and not (iteration % nonlin):
-                            if not silent:
-                                print(f'Updating solver, iteration {iteration}')
-                            df_now = pd.DataFrame(values, index=databank.index,
-                                                  columns=databank.columns)
-                            self.newton_solver_implicit = self.newton_diff_implicit.get_solve1per(
-                                df_now, periode=[self.periode], is_residual_eq=self.is_residual_eq
-                                          )[self.periode]
-                        # --- Update step
-                        update = self.newton_solver_implicit(residual)
-                        damp = newtonalfa if iteration <= newtonnodamp else 1.0
-                        # df0 =self.newton_diff_implicit.get_diff_df_1per()[1]
-                        
-                        # debug_var(residual,update, df0, df,inv_df,inv_inv_df)
-                        # debug_var(residual,update)
-                        values[row, newton_col_unknown] = before_unknown - damp * update
-
-                    ittotal += 1
-                    # breakpoint()         
-    
-                    if ldumpvar:
-                        self.dumplist.append(
-                            [fairiteration, self.periode, iteration + 1] +
-                            [values[row, p] for p in dumpplac]
-                        )
-    
-                # Post-iteration evaluation
-                self.epinew2d(values, values, row, alfa)
-                if not silent:
-                    if newton_conv > newton_absconv:
-                        print(f'{self.periode} not converged in {iteration} iterations')
-                    else:
-                        print(f'{self.periode} solved in {iteration} iterations')
-    
-        # --- Optional dumping of iterations
-        if ldumpvar:
-            self.dumpdf = pd.DataFrame(self.dumplist)
-            self.dumpdf.columns = ['fair', 'per', 'iteration'] + self.dump
-            if fair_max_iterations <= 2:
-                self.dumpdf.drop('fair', axis=1, inplace=True)
-    
-        # --- Build output dataframe
-        outdf = pd.DataFrame(values, index=databank.index, columns=databank.columns)
-    
-        # --- Statistics
-        if stats:
-            numberfloats = self.calculate_freq[-1][1] * ittotal
-            endtime = time.time()
-            self.simtime = endtime - starttime
-            self.setuptime = endtimesetup - starttimesetup
-            print(f'Setup time (s): {self.setuptime:>15,.2f}')
-            print(f'Total iterations: {ittotal:>15,}')
-            print(f'Simulation time (s): {self.simtime:>15,.2f}')
-    
-        if not silent:
-            print(self.name + ' solved (newton_implicit)')
-    
-        return outdf
         
     
     def newton_implicit(
@@ -8129,10 +7935,7 @@ class Solver_Mixin():
           y_new  = y_old - α * update
     
         Extra features (via **kwargs):
-          - newton_linesearch : bool  (default False)
-          - newton_ls_max     : int   (default 8)
-          - newton_ls_beta    : float (default 0.5)
-          - newton_ls_c       : float (default 1e-4)
+
           - debug_newton      : bool  (default False)
           - debug_top         : int   (default 5)
         """
@@ -8225,7 +8028,10 @@ class Solver_Mixin():
                 periode=[first_per],
                 is_residual_eq=self.is_residual_eq
             )
-            self.newton_solver_implicit = solver_dict[first_per]
+            self.newton_solver_implicit_first  = solver_dict[first_per]
+
+            
+        self.newton_solver_implicit = self.newton_solver_implicit_first
     
         # --- Column locations (indices in values) -------------------------------
         col_index = databank.columns.get_loc
@@ -8322,7 +8128,7 @@ class Solver_Mixin():
                         if not silent:
                             print(
                                 f'Iteration {iteration:>2} | {self.periode} | '
-                                f'max residual (before step): {newton_conv:,.6g}'
+                                f'max residual (before step): {newton_conv:>25,.6f}'
                             )
     
                         # Debug: show worst offending equations
@@ -8331,8 +8137,8 @@ class Solver_Mixin():
                             # print('  Worst residuals:',worst_idx)
                             for i in worst_idx:
                                 print(
-                                    f'{eq_names[i]:<25} '
-                                    f'res={residual[i]: .6g}'
+                                    f'{eq_names[i]:<25}               '
+                                    f'residual: {residual[i]:>25,.6f}'
                                 )
     
                         # Convergence test
@@ -8371,77 +8177,10 @@ class Solver_Mixin():
                         else:
                             base_damp = 1.0
     
-                        # 4) Optional line search on step length
-                        if newton_linesearch:
-                            alpha = base_damp
-                            best_alpha = None
-                            best_conv = None
-                            first_step_y = y_old - base_damp * update
-    
-                            if debug_newton and not silent:
-                                print(
-                                    f'  Line search start: '
-                                    f'base_damp={base_damp}, '
-                                    f'ls_max={ls_max}'
-                                )
-    
-                            # We keep y_old as reference; try shrinking alpha
-                            for ls_it in range(ls_max):
-                                trial_y = y_old - alpha * update
-                                # apply trial step
-                                values[row, newton_col_unknown] = trial_y
-                                # evaluate at trial point
-                                self.solvenew2d(values, outvalues, row, alfa)
-    
-                                trial_eq = outvalues[row, newton_col]
-                                trial_y_imp = outvalues[row, newton_col_unknown]
-    
-                                trial_residual = trial_eq.copy()
-                                trial_residual[~self.is_residual_eq] = (
-                                    trial_y_imp[~self.is_residual_eq] -
-                                    trial_y[~self.is_residual_eq]
-                                )
-                                trial_conv = np.max(np.abs(trial_residual))
-    
-                                if debug_newton and not silent:
-                                    print(
-                                        f'    LS it {ls_it}: α={alpha: .3g}, '
-                                        f'max_res={trial_conv: .6g}'
-                                    )
-    
-                                # Simple Armijo-like condition: improvement
-                                if trial_conv < newton_conv * (1.0 - ls_c * alpha) \
-                                   or trial_conv < newton_conv:
-                                    best_alpha = alpha
-                                    best_conv = trial_conv
-                                    # leave values with trial_y
-                                    if debug_newton and not silent:
-                                        print(
-                                            f'    -> accept α={alpha: .3g}, '
-                                            f'new max_res={trial_conv: .6g}'
-                                        )
-                                    break
-    
-                                # shrink α
-                                alpha *= ls_beta
-    
-                            if best_alpha is None:
-                                # No acceptable α found: use base_damp step
-                                values[row, newton_col_unknown] = first_step_y
-                                if debug_newton and not silent:
-                                    print(
-                                        '    -> line search failed, '
-                                        'using base step'
-                                    )
-                            else:
-                                # best step already applied in values[row,*]
-                                newton_conv = best_conv
-    
-                        else:
-                            # No line search: simple damped Newton step
-                            values[row, newton_col_unknown] = (
-                                y_old - base_damp * update
-                            )
+
+                        values[row, newton_col_unknown] = (
+                            y_old - base_damp * update
+                        )
     
                         ittotal += 1
     
@@ -8452,34 +8191,6 @@ class Solver_Mixin():
                                 [values[row, p] for p in dumpplac]
                             )
     
-                        # Optionally, evaluate at new y just to show post-step residual
-                        # if not silent or debug_newton:
-                        #     self.solvenew2d(values, outvalues, row, alfa)
-                        #     eq_new = outvalues[row, newton_col]
-                        #     y_new = values[row, newton_col_unknown]
-                        #     y_new_imp = outvalues[row, newton_col_unknown]
-    
-                        #     res_new = eq_new.copy()
-                        #     res_new[~self.is_residual_eq] = (
-                        #         y_new_imp[~self.is_residual_eq] -
-                        #         y_new[~self.is_residual_eq]
-                        #     )
-                        #     conv_new = np.max(np.abs(res_new))
-    
-                        #     if not silent:
-                        #         print(
-                        #             f'Iteration {iteration:>2} | {self.periode} | '
-                        #             f'max residual (after step): {newton_conv:,.6g}'
-                        #         )
-
-                        #     if debug_newton and not silent:
-                        #         worst_idx_new = np.argsort(-np.abs(res_new))[:debug_top]
-                        #         print('  Worst residuals after step:')
-                        #         for i in worst_idx_new:
-                        #             print(
-                        #                 f'    {eq_names[i]:<25} '
-                        #                 f'res={res_new[i]: .6g}'
-                        #             )
     
                 # --------------------------------------------------------------
                 # Post-iteration evaluation (recursive "epi" block)
