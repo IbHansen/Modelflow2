@@ -8105,7 +8105,7 @@ class Solver_Mixin():
             self, databank, start='', end='', silent=1, samedata=0, alfa=1.0,
             stats=False, first_test=1, newton_absconv=0.001, max_iterations=20,
             conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False,
-            newton_reset=1, dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5,
+            newton_reset=False, dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5,
             chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False,
             init=False, newtonalfa=1.0, newtonnodamp=0, forcenum=False,
             fairopt={'fair_max_iterations ': 1}, **kwargs):
@@ -8201,9 +8201,10 @@ class Solver_Mixin():
             )
     
             if not silent:
-                print(f"Endovar (equations): {endovar}")
-                print(f"Declared endogenous (unknowns): {self.declared_endo_list}")
-                print(f"Residual mask: {self.is_residual_eq}")
+                ...
+                # print(f"Endovar (equations): {endovar}")
+                # print(f"Declared endogenous (unknowns): {self.declared_endo_list}")
+                # print(f"Residual mask: {self.is_residual_eq}")
     
             # Build differentiation object (symbolic / numeric derivatives)
             self.newton_diff_implicit = newton_diff(
@@ -8320,17 +8321,17 @@ class Solver_Mixin():
     
                         if not silent:
                             print(
-                                f'\nIteration {iteration:>2} | {self.periode} | '
+                                f'Iteration {iteration:>2} | {self.periode} | '
                                 f'max residual (before step): {newton_conv:,.6g}'
                             )
     
                         # Debug: show worst offending equations
                         if debug_newton and not silent:
                             worst_idx = np.argsort(-np.abs(residual))[:debug_top]
-                            print('  Worst residuals:')
+                            # print('  Worst residuals:',worst_idx)
                             for i in worst_idx:
                                 print(
-                                    f'    {eq_names[i]:<25} '
+                                    f'{eq_names[i]:<25} '
                                     f'res={residual[i]: .6g}'
                                 )
     
@@ -8452,31 +8453,33 @@ class Solver_Mixin():
                             )
     
                         # Optionally, evaluate at new y just to show post-step residual
-                        if not silent or debug_newton:
-                            self.solvenew2d(values, outvalues, row, alfa)
-                            eq_new = outvalues[row, newton_col]
-                            y_new = values[row, newton_col_unknown]
-                            y_new_imp = outvalues[row, newton_col_unknown]
+                        # if not silent or debug_newton:
+                        #     self.solvenew2d(values, outvalues, row, alfa)
+                        #     eq_new = outvalues[row, newton_col]
+                        #     y_new = values[row, newton_col_unknown]
+                        #     y_new_imp = outvalues[row, newton_col_unknown]
     
-                            res_new = eq_new.copy()
-                            res_new[~self.is_residual_eq] = (
-                                y_new_imp[~self.is_residual_eq] -
-                                y_new[~self.is_residual_eq]
-                            )
-                            conv_new = np.max(np.abs(res_new))
+                        #     res_new = eq_new.copy()
+                        #     res_new[~self.is_residual_eq] = (
+                        #         y_new_imp[~self.is_residual_eq] -
+                        #         y_new[~self.is_residual_eq]
+                        #     )
+                        #     conv_new = np.max(np.abs(res_new))
     
-                            if not silent:
-                                print(
-                                    f'  max residual (after step): {conv_new:,.6g}'
-                                )
-                            if debug_newton and not silent:
-                                worst_idx_new = np.argsort(-np.abs(res_new))[:debug_top]
-                                print('  Worst residuals after step:')
-                                for i in worst_idx_new:
-                                    print(
-                                        f'    {eq_names[i]:<25} '
-                                        f'res={res_new[i]: .6g}'
-                                    )
+                        #     if not silent:
+                        #         print(
+                        #             f'Iteration {iteration:>2} | {self.periode} | '
+                        #             f'max residual (after step): {newton_conv:,.6g}'
+                        #         )
+
+                        #     if debug_newton and not silent:
+                        #         worst_idx_new = np.argsort(-np.abs(res_new))[:debug_top]
+                        #         print('  Worst residuals after step:')
+                        #         for i in worst_idx_new:
+                        #             print(
+                        #                 f'    {eq_names[i]:<25} '
+                        #                 f'res={res_new[i]: .6g}'
+                        #             )
     
                 # --------------------------------------------------------------
                 # Post-iteration evaluation (recursive "epi" block)

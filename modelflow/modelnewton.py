@@ -625,7 +625,7 @@ class newton_diff():
     def get_solve1per(self,df=None,periode=None,is_residual_eq=None):
 #        if update or not hasattr(self,'stacked'):
         # breakpoint()
-        if is_residual_eq is not None :
+        if is_residual_eq is not None and not self.mmodel.normalized :
            diag_mask = sp.sparse.diags((~is_residual_eq).astype(float))
            temp = self.get_diff_mat_1per(df=df,periode=periode)
            self.jacsparsedic  = { p: jac - diag_mask for p,jac in temp.items()  }
