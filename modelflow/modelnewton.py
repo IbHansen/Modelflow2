@@ -635,9 +635,15 @@ class newton_diff():
         return self.solvelusparsedic
 
      
-    def get_solvestacked(self,df=''):
+    def get_solvestacked(self,df='',is_residual_eq=None):
 #        if update or not hasattr(self,'stacked'):
-        self.stacked = self.get_diff_mat_tot(df=df)
+    
+        # breakpoint()     
+        if is_residual_eq is not None and not self.mmodel.normalized :
+           diag_mask = sp.sparse.diags((~is_residual_eq).astype(float))
+           self.stacked =  self.get_diff_mat_tot(df=df) - diag_mask 
+        else: 
+            self.stacked = self.get_diff_mat_tot(df=df)
         self.solvestacked = sp.sparse.linalg.factorized(self.stacked)
         return self.solvestacked
     
