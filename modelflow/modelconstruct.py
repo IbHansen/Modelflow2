@@ -273,6 +273,47 @@ def extract_model_from_markdown(md_text: str) -> str:
     ).strip()
 
 
+def extract_model_from_markdown(md_text: str) -> str:
+    """
+    Extract model lines from Markdown.
+
+    - Lines starting with '>' start a new statement.
+    - Lines starting with '>>' are continuation lines and are appended
+      to the previous model line with a space.
+    """
+    lines = md_text.splitlines()
+    model_lines = []
+    current = ""
+
+    for line in lines:
+        stripped = line.lstrip()
+
+        # Continuation: starts with ">>"
+        if stripped.startswith(">>"):
+            part = stripped[2:].lstrip()
+            current += " " + part
+            continue
+
+        # New model line: starts with ">"
+        if stripped.startswith(">"):
+            # flush previous
+            if current.strip():
+                model_lines.append(current.strip())
+            current = stripped[1:].lstrip()
+            continue
+
+        # Non-model line: flush if needed
+        if current.strip():
+            model_lines.append(current.strip())
+            current = ""
+
+    # Final flush
+    if current.strip():
+        model_lines.append(current.strip())
+
+    return "\n".join(model_lines)
+
+
 def apply_replacements(formulas: str, replacements: Union[tuple[str, str], list[tuple[str, str]]]) -> str:
     """
     Apply one or more string replacements to a formula string.

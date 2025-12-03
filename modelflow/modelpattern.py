@@ -252,8 +252,9 @@ def list_extract(equations,silent=True):
                 this_dict[first_sublist_name+'_END'] =(['0']*  (len(first_sublist)-1))+['1']    
                 this_dict[first_sublist_name+'_NOEND'] =(['1']*(len(first_sublist)-1))+['0']    
                 this_dict[first_sublist_name+'_START'] =['1'] +(['0']*(len(first_sublist)-1))   
-                this_dict[first_sublist_name+'_NOSTART'] =['0'] +(['1']*(len(first_sublist)-1))   
-                this_dict[first_sublist_name+'_MIDDLE'] =['0'] + (['1']*(len(first_sublist)-2))+['0']    
+                this_dict[first_sublist_name+'_NOSTART'] =['0'] +(['1']*(len(first_sublist)-1))  
+                if len(first_sublist)>=3:
+                    this_dict[first_sublist_name+'_MIDDLE'] =['0'] + (['1']*(len(first_sublist)-2))+['0']    
                 this_dict[first_sublist_name+'_BEFORE'] =['0'] + first_sublist[:-1] 
                 this_dict[first_sublist_name+'_AFTER'] =first_sublist[1:] + ['0']     
 
