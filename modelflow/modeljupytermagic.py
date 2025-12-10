@@ -25,6 +25,7 @@ from modelclass import model
 from modelmanipulation import explode
 from model_latex_class import a_latex_model
 from modelconstruct import Mexplode, extract_model_from_markdown
+from modelhelp import debug_var
 
 
 def get_options(line,defaultname = 'test'):
@@ -56,7 +57,83 @@ def get_options(line,defaultname = 'test'):
 
 
 try:
-    # this is to 
+    @register_cell_magic
+    def mexplode(line, cell):
+       '''Creates a ModelFlow model from a makrdown document'''
+       name,options = get_options(line)
+       ia = get_ipython()
+
+       # print(f'{options=}')
+       if options.get('segment',False):
+          
+           if f'{name}_dict' not in globals():
+              globals()[f'{name}_dict'] = {}
+              ia.push(f'{name}_dict',interactive=True)
+
+           modelsegment= options.get('segment','rest')
+           globals()[f'{name}_dict'][modelsegment]=cell   
+           
+           if modelsegment.startswith('list'):
+              if options.get('render',True) and not options.get('display',False):
+                  Mexplode(cell).render
+              return  
+           if modelsegment.startswith('text'):
+               display(Markdown(cell))
+               return  
+           
+           # we want this cell plus all list cells to make this small model
+           if options.get('all',False):
+               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
+    
+           else:     
+               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items() 
+                                  if name.startswith('list')])+cell 
+       else:
+           if f'{name}_dict' in globals():
+               temp='\n'
+               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
+           else: 
+               model_text = cell 
+               
+
+       replacements = None
+        
+       if 'replacements' in options:
+            repl_name = options['replacements']
+            replacements = ia.user_ns.get(repl_name, None)
+        
+            if replacements is None:
+                print(f'⚠️ Warning: replacements "{repl_name}" not found in notebook namespace')
+        
+
+       emodel = Mexplode(model_text,replacements=replacements)
+       mmodel  = emodel.mmodel
+   
+       
+       globals()[f'm{name}'] = mmodel
+       globals()[f'e{name}'] = emodel
+       
+       ia.push(f'm{name}',interactive=True)
+       ia.push(f'e{name}',interactive=True)
+       
+       if options.get('render',True) and not options.get('display',False):
+           emodel.render
+       
+       # display(Markdown('## The model'))
+       if options.get('display',False):
+           display(Markdown(cell))
+           try:
+               print(f'Model:{name} is created from these segments:\n'+
+                     f"{temp.join([s for s in globals()[f'{name}_dict'].keys()])} \n")
+           except:
+               ...
+           display(Markdown('## Creating this Template model'))
+           print(mmodel.equations_original)
+           display(Markdown('## And this Business Logic Language  model'))
+           print(mmodel.equations)
+   
+       return
+
 
     @register_cell_magic
     def graphviz(line, cell):
@@ -197,6 +274,9 @@ try:
            print(mmodel.equations)
    
        return
+
+
+
 
 
 

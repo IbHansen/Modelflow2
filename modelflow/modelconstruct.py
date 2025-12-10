@@ -699,7 +699,7 @@ class Mexplode(BaseExplode):
         self.clean_frml_statements = clean_expressions(
                 apply_replacements(extracted_frml,self.replacements)
                 ).strip().upper()
-       # debug_var(extract_model_from_markdown(self.original_statements))
+        # debug_var(extract_model_from_markdown(self.original_statements))
         
         
         self.post_doable = doable_unroll(self.clean_frml_statements ,self.funks)

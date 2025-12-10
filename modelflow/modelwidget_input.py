@@ -27,7 +27,180 @@ Some methods and properties of widgets.
      :reset: A function which resets the input values to the initial values. 
      
 
- 
+========================
+Defining and Using Widgets
+========================
+
+All widgets in this framework are defined using a **recursive list-based
+definition format**. Every widget definition must have the structure:
+
+    ['widgettype', {widget_dictionary}]
+
+The widget dictionary always contains configuration parameters and usually
+a 'content' field. Widgets can be nested to form complex layouts.
+
+------------------------
+Basic Widget Types
+------------------------
+
+1) SLIDER WIDGET ("slide")
+-------------------------
+Creates independent sliders which update variables directly.
+
+Example:
+
+    slidedef = ['slide', {
+        'heading': 'Macroeconomic Shocks',
+        'content': {
+            'Productivity': {
+                'var': 'ALFA',
+                'value': 0.5,
+                'min': 0.0,
+                'max': 1.0,
+                'step': 0.01
+            },
+            'Labor growth': {
+                'var': 'LABOR_GROWTH',
+                'value': 0.01,
+                'min': 0.0,
+                'max': 1.0
+            }
+        }
+    }]
+
+
+2) SUM-CONSTRAINED SLIDER WIDGET ("sumslide")
+---------------------------------------------
+Like "slide", but all sliders must sum to a fixed total (e.g. 100%).
+
+Example:
+
+    sharedef = {
+        '1Y bond':  {'var': 'BOND_1Y',  'value': 20, 'min': 0, 'max': 100, 'step': 5},
+        '5Y bond':  {'var': 'BOND_5Y',  'value': 30, 'min': 0, 'max': 100, 'step': 5},
+        '10Y bond': {'var': 'BOND_10Y', 'value': 50, 'min': 0, 'max': 100, 'step': 5}
+    }
+
+    wsharedef = ['sumslide', {
+        'heading': 'Issuance Policy',
+        'content': sharedef,
+        'maxsum': 100.0
+    }]
+
+
+3) BASE CONTAINER WIDGET ("base")
+---------------------------------
+Stacks multiple widgets vertically.
+
+Example:
+
+    basedef = ['base', {
+        'content': [
+            slidedef,
+            wsharedef
+        ]
+    }]
+
+
+4) TAB CONTAINER WIDGET ("tab")
+-------------------------------
+Creates a tabbed or accordion layout.
+
+Structure of 'content':
+
+    [
+        ['Tab title 1', widgetdef1],
+        ['Tab title 2', widgetdef2],
+        ...
+    ]
+
+Example:
+
+    portdef = ['tab', {
+        'content': [
+            ['Markets',  wratedef],
+            ['Issuance', wsharedef]
+        ],
+        'tab': True   # True = tabs, False = accordion
+    }]
+
+
+------------------------
+Creating and Displaying Widgets
+------------------------
+
+Once a widget definition is created, it is converted into a live widget using:
+
+    wport = make_widget(portdef)
+    display(wport.datawidget)
+
+This will render the full interactive widget interface inside Jupyter.
+
+
+------------------------
+Typical Workflow
+------------------------
+
+1) Build parameter dictionaries from a baseline DataFrame:
+
+    ratedef = {
+        d: {
+            'var': v,
+            'value': float(baseline.at[2026, v]),
+            'min': 0,
+            'max': 10.0,
+            'step': 0.1
+        }
+        for v, d in ratedict.items()
+    }
+
+2) Wrap into a widget definition:
+
+    wratedef = ['sumslide', {
+        'content': ratedef,
+        'maxsum': 100.0,
+        'heading': 'Interest Rate Shock'
+    }]
+
+3) Combine into a tab widget:
+
+    portdef = ['tab', {
+        'content': [
+            ['Markets',  wratedef],
+            ['Issuance', wsharedef]
+        ],
+        'tab': True
+    }]
+
+4) Create and display:
+
+    wport = make_widget(portdef)
+    display(wport.datawidget)
+
+
+------------------------
+Important Structural Rules
+------------------------
+
+- Every widget MUST be defined as:
+  
+      ['widgettype', {widgetdict}]
+
+- 'tab' widgets require:
+
+      ['tab', {'content': [[title, widgetdef], ...], 'tab': True}]
+
+- 'base' widgets require:
+
+      ['base', {'content': [widgetdef, widgetdef, ...]}]
+
+- 'sumslide' widgets require:
+
+      ['sumslide', {'content': dict, 'maxsum': float, 'heading': str}]
+
+If any of these structures are violated, widget creation will fail.
+
+
 
 @author: Ib 
 """
@@ -65,7 +238,7 @@ import yaml
 
 from typing import Tuple
 
-
+from modelhelp import debug_var
 
 
 
@@ -360,7 +533,7 @@ class sumslidewidget(singelwidget):
         ...
         super().__init__(widgetdef)
         self.altname = self.widgetdef .get('altname','Alternative')
-        self.basename = self.widgetdef .get('basename','Baseiline')
+        self.basename = self.widgetdef .get('basename','Baseline')
         self.maxsum = self.widgetdef .get('maxsum',1.0)
        # breakpoint() 
        
@@ -898,7 +1071,6 @@ class keep_plot_widget:
     
     def __post_init__(self):
         from copy import copy 
-        
         minper = self.mmodel.lastdf.index[0]
         maxper = self.mmodel.lastdf.index[-1]
         options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
@@ -958,7 +1130,7 @@ class keep_plot_widget:
         
         with self.mmodel.keepswitch(switch=self.switch,scenarios= '*'):
             gross_keys = list(self.mmodel.keep_solutions.keys())
-       
+            
             scenariobase = Select(options = gross_keys, 
                                   value = gross_keys[0],
                                                description='First scenario',
@@ -1175,6 +1347,7 @@ class keep_plot_widget:
         
         # clear_output()
         with self.mmodel.keepswitch(switch=self.switch,scenarios= self.scenarioselected):
+       
             with self.mmodel.set_smpl(*smpl):
     
                 self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 

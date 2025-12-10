@@ -490,8 +490,11 @@ class BaseModel():
          from copy import deepcopy
          # old_keep_solutions = {k:v.copy() for k,v in self.keep_solutions.items() }
          old_keep_solutions = self.keep_solutions
-         
          if switch or base_last or scenarios in {'base_last'} :
+         # if switch or base_last or (
+         #   isinstance(scenarios, str) and scenarios in {'base_last'}
+         #     ):
+
              basename = self.basename if hasattr(self, 'basename') else 'Baseline solution'
              lastname = self.lastname if hasattr(self, 'lastname') else 'Last solution'
              self.keep_solutions = {basename:self.basedf.copy() , lastname:self.lastdf.copy()}
@@ -685,7 +688,8 @@ class BaseModel():
             databank = insertModelVar(databank, self)
             for i in [j for j in self.allvar.keys() if self.allvar[j]['matrix']]:
                 # Make sure columns with matrixes are of this type
-                databank.loc[:, i] = databank.loc[:, i].astype('O')
+                databank[i] = databank[i].astype(object)
+                # databank.loc[:, i] = databank.loc[:, i].astype('O')
             self.genrcolumns = databank.columns.copy()
             make_los_text = self.outeval(databank)
             self.make_los_text = make_los_text
@@ -9270,6 +9274,8 @@ def join_name_lag(df):
     newdf = df.copy()
     newdf.index = newindex
     return newdf
+
+
 
 
 @contextmanager
