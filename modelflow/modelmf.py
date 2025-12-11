@@ -264,7 +264,6 @@ def mfquery(pat, df):
 
     return df.loc[:, names]
 
-if not hasattr(pd.DataFrame,'mf'):
 
     @pd.api.extensions.register_dataframe_accessor("mfquery")
     class DFQueryAccessor:

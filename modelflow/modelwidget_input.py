@@ -961,6 +961,22 @@ class updatewidget:
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
         self.keep_ui.trigger(None) 
+        # --- FULL REBUILD of keep_plot_widget to force scenario refresh ---
+        self.keep_ui = keep_plot_widget(
+            mmodel=self.mmodel,
+            selectfrom=self.varpat,
+            vline=self.vline,
+            relativ_start=self.relativ_start,
+            short=self.short
+        )
+        
+        self.wtotal.children = [
+            self.datawidget.datawidget,
+            self.wtotal.children[1],   # scenario name + variable selector row
+            self.wtotal.children[2],   # buttons
+            self.keep_ui.datawidget    # NEW plot widget
+        ]
+
         
     def setbasis(self,g):
         self.mmodel.keep_solutions={self.current_experiment:self.mmodel.keep_solutions[self.current_experiment]}
