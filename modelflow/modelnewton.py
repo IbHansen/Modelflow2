@@ -13,6 +13,7 @@ import matplotlib as mpl
 
 import pandas as pd
 from sympy import sympify ,Symbol,Function
+
 from collections import defaultdict, namedtuple
 import itertools
 
@@ -47,7 +48,7 @@ from modelmanipulation import split_frml,udtryk_parse,pastestring,stripstring
 
 from modelhelp import tovarlag, ttimer, insertModelVar   
 import modeljupyter as mj
-
+from modelhelp import debug_var
  
 @dataclass
 class diff_value_base:
@@ -118,10 +119,10 @@ class newton_diff():
     '''
     
     
-    def __init__(self, mmodel, df=None, endovar=None, onlyendocur=False, 
-                 timeit=False, silent=True, forcenum=False, per='', ljit=0, nchunk=None, endoandexo=False):
-        pass
-    # [Methods implementations]
+    # def __init__(self, mmodel, df=None, endovar=None, onlyendocur=False, 
+    #              timeit=False, silent=True, forcenum=False, per='', ljit=0, nchunk=None, endoandexo=False):
+    #     pass
+    # # [Methods implementations]
 
     def __init__(self, mmodel, df = None , endovar = None,onlyendocur=False, 
                  timeit=False, silent = True, forcenum=False,per='',ljit=0,nchunk=None,endoandexo=False):
@@ -247,7 +248,11 @@ class newton_diff():
                     if not self.forcenum:
                         # kat=sympify(rhs[0:-1], md._clash) # we take the the $ out _clash1 makes I is not taken as imiganary 
                         lookat = pastestring(rhs[0:-1], post,onlylags=True,funks= self.mmodel.funks)
-                        kat=sympify(lookat,clash) # we take the the $ out _clash1 makes I is not taken as imiganary 
+                        lookat=re.sub(r'LOG\(','log(',lookat) # sympy uses lover case for log and exp 
+                        lookat=re.sub(r'EXP\(','exp(',lookat)
+                        
+                        kat=sympify(lookat,clash) # we take the the $ out _clash1 makes I is not taken as imiganary
+                        debug_var(lookat)
                 except Exception as inst:
                     # breakpoint()
                     print(inst)
@@ -263,16 +268,18 @@ class newton_diff():
                             # ud=str(kat.diff(sympify(rhv,md._clash)))
                             try:
                                 ud=str(kat.diff(sympify(pastestring(rhv, post,funks=self.mmodel.funks,onlylags=True ),clash)))
-                                # print(v,rhv,ud)
+                                # debug_var(v,rhv,ud)
                                 ud = stripstring(ud,post,self.mmodel.funks)
                                 ud = re.sub(pt.namepat+r'(?:(\()([0-9]*)(\)))',r'\g<1>\g<2>+\g<3>\g<4>',ud) 
                             except:
                                 ud = numdif(self.mmodel,v,rhv,silent=self.silent)
-                                
+                                debug_var(v,rhv,ud)
 
-                        if self.forcenum or 'DERIVATIVE(' in ud.upper() :
-                            ud = numdif(self.mmodel,v,rhv,silent=self.silent)
-                            if not self.silent and 0: print('numdif of {rhv}')
+                            if self.forcenum or 'DERIVATIVE(' in ud.upper() :
+                                if  'DERIVATIVE(' in ud.upper() :
+                                    debug_var(v,rhv,lhs,rhs,ud)
+                                ud = numdif(self.mmodel,v,rhv,silent=self.silent)
+                                if not self.silent and 0: print('numdif of {rhv}')
                         diffendocur[v.upper()][rhv.upper()]=ud
         
                     except:
@@ -614,12 +621,12 @@ class newton_diff():
         self.solveludic = {p: lambda distance : sp.linalg.lu_solve(lu,distance) for p,lu in self.ludic.items()}
         return self.solveludic
     
-    def get_solve1per(self,df=None,periode=None):
-#        if update or not hasattr(self,'stacked'):
-        # breakpoint()
-        self.jacsparsedic = self.get_diff_mat_1per(df=df,periode=periode)
-        self.solvelusparsedic = {p: sp.sparse.linalg.factorized(jac) for p,jac in self.jacsparsedic.items()}
-        return self.solvelusparsedic
+#     def get_solve1per(self,df=None,periode=None):
+# #        if update or not hasattr(self,'stacked'):
+#         # breakpoint()
+#         self.jacsparsedic = self.get_diff_mat_1per(df=df,periode=periode)
+#         self.solvelusparsedic = {p: sp.sparse.linalg.factorized(jac) for p,jac in self.jacsparsedic.items()}
+#         return self.solvelusparsedic
     
     
     def get_solve1per(self,df=None,periode=None,is_residual_eq=None):

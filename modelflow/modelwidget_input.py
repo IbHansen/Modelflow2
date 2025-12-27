@@ -362,82 +362,83 @@ class tabwidget(singelwidget):
             w.reset(g)
         
    
- 
-@dataclass
-class sheetwidget(singelwidget):
-    ''' class defefining a widget with lines of slides '''
-
-    df_var: pd.DataFrame = field(init=False)
-    trans: Callable[[str], str] = field(default=lambda x: x)
-    transpose: bool = field(default=False)
-    wexp: widgets.Label = field(init=False)
-    org_df_var: pd.DataFrame = field(init=False)
-    wsheet: DataGrid = field(init=False)
-    org_values: pd.DataFrame = field(init=False)
-    datawidget: VBox | DataGrid = field(init=False)
-    dec : int =  field(init=False)
-    def __post_init__(self):
-        super().__post_init__()  # Call the parent __post_init__
-
-        self.df_var = self.content['df']
-        self.dec = self.content.get('dec',2)
-        self.transpose = self.widgetdef.get('transpose', False)
-        self.wexp = widgets.Label(value=self.heading, layout={'width': '54%'})
-
-        newnamedf = self.df_var.copy().rename(columns=self.trans)
-        self.org_df_var = newnamedf.T if self.transpose else newnamedf
-        
-        max_value = self.org_df_var.abs().max().max()   
-        
-        fmt = f',.{self.dec}f'
-        max_len= len(f'{max_value:{fmt}}')
-        column_widths = {col: max(len(str(col))+4,max_len) * 9 for col in self.org_df_var.columns}
-        renderers={col: TextRenderer(format= fmt,horizontal_alignment='right') for col in self.org_df_var.columns}
-        renderers['index'] = TextRenderer(horizontal_alignment='left')
-        self.wsheet = DataGrid(self.org_df_var,
-                               column_widths = column_widths,
-                               row_header_width = 500 , 
-                               # auto_fit_columns=True, auto_fit_params={'area': 'all'},
-                             #  layout=Layout(width='1500px'),
-                             #    index_columns_widths=[200],
-                                 enable_filters=False, enable_sort=False,
-                                editable=True, index_name='year',
-                               renderers = renderers, 
-                            #    header_align={'index': 'left'}
-                            )
-        # self.wsheet.row_headers_manager.sizes = {0: 200}
-        self.datawidget = VBox([self.wexp, self.wsheet]) if len(self.heading) else self.wsheet
-        #self.datawidget =self.wsheet
-        self.org_values = self.org_df_var.copy()
-
-    def update_df(self, df: pd.DataFrame, current_per=None):
-        updated_df = pd.DataFrame(self.wsheet.data) 
-        if self.transpose:
-            updated_df = updated_df.T
-
-        updated_df.columns = self.df_var.columns
-        updated_df.index = self.df_var.index
-        df.loc[updated_df.index, updated_df.columns] = df.loc[updated_df.index, updated_df.columns] + updated_df
-
-    def reset(self, g: Any):
-        self.wsheet.data = self.org_values
-      
-# from dataclasses import dataclass, field
-from typing import Callable, Any
-# import pandas as pd
-# import ipydatagrid as gd
-# from ipydatagrid.renderer import TextRenderer
-# from ipywidgets import HBox, VBox, Layout, widgets
-
-# @dataclass
-# class singelwidget:
-#     content: dict = field(default_factory=dict)
-#     widgetdef: dict = field(default_factory=dict)
-#     heading: str = field(default="")
-
-#     def __post_init__(self):
-#         pass
-
+try: 
+    @dataclass
+    class sheetwidget(singelwidget):
+        ''' class defefining a widget with lines of slides '''
+    
+        df_var: pd.DataFrame = field(init=False)
+        trans: Callable[[str], str] = field(default=lambda x: x)
+        transpose: bool = field(default=False)
+        wexp: widgets.Label = field(init=False)
+        org_df_var: pd.DataFrame = field(init=False)
+        wsheet: DataGrid = field(init=False)
+        org_values: pd.DataFrame = field(init=False)
+        datawidget: VBox | DataGrid = field(init=False)
+        dec : int =  field(init=False)
+        def __post_init__(self):
+            super().__post_init__()  # Call the parent __post_init__
+    
+            self.df_var = self.content['df']
+            self.dec = self.content.get('dec',2)
+            self.transpose = self.widgetdef.get('transpose', False)
+            self.wexp = widgets.Label(value=self.heading, layout={'width': '54%'})
+    
+            newnamedf = self.df_var.copy().rename(columns=self.trans)
+            self.org_df_var = newnamedf.T if self.transpose else newnamedf
+            
+            max_value = self.org_df_var.abs().max().max()   
+            
+            fmt = f',.{self.dec}f'
+            max_len= len(f'{max_value:{fmt}}')
+            column_widths = {col: max(len(str(col))+4,max_len) * 9 for col in self.org_df_var.columns}
+            renderers={col: TextRenderer(format= fmt,horizontal_alignment='right') for col in self.org_df_var.columns}
+            renderers['index'] = TextRenderer(horizontal_alignment='left')
+            self.wsheet = DataGrid(self.org_df_var,
+                                   column_widths = column_widths,
+                                   row_header_width = 500 , 
+                                   # auto_fit_columns=True, auto_fit_params={'area': 'all'},
+                                 #  layout=Layout(width='1500px'),
+                                 #    index_columns_widths=[200],
+                                     enable_filters=False, enable_sort=False,
+                                    editable=True, index_name='year',
+                                   renderers = renderers, 
+                                #    header_align={'index': 'left'}
+                                )
+            # self.wsheet.row_headers_manager.sizes = {0: 200}
+            self.datawidget = VBox([self.wexp, self.wsheet]) if len(self.heading) else self.wsheet
+            #self.datawidget =self.wsheet
+            self.org_values = self.org_df_var.copy()
+    
+        def update_df(self, df: pd.DataFrame, current_per=None):
+            updated_df = pd.DataFrame(self.wsheet.data) 
+            if self.transpose:
+                updated_df = updated_df.T
+    
+            updated_df.columns = self.df_var.columns
+            updated_df.index = self.df_var.index
+            df.loc[updated_df.index, updated_df.columns] = df.loc[updated_df.index, updated_df.columns] + updated_df
+    
+        def reset(self, g: Any):
+            self.wsheet.data = self.org_values
+          
+    # from dataclasses import dataclass, field
+    from typing import Callable, Any
+    # import pandas as pd
+    # import ipydatagrid as gd
+    # from ipydatagrid.renderer import TextRenderer
+    # from ipywidgets import HBox, VBox, Layout, widgets
+    
+    # @dataclass
+    # class singelwidget:
+    #     content: dict = field(default_factory=dict)
+    #     widgetdef: dict = field(default_factory=dict)
+    #     heading: str = field(default="")
+    
+    #     def __post_init__(self):
+    #         pass
+except:
+    print('no sheetwidget')
 
 
 @dataclass
