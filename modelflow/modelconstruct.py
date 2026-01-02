@@ -954,7 +954,7 @@ if __name__ == '__main__' :
         <endo=x,stoc> a+x = gamma+ f+O   
         <fit,exo,stoc> c = b*42    
         
-        ''')   
+        ''',replacements=None)   
         
         res3.shownormal_expressions 
         tlists = '''

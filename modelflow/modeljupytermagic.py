@@ -484,51 +484,120 @@ try:
     import ast
     
 
+
+
+
     def render_markdown_model(cell: str, style: str = "mixed") -> str:
         """
-        Render Markdown model content.
+        Render Markdown model content while preserving:
+        - prose
+        - model lines ("> ...") as fenced code
+        - LaTeX blocks (kept clean for MathJax)
     
-        Parameters
-        ----------
-        cell : str
-            Original Markdown cell text.
-        style : str, optional
-            "mixed" : Markdown prose + code lines fenced (default)
-            "plain" : Raw Markdown (no transformation)
+        Output is safe to pass to display_mixed_markdown().
         """
         if style == "plain":
             return cell
     
-        # --- Mixed mode: Markdown prose + code blocks for model lines ---
-        lines = cell.strip().split('\n')
+        lines = cell.split('\n')
         rendered_lines = []
+    
         in_code = False
+        in_fence = False
+        in_math = False
     
         def start_code():
             nonlocal in_code
             if not in_code:
-                rendered_lines.append('```text')
+                rendered_lines.append("```text")
                 in_code = True
     
         def end_code():
             nonlocal in_code
             if in_code:
-                rendered_lines.append('```')
+                rendered_lines.append("```")
                 in_code = False
     
         for line in lines:
-            stripped = line.strip()
+            stripped = line.lstrip()
     
-            if stripped.startswith(('>')):
-                start_code()
+            # Existing fenced code blocks (idempotent)
+            if stripped.startswith("```"):
+                end_code()
+                rendered_lines.append(stripped)
+                in_fence = not in_fence
+                continue
+    
+            if in_fence:
                 rendered_lines.append(line)
+                continue
+    
+            # LaTeX display math ($$ or \begin{align})
+            # --- LaTeX math ---
+            if stripped.startswith("$$"):
+                end_code()
+                rendered_lines.append(stripped)   # math must be flush-left
+                in_math = not in_math
+                continue
+            
+            if in_math:
+                rendered_lines.append(stripped)   # math must stay flush-left
+                continue
+    
+            # Blank line
+            if stripped == "":
+                end_code()
+                rendered_lines.append("")
+                continue
+    
+            # Model line
+            if stripped.startswith(">"):
+                start_code()
+                rendered_lines.append(stripped)
             else:
                 end_code()
                 rendered_lines.append(line)
     
         end_code()
-        return '\n'.join(rendered_lines)
+        return "\n".join(rendered_lines)
+
+
+
+
+    import re
+    from IPython.display import display, Markdown, Math
     
+    def display_mixed_markdown(md: str):
+        """
+        Display Markdown mixed with LaTeX safely in Jupyter.
+    
+        - $$ ... $$        → Math()
+        - \begin{align}   → Math()
+        - inline $...$    → left to Markdown
+        - code fences     → Markdown
+        """
+    
+        # Split into LaTeX blocks and non-LaTeX blocks
+        parts = re.split(
+            r"(\$\$.*?\$\$|\\begin\{align\}.*?\\end\{align\})",
+            md,
+            flags=re.DOTALL,
+        )
+    
+        for part in parts:
+            if not part.strip():
+                continue
+    
+            part = part.strip()
+    
+            # Display math blocks explicitly
+            if part.startswith("$$") and part.endswith("$$"):
+                display(Math(part[2:-2]))
+            elif part.startswith(r"\begin{align}"):
+                display(Math(part))
+            else:
+                display(Markdown(part))
+
     
     @register_cell_magic
     def mdmodel(line, cell):
@@ -564,6 +633,8 @@ try:
                 else:
                     print(f"⚠️ Warning: replacements '{repl_arg}' not found or invalid.")
                     replacements = None
+        else:
+            replacements = None 
 
 
 
@@ -586,53 +657,64 @@ try:
                 display(Markdown(rendered_md))
                 return
         
-            # Combine text according to 'all' option
-            if options.get('all', False):
-                model_text = '\n'.join(user_ns[dict_name].values())
-            else:
-                model_text = '\n'.join([
-                    txt for seg, txt in user_ns[dict_name].items()
-                    if seg.startswith('list')
-                ]) + cell
+            # Combine cell with lists 
+            model_text = '\n'.join([
+                txt for seg, txt in user_ns[dict_name].items()
+                if seg.startswith('list')
+            ]) + cell
             
+            model_text_no_list = cell 
+            exploded_name = segment_name 
                 # --- Core model creation ---
         else:
-                # Combine any stored pieces or just use this cell
-                if f'{name}_dict' in globals():
-                    model_text = '\n'.join(globals()[f'{name}_dict'].values())
-                else:
-                    model_text = cell
+            dict_name = f'{name}_dict'
+            
+            if dict_name in user_ns:
+               # debug_var(dict_name)
+               segments = user_ns[dict_name]
+               # debug_var(segments)
 
-                
- 
-        model_code = extract_model_from_markdown(model_text)
-    
-    
+               model_text = (
+                    '\n'.join(txt for k, txt in segments.items() if k.startswith('list'))
+                    + '\n'
+                    + '\n'.join(txt for k, txt in segments.items() if not k.startswith('list'))
+                )+ cell
+               # debug_var(model_text)
+               model_text_no_list = ('\n'.join(txt for k, txt in segments.items() if not k.startswith('list'))
+                                   )+ cell
+
+            else:
+                model_text = cell
+                model_text_no_list = model_text
+            exploded_name = name
+
         # Create the model
-        if replacements is not None:
-            model = Mexplode(model_code, replacements=replacements)
-        else:
-            model = Mexplode(model_code)
-    
-        # Store globally
-        user_ns[name] =model
+        model_code = extract_model_from_markdown(model_text)
+        emodel = Mexplode(model_code, replacements=replacements)
+        user_ns[exploded_name] =emodel
     
         # --- Rendering section ---
         if options.get('render', True) and not options.get('display', False):
             render_style = options.get('render_style', 'mixed')
-            rendered_md = render_markdown_model(cell, style=render_style)
-            display(Markdown(rendered_md))
+            if options.get('render_list', False) :
+                rendered_md = render_markdown_model(model_text, style=render_style)
+            else:
+                rendered_md = render_markdown_model(model_text_no_list, style=render_style)
+            # display(Markdown(rendered_md))
+            display_mixed_markdown(rendered_md)
+
+            # debug_var(rendered_md,)
     
         # --- Optional full display ---
         if options.get('display', False):
             render_style = options.get('render_style', 'mixed')
-            rendered_md = render_markdown_model(cell, style=render_style)
+            rendered_md = render_markdown_model(model_text, style=render_style)
             display(Markdown(rendered_md))
             if f'{name}_dict' in globals():
                 segs = list(globals()[f'{name}_dict'].keys())
                 print(f"Model `{name}` built from segments: {', '.join(segs)}")
             print(f"✅ Created Mexplode model: {name}")
-            print(model)
+            print(emodel)
     
         return
 
