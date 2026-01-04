@@ -5,7 +5,7 @@ Created on Thu Oct 16 09:43:04 2025
 @author: ibhan
 """
 
-#%% next generation
+# next generation
 
 from dataclasses import dataclass, field, fields 
 from typing import List, Optional, Any ,  Union
@@ -18,8 +18,9 @@ import textwrap
 
 from modelmanipulation import tofrml,dounloop, sumunroll, list_extract
 from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts
+from modelpattern import namepat 
 from modelhelp import debug_var
-from model_latex_class import a_latex_model
+from model_latex_class import a_latex_model,a_latex_equation,defrack, depower,debrace,defunk
 from modelreport import LatexRepo
 
 def clean_expressions(original_statements: str) -> str:
@@ -273,45 +274,204 @@ def extract_model_from_markdown(md_text: str) -> str:
     ).strip()
 
 
+
+TAG_RE = re.compile(r'^%\s*@<([^>]+)>')
+
+
+def extract_latex_equation_block(lines, start):
+    block = []
+    i = start + 1
+
+    while i < len(lines) and r"\end{equation}" not in lines[i]:
+        block.append(lines[i])
+        i += 1
+
+    return block, i + 1
+
+
 def extract_model_from_markdown(md_text: str) -> str:
-    """
-    Extract model lines from Markdown.
-
-    - Lines starting with '>' start a new statement.
-    - Lines starting with '>>' are continuation lines and are appended
-      to the previous model line with a space.
-    """
-    lines = md_text.splitlines()
     model_lines = []
+    lines = md_text.splitlines()
     current = ""
+    i = 0
+    n = len(lines)
 
-    for line in lines:
-        stripped = line.lstrip()
+    while i < n:
+        stripped = lines[i].lstrip()
 
-        # Continuation: starts with ">>"
-        if stripped.startswith(">>"):
-            part = stripped[2:].lstrip()
-            current += " " + part
+        # ----------------------------------------------------------
+        # LaTeX equation environment (MODEL ONLY if labeled)
+        # ----------------------------------------------------------
+        if stripped.startswith(r"\begin{equation}"):
+            block, i = extract_latex_equation_block(lines, i)
+        
+            tag = None
+            label = None
+            body_lines = []
+        
+            for l in block:
+                s = l.strip()
+        
+                if not s:
+                    continue
+        
+                # ------------------------------------------
+                # Tag line: % @<...>
+                # ------------------------------------------
+                if s.startswith('%'):
+                    m = TAG_RE.match(s)
+                    if m:
+                        tag = m.group(1)
+                    continue
+        
+                # ------------------------------------------
+                # Label line
+                # ------------------------------------------
+                if s.startswith(r"\label{eq:"):
+                    label = s[len(r"\label{eq:"):-1]
+                    continue
+        
+                # ------------------------------------------
+                # Equation body
+                # ------------------------------------------
+                body_lines.append(s)
+        
+            # ----------------------------------------------
+            # Extract ONLY labeled equations
+            # ----------------------------------------------
+            if label and body_lines:
+                final_tag = f'<{tag}>' if tag else '<>'
+                body = " ".join(body_lines)
+                model_lines.append(
+                    latex_to_doable(body, tag=final_tag)
+                )
+        
             continue
 
-        # New model line: starts with ">"
+        # ----------------------------------------------------------
+        # Markdown continuation
+        # ----------------------------------------------------------
+        if stripped.startswith(">>"):
+            current += " " + stripped[2:].lstrip()
+            i += 1
+            continue
+
+        # ----------------------------------------------------------
+        # Markdown new equation
+        # ----------------------------------------------------------
         if stripped.startswith(">"):
-            # flush previous
             if current.strip():
                 model_lines.append(current.strip())
             current = stripped[1:].lstrip()
+            i += 1
             continue
 
-        # Non-model line: flush if needed
+        # ----------------------------------------------------------
+        # Non-model line → flush
+        # ----------------------------------------------------------
         if current.strip():
             model_lines.append(current.strip())
             current = ""
 
-    # Final flush
+        i += 1
+
     if current.strip():
         model_lines.append(current.strip())
 
     return "\n".join(model_lines)
+
+
+def extract_model_from_markdown(md_text: str) -> str:
+    model_lines = []
+    lines = md_text.splitlines()
+    current = ""
+    i = 0
+    n = len(lines)
+
+    in_dollars = False  # 👈 NEW
+
+    while i < n:
+        stripped = lines[i].lstrip()
+
+        # ----------------------------------------------------------
+        # Track $$ display math
+        # ----------------------------------------------------------
+        if stripped.startswith("$$"):
+            in_dollars = not in_dollars
+            i += 1
+            continue
+
+        # ----------------------------------------------------------
+        # LaTeX equation environment (ONLY if standalone)
+        # ----------------------------------------------------------
+        if stripped.startswith(r"\begin{equation}") and not in_dollars:
+            block, i = extract_latex_equation_block(lines, i)
+
+            tag = None
+            label = None
+            body_lines = []
+
+            for l in block:
+                s = l.strip()
+                if not s:
+                    continue
+
+                # % @<...>
+                if s.startswith('%'):
+                    m = TAG_RE.match(s)
+                    if m:
+                        tag = m.group(1)
+                    continue
+
+                # \label{eq:...}
+                if s.startswith(r"\label{eq:"):
+                    label = s[len(r"\label{eq:"):-1]
+                    continue
+
+                body_lines.append(s)
+
+            # Only labeled equations become model equations
+            if label and body_lines:
+                final_tag = f'<{tag}>' if tag else '<>'
+                body = " ".join(body_lines)
+                model_lines.append(
+                    latex_to_doable(body, tag=final_tag)
+                )
+            continue
+
+        # ----------------------------------------------------------
+        # Markdown continuation >>
+        # ----------------------------------------------------------
+        if stripped.startswith(">>"):
+            current += " " + stripped[2:].lstrip()
+            i += 1
+            continue
+
+        # ----------------------------------------------------------
+        # Markdown model line >
+        # ----------------------------------------------------------
+        if stripped.startswith(">"):
+            if current.strip():
+                model_lines.append(current.strip())
+            current = stripped[1:].lstrip()
+            i += 1
+            continue
+
+        # ----------------------------------------------------------
+        # Flush on non-model line
+        # ----------------------------------------------------------
+        if current.strip():
+            model_lines.append(current.strip())
+            current = ""
+
+        i += 1
+
+    if current.strip():
+        model_lines.append(current.strip())
+
+    return "\n".join(model_lines)
+
+
 
 
 def apply_replacements(formulas: str, replacements: Union[tuple[str, str], list[tuple[str, str]]]) -> str:
@@ -938,15 +1098,110 @@ class Lexplode(BaseExplode):
         
 
 
+def latex_to_doable(temp,tag='<>'):
+    """
+Given a LaTeX equation string in `temp`, this function processes and converts it to a more standardized format.
 
+Args:
+temp (str): A LaTeX equation string to be processed and standardized.
 
+Returns:
+str: A processed and standardized version of the input `temp` string.
+
+Raises:
+None.
+"""
+
+    if type(temp) == type(None):
+         return None 
+    trans={r'\left':'',
+           r'\right':'',
+           # r'\min':'min',
+           # r'\max':'max',   
+           r'\rho':'rho',   
+           r'\alpha':'alpha',   
+           r'\beta':'beta',   
+           r'\tau':'tau',   
+           r'\sigma':'sigma',   
+           r'\exp':'exp',   
+           r'&':'',
+           r'\\':'',
+           r'\nonumber'  : '',
+           r'\_'      : '_',
+           r'_{t}'      : '',
+           r"_t(?![a-zA-Z0-9])" :'',
+           'logit^{-1}' : 'logit_inverse',
+           r'\{'      : '{',
+           r'\}'      : '}',
+           r'\begin{split}' : '',
+           '\n' :'',
+           r'\forall' :'',
+           r'\;' :'',
+           r'\:' :'',
+           r'  ' :' ',
+
+          
+           }
+    ftrans = {       
+           r'\sqrt':'sqrt',
+           r'\Delta':'diff',
+           r'\Phi':'NORM.CDF',
+           r'\Phi^{-1}':'NORM.PDF'
+           }
+    regtrans = {
+           r'\\Delta ([A-Za-z_][\w{},\^]*)':r'diff(\1)', # \Delta xy => diff(xy)
+           r'_{t-([1-9]+)}'                   : r'(-\1)',      # _{t-x}        => (-x)
+           r'_{t\+([1-9]+)}'                  : r'(+\1)',      # _{t+x}        => (+x)
+
+           # r'\^([\w])'                   : r'_\1',      # ^x        => _x
+           # r'\^\{([\w]+)\}(\w)'          : r'_\1_\2',   # ^{xx}y    => _xx_y
+           r'\^{([\w+-]+)}'              : r'__{\1}',      # ^{xx}     => _xx
+           r'\^{([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}',    # ^{xx,yy}     => _xx_yy
+           r'\^{([\w+-]+),([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}__{\3}',    # ^{xx,yy}     => _xx_yy
+           r'\^{([\w+-]+),([\w+-]+),([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}__{\3}__{\4}',    # ^{xx,yy}     => _xx_yy
+           r'\s*\\times\s*':'*' ,
+           r'\s*\\cdot\s*':'*' ,
+           r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
+           r'\\sum_{('+namepat+r')}\(' : r'sum(\1,',
+           r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \2=1,',
+           
+           r'\\max_{('+namepat+r')}\(' : r'lmax(\1,',
+           r"\\max_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmax(\1 \2=1,',
+           r'\\min_{('+namepat+r')}\(' : r'lmin(\1,',
+           r"\\min_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmin(\1 \2=1,',
+           
+            }
+   # breakpoint()
+    try:       
+        for before,to in ftrans.items():
+             temp = defunk(before,to,temp)
+    except:          
+        print(f'{before=} {to=} {temp=}')   
+    # debug_var(temp)    
+    
+    for before,to in trans.items():
+        temp = temp.replace(before,to)   
+    # debug_var(temp)    
+    
+    for before,to in regtrans.items():
+        temp = re.sub(before,to,temp)
+    # debug_var(temp)    
+    temp = debrace(temp)
+    temp = defrack(temp)
+    temp = depower(temp)
+    temp = ' '.join(temp.split())
+    if '__' in temp:
+        res = f'doable {tag} {temp}' 
+    else:     
+        res = f'{tag} {temp}'
+    return res 
 
 
 
 if __name__ == '__main__' :
 #%%
     pass
-    if 1: 
+    if 0: 
         res3 = Mexplode('''
         <endo=f,stoc> a = gamma+ f+O       
         <endo=f> a = gamma+ f+O       
@@ -998,7 +1253,7 @@ if __name__ == '__main__' :
     
         print(res2+res3)
         
-    if 1: 
+    if 0: 
         test1= Mexplode('a=1')
         test2= Mexplode('b=2')
         test3= Mexplode('c=3')
@@ -1015,3 +1270,9 @@ and yes
 
 
         print(text2:=mfmod_list_to_markdown(text))
+        
+#%% latex  
+    leq = r'CRF^{l,es,d}=\frac{DiscountRate^{l,es,d}}{1 - \left(1 + DiscountRate^{l,es,d}\right)^{-LifeSpan^{l,es,d}}}'
+    meq = latex_to_doable('ii',leq) 
+    print(meq)
+             

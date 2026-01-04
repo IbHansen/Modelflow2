@@ -489,116 +489,128 @@ try:
 
     def render_markdown_model(cell: str, style: str = "mixed") -> str:
         """
-        Render Markdown model content while preserving:
-        - prose
-        - model lines ("> ...") as fenced code
-        - LaTeX blocks (kept clean for MathJax)
+        Prepare Markdown text for rendering.
     
-        Output is safe to pass to display_mixed_markdown().
+        Responsibilities:
+        - Protect model lines (starting with '>') by wrapping them in code fences
+        - Leave LaTeX blocks untouched
+        - Do NOT render anything
         """
+    
         if style == "plain":
             return cell
     
-        lines = cell.split('\n')
-        rendered_lines = []
+        lines = cell.splitlines()
+        out = []
     
         in_code = False
         in_fence = False
-        in_math = False
     
         def start_code():
             nonlocal in_code
             if not in_code:
-                rendered_lines.append("```text")
+                out.append("```text")
                 in_code = True
     
         def end_code():
             nonlocal in_code
             if in_code:
-                rendered_lines.append("```")
+                out.append("```")
                 in_code = False
     
         for line in lines:
             stripped = line.lstrip()
     
-            # Existing fenced code blocks (idempotent)
+            # Preserve existing fenced blocks
             if stripped.startswith("```"):
                 end_code()
-                rendered_lines.append(stripped)
+                out.append(stripped)
                 in_fence = not in_fence
                 continue
     
             if in_fence:
-                rendered_lines.append(line)
+                out.append(line)
                 continue
     
-            # LaTeX display math ($$ or \begin{align})
-            # --- LaTeX math ---
-            if stripped.startswith("$$"):
-                end_code()
-                rendered_lines.append(stripped)   # math must be flush-left
-                in_math = not in_math
-                continue
-            
-            if in_math:
-                rendered_lines.append(stripped)   # math must stay flush-left
-                continue
-    
-            # Blank line
-            if stripped == "":
-                end_code()
-                rendered_lines.append("")
-                continue
-    
-            # Model line
+            # Model lines → code block
             if stripped.startswith(">"):
                 start_code()
-                rendered_lines.append(stripped)
-            else:
-                end_code()
-                rendered_lines.append(line)
+                out.append(stripped)
+                continue
+    
+            # Normal text
+            end_code()
+            out.append(line)
     
         end_code()
-        return "\n".join(rendered_lines)
-
-
-
+        return "\n".join(out)
 
     import re
     from IPython.display import display, Markdown, Math
+    
+    
+    import re
+    from IPython.display import display, Markdown, Math
+    
+    
+    LABEL_RE = re.compile(r"\\label\{[^}]*\}")
+    TAG_RE   = re.compile(r"%\s*@<[^>]*>")
+    COMMENT_RE = re.compile(r"%.*?$", re.MULTILINE)
+    
+    
+    def _clean_math_body(math: str) -> str:
+        """
+        Remove non-math directives from LaTeX before MathJax rendering.
+        """
+        math = LABEL_RE.sub("", math)
+        math = TAG_RE.sub("", math)
+        math = COMMENT_RE.sub("", math)
+        return math.strip()
+    
     
     def display_mixed_markdown(md: str):
         """
         Display Markdown mixed with LaTeX safely in Jupyter.
     
-        - $$ ... $$        → Math()
-        - \begin{align}   → Math()
-        - inline $...$    → left to Markdown
-        - code fences     → Markdown
+        Supports unlimited alternation of:
+          - Markdown prose
+          - LaTeX equation / align environments
+          - $$ ... $$ blocks
+    
+        Rendering rules:
+          - Math() receives ONLY pure math (no environments, no labels, no tags)
+          - Markdown() never sees LaTeX display environments
         """
     
-        # Split into LaTeX blocks and non-LaTeX blocks
-        parts = re.split(
-            r"(\$\$.*?\$\$|\\begin\{align\}.*?\\end\{align\})",
-            md,
+        pattern = re.compile(
+            r"\$\$(.*?)\$\$"
+            r"|\\begin\{equation\}(.*?)\\end\{equation\}"
+            r"|\\begin\{align\}(.*?)\\end\{align\}",
             flags=re.DOTALL,
         )
     
-        for part in parts:
-            if not part.strip():
-                continue
+        pos = 0
     
-            part = part.strip()
+        for m in pattern.finditer(md):
+            # ---- Markdown before math ----
+            if m.start() > pos:
+                text = md[pos:m.start()]
+                if text.strip():
+                    display(Markdown(text))
     
-            # Display math blocks explicitly
-            if part.startswith("$$") and part.endswith("$$"):
-                display(Math(part[2:-2]))
-            elif part.startswith(r"\begin{align}"):
-                display(Math(part))
-            else:
-                display(Markdown(part))
-
+            # ---- Math block ----
+            raw_math = next(g for g in m.groups() if g is not None)
+            clean_math = _clean_math_body(raw_math)
+            if clean_math:
+                display(Math(clean_math))
     
+            pos = m.end()
+    
+        # ---- Trailing Markdown ----
+        rest = md[pos:]
+        if rest.strip():
+            display(Markdown(rest))
+   
     @register_cell_magic
     def mdmodel(line, cell):
         """
@@ -700,6 +712,7 @@ try:
                 rendered_md = render_markdown_model(model_text, style=render_style)
             else:
                 rendered_md = render_markdown_model(model_text_no_list, style=render_style)
+            breakpoint() 
             # display(Markdown(rendered_md))
             display_mixed_markdown(rendered_md)
 

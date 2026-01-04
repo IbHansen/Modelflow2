@@ -139,26 +139,27 @@ def debrace(streng):
     
     '''
     tstreng = streng[:]
-    tfunk = r'\underbrace{'
-    while tfunk in tstreng:
-        start = tstreng.find(tfunk)
-        match = tstreng[start + len(tfunk):]
-        open = 1
-        for index1 in range(len(match)):
-            if match[index1] in '{}':
-                open = (open + 1) if match[index1] == '{' else (open - 1)
-            if not open:
-                break
-        goodstuf = tstreng[:start]+match[index1]    
-        match2 =  match[index1 + 1+2:]
-        open=1 
-        for index2 in range(len(match2)):
-            if match2[index2] in '{}':
-                open = (open + 1) if match2[index2] == '{' else (open - 1)
-            if not open:
-                break
-        tstreng = tstreng[:start]+ ''+ match[:index1] +''+ match2[index2+1:]    
-    # print(f'{tstreng=}')    
+    for tfunk in [ r'\underbrace{', r'\overbrace{']:
+    # tfunk = r'\underbrace{'
+        while tfunk in tstreng:
+            start = tstreng.find(tfunk)
+            match = tstreng[start + len(tfunk):]
+            open = 1
+            for index1 in range(len(match)):
+                if match[index1] in '{}':
+                    open = (open + 1) if match[index1] == '{' else (open - 1)
+                if not open:
+                    break
+            goodstuf = tstreng[:start]+match[index1]    
+            match2 =  match[index1 + 1+2:]
+            open=1 
+            for index2 in range(len(match2)):
+                if match2[index2] in '{}':
+                    open = (open + 1) if match2[index2] == '{' else (open - 1)
+                if not open:
+                    break
+            tstreng = tstreng[:start]+ ''+ match[:index1] +''+ match2[index2+1:]    
+    # debug_var(tstreng)    
     return tstreng
 
 def defunk(funk, subs , streng,startp='{',slutp='}'):
@@ -461,11 +462,14 @@ Methods:
 
     equation_name          : str = ''            # The name 
     original_equation      : str = ''            # an equation in latex 
+    partial : bool = False 
     modellists             : list = ''  
     
     def __post_init__(self): 
         
         self.transformed_equation = self.straighten_eq(self.original_equation)
+        if self.partial:
+            return 
         # breakpoint()
         self.doable_equation = doable(f'<{self.equation_name}> {self.transformed_equation}',show=0)
         
