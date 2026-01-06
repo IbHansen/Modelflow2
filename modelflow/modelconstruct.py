@@ -23,6 +23,10 @@ from modelhelp import debug_var
 from model_latex_class import a_latex_model,a_latex_equation,defrack, depower,debrace,defunk
 from modelreport import LatexRepo
 
+class ModelSpecificationError(Exception):
+    pass
+
+
 def clean_expressions(original_statements: str) -> str:
     """
     Pipeline:
@@ -842,15 +846,11 @@ class Mexplode(BaseExplode):
         
         Eksempel: model = udrul_model(MinModel.txt)'''
         
-        if   any(e.startswith('>') for e in self.original_statements.split('\n')) :
-            self.type_input = 'markdown' 
+        if   (any(e.startswith('>') for e in self.original_statements.split('\n')) or 
+             r'\begin{equation}' in self.original_statements):
+            self.type_input = 'markdown'  
             extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
             self.markdown_model = (mfmod_list_to_codeblock(self.original_statements))
-
-        elif  self.type_input == 'latex': 
-            extracted_frml = a_latex_model(self.list_defs+self.original_statements).model_template
-            self.latex_model = self.original_statements
-            self.markdown_model =  fr'{self.original_statements}'
             
         else:   
            extracted_frml = self.list_defs+self.original_statements
@@ -1138,6 +1138,10 @@ None.
            r'\forall' :'',
            r'\;' :'',
            r'\:' :'',
+           r'\,' :'',
+           r'\big' :'',
+           r'\begin{aligned}' :'',
+           r'\end{aligned}' :'',
            r'  ' :' ',
 
           
@@ -1194,6 +1198,11 @@ None.
         res = f'doable {tag} {temp}' 
     else:     
         res = f'{tag} {temp}'
+        
+    if '\\' in res:
+        raise ModelSpecificationError(
+            f"Some LaTeX has survived in the model (excerpt): {res[:200]}"
+        )
     return res 
 
 

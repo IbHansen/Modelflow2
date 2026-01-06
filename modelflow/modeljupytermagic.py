@@ -690,7 +690,7 @@ try:
                     '\n'.join(txt for k, txt in segments.items() if k.startswith('list'))
                     + '\n'
                     + '\n'.join(txt for k, txt in segments.items() if not k.startswith('list'))
-                )+ cell
+                )+ '' if len(cell) <=2 else cell 
                # debug_var(model_text)
                model_text_no_list = ('\n'.join(txt for k, txt in segments.items() if not k.startswith('list'))
                                    )+ cell
@@ -701,8 +701,8 @@ try:
             exploded_name = name
 
         # Create the model
-        model_code = extract_model_from_markdown(model_text)
-        emodel = Mexplode(model_code, replacements=replacements)
+       # model_code = extract_model_from_markdown(model_text)
+        emodel = Mexplode(model_text, replacements=replacements)
         user_ns[exploded_name] =emodel
     
         # --- Rendering section ---
@@ -712,7 +712,7 @@ try:
                 rendered_md = render_markdown_model(model_text, style=render_style)
             else:
                 rendered_md = render_markdown_model(model_text_no_list, style=render_style)
-            breakpoint() 
+            # breakpoint() 
             # display(Markdown(rendered_md))
             display_mixed_markdown(rendered_md)
 
@@ -735,3 +735,174 @@ try:
 
 except:
     print('no magic')
+    
+import re
+from textwrap import dedent
+from typing import List, Dict
+
+
+# ------------------------------------------------------------
+# 1. ModelFlow list parser (robust, auto-detecting)
+# ------------------------------------------------------------
+
+LIST_HEADER = re.compile(
+    r"^\s*>*\s*list\s+(\w+)\s*=\s*(\w+)\s*:\s*(.*)$",
+    re.IGNORECASE,
+)
+
+ITEM_LINE = re.compile(r"^\s*>+\s*(.+)$")
+
+
+def parse_modelflow_lists(text: str) -> List[Dict]:
+    lines = text.splitlines()
+    i = 0
+    lists = []
+
+    while i < len(lines):
+        m = LIST_HEADER.match(lines[i])
+        if not m:
+            i += 1
+            continue
+
+        name, index, tail = m.groups()
+        items = []
+
+        # inline items
+        if tail.strip():
+            items.extend(tail.split())
+
+        i += 1
+
+        # multiline items
+        while i < len(lines):
+            line = lines[i]
+
+            if not line.strip():
+                break
+
+            m_item = ITEM_LINE.match(line)
+            if m_item:
+                items.append(m_item.group(1).strip())
+                i += 1
+                continue
+
+            if line.startswith((" ", "\t")):
+                items.extend(line.split())
+                i += 1
+                continue
+
+            break
+
+        lists.append(
+            dict(name=name, index=index, items=items)
+        )
+
+        i += 1
+
+    return lists
+
+
+# ------------------------------------------------------------
+# 2. Markdown → LaTeX (safe)
+# ------------------------------------------------------------
+
+def markdown_to_latex(text: str) -> str:
+    text = re.sub(r"^# (.+)$", r"\\section{\1}", text, flags=re.MULTILINE)
+    text = re.sub(r"^## (.+)$", r"\\subsection{\1}", text, flags=re.MULTILINE)
+    text = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", text, flags=re.MULTILINE)
+    return text
+
+
+# ------------------------------------------------------------
+# 3. Remove ModelFlow list blocks from source
+# ------------------------------------------------------------
+
+def strip_list_blocks(text: str) -> str:
+    lines = text.splitlines()
+    out = []
+    skip = False
+
+    for line in lines:
+        if LIST_HEADER.match(line):
+            skip = True
+            continue
+        if skip:
+            if not line.strip() or not (
+                ITEM_LINE.match(line) or line.startswith((" ", "\t"))
+            ):
+                skip = False
+            else:
+                continue
+        if not skip:
+            out.append(line)
+
+    return "\n".join(out)
+
+
+# ------------------------------------------------------------
+# 4. Lists → LaTeX
+# ------------------------------------------------------------
+
+def lists_to_latex(lists: List[Dict]) -> str:
+    blocks = []
+
+    for L in lists:
+        body = "\n".join(
+            rf"\item \texttt{{{item}}}" for item in L["items"]
+        )
+
+        blocks.append(
+            rf"""
+\begin{{description}}
+\item[\textbf{{{L['name']}}}] Index: ${L['index']}$
+{body}
+\end{{description}}
+""".strip()
+        )
+
+    return "\n\n".join(blocks)
+
+
+# ------------------------------------------------------------
+# 5. Master function (THIS is what you call)
+# ------------------------------------------------------------
+
+def modeltext_to_latex(source: str) -> str:
+    source = dedent(source).strip()
+
+    # Extract lists safely
+    lists = parse_modelflow_lists(source)
+
+    # Remove list blocks from prose
+    body = strip_list_blocks(source)
+
+    # Markdown → LaTeX
+    body = markdown_to_latex(body)
+
+    # Assemble LaTeX
+    latex = rf"""
+\documentclass[11pt]{{article}}
+\usepackage{{amsmath,amssymb}}
+\usepackage{{booktabs}}
+\usepackage[utf8]{{inputenc}}
+\usepackage{{geometry}}
+\geometry{{margin=1in}}
+
+\begin{{document}}
+
+{lists_to_latex(lists)}
+
+{body}
+
+\end{{document}}
+""".strip()
+
+    return latex
+
+# latex_source = modeltext_to_latex(green.original_statements)
+
+# with open("abatement_model.tex", "w", encoding="utf-8") as f:
+#     f.write(latex_source)
+
+
+    
