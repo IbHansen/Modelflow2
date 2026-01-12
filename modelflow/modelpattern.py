@@ -205,6 +205,7 @@ def list_extract(equations,silent=True):
     
         returns a dictonary with the lists
         if a list is defined several times, the first definition is used'''
+    # assert 1==2     
     liste_dict = defaultdict(
         list)  # opretter modellens lister - skal laves til en klasse
     for comment, command, value in find_statements(equations):

@@ -293,122 +293,54 @@ def extract_latex_equation_block(lines, start):
     return block, i + 1
 
 
-def extract_model_from_markdown(md_text: str) -> str:
+
+def extract_model_from_markdown(md_text: str, list_position: str = "front") -> str:
+    """
+    Extract ModelFlow model equations from markdown.
+    
+    Parameters
+    ----------
+    md_text : str
+        Markdown text containing model equations and LaTeX.
+    list_position : {"front", "end"}
+        Where extracted LIST definitions should be placed.
+    """
+
+    if list_position not in {"front", "end"}:
+        raise ValueError("list_position must be 'front' or 'end'")
+
     model_lines = []
+    latex_buffer = []   # collect ALL LaTeX for LIST extraction
+
     lines = md_text.splitlines()
     current = ""
     i = 0
     n = len(lines)
 
-    while i < n:
-        stripped = lines[i].lstrip()
-
-        # ----------------------------------------------------------
-        # LaTeX equation environment (MODEL ONLY if labeled)
-        # ----------------------------------------------------------
-        if stripped.startswith(r"\begin{equation}"):
-            block, i = extract_latex_equation_block(lines, i)
-        
-            tag = None
-            label = None
-            body_lines = []
-        
-            for l in block:
-                s = l.strip()
-        
-                if not s:
-                    continue
-        
-                # ------------------------------------------
-                # Tag line: % @<...>
-                # ------------------------------------------
-                if s.startswith('%'):
-                    m = TAG_RE.match(s)
-                    if m:
-                        tag = m.group(1)
-                    continue
-        
-                # ------------------------------------------
-                # Label line
-                # ------------------------------------------
-                if s.startswith(r"\label{eq:"):
-                    label = s[len(r"\label{eq:"):-1]
-                    continue
-        
-                # ------------------------------------------
-                # Equation body
-                # ------------------------------------------
-                body_lines.append(s)
-        
-            # ----------------------------------------------
-            # Extract ONLY labeled equations
-            # ----------------------------------------------
-            if label and body_lines:
-                final_tag = f'<{tag}>' if tag else '<>'
-                body = " ".join(body_lines)
-                model_lines.append(
-                    latex_to_doable(body, tag=final_tag)
-                )
-        
-            continue
-
-        # ----------------------------------------------------------
-        # Markdown continuation
-        # ----------------------------------------------------------
-        if stripped.startswith(">>"):
-            current += " " + stripped[2:].lstrip()
-            i += 1
-            continue
-
-        # ----------------------------------------------------------
-        # Markdown new equation
-        # ----------------------------------------------------------
-        if stripped.startswith(">"):
-            if current.strip():
-                model_lines.append(current.strip())
-            current = stripped[1:].lstrip()
-            i += 1
-            continue
-
-        # ----------------------------------------------------------
-        # Non-model line → flush
-        # ----------------------------------------------------------
-        if current.strip():
-            model_lines.append(current.strip())
-            current = ""
-
-        i += 1
-
-    if current.strip():
-        model_lines.append(current.strip())
-
-    return "\n".join(model_lines)
-
-
-def extract_model_from_markdown(md_text: str) -> str:
-    model_lines = []
-    lines = md_text.splitlines()
-    current = ""
-    i = 0
-    n = len(lines)
-
-    in_dollars = False  # 👈 NEW
+    in_dollars = False
 
     while i < n:
-        stripped = lines[i].lstrip()
+        line = lines[i]
+        stripped = line.lstrip()
 
         # ----------------------------------------------------------
         # Track $$ display math
         # ----------------------------------------------------------
         if stripped.startswith("$$"):
             in_dollars = not in_dollars
+            latex_buffer.append(line)
+            i += 1
+            continue
+
+        if in_dollars:
+            latex_buffer.append(line)
             i += 1
             continue
 
         # ----------------------------------------------------------
-        # LaTeX equation environment (ONLY if standalone)
+        # LaTeX equation environment (standalone)
         # ----------------------------------------------------------
-        if stripped.startswith(r"\begin{equation}") and not in_dollars:
+        if stripped.startswith(r"\begin{equation}"):
             block, i = extract_latex_equation_block(lines, i)
 
             tag = None
@@ -419,6 +351,8 @@ def extract_model_from_markdown(md_text: str) -> str:
                 s = l.strip()
                 if not s:
                     continue
+
+                latex_buffer.append(s)
 
                 # % @<...>
                 if s.startswith('%'):
@@ -434,7 +368,6 @@ def extract_model_from_markdown(md_text: str) -> str:
 
                 body_lines.append(s)
 
-            # Only labeled equations become model equations
             if label and body_lines:
                 final_tag = f'<{tag}>' if tag else '<>'
                 body = " ".join(body_lines)
@@ -442,6 +375,12 @@ def extract_model_from_markdown(md_text: str) -> str:
                     latex_to_doable(body, tag=final_tag)
                 )
             continue
+
+        # ----------------------------------------------------------
+        # Inline LaTeX (for LIST detection)
+        # ----------------------------------------------------------
+        if "$" in line:
+            latex_buffer.append(line)
 
         # ----------------------------------------------------------
         # Markdown continuation >>
@@ -470,11 +409,196 @@ def extract_model_from_markdown(md_text: str) -> str:
 
         i += 1
 
+    # ----------------------------------------------------------
+    # Final flush
+    # ----------------------------------------------------------
     if current.strip():
         model_lines.append(current.strip())
 
+    # ----------------------------------------------------------
+    # GLOBAL LIST extraction (ONCE)
+    # ----------------------------------------------------------
+    lists = findlists_in_latex(md_text)
+    # debug_var(lists,model_lines)
+    if lists:
+        if list_position == "front":
+            model_lines = [lists] + model_lines
+        else:  # "end"
+            model_lines = model_lines + [lists]
+
     return "\n".join(model_lines)
 
+
+
+# def findlists_in_latex(input):
+#     '''extracte list with sublist from latex'''
+#     relevant = re.findall(r'\$LIST\s*\\;\s*[^$]*\$',input.upper())  
+#     # print(f'{relevant=}')
+#     temp1 = [l.replace('$','').replace('\\','')
+#              .replace(',',' ').replace(';',' ')  
+#             .replace('{','').replace('}','').replace('\n','/ \n')                                 
+#          for l in relevant]
+#     # print(f'\n{temp1=}\n')
+#     temp2 = ['LIST ' + l.split('=')[0][4:].strip() +' = '
+#            + l.split('=')[0][4:]
+#            +' : '+ l.split('=')[1] for l in temp1]
+    
+#     return ('\n'.join(temp2)+'\n') 
+
+
+import re
+
+import re
+
+def clean_mathjax(s):
+    s = (
+        s.replace('$$\n','')
+         .replace('$','')
+         .replace('\\allowbreak',' ')
+         .replace('\\\\',' ')
+         .replace('\\begin{aligned}','')
+         .replace('\\end{aligned}','')
+         .replace(r'\{','')
+         .replace(r'\}','')
+         .replace(',',' ')
+         .replace(r'\;',' ')
+         .replace('\n','/ \n')
+         .replace(r'\_','_')
+    )
+    # remove line-start + blanks
+    return re.sub(r'(?m)^\s+', '', s)
+
+
+
+def findlists_in_latex(input):
+    '''extract list with possible MathJax line breaks'''
+    
+    relevant = re.findall(
+        r'\${1,2}\s*LIST\s*\\;\s*.*?\${1,2}',
+        input,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+    temp0 = [l.upper() for l in relevant]
+    temp1 = [clean_mathjax(l.upper()) for l in relevant]
+
+    temp2 = [
+        'LIST ' + l.split('=')[0][4:].strip()
+        + ' = ' + l.split('=')[0][4:]
+        + ' : ' + l.split('=')[1]
+        for l in temp1
+    ]
+    # debug_var(temp0,temp1,temp2)
+    result =  '\n'.join(temp2) + '\n'
+    return result 
+
+
+
+def latex_to_doable(temp,tag='<>'):
+    """
+Given a LaTeX equation string in `temp`, this function processes and converts it to a more standardized format.
+
+Args:
+temp (str): A LaTeX equation string to be processed and standardized.
+
+Returns:
+str: A processed and standardized version of the input `temp` string.
+
+Raises:
+None.
+"""
+
+    if type(temp) == type(None):
+         return None 
+    trans={r'\left':'',
+           r'\right':'',
+           # r'\min':'min',
+           # r'\max':'max',   
+           r'\rho':'rho',   
+           r'\alpha':'alpha',   
+           r'\beta':'beta',   
+           r'\tau':'tau',   
+           r'\sigma':'sigma',   
+           r'\exp':'exp',   
+           r'&':'',
+           r'\\':'',
+           r'\nonumber'  : '',
+           r'\_'      : '_',
+           r'_{t}'      : '',
+           r"_t(?![a-zA-Z0-9])" :'',
+           'logit^{-1}' : 'logit_inverse',
+           r'\{'      : '{',
+           r'\}'      : '}',
+           r'\begin{split}' : '',
+           '\n' :'',
+           r'\forall' :'',
+           r'\;' :'',
+           r'\:' :'',
+           r'\,' :'',
+           r'\big' :'',
+           r'\begin{aligned}' :'',
+           r'\end{aligned}' :'',
+           r'  ' :' ',
+
+          
+           }
+    ftrans = {       
+           r'\sqrt':'sqrt',
+           r'\Delta':'diff',
+           r'\Phi':'NORM.CDF',
+           r'\Phi^{-1}':'NORM.PDF'
+           }
+    regtrans = {
+           r'\\Delta ([A-Za-z_][\w{},\^]*)':r'diff(\1)', # \Delta xy => diff(xy)
+           r'_{t-([1-9]+)}'                   : r'(-\1)',      # _{t-x}        => (-x)
+           r'_{t\+([1-9]+)}'                  : r'(+\1)',      # _{t+x}        => (+x)
+
+           # r'\^([\w])'                   : r'_\1',      # ^x        => _x
+           # r'\^\{([\w]+)\}(\w)'          : r'_\1_\2',   # ^{xx}y    => _xx_y
+           r'\^{([\w+-]+)}'              : r'__{\1}',      # ^{xx}     => _xx
+           r'\^{([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}',    # ^{xx,yy}     => _xx_yy
+           r'\^{([\w+-]+),([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}__{\3}',    # ^{xx,yy}     => _xx_yy
+           r'\^{([\w+-]+),([\w+-]+),([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}__{\3}__{\4}',    # ^{xx,yy}     => _xx_yy
+           r'\s*\\times\s*':'*' ,
+           r'\s*\\cdot\s*':'*' ,
+           r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
+           r'\\sum_{('+namepat+r')}\(' : r'sum(\1,',
+           r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \2=1,',
+           
+           r'\\max_{('+namepat+r')}\(' : r'lmax(\1,',
+           r"\\max_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmax(\1 \2=1,',
+           r'\\min_{('+namepat+r')}\(' : r'lmin(\1,',
+           r"\\min_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmin(\1 \2=1,',
+           
+            }
+   # breakpoint()
+    try:       
+        for before,to in ftrans.items():
+             temp = defunk(before,to,temp)
+    except:          
+        print(f'{before=} {to=} {temp=}')   
+    # debug_var(temp)    
+    
+    for before,to in trans.items():
+        temp = temp.replace(before,to)   
+    # debug_var(temp)    
+    
+    for before,to in regtrans.items():
+        temp = re.sub(before,to,temp)
+    # debug_var(temp)    
+    temp = debrace(temp)
+    temp = defrack(temp)
+    temp = depower(temp)
+    temp = ' '.join(temp.split())
+    if '__' in temp:
+        res = f'doable {tag} {temp}' 
+    else:     
+        res = f'{tag} {temp}'
+        
+    if '\\' in res:
+        raise ModelSpecificationError(
+            f"Some LaTeX has survived in the model (excerpt): {res[:200]}"
+        )
+    return res 
 
 
 
@@ -784,6 +908,194 @@ def mfmod_list_to_codeblock(text: str) -> str:
 import modelnormalize as nz 
 from functools import cached_property
 
+def render_markdown_model(cell: str, style: str = "mixed") -> str:
+    """
+    Prepare Markdown text for rendering.
+
+    Responsibilities:
+    - Protect model lines (starting with '>') by wrapping them in code fences
+    - Leave LaTeX blocks untouched
+    - Do NOT render anything
+    """
+
+    if style == "plain":
+        return cell
+
+    lines = cell.splitlines()
+    out = []
+
+    in_code = False
+    in_fence = False
+
+    def start_code():
+        nonlocal in_code
+        if not in_code:
+            out.append("```text")
+            in_code = True
+
+    def end_code():
+        nonlocal in_code
+        if in_code:
+            out.append("```")
+            in_code = False
+
+    for line in lines:
+        stripped = line.lstrip()
+
+        # Preserve existing fenced blocks
+        if stripped.startswith("```"):
+            end_code()
+            out.append(stripped)
+            in_fence = not in_fence
+            continue
+
+        if in_fence:
+            out.append(line)
+            continue
+
+        # Model lines → code block
+        if stripped.startswith(">"):
+            start_code()
+            out.append(stripped)
+            continue
+
+        # Normal text
+        end_code()
+        out.append(line)
+
+    end_code()
+    # debug_var(out)
+    return "\n".join(out)
+
+import re
+from IPython.display import display, Markdown, Math
+
+
+import re
+from IPython.display import display, Markdown, Math
+
+def display_model(cell: str, spec: str = "markdown"):
+    """
+    Display a model specification.
+
+    spec = "markdown" | "latex"
+    """
+    if spec == "markdown":
+        display_markdown_model(cell)
+    elif spec == "latex":
+        display_latex_model(cell)
+    else:
+        raise ValueError("spec must be 'markdown' or 'latex'")
+
+def display_markdown_model(cell: str):
+    cell = render_markdown_model(cell)
+    display_mixed_markdown(cell)
+
+
+
+def markdown_headings_to_latex(text: str) -> str:
+    lines = []
+    for line in text.splitlines():
+        if line.startswith("### "):
+            lines.append(r"\subsubsection{" + line[4:] + "}")
+        elif line.startswith("## "):
+            lines.append(r"\subsection{" + line[3:] + "}")
+        elif line.startswith("# "):
+            lines.append(r"\section{" + line[2:] + "}")
+        else:
+            lines.append(line)
+    return "\n".join(lines)
+
+def protect_model_code_latex(md: str) -> str:
+    out = []
+    in_code = False
+
+    for line in md.splitlines():
+        if line.lstrip().startswith(">"):
+            if not in_code:
+                out.append(r"\begin{verbatim}")
+                in_code = True
+            out.append(line.lstrip()[1:])
+        else:
+            if in_code:
+                out.append(r"\end{verbatim}")
+                in_code = False
+            out.append(line)
+
+    if in_code:
+        out.append(r"\end{verbatim}")
+
+    return "\n".join(out)
+
+from IPython.display import Latex, display
+
+def display_latex_model(cell: str):
+    # cell = protect_model_code_latex(cell)
+
+    display(Markdown(cell)) 
+
+
+
+def display_mixed_markdown(md: str):
+    """
+    Display Markdown mixed with LaTeX safely in Jupyter.
+
+    Supports unlimited alternation of:
+      - Markdown prose
+      - LaTeX equation / align environments
+      - $$ ... $$ blocks
+
+    Rendering rules:
+      - Math() receives ONLY pure math (no environments, no labels, no tags)
+      - Markdown() never sees LaTeX display environments
+    """
+
+    pattern = re.compile(
+        r"\$\$(.*?)\$\$"
+        r"|\\begin\{equation\}(.*?)\\end\{equation\}"
+        r"|\\begin\{align\}(.*?)\\end\{align\}",
+        flags=re.DOTALL,
+    )
+
+    pos = 0
+
+    def _clean_math_body(math: str) -> str:
+        """
+        Remove non-math directives from LaTeX before MathJax rendering.
+        """
+        LABEL_RE = re.compile(r"\\label\{[^}]*\}")
+        TAG_RE   = re.compile(r"%\s*@<[^>]*>")
+        COMMENT_RE = re.compile(r"%.*?$", re.MULTILINE)
+
+        math = LABEL_RE.sub("", math)
+        math = TAG_RE.sub("", math)
+        math = COMMENT_RE.sub("", math)
+        return math.strip()
+
+
+
+    for m in pattern.finditer(md):
+        # ---- Markdown before math ----
+        if m.start() > pos:
+            text = md[pos:m.start()]
+            if text.strip():
+                display(Markdown(text))
+
+        # ---- Math block ----
+        raw_math = next(g for g in m.groups() if g is not None)
+        clean_math = _clean_math_body(raw_math)
+        if clean_math:
+            display(Math(clean_math))
+
+        pos = m.end()
+
+    # ---- Trailing Markdown ----
+    rest = md[pos:]
+    if rest.strip():
+        display(Markdown(rest))
+
+
+
 @dataclass
 class BaseExplode:
     """Common parent for Mexplode and Lexplode."""
@@ -812,9 +1124,11 @@ class BaseExplode:
 
     @property    
     def render(self):
-        display(Markdown(self.markdown_model))
+    #    display(Markdown(self.markdown_model))
 
- 
+         rendered_md = render_markdown_model(self.markdown_model)
+         display_mixed_markdown(rendered_md)
+
 @dataclass
 class Mexplode(BaseExplode):
     
@@ -837,7 +1151,7 @@ class Mexplode(BaseExplode):
     list_specification    : str       = field(init=False,        metadata={"description": "All list specifications in string "})
     modellist             : str       = field(init=False,        metadata={"description": "The lists defined in string as a dictionary"})
     funks                 : List[Any] = field(default_factory=list, metadata={"description": "List of user specified functions to be used in model"})
-    type_input            : str       = field(default= 'modelflow'     ,metadata={"description": "Originaal as type modelflow or markdown"})
+    type_input            : str       = field(default= 'markdown'     ,metadata={"description": "Originaal as type modelflow or markdown"})
     
     def __post_init__(self):      
         '''prepares a model from a model template. 
@@ -846,9 +1160,7 @@ class Mexplode(BaseExplode):
         
         Eksempel: model = udrul_model(MinModel.txt)'''
         
-        if   (any(e.startswith('>') for e in self.original_statements.split('\n')) or 
-             r'\begin{equation}' in self.original_statements):
-            self.type_input = 'markdown'  
+        if   self.type_input == 'markdown': 
             extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
             self.markdown_model = (mfmod_list_to_codeblock(self.original_statements))
             
@@ -1096,114 +1408,6 @@ class Lexplode(BaseExplode):
 
     # __str__(self):
         
-
-
-def latex_to_doable(temp,tag='<>'):
-    """
-Given a LaTeX equation string in `temp`, this function processes and converts it to a more standardized format.
-
-Args:
-temp (str): A LaTeX equation string to be processed and standardized.
-
-Returns:
-str: A processed and standardized version of the input `temp` string.
-
-Raises:
-None.
-"""
-
-    if type(temp) == type(None):
-         return None 
-    trans={r'\left':'',
-           r'\right':'',
-           # r'\min':'min',
-           # r'\max':'max',   
-           r'\rho':'rho',   
-           r'\alpha':'alpha',   
-           r'\beta':'beta',   
-           r'\tau':'tau',   
-           r'\sigma':'sigma',   
-           r'\exp':'exp',   
-           r'&':'',
-           r'\\':'',
-           r'\nonumber'  : '',
-           r'\_'      : '_',
-           r'_{t}'      : '',
-           r"_t(?![a-zA-Z0-9])" :'',
-           'logit^{-1}' : 'logit_inverse',
-           r'\{'      : '{',
-           r'\}'      : '}',
-           r'\begin{split}' : '',
-           '\n' :'',
-           r'\forall' :'',
-           r'\;' :'',
-           r'\:' :'',
-           r'\,' :'',
-           r'\big' :'',
-           r'\begin{aligned}' :'',
-           r'\end{aligned}' :'',
-           r'  ' :' ',
-
-          
-           }
-    ftrans = {       
-           r'\sqrt':'sqrt',
-           r'\Delta':'diff',
-           r'\Phi':'NORM.CDF',
-           r'\Phi^{-1}':'NORM.PDF'
-           }
-    regtrans = {
-           r'\\Delta ([A-Za-z_][\w{},\^]*)':r'diff(\1)', # \Delta xy => diff(xy)
-           r'_{t-([1-9]+)}'                   : r'(-\1)',      # _{t-x}        => (-x)
-           r'_{t\+([1-9]+)}'                  : r'(+\1)',      # _{t+x}        => (+x)
-
-           # r'\^([\w])'                   : r'_\1',      # ^x        => _x
-           # r'\^\{([\w]+)\}(\w)'          : r'_\1_\2',   # ^{xx}y    => _xx_y
-           r'\^{([\w+-]+)}'              : r'__{\1}',      # ^{xx}     => _xx
-           r'\^{([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}',    # ^{xx,yy}     => _xx_yy
-           r'\^{([\w+-]+),([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}__{\3}',    # ^{xx,yy}     => _xx_yy
-           r'\^{([\w+-]+),([\w+-]+),([\w+-]+),([\w+-]+)\}'      : r'__{\1}__{\2}__{\3}__{\4}',    # ^{xx,yy}     => _xx_yy
-           r'\s*\\times\s*':'*' ,
-           r'\s*\\cdot\s*':'*' ,
-           r'\\text{\[([\w+-,.]+)\]}' : r'[\1]',
-           r'\\sum_{('+namepat+r')}\(' : r'sum(\1,',
-           r"\\sum_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'sum(\1 \2=1,',
-           
-           r'\\max_{('+namepat+r')}\(' : r'lmax(\1,',
-           r"\\max_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmax(\1 \2=1,',
-           r'\\min_{('+namepat+r')}\(' : r'lmin(\1,',
-           r"\\min_{([a-zA-Z][a-zA-Z0-9_]*)=([a-zA-Z][a-zA-Z0-9_]*)}\(":  r'lmin(\1 \2=1,',
-           
-            }
-   # breakpoint()
-    try:       
-        for before,to in ftrans.items():
-             temp = defunk(before,to,temp)
-    except:          
-        print(f'{before=} {to=} {temp=}')   
-    # debug_var(temp)    
-    
-    for before,to in trans.items():
-        temp = temp.replace(before,to)   
-    # debug_var(temp)    
-    
-    for before,to in regtrans.items():
-        temp = re.sub(before,to,temp)
-    # debug_var(temp)    
-    temp = debrace(temp)
-    temp = defrack(temp)
-    temp = depower(temp)
-    temp = ' '.join(temp.split())
-    if '__' in temp:
-        res = f'doable {tag} {temp}' 
-    else:     
-        res = f'{tag} {temp}'
-        
-    if '\\' in res:
-        raise ModelSpecificationError(
-            f"Some LaTeX has survived in the model (excerpt): {res[:200]}"
-        )
-    return res 
 
 
 

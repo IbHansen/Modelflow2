@@ -24,7 +24,7 @@ from model_latex import latextotxt
 from modelclass import model
 from modelmanipulation import explode
 from model_latex_class import a_latex_model
-from modelconstruct import Mexplode, extract_model_from_markdown
+from modelconstruct import Mexplode, display_model
 from modelhelp import debug_var
 
 
@@ -57,82 +57,82 @@ def get_options(line,defaultname = 'test'):
 
 
 try:
-    @register_cell_magic
-    def mexplode(line, cell):
-       '''Creates a ModelFlow model from a makrdown document'''
-       name,options = get_options(line)
-       ia = get_ipython()
+    # @register_cell_magic
+    # def mexplode(line, cell):
+    #    '''Creates a ModelFlow model from a makrdown document'''
+    #    name,options = get_options(line)
+    #    ia = get_ipython()
 
-       # print(f'{options=}')
-       if options.get('segment',False):
+    #    # print(f'{options=}')
+    #    if options.get('segment',False):
           
-           if f'{name}_dict' not in globals():
-              globals()[f'{name}_dict'] = {}
-              ia.push(f'{name}_dict',interactive=True)
+    #        if f'{name}_dict' not in globals():
+    #           globals()[f'{name}_dict'] = {}
+    #           ia.push(f'{name}_dict',interactive=True)
 
-           modelsegment= options.get('segment','rest')
-           globals()[f'{name}_dict'][modelsegment]=cell   
+    #        modelsegment= options.get('segment','rest')
+    #        globals()[f'{name}_dict'][modelsegment]=cell   
            
-           if modelsegment.startswith('list'):
-              if options.get('render',True) and not options.get('display',False):
-                  Mexplode(cell).render
-              return  
-           if modelsegment.startswith('text'):
-               display(Markdown(cell))
-               return  
+    #        if modelsegment.startswith('list'):
+    #           if options.get('render',True) and not options.get('display',False):
+    #               Mexplode(cell).render
+    #           return  
+    #        if modelsegment.startswith('text'):
+    #            display(Markdown(cell))
+    #            return  
            
-           # we want this cell plus all list cells to make this small model
-           if options.get('all',False):
-               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
+    #        # we want this cell plus all list cells to make this small model
+    #        if options.get('all',False):
+    #            model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
     
-           else:     
-               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items() 
-                                  if name.startswith('list')])+cell 
-       else:
-           if f'{name}_dict' in globals():
-               temp='\n'
-               model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
-           else: 
-               model_text = cell 
+    #        else:     
+    #            model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items() 
+    #                               if name.startswith('list')])+cell 
+    #    else:
+    #        if f'{name}_dict' in globals():
+    #            temp='\n'
+    #            model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
+    #        else: 
+    #            model_text = cell 
                
 
-       replacements = None
+    #    replacements = None
         
-       if 'replacements' in options:
-            repl_name = options['replacements']
-            replacements = ia.user_ns.get(repl_name, None)
+    #    if 'replacements' in options:
+    #         repl_name = options['replacements']
+    #         replacements = ia.user_ns.get(repl_name, None)
         
-            if replacements is None:
-                print(f'⚠️ Warning: replacements "{repl_name}" not found in notebook namespace')
+    #         if replacements is None:
+    #             print(f'⚠️ Warning: replacements "{repl_name}" not found in notebook namespace')
         
 
-       emodel = Mexplode(model_text,replacements=replacements)
-       mmodel  = emodel.mmodel
+    #    emodel = Mexplode(model_text,replacements=replacements)
+    #    mmodel  = emodel.mmodel
    
        
-       globals()[f'm{name}'] = mmodel
-       globals()[f'e{name}'] = emodel
+    #    globals()[f'm{name}'] = mmodel
+    #    globals()[f'e{name}'] = emodel
        
-       ia.push(f'm{name}',interactive=True)
-       ia.push(f'e{name}',interactive=True)
+    #    ia.push(f'm{name}',interactive=True)
+    #    ia.push(f'e{name}',interactive=True)
        
-       if options.get('render',True) and not options.get('display',False):
-           emodel.render
+    #    if options.get('render',True) and not options.get('display',False):
+    #        emodel.render
        
-       # display(Markdown('## The model'))
-       if options.get('display',False):
-           display(Markdown(cell))
-           try:
-               print(f'Model:{name} is created from these segments:\n'+
-                     f"{temp.join([s for s in globals()[f'{name}_dict'].keys()])} \n")
-           except:
-               ...
-           display(Markdown('## Creating this Template model'))
-           print(mmodel.equations_original)
-           display(Markdown('## And this Business Logic Language  model'))
-           print(mmodel.equations)
+    #    # display(Markdown('## The model'))
+    #    if options.get('display',False):
+    #        display(Markdown(cell))
+    #        try:
+    #            print(f'Model:{name} is created from these segments:\n'+
+    #                  f"{temp.join([s for s in globals()[f'{name}_dict'].keys()])} \n")
+    #        except:
+    #            ...
+    #        display(Markdown('## Creating this Template model'))
+    #        print(mmodel.equations_original)
+    #        display(Markdown('## And this Business Logic Language  model'))
+    #        print(mmodel.equations)
    
-       return
+    #    return
 
 
     @register_cell_magic
@@ -487,129 +487,6 @@ try:
 
 
 
-    def render_markdown_model(cell: str, style: str = "mixed") -> str:
-        """
-        Prepare Markdown text for rendering.
-    
-        Responsibilities:
-        - Protect model lines (starting with '>') by wrapping them in code fences
-        - Leave LaTeX blocks untouched
-        - Do NOT render anything
-        """
-    
-        if style == "plain":
-            return cell
-    
-        lines = cell.splitlines()
-        out = []
-    
-        in_code = False
-        in_fence = False
-    
-        def start_code():
-            nonlocal in_code
-            if not in_code:
-                out.append("```text")
-                in_code = True
-    
-        def end_code():
-            nonlocal in_code
-            if in_code:
-                out.append("```")
-                in_code = False
-    
-        for line in lines:
-            stripped = line.lstrip()
-    
-            # Preserve existing fenced blocks
-            if stripped.startswith("```"):
-                end_code()
-                out.append(stripped)
-                in_fence = not in_fence
-                continue
-    
-            if in_fence:
-                out.append(line)
-                continue
-    
-            # Model lines → code block
-            if stripped.startswith(">"):
-                start_code()
-                out.append(stripped)
-                continue
-    
-            # Normal text
-            end_code()
-            out.append(line)
-    
-        end_code()
-        return "\n".join(out)
-
-    import re
-    from IPython.display import display, Markdown, Math
-    
-    
-    import re
-    from IPython.display import display, Markdown, Math
-    
-    
-    LABEL_RE = re.compile(r"\\label\{[^}]*\}")
-    TAG_RE   = re.compile(r"%\s*@<[^>]*>")
-    COMMENT_RE = re.compile(r"%.*?$", re.MULTILINE)
-    
-    
-    def _clean_math_body(math: str) -> str:
-        """
-        Remove non-math directives from LaTeX before MathJax rendering.
-        """
-        math = LABEL_RE.sub("", math)
-        math = TAG_RE.sub("", math)
-        math = COMMENT_RE.sub("", math)
-        return math.strip()
-    
-    
-    def display_mixed_markdown(md: str):
-        """
-        Display Markdown mixed with LaTeX safely in Jupyter.
-    
-        Supports unlimited alternation of:
-          - Markdown prose
-          - LaTeX equation / align environments
-          - $$ ... $$ blocks
-    
-        Rendering rules:
-          - Math() receives ONLY pure math (no environments, no labels, no tags)
-          - Markdown() never sees LaTeX display environments
-        """
-    
-        pattern = re.compile(
-            r"\$\$(.*?)\$\$"
-            r"|\\begin\{equation\}(.*?)\\end\{equation\}"
-            r"|\\begin\{align\}(.*?)\\end\{align\}",
-            flags=re.DOTALL,
-        )
-    
-        pos = 0
-    
-        for m in pattern.finditer(md):
-            # ---- Markdown before math ----
-            if m.start() > pos:
-                text = md[pos:m.start()]
-                if text.strip():
-                    display(Markdown(text))
-    
-            # ---- Math block ----
-            raw_math = next(g for g in m.groups() if g is not None)
-            clean_math = _clean_math_body(raw_math)
-            if clean_math:
-                display(Math(clean_math))
-    
-            pos = m.end()
-    
-        # ---- Trailing Markdown ----
-        rest = md[pos:]
-        if rest.strip():
-            display(Markdown(rest))
    
     @register_cell_magic
     def mdmodel(line, cell):
@@ -629,8 +506,9 @@ try:
         """
         ip = get_ipython()
         user_ns = ip.user_ns
-        
+
         name, options = get_options(line)
+        spec = options.get('spec','markdown')
 
         # Handle replacements argument (variable name or literal)
         replacements = None
@@ -664,9 +542,7 @@ try:
         
             # Handle display of list/text segments
             if segment_name.startswith(('list', 'text')):
-                render_style = options.get('render_style', 'mixed')
-                rendered_md = render_markdown_model(cell, style=render_style)
-                display(Markdown(rendered_md))
+                display_model(cell,spec=spec)
                 return
         
             # Combine cell with lists 
@@ -682,20 +558,21 @@ try:
             dict_name = f'{name}_dict'
             
             if dict_name in user_ns:
-               # debug_var(dict_name)
                segments = user_ns[dict_name]
-               # debug_var(segments)
 
-               model_text = (
-                    '\n'.join(txt for k, txt in segments.items() if k.startswith('list'))
-                    + '\n'
-                    + '\n'.join(txt for k, txt in segments.items() if not k.startswith('list'))
-                )+ '' if len(cell) <=2 else cell 
-               # debug_var(model_text)
-               model_text_no_list = ('\n'.join(txt for k, txt in segments.items() if not k.startswith('list'))
-                                   )+ cell
+               model_text_lists   = '\n'.join(txt for k, txt in segments.items() if     k.startswith('list'))
+               model_text_no_list = '\n'.join(txt for k, txt in segments.items() if not k.startswith('list')) + cell           
+               model_text = model_text_no_list + '\n' + model_text_lists
+               
+               model_text_latex_nowrap = '\n'.join(
+                                        (modeltext_to_latex(txt) if (k.startswith('text') or k.startswith('list'))
+                                         else txt   
+                                             for k,txt in segments.items()  ) )
+               model_text_latex = markdown_titles_to_latex(wrap_latex(model_text_latex_nowrap))
+
 
             else:
+                model_text_lists = ''
                 model_text = cell
                 model_text_no_list = model_text
             exploded_name = name
@@ -703,18 +580,29 @@ try:
         # Create the model
        # model_code = extract_model_from_markdown(model_text)
         emodel = Mexplode(model_text, replacements=replacements)
-        user_ns[exploded_name] =emodel
-    
+        
+        try: 
+            emodel.latex = model_text_latex
+        except: 
+            print('no latex')
+            ...
+            
+        user_ns[exploded_name] = emodel
+        
+        
         # --- Rendering section ---
         if options.get('render', True) and not options.get('display', False):
             render_style = options.get('render_style', 'mixed')
             if options.get('render_list', False) :
-                rendered_md = render_markdown_model(model_text, style=render_style)
+                # rendered_md = render_markdown_model(model_text, style=render_style)
+                display_model(model_text,spec=spec)
             else:
-                rendered_md = render_markdown_model(model_text_no_list, style=render_style)
+                # rendered_md = render_markdown_model(model_text_no_list, style=render_style)
+                display_model(model_text_no_list,spec=spec)
+
             # breakpoint() 
             # display(Markdown(rendered_md))
-            display_mixed_markdown(rendered_md)
+            # display_mixed_markdown(normalize_list_math(rendered_md))
 
             # debug_var(rendered_md,)
     
@@ -736,149 +624,133 @@ try:
 except:
     print('no magic')
     
-import re
-from textwrap import dedent
-from typing import List, Dict
-
-
-# ------------------------------------------------------------
-# 1. ModelFlow list parser (robust, auto-detecting)
-# ------------------------------------------------------------
-
-LIST_HEADER = re.compile(
-    r"^\s*>*\s*list\s+(\w+)\s*=\s*(\w+)\s*:\s*(.*)$",
-    re.IGNORECASE,
-)
-
-ITEM_LINE = re.compile(r"^\s*>+\s*(.+)$")
-
-
-def parse_modelflow_lists(text: str) -> List[Dict]:
-    lines = text.splitlines()
-    i = 0
-    lists = []
-
-    while i < len(lines):
-        m = LIST_HEADER.match(lines[i])
-        if not m:
-            i += 1
-            continue
-
-        name, index, tail = m.groups()
-        items = []
-
-        # inline items
-        if tail.strip():
-            items.extend(tail.split())
-
-        i += 1
-
-        # multiline items
-        while i < len(lines):
-            line = lines[i]
-
-            if not line.strip():
-                break
-
-            m_item = ITEM_LINE.match(line)
-            if m_item:
-                items.append(m_item.group(1).strip())
-                i += 1
-                continue
-
-            if line.startswith((" ", "\t")):
-                items.extend(line.split())
-                i += 1
-                continue
-
-            break
-
-        lists.append(
-            dict(name=name, index=index, items=items)
-        )
-
-        i += 1
-
-    return lists
-
-
-# ------------------------------------------------------------
-# 2. Markdown → LaTeX (safe)
-# ------------------------------------------------------------
-
-def markdown_to_latex(text: str) -> str:
-    text = re.sub(r"^# (.+)$", r"\\section{\1}", text, flags=re.MULTILINE)
-    text = re.sub(r"^## (.+)$", r"\\subsection{\1}", text, flags=re.MULTILINE)
-    text = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", text, flags=re.MULTILINE)
-    return text
-
-
-# ------------------------------------------------------------
-# 3. Remove ModelFlow list blocks from source
-# ------------------------------------------------------------
-
-def strip_list_blocks(text: str) -> str:
-    lines = text.splitlines()
-    out = []
-    skip = False
-
-    for line in lines:
-        if LIST_HEADER.match(line):
-            skip = True
-            continue
-        if skip:
-            if not line.strip() or not (
-                ITEM_LINE.match(line) or line.startswith((" ", "\t"))
-            ):
-                skip = False
-            else:
-                continue
-        if not skip:
-            out.append(line)
-
-    return "\n".join(out)
-
-
-# ------------------------------------------------------------
-# 4. Lists → LaTeX
-# ------------------------------------------------------------
-
-def lists_to_latex(lists: List[Dict]) -> str:
-    blocks = []
-
-    for L in lists:
-        body = "\n".join(
-            rf"\item \texttt{{{item}}}" for item in L["items"]
-        )
-
-        blocks.append(
-            rf"""
-\begin{{description}}
-\item[\textbf{{{L['name']}}}] Index: ${L['index']}$
-{body}
-\end{{description}}
-""".strip()
-        )
-
-    return "\n\n".join(blocks)
-
-
-# ------------------------------------------------------------
-# 5. Master function (THIS is what you call)
-# ------------------------------------------------------------
 
 def modeltext_to_latex(source: str) -> str:
-    source = dedent(source).strip()
+    import re
+    from textwrap import dedent    
+    
 
-    # Extract lists safely
-    lists = parse_modelflow_lists(source)
+    def markdown_item_lists_to_latex(text):
+        """
+        Convert Markdown bullet (- item) and numbered (1. item) lists
+        into LaTeX itemize / enumerate environments.
 
-    # Remove list blocks from prose
-    body = strip_list_blocks(source)
+        Guards against formulas, numeric lines, and symbols.
+        """
 
-    # Markdown → LaTeX
-    body = markdown_to_latex(body)
+        list_block = re.compile(
+            r'(?:^|\n)'
+            r'('
+            r'(?:\s*(?:-|\d+\.)\s+'
+            r'(?=.*[A-Za-z])'        # must contain at least one letter
+            r'(?!.*=)'               # reject equations
+            r'.+'
+            r'\n?)+'
+            r')',
+            flags=re.MULTILINE
+        )
 
+        def repl_list(match):
+            block = match.group(1)
+
+            first = re.search(r'\S+', block).group()
+
+            if first.startswith('-'):
+                items = re.findall(
+                    r'\s*-\s+(?=(?:.*[A-Za-z]))(?!.*=)(.+)',
+                    block
+                )
+                env = 'itemize'
+            else:
+                items = re.findall(
+                    r'\s*\d+\.\s+(?=(?:.*[A-Za-z]))(?!.*=)(.+)',
+                    block
+                )
+                env = 'enumerate'
+
+            latex = [f'\\begin{{{env}}}']
+            latex += [f'  \\item {item}' for item in items]
+            latex.append(f'\\end{{{env}}}')
+
+            return '\n' + '\n'.join(latex)
+
+        return list_block.sub(repl_list, text)
+
+    
+    TABLE_RE = re.compile(
+    r"""
+    (                               # entire table
+      (?:^\|.*\|\s*\n)              # header
+      (?:^\|\s*[-:]+.*\|\s*\n)      # separator
+      (?:^\|.*\|\s*\n?)+            # body
+    )
+    """,
+    re.MULTILINE | re.VERBOSE,
+)
+
+
+    def markdown_table_to_latex(table, align=None):
+        lines = [l.strip() for l in table.strip().splitlines()]
+    
+        # Remove separator row
+        rows = []
+        for l in lines:
+            if re.match(r'^\|\s*[-:]+', l):
+                continue
+            rows.append([c.strip() for c in l.strip('|').split('|')])
+    
+        ncols = len(rows[0])
+        align = align or ("l" * ncols)
+    
+        def md_to_tex(cell):
+            cell = re.sub(r'\*\*(.*?)\*\*', r'\\textbf{\1}', cell)
+            return cell
+    
+        rows = [[md_to_tex(c) for c in r] for r in rows]
+    
+        latex = []
+        # latex.append(r"\\")        
+        latex.append(r"\begin{tabular}{" + align + r"}")
+        latex.append(r"\hline")
+    
+        for i, row in enumerate(rows):
+            latex.append(" & ".join(row) + r" \\")
+            if i == 0:
+                latex.append(r"\hline")
+    
+        latex.append(r"\hline")
+        latex.append(r"\end{tabular}")
+        latex.append(r"\\")
+        latex.append(r"")
+    
+        return "\n".join(latex)
+    
+    
+    def replace_markdown_tables(text):
+        """
+        Replace all Markdown tables in a string with LaTeX tables.
+        """
+    
+        def repl_table(match):
+            table = match.group(1)
+            return markdown_table_to_latex(table)
+    
+        return TABLE_RE.sub(repl_table, dedent(text))
+
+    
+    
+
+    # source = dedent(source).strip()
+
+       # Markdown → LaTeX
+       
+    body = markdown_item_lists_to_latex(source)
+    body = replace_markdown_tables(body)
+    
+    return body
+
+
+def wrap_latex(body):
     # Assemble LaTeX
     latex = rf"""
 \documentclass[11pt]{{article}}
@@ -890,19 +762,17 @@ def modeltext_to_latex(source: str) -> str:
 
 \begin{{document}}
 
-{lists_to_latex(lists)}
-
 {body}
 
 \end{{document}}
 """.strip()
 
     return latex
-
-# latex_source = modeltext_to_latex(green.original_statements)
-
-# with open("abatement_model.tex", "w", encoding="utf-8") as f:
-#     f.write(latex_source)
-
-
     
+
+def markdown_titles_to_latex(text: str) -> str:
+    outtext = re.sub(r"^# (.+)$", r"\\section{\1}", text, flags=re.MULTILINE)
+    outtext = re.sub(r"^## (.+)$", r"\\subsection{\1}", outtext, flags=re.MULTILINE)
+    outtext = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", outtext, flags=re.MULTILINE)
+    return outtext
+
