@@ -183,17 +183,6 @@ def findlists(input):
            +' : '+ l.split('=')[1]+'$' for l in temp1]
     return temp2
 
-if 0:
-    listtest='''      
-    List $stage=\{stage1, stage2,stage3\}$
-    
-    List $stage\_from=\{stage1, stage2,stage3\}$
-    
-    List $stage\_to=\{stage1, stage2,stage3\}$
-    
-    List $stage\_to2=\{stage1, stage2,stage3\}$
-    '''
-    print(findlistsold(listtest))
     
 def findlistsnew(input):
     '''extracte list with sublist from latex'''
@@ -505,22 +494,4 @@ if __name__ == '__main__'  :
     '''
          res = latextotxt(test)    
          
-    test1 ='''
-    list $agegroup=\{16,  17,  18,  19,  20,  99, 100 \} \\
-          end     : \{0 ,     0  ,  0   , 0 ,   0 ,   0  , 1\}$
     
-    
-    \begin{equation}
-    \label{eq:mod_another}
-    \begin{split}
-    \text{[NONEND]}\; & \left(QC^{agegroup}_t\right)^{-ECX_t} & &=  \left(\dfrac{PCTOT_t}{PCTOT_{t+1}}\right) * QC^{agegroup+1}_{t+1}
-    \\
-    \text{}\;& & &= 
-    \dfrac{VB^{agegroup-1}_{t-1} *  \dfrac{NPOP^{agegroup-1}_{t-1}}{NPOP^{agegroup}_t} 
-    * (1+R) + VY^{agegroup}_t - VB^{agegroup}_{t+1} )}{ PCTOT_{t}}   
-    \end{split}
-    \end{equation}
-        '''        
-    print(findlists(test1))    
-
-     

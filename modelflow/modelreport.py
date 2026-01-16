@@ -709,6 +709,8 @@ class LatexRepo:
 \usepackage{graphicx}
 \usepackage{pgf}
 \usepackage{lscape}
+\usepackage{{amsmath,amssymb}}
+
 \begin{document}
 
 '''

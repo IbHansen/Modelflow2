@@ -18,6 +18,7 @@ import pandas as pd
 from IPython.core.magic import register_line_magic, register_cell_magic
 from subprocess import run 
 import re 
+import ast
 
 
 from model_latex import latextotxt
@@ -26,6 +27,7 @@ from modelmanipulation import explode
 from model_latex_class import a_latex_model
 from modelconstruct import Mexplode, display_model
 from modelhelp import debug_var
+from modelreport import LatexRepo
 
 
 def get_options(line,defaultname = 'test'):
@@ -57,84 +59,11 @@ def get_options(line,defaultname = 'test'):
 
 
 try:
-    # @register_cell_magic
-    # def mexplode(line, cell):
-    #    '''Creates a ModelFlow model from a makrdown document'''
-    #    name,options = get_options(line)
-    #    ia = get_ipython()
 
-    #    # print(f'{options=}')
-    #    if options.get('segment',False):
-          
-    #        if f'{name}_dict' not in globals():
-    #           globals()[f'{name}_dict'] = {}
-    #           ia.push(f'{name}_dict',interactive=True)
-
-    #        modelsegment= options.get('segment','rest')
-    #        globals()[f'{name}_dict'][modelsegment]=cell   
-           
-    #        if modelsegment.startswith('list'):
-    #           if options.get('render',True) and not options.get('display',False):
-    #               Mexplode(cell).render
-    #           return  
-    #        if modelsegment.startswith('text'):
-    #            display(Markdown(cell))
-    #            return  
-           
-    #        # we want this cell plus all list cells to make this small model
-    #        if options.get('all',False):
-    #            model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
+    from IPython.core.magic import register_cell_magic, register_line_magic
     
-    #        else:     
-    #            model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items() 
-    #                               if name.startswith('list')])+cell 
-    #    else:
-    #        if f'{name}_dict' in globals():
-    #            temp='\n'
-    #            model_text = '\n'.join([text for name,text in globals()[f'{name}_dict'].items()] )
-    #        else: 
-    #            model_text = cell 
-               
 
-    #    replacements = None
-        
-    #    if 'replacements' in options:
-    #         repl_name = options['replacements']
-    #         replacements = ia.user_ns.get(repl_name, None)
-        
-    #         if replacements is None:
-    #             print(f'⚠️ Warning: replacements "{repl_name}" not found in notebook namespace')
-        
-
-    #    emodel = Mexplode(model_text,replacements=replacements)
-    #    mmodel  = emodel.mmodel
-   
-       
-    #    globals()[f'm{name}'] = mmodel
-    #    globals()[f'e{name}'] = emodel
-       
-    #    ia.push(f'm{name}',interactive=True)
-    #    ia.push(f'e{name}',interactive=True)
-       
-    #    if options.get('render',True) and not options.get('display',False):
-    #        emodel.render
-       
-    #    # display(Markdown('## The model'))
-    #    if options.get('display',False):
-    #        display(Markdown(cell))
-    #        try:
-    #            print(f'Model:{name} is created from these segments:\n'+
-    #                  f"{temp.join([s for s in globals()[f'{name}_dict'].keys()])} \n")
-    #        except:
-    #            ...
-    #        display(Markdown('## Creating this Template model'))
-    #        print(mmodel.equations_original)
-    #        display(Markdown('## And this Business Logic Language  model'))
-    #        print(mmodel.equations)
-   
-    #    return
-
-
+    
     @register_cell_magic
     def graphviz(line, cell):
         '''Creates a ModelFlow model from a Latex document'''
@@ -478,147 +407,187 @@ try:
         print(f"✅ Created Mexplode model: {name}")
         print(model)
 
-    from IPython.core.magic import register_cell_magic
-    
-
-    import ast
     
 
 
 
 
    
-    @register_cell_magic
-    def mdmodel(line, cell):
+    def _mdmodel_impl(line, cell=None):
         """
-        %%mdmodel <name> [options...]
-        
-        Creates or extends a Markdown-based Mexplode model.
-        You can split a model into multiple cells (segments) using 'segment=<name>'.
-        
-        Options:
-          segment=<segname>     Define a named segment of the model (e.g., 'list1', 'core', etc.)
-          all=True              Combine all stored segments to form the model
-          display=True          Show full model info after creation
-          render=False          Skip Markdown rendering of the cell content
-          render_style=<style>  "mixed" (default), "plain"
-          replacements=<expr>   Python variable name or literal Python expression/list/tuple
+        Shared implementation for %mdmodel and %%mdmodel
         """
         ip = get_ipython()
         user_ns = ip.user_ns
 
         name, options = get_options(line)
-        spec = options.get('spec','markdown')
+        spec = options.get('spec', 'markdown')
 
-        # Handle replacements argument (variable name or literal)
+        # ------------------------------------------------------------
+        # Handle replacements argument
+        # ------------------------------------------------------------
         replacements = None
-        
         if 'replacements' in options:
             repl_arg = options['replacements']
             try:
                 replacements = ast.literal_eval(repl_arg)
             except (ValueError, SyntaxError):
-                if repl_arg in ip.user_ns:
-                    replacements = ip.user_ns[repl_arg]
+                if repl_arg in user_ns:
+                    replacements = user_ns[repl_arg]
                 else:
                     print(f"⚠️ Warning: replacements '{repl_arg}' not found or invalid.")
                     replacements = None
-        else:
-            replacements = None 
 
-
-
-    
+        # ------------------------------------------------------------
         # Handle segmented models
+        # ------------------------------------------------------------
         if options.get('segment', False):
             dict_name = f"{name}_dict"
-        
-            # Create or reuse the per-model dict in user namespace
-            if dict_name not in user_ns:
-                user_ns[dict_name] = {}
-        
+            user_ns.setdefault(dict_name, {})
+
             segment_name = options.get('segment', 'rest')
-            user_ns[dict_name][segment_name] = cell
-        
-            # Handle display of list/text segments
-            if segment_name.startswith(('list', 'text')):
-                display_model(cell,spec=spec)
+
+            if cell is not None:
+                user_ns[dict_name][segment_name] = cell
+
+            # Display-only segments
+            if segment_name.startswith(('list', 'text')) and cell is not None:
+                display_model(cell, spec=spec)
                 return
-        
-            # Combine cell with lists 
-            model_text = '\n'.join([
+
+            # Combine lists + current cell
+            model_text = '\n'.join(
                 txt for seg, txt in user_ns[dict_name].items()
                 if seg.startswith('list')
-            ]) + cell
+            ) + (cell or "")
+
+            model_text_no_list = cell or ""
             
-            model_text_no_list = cell 
-            exploded_name = segment_name 
-                # --- Core model creation ---
+            model_text_latex_nowrap =  modeltext_to_latex(model_text)
+
+            
+            exploded_name = segment_name
+
         else:
-            dict_name = f'{name}_dict'
-            
+            dict_name = f"{name}_dict"
+
             if dict_name in user_ns:
-               segments = user_ns[dict_name]
+                segments = user_ns[dict_name]
 
-               model_text_lists   = '\n'.join(txt for k, txt in segments.items() if     k.startswith('list'))
-               model_text_no_list = '\n'.join(txt for k, txt in segments.items() if not k.startswith('list')) + cell           
-               model_text = model_text_no_list + '\n' + model_text_lists
-               
-               model_text_latex_nowrap = '\n'.join(
-                                        (modeltext_to_latex(txt) if (k.startswith('text') or k.startswith('list'))
-                                         else txt   
-                                             for k,txt in segments.items()  ) )
-               model_text_latex = markdown_titles_to_latex(wrap_latex(model_text_latex_nowrap))
+                model_text_lists = '\n'.join(
+                    txt for k, txt in segments.items()
+                    if k.startswith('list')
+                )
 
+                model_text_no_list = '\n'.join(
+                    txt for k, txt in segments.items()
+                    if not k.startswith('list')
+                ) + (cell or "")
+
+                model_text = model_text_no_list + '\n' + model_text_lists
+                
+                model_text_latex_nowrap = '\n'.join(
+                    modeltext_to_latex(txt)
+                    if k.startswith(('text', 'list')) else txt
+                    for k, txt in segments.items()
+                )
 
             else:
-                model_text_lists = ''
-                model_text = cell
+                model_text = cell or ""
                 model_text_no_list = model_text
+                model_text_latex_nowrap =  modeltext_to_latex(model_text)
+
             exploded_name = name
 
-        # Create the model
-       # model_code = extract_model_from_markdown(model_text)
+        # ------------------------------------------------------------
+        # Create Mexplode model
+        # ------------------------------------------------------------
         emodel = Mexplode(model_text, replacements=replacements)
-        
-        try: 
-            emodel.latex = model_text_latex
-        except: 
-            print('no latex')
-            ...
-            
+
+     
         user_ns[exploded_name] = emodel
-        
-        
-        # --- Rendering section ---
-        if options.get('render', True) and not options.get('display', False):
-            render_style = options.get('render_style', 'mixed')
-            if options.get('render_list', False) :
-                # rendered_md = render_markdown_model(model_text, style=render_style)
-                display_model(model_text,spec=spec)
+
+        # ------------------------------------------------------------
+        # Rendering
+        # ------------------------------------------------------------
+        if options.get('render', False):
+            if options.get('render_list', True):
+                display_model(model_text, spec=spec)
             else:
-                # rendered_md = render_markdown_model(model_text_no_list, style=render_style)
-                display_model(model_text_no_list,spec=spec)
+                display_model(model_text_no_list, spec=spec)
+                
+        if options.get('show', False):
+            emodel.show
 
-            # breakpoint() 
-            # display(Markdown(rendered_md))
-            # display_mixed_markdown(normalize_list_math(rendered_md))
+        if options.get('draw', False) and not options.get('display', False):
+            emodel.draw
 
-            # debug_var(rendered_md,)
-    
-        # --- Optional full display ---
+
+        if options.get('latex', False):
+            
+            try:
+                
+                emodel.latex_nowrap = markdown_titles_to_latex(model_text_latex_nowrap)
+
+                emodel.latex = markdown_titles_to_latex(
+                    wrap_latex(model_text_latex_nowrap)
+                )
+                LatexRepo( emodel.latex_nowrap,name=exploded_name).pdf(pdfopen=True) 
+            except Exception:
+                print("no latex")
+
+
+
         if options.get('display', False):
-            render_style = options.get('render_style', 'mixed')
-            rendered_md = render_markdown_model(model_text, style=render_style)
-            display(Markdown(rendered_md))
-            if f'{name}_dict' in globals():
-                segs = list(globals()[f'{name}_dict'].keys())
+            display_model(model_text, spec=spec)
+            if dict_name in user_ns:
+                segs = list(user_ns[dict_name].keys())
                 print(f"Model `{name}` built from segments: {', '.join(segs)}")
             print(f"✅ Created Mexplode model: {name}")
             print(emodel)
-    
-        return
 
+        return emodel
+
+
+    # -----------------------------------------------------------------
+    # Cell magic
+    # -----------------------------------------------------------------
+    @register_cell_magic
+    def mdmodel(line, cell):
+        _ =  _mdmodel_impl(line, cell)
+
+
+    # -----------------------------------------------------------------
+    # Line magic
+    # -----------------------------------------------------------------
+    @register_line_magic
+    def mdmodel(line):
+        """
+        %mdmodel <name> [options...]
+
+        Rebuild / re-render an existing Markdown-based model
+        without adding new content.
+        """
+        _ =  _mdmodel_impl(line, cell=None)
+
+
+    @register_cell_magic
+    def Mexplodemodel(line, cell):
+        _ =  _mdmodel_impl(line, cell)
+
+
+    # -----------------------------------------------------------------
+    # Line magic
+    # -----------------------------------------------------------------
+    @register_line_magic
+    def Mexplodemodel(line):
+        """
+        %mdmodel <name> [options...]
+
+        Rebuild / re-render an existing Markdown-based model
+        without adding new content.
+        """
+        _ =  _mdmodel_impl(line, cell=None)
 
 
 except:
