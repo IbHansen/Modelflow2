@@ -53,23 +53,30 @@ def MV_test(lprint=True):
     results=pd.DataFrame(res,columns=columns)                 # create an empty pandas.Dataframe 
     return results     
     
-def mv_opt(PP,qq,riskaversion,bsum,weights,weigthtedsum,boundsmin,boundsmax,lprint=False,solget=None):
+def mv_opt(PP,qq,riskaversion,bsum,weights,weigthtedsum,boundsmin,boundsmax,maximize=True,lprint=False,solget=None):
     ''' Performs mean variance optimization by calling a 
     quadratic optimization function from the cvxopt 
     library 
     
     '''
+    yield_multiplier = -1 if maximize else 1
+
     q_size   =  len(qq)
     P        =  matrix(2.0*(1.0-riskaversion)*PP)                 # to 
-    q        =  matrix(-1.0*riskaversion*qq)
+    q        =  matrix(yield_multiplier*riskaversion*qq)
     Gmin     = -matrix(np.eye(q_size))
     hmin     = -matrix(boundsmin)
     Gmax     =  matrix(np.eye(q_size))
     hmax     =  matrix(boundsmax)
-    Gweights =  matrix(weights)
-    hweights =  matrix(weigthtedsum)
-    G        =  matrix([Gmin,Gmax,Gweights.T])                       # creates the combined inequalities 
-    h        =  matrix([hmin,hmax,hweights])
+    if weights:
+        Gweights =  matrix(weights)
+        hweights =  matrix(weigthtedsum)
+        G        =  matrix([Gmin,Gmax,Gweights.T])                       # creates the combined inequalities 
+        h        =  matrix([hmin,hmax,hweights])
+    else: 
+        G        =  matrix([Gmin,Gmax])                       # creates the combined inequalities 
+        h        =  matrix([hmin,hmax])
+        
     A        =  matrix(1.,(1,q_size)) if bsum else None                                # sum of shares equal to bsum 
     b        =  matrix([bsum])        if bsum else None   
     options['show_progress'] = False

@@ -242,6 +242,134 @@ def df_extend(df,add=5):
     newindex = pd.period_range(df.index[0], periods=len(df)+add, freq=df.index.freq)
     return df.reindex(newindex,method='ffill')    
   
+
+import inspect
+import ast
+from pprint import pformat
+
+def debug_var(*args, **kwargs):
+    """
+    Print names/expressions and values for args passed to debug_var,
+    with file, function, and line number. Robust to multi-line calls.
+    """
+    # --- Locate caller info ---
+    caller_frame = inspect.currentframe().f_back
+    func_name = caller_frame.f_code.co_name
+    file_name = caller_frame.f_code.co_filename
+    call_lineno = caller_frame.f_lineno
+
+    # --- Try to grab enough source to cover a potentially multi-line call ---
+    try:
+        # Entire function (or module) source + starting line
+        src_lines, start_line = inspect.getsourcelines(caller_frame)
+        rel_idx = call_lineno - start_line  # index of the call line within src_lines
+
+        # Join forward from the call line until parentheses balance
+        # Find the first "debug_var(" occurrence on or after rel_idx
+        joined = "".join(src_lines[rel_idx:])
+        # If multiple statements share the line, trim before "debug_var("
+        start_pos = joined.find("debug_var(")
+        if start_pos == -1:
+            raise RuntimeError("Could not find 'debug_var(' on or after the call line.")
+
+        # Walk forward to capture the full call (balance parentheses)
+        i = start_pos
+        depth = 0
+        in_str = False
+        str_quote = ""
+        escaped = False
+        end_pos = None
+
+        while i < len(joined):
+            ch = joined[i]
+
+            if in_str:
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == str_quote:
+                    in_str = False
+            else:
+                if ch in ("'", '"'):
+                    in_str = True
+                    str_quote = ch
+                elif ch == "(":
+                    depth += 1
+                elif ch == ")":
+                    depth -= 1
+                    if depth == 0:
+                        end_pos = i + 1
+                        break
+
+            i += 1
+
+        if end_pos is None:
+            raise RuntimeError("Could not balance parentheses for debug_var call.")
+
+        call_text = joined[start_pos:end_pos]  # e.g., "debug_var(a, b=foo(x, y))"
+
+        # --- Parse the call with AST and extract argument source segments ---
+        # We parse the isolated call text so ast.get_source_segment works cleanly.
+        tree = ast.parse(call_text, mode="exec")
+        # Expecting one Expr(Call(...))
+        node = tree.body[0].value
+        if not isinstance(node, ast.Call):
+            raise RuntimeError("Parsed node was not a Call.")
+
+        # Helper to recover source of each arg from call_text
+        def src_of(subnode):
+            try:
+                return ast.get_source_segment(call_text, subnode)
+            except Exception:
+                return "<?>"  # fallback
+
+        # Build argument name labels in the same order they were passed
+        # Positional args first:
+        pos_labels = [src_of(a) for a in node.args]
+        # Keyword args next:
+        kw_labels = [f"{src_of(k.arg) if k.arg else '<?>'}={src_of(k.value)}" for k in node.keywords if k.arg is not None]
+        # Handle **kwargs expansion specially (k.arg is None)
+        starstar_labels = [f"**{src_of(k.value)}" for k in node.keywords if k.arg is None]
+
+        # Combine labels to match runtime values ordering: positional, then explicit keywords
+        # Note: **kwargs expansion values appear only in source; we can't match them to individual items at runtime.
+        arg_labels = pos_labels + [lbl.split("=", 1)[0] for lbl in kw_labels]  # use just the key before '='
+        # For display, we’ll list **expansions separately after the printed values.
+        starstar_note = ", ".join(starstar_labels) if starstar_labels else ""
+
+    except Exception:
+        # Fallback: source not available or parsing failed
+        arg_labels = ["<?>"] * len(args) + list(kwargs.keys())
+        starstar_note = ""
+
+    # --- Print header (location/context) ---
+    print(f"[debug_var] File: {file_name} | Function: {func_name} | Line: {call_lineno}")
+
+    # --- Print positional args ---
+    for label, value in zip(arg_labels[:len(args)], args):
+        print(f"  {label} = {pformat(value)}")
+
+    # --- Print keyword args (explicit ones only) ---
+    # Align labels for the kwargs we actually received (explicit, not **expansion members)
+    explicit_kw_keys = list(kwargs.keys())
+    kw_start = len(args)
+    for key in explicit_kw_keys:
+        # If parsing worked, try to use the parsed label; else fall back to the key
+        label = arg_labels[kw_start] if kw_start < len(arg_labels) else key
+        # Ensure the label matches the real key if we have a mismatch
+        if label != key:
+            label = key
+        print(f"  {label} = {pformat(kwargs[key])}")
+        kw_start += 1
+
+    # --- Note any **kwargs expansions present in the source but not directly enumerable here ---
+    if starstar_note:
+        print(f"  (source included {starstar_note})")
+        
+    
+  
+    
 if __name__ == '__main__':
     #%% Test
     if not  'baseline' in locals() or 1 :    
@@ -253,3 +381,5 @@ if __name__ == '__main__':
         _ = madam(scenarie)
     
     update_var(baseline,'tg','=GROWTH',1,2021,2024,lprint=1)
+
+

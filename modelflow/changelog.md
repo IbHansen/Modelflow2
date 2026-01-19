@@ -220,13 +220,14 @@ sort when finding pre and epi variables to make the order deterministic
 
 Version 2.59 uploaded 
 Version 2.60 uploaded 
-
 app.run_serve to app.run 
 warning when pdf is not generated in report 
 
 Version 2.61 uploaded 
 download_github_repo now accept a subfolder, so models and other stuf can be in one repo 
 used in Worldbank_Models
-
-
 Version 2.61 uploaded 
+Differentiation of log and exp now symbolic in modelnewton 
+mv_opt in model_cvx can both maximizee and minimize 
+revised magic with mdmodel and output to latex 
+models with both implicit and normalized frml can be handled 

@@ -24,6 +24,7 @@ import modelmanipulation as mp
 from modelclass import model 
 import modelpattern as pt 
 from modelnormalize import normal 
+from modelhelp import debug_var
 
 def rebank(model):
     ''' All variable names are decorated by a {bank}
@@ -138,26 +139,27 @@ def debrace(streng):
     
     '''
     tstreng = streng[:]
-    tfunk = r'\underbrace{'
-    while tfunk in tstreng:
-        start = tstreng.find(tfunk)
-        match = tstreng[start + len(tfunk):]
-        open = 1
-        for index1 in range(len(match)):
-            if match[index1] in '{}':
-                open = (open + 1) if match[index1] == '{' else (open - 1)
-            if not open:
-                break
-        goodstuf = tstreng[:start]+match[index1]    
-        match2 =  match[index1 + 1+2:]
-        open=1 
-        for index2 in range(len(match2)):
-            if match2[index2] in '{}':
-                open = (open + 1) if match2[index2] == '{' else (open - 1)
-            if not open:
-                break
-        tstreng = tstreng[:start]+ ''+ match[:index1] +''+ match2[index2+1:]    
-    # print(f'{tstreng=}')    
+    for tfunk in [ r'\underbrace{', r'\overbrace{']:
+    # tfunk = r'\underbrace{'
+        while tfunk in tstreng:
+            start = tstreng.find(tfunk)
+            match = tstreng[start + len(tfunk):]
+            open = 1
+            for index1 in range(len(match)):
+                if match[index1] in '{}':
+                    open = (open + 1) if match[index1] == '{' else (open - 1)
+                if not open:
+                    break
+            goodstuf = tstreng[:start]+match[index1]    
+            match2 =  match[index1 + 1+2:]
+            open=1 
+            for index2 in range(len(match2)):
+                if match2[index2] in '{}':
+                    open = (open + 1) if match2[index2] == '{' else (open - 1)
+                if not open:
+                    break
+            tstreng = tstreng[:start]+ ''+ match[:index1] +''+ match2[index2+1:]    
+    # debug_var(tstreng)    
     return tstreng
 
 def defunk(funk, subs , streng,startp='{',slutp='}'):
@@ -234,13 +236,49 @@ def findallindex(ind0):
         ind = ind0[ind0.index('>')+1:].strip()
     else:
         frmlname='<>'
+        ind=ind0.strip()                                        
+    # print(f'{ind=}')
+    # breakpoint()    
+    if ind.startswith('['):
+        do_conditions = ind[1:ind.index(']')]
+        rest = ind[ind.index(']')+1:].strip() 
+        
+        all_do_condition = {condition.strip().split(' ',1)[0].strip() : 
+                            condition.strip().split(' ',1)[1].strip().replace('=',' = ') 
+                            for condition in do_conditions.split(',')}
+        # print(f'{do_conditions=}')
+        # print(f'{all_do_condition=}')
+    else:
+        all_do_condition = dict()
+        rest = ind.strip() 
+        
+    lhs=rest.split('=')[0]
+    do_indicies =   re.findall(r'__\{([A-Za-z][\w]*)\}',lhs ) # all the index variables 
+    
+    do_indicies_dict = {ind : all_do_condition.get(ind) for ind in do_indicies}             
+        
+    return frmlname,do_indicies_dict,rest
+
+
+def findallindex(ind0):   #old 
+    ''' 
+     - an equation looks like this
+     - <frmlname> [do_condition,...] lhs = rhs
+     - indicies are identified as __{} on the left hand side. 
+    
+    this function find frmlname and index variables on the left hand side. meaning variables braced by {} '''
+    if ind0.startswith('<'):
+        frmlname = re.findall(r'\<.*?\>',ind0)[0]
+        ind = ind0[ind0.index('>')+1:].strip()
+    else:
+        frmlname='<>'
         ind=ind0.strip()
     # print(f'{ind=}')
     # breakpoint()    
     if ind.startswith('['):
         do_conditions = ind[1:ind.index(']')]
         rest = ind[ind.index(']')+1:].strip() 
-        all_do_condition = {condition.split('=')[0] : condition.split('=')[1] for condition in do_conditions.split(',')}
+        all_do_condition = {condition.split('=',1)[0] : condition.split('=',1)[1].replace('=',' = ')  for condition in do_conditions.split(',')}
         # print(f'{do_conditions=}')
     else:
         all_do_condition = dict()
@@ -253,37 +291,102 @@ def findallindex(ind0):
         
     return frmlname,do_indicies_dict,rest
 
+
 def do_list(do_index,do_condition):
     '''     do do_index_list do_condition = 1 $ '''
     
     
     if do_condition:
-        out = f'do {do_index} {do_condition} = 1 $'
+        if '=' in do_condition:
+            out = f'do {do_index} {do_condition} $'
+        else:    
+            out = f'do {do_index} {do_condition} = 1 $'
     else:
         out = f'do {do_index}  $'
     return out
 
-def doable(ind,show=False):
+def sum_lists(do_index,do_condition):
+    '''     do do_index_list do_condition = 1 $ '''
+    
+    
+    if do_condition:
+        if '=' in do_condition:
+            out = f' {do_condition}'
+        else:    
+            out = f' {do_condition} = 1'
+    else:
+        out = f''
+    return out
+
+
+def doable(ind,funks=[],show=False):
     ''' find all dimensions in the left hand side of = and and decorate with the nessecary do .. enddo ''' 
+
+    def endovar(f,funks=[]):  # Finds the first variable in a expression
+        # print(f)
+        for t in pt.udtryk_parse(f,funks=funks):
+            if t.var:
+                ud=t.var
+                break
+        return ud
+
     
     if show:
          print('\nBefore doable',ind,sep='\n')
 
-    frmlname,do_indicies_dict,rest = findallindex(ind)  # all the index variables 
+    frmlname,do_indicies_dict,rest = findallindex(ind.upper() )  # all the index variables 
+    # debug_var(frmlname,do_indicies_dict,rest)
     # breakpoint()
-    # print(f'{do_indicies_dict=}*******************')
+    if show:
+        print(f'{do_indicies_dict=}*******************')
     if do_indicies_dict : 
         pre = ' '.join([do_list(i,c) for i,c in do_indicies_dict.items() ]) 
         # print(f'{pre=}*******************')
 
         post = 'enddo $ '*len(do_indicies_dict)
-        out = f'{pre}\n  frml    {frmlname} {rest} $\n{post}'
+        out = [f'{pre}\n  frml    {frmlname} {rest} $\n{post}']
     else:
-        out=f'frml {frmlname} {rest.strip()} $'
-        
+        out=[f'frml {frmlname} {rest.strip()} $']
+    # print()     
+    if ind.startswith('<'):
+        sumname = mp.kw_frml_name(frmlname, 'sum')
+        if sumname:
+            sep = ']' if ']' in ind else '>'
+            lhs= ind.split(sep,1)[1].split('=',1)[0].strip() 
+            # debug_var(lhs,)
+            lhsvar = endovar(lhs,funks=funks)
+            lhsvar_stub = lhsvar.split('{',1)[0]
+            sums  = ''.join([f'sum({i}{sum_lists(i,c)},' for i,c in  do_indicies_dict.items() ])+lhsvar+')'*len(do_indicies_dict)
+            out.append(f'frml {frmlname} {lhsvar_stub}{sumname} = {sums} $ \n\n')
+    out_str = '\n'.join(out).upper() 
     if show:
-         print('\nAfter doable',out,sep='\n')
-    return out
+         print('\nAfter doable',out_str,sep='\n')
+    return out_str
+# xx = doable('<sum=_sum,HEST>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() 
+#     ,show=True)
+# xx = doable('<sum=abe,HEST> [banks=country = denmark ] LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs}'.upper() ,show=True)
+def normalize_lists(text: str) -> str:
+    """
+    Finds all LIST ... $ blocks (possibly spanning multiple lines)
+    and rewrites them so that each block is on a single line
+    with clean spacing.
+
+    Will NOT match across another line starting with LIST.
+    """
+    pattern = re.compile(
+        r'LIST'                     # start marker
+        r'((?:(?!^\s*LIST).)*?)'    # content: anything, but stop if line starts with LIST
+        r'\$',                      # end marker
+        flags=re.DOTALL | re.MULTILINE
+    )
+
+    def replacer(match):
+        content = match.group(1)
+        flattened = " ".join(content.split())
+        return f"LIST {flattened} "
+
+    return pattern.sub(replacer, text)
+
 
 @dataclass 
 class a_latex_model:
@@ -359,11 +462,14 @@ Methods:
 
     equation_name          : str = ''            # The name 
     original_equation      : str = ''            # an equation in latex 
+    partial : bool = False 
     modellists             : list = ''  
     
     def __post_init__(self): 
         
         self.transformed_equation = self.straighten_eq(self.original_equation)
+        if self.partial:
+            return 
         # breakpoint()
         self.doable_equation = doable(f'<{self.equation_name}> {self.transformed_equation}',show=0)
         
@@ -424,6 +530,7 @@ Raises:
                '\n' :'',
                r'\forall' :'',
                r'\;' :'',
+               r'\:' :'',
                r'  ' :' ',
 
               

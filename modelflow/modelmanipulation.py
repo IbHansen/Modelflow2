@@ -22,7 +22,10 @@ from sympy import solve, sympify
 import ast
 
 
-from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar
+
+
+from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts
+from modelhelp import debug_var
 
 
 class oldsafesub(dict):
@@ -65,6 +68,7 @@ class safesub(dict):
                 print(f'Wrong key or value in list ofset:<{key}>') 
                 raise
         return '{' + key +'}' 
+
 
 
 def sub(text, katalog):
@@ -268,7 +272,7 @@ def tofrml(expressions,sep='\n'):
     ''' a function, wich adds FRML to all expressions seperated by <sep>  
     if no start is specified the max lag will be used ''' 
         
-    notrans = {'DO','ENDDO','LIST','FRML'}
+    notrans = {'DO','ENDDO','LIST','FRML','DOABLE'}
         
     def trans(eq):
         test= eq.strip().upper()+'        '
@@ -280,12 +284,14 @@ def tofrml(expressions,sep='\n'):
             return eq  
         else:
             return ('FRML ' + (eq if test.startswith('<') else ' <> ' +eq) +' $' )
+        
+    # debug_var(expressions)    
     if '$' in expressions:
         return expressions
     else: 
 #        exp = re.sub(commentchar+'!(.*)\n',r'!\1\n',expressions)        
         eqlist =  [trans(e)  for e in expressions.split(sep)]
-    
+    # debug_var(expressions.split(sep))   
     return '\n'.join(eqlist)
 
 
@@ -435,12 +441,16 @@ def sumunroll(in_equations,listin=False):
                 if '=' in suminit:
                     sumover,remain = suminit.split(' ',1)
                     xvar,lig =remain.replace(' ','').split('=')
+                elif ' ' in suminit.strip():
+                    sumover,remain = suminit.split(' ',1)
+                    xvar =remain.replace(' ','')
+                    lig = '1' 
                 else:
                     sumover = suminit
                     xvar=''
                     lig=''
                     
-                current_dict = liste_dict[sumover]
+                current_dict = liste_dict[sumover.strip()]
                 ibsud = sub_frml(current_dict, sumled, '+', xvar=xvar,lig=lig,sep='')
                 value = forsum + '(' + ibsud + ')' + eftersum
             nymodel.append(command + ' ' + value)
@@ -489,7 +499,7 @@ def funkunroll(in_equations,funk='MAX',listin=False,replacefunk=''):
                     xvar=''
                     lig=''
                     
-                current_dict = liste_dict[sumover]
+                current_dict = liste_dict[sumover.strip()]
                 # print(f'{value=}')
                 ibsud = sub_frml(current_dict, sumled, ',', xvar=xvar,lig=lig,sep='')
                 value = forsum + 'xxxx_funk_ibhansen(' + ibsud + ')' + eftersum  # as we dont replace the funk name 
@@ -837,6 +847,28 @@ def explode(model,norm=True,sym=False,funks=[],sep='\n'):
    
     return udrullet
 
+def explode_new(model,norm=True,sym=False,funks=[],sep='\n'):
+    '''prepares a model from a model template. 
+    
+    Returns a expanded model which is ready to solve
+    
+    Eksempel: model = udrul_model(MinModel.txt)'''
+    # breakpoint()
+    udrullet=tofrml(model,sep=sep) 
+    udrullet = doable_unroll(udrullet,funks)
+    udrullet = dounloop(udrullet)        #  we unroll the do loops 
+    # modellist = list_extract(udrullet) 
+    # if norm : udrullet = normalize(udrullet,sym,funks=funks ) # to save time if we know that normalization is not needed 
+    # udrullet = lagarray_unroll(udrullet,funks=funks )
+    # udrullet = exounroll(udrullet)    # finaly the exogeneous and adjustment terms - if present -  are handled 
+    # # breakpoint() 
+    # udrullet = sumunroll(udrullet,listin=modellist)    # then we unroll the sum 
+    # udrullet = creatematrix(udrullet,listin=modellist)
+    # udrullet = createarray(udrullet,listin=modellist)
+    # udrullet = argunroll(udrullet,listin=modellist)
+   
+    return udrullet
+
 
 def modelprint(ind, title=' A model', udfil='', short=0):
     ''' prettyprinter for a a model. 
@@ -1035,7 +1067,7 @@ def doablekeep(formulars):
                    out.append([exp+ ' $ \n'])
     return ''.join(chain(*listout,*out))
 ##%%
-def doable(formulars,funks=[]):
+def doable(formulars,funks=[],replace_usd=True):
     ''' takes index in the lhs and creates a do loop around the line
     on the right side you can use %0_, %1_ an so on to indicate the index, just to awoid typing to much
     
@@ -1072,19 +1104,12 @@ def doable(formulars,funks=[]):
                     out.append(f'{lhsvar_stub}{sumname} = {sumlist} $ \n\n')
         elif len(exp) : 
             out.append(exp+ ' $ \n')
-    return ''.join(out).replace('$','')   # the replace is a quick fix 
+    if replace_usd:
+        res = ''.join(out).replace('$','')   # the replace is a quick 
+    else:  
+        res = ''.join(out)        
+    return res 
 
-#% test doable
-frml = '''
-list sectors_list = sectors : a b
-list banks_list   = banks : hest ko
-
-    a__{banks}__{sectors} = b 
-<sum= all>    b__{sectors}__{banks}  = b
-<sum= all>    diff(xx__{sectors}__{banks})  = 42 
-        '''.upper()
-testfrml = (doable(frml))
-# print(explode(testfrml))
 
 ##%%
 def findindex_gams(ind00):
@@ -1116,20 +1141,26 @@ def un_normalize_expression(frml) :
     else the lhs_varriable is used in <endo=> 
     ''' 
     frml_name,frml_index,frml_rest = findindex_gams(frml.upper())
-    this_endo = kw_frml_name(frml_name.upper(), 'ENDO')
-    # breakpoint()
-    lhs,rhs  = frml_rest.split('=')
-    if this_endo: 
-        lhs_var = this_endo.strip()
-        frml_name_out = frml_name
-    else:
-        lhs_var = lhs.strip()
-        # frml_name_out = f'<endo={lhs_var}>' if frml_name == '<>' else f'{frml_name[:-1]},endo={lhs_var}>'
-        frml_name_out = frml_name[:]
-    # print(this_endo)
-    new_rest = f'{lhs_var}___res = ( {rhs.strip()} ) - ( {lhs.strip()} )'
-    return f'{frml_name_out} {frml_index if len(frml_index) else ""} {new_rest}'
- 
+    
+    if kw_frml_name(frml_name.upper(), 'IMPLICIT'): 
+        
+        this_endo = kw_frml_name(frml_name.upper(), 'ENDO')
+        # breakpoint()
+        lhs,rhs  = frml_rest.split('=')
+        if this_endo: 
+            lhs_var = this_endo.strip()
+            frml_name_out = frml_name
+        else:
+            lhs_var = lhs.strip()
+            # frml_name_out = f'<endo={lhs_var}>' if frml_name == '<>' else f'{frml_name[:-1]},endo={lhs_var}>'
+            frml_name_out = frml_name[:]
+        # print(this_endo)
+        new_rest = f'{lhs_var}___res = ( {rhs.strip()} ) - ( {lhs.strip()} )'
+        res =  f'{frml_name_out} {frml_index if len(frml_index) else ""} {new_rest}'
+        return res 
+        
+    else: 
+         return frml
 
 def un_normalize_model(in_equations,funks=[]):
     ''' un normalize a model '''
@@ -1164,7 +1195,7 @@ def eksempel(ind):
     modelprint(abe, 'Unrolled model')
     modelprint(ko,  'Historic model')
 # print('Hej fra modelmanipulation')
-if __name__ == '__main__' and 1 :
+if __name__ == '__main__' and 0 :
     #%%
     print(sub_frml(a['bankdic'],'Dette er {bank}'))
     print(sub_frml(a['bankdic'],'Dette er {bank}',sep=' and '))
@@ -1196,7 +1227,7 @@ if __name__ == '__main__' and 1 :
     split_frml ('FRML <res> ib =1+gris $')
     find_statements('   FRML x ib    =1+gris $    frml <exo> hane= 27*ged$')
     find_statements('! FRML x ib =1+gris $ \n frml <exo> hane=27*ged $')
-    find_statements('FRML x ib =1+gris*(ko+1) $ ! Comment \n frml <exo> hane= ged $')
+    find_statements('FRML <x> ib =1+gris*(ko+1) $ ! Comment \n frml <exo> hane= ged $')
     sub('O {who} of {from}',{'who':'Knights','from':'Ni'})
     sub('O {who} of {from}, , we have brought you your {weed}',{'who':'Knights','from':'Ni'})
     sub_frml({'weed':['scrubbery','herring']},'we have brought you your {weed}')
@@ -1348,7 +1379,7 @@ enddo $
     print(tofrml('a=b \n c=55 ',sep='\n'))
     #%%
     model      = '''\
-!jjjfj
+! jjjfj
 list alist = al : a b c  
 a = c(-1) + b(-1)  
 x = 0.5 * c 
@@ -1357,7 +1388,7 @@ d = x + 3 * a(-1)
     print(tofrml(model))
     
     
-    #%% testtofrml
+    # testtofrml
     mtest = ''' 
     list banklist = bank    : ib      soren  marie /
                     country : denmark sweden denmark  $

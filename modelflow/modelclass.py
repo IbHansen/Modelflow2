@@ -105,6 +105,7 @@ import modeljupyter as mj
 from modelhelp import cutout, update_var
 from modelnormalize import normal
 from modeldekom import totdif
+from modelhelp import debug_var
 
 
 # functions used in BL language
@@ -327,9 +328,16 @@ class BaseModel():
         self.exogene_true = {
             v for v in self.exogene if not v+'___RES' in self.endogene}
         # breakpoint()
-        self.normalized = not all((v.endswith('___RES')
+        
+        self.normalized = not any((v.endswith('___RES')
                                   for v in self.endogene))
-        self.endogene_true = self.endogene if self.normalized else {
+        self.implicit   = all((v.endswith('___RES')
+                                  for v in self.endogene))
+        self.hybrid = not self.normalized and not self.implicit 
+        
+        
+
+        self.endogene_true = self.endogene if self.normalized else {  # unknown if some 
             v for v in self.exogene if v+'___RES' in self.endogene}
 
         # self.check_endo_rhs() 
@@ -482,8 +490,11 @@ class BaseModel():
          from copy import deepcopy
          # old_keep_solutions = {k:v.copy() for k,v in self.keep_solutions.items() }
          old_keep_solutions = self.keep_solutions
-         
          if switch or base_last or scenarios in {'base_last'} :
+         # if switch or base_last or (
+         #   isinstance(scenarios, str) and scenarios in {'base_last'}
+         #     ):
+
              basename = self.basename if hasattr(self, 'basename') else 'Baseline solution'
              lastname = self.lastname if hasattr(self, 'lastname') else 'Last solution'
              self.keep_solutions = {basename:self.basedf.copy() , lastname:self.lastdf.copy()}
@@ -677,7 +688,8 @@ class BaseModel():
             databank = insertModelVar(databank, self)
             for i in [j for j in self.allvar.keys() if self.allvar[j]['matrix']]:
                 # Make sure columns with matrixes are of this type
-                databank.loc[:, i] = databank.loc[:, i].astype('O')
+                databank[i] = databank[i].astype(object)
+                # databank.loc[:, i] = databank.loc[:, i].astype('O')
             self.genrcolumns = databank.columns.copy()
             make_los_text = self.outeval(databank)
             self.make_los_text = make_los_text
@@ -6529,6 +6541,9 @@ class Solver_Mixin():
                                 
                         if not silent:
                             print(f'Importing {jitfile}')    
+                            print('modelsource in sys.path?', any(str(Path('modelsource').resolve().parent) == p for p in sys.path))
+                            print('is package?', Path('modelsource/__init__.py').exists())
+                            print('jit exists?', Path('modelsource/PAK_sim_jit_jitsolver.py').exists())
                         m1 = importlib.import_module('.'+jitfile.stem,jitfile.parent.name)
 
                         pro_jit, core_jit, epi_jit = m1.prolog, m1.core, m1.epilog
@@ -7261,6 +7276,8 @@ class Solver_Mixin():
             # breakpoint()
             self.newton_1per_solver = self.newton_1per_diff.get_solve1per(
                 df=databank, periode=[self.current_per[0]])[self.current_per[0]]
+            
+            
 
         newton_col = [databank.columns.get_loc(
             c) for c in self.newton_1per_diff.endovar]
@@ -7811,9 +7828,9 @@ class Solver_Mixin():
         self.stackrowindex = np.array(
             [[r]*len(newton_col) for r in self.stackrows]).flatten()
         self.stackcolindex = np.array(
-            [newton_col for r in self.stackrows]).flatten()
+            [newton_col for r in self.stackrows]).flatten()         #index for equations 
         self.stackcolindex_endo = np.array(
-            [newton_col_endo for r in self.stackrows]).flatten()
+            [newton_col_endo for r in self.stackrows]).flatten()    # index for unknown 
 
 
 #                if ldumpvar:
@@ -7917,6 +7934,534 @@ class Solver_Mixin():
         if not silent:
             print(self.name + ' solved  ')
         return outdf
+
+
+    def newtonstack_implicit(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
+                                  max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv,
+                                  dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=None, ljit=False, nljit=0, stringjit=False, transpile_reset=False,
+                                  fairopt={'fair_max_iterations ': 1}, debug=False, timeit=False, nonlin=False,
+                                  newtonalfa=1.0, newtonnodamp=0, forcenum=True, newton_reset=False, **kwargs):
+        '''Evaluates this model on a databank from start to end (means end in Danish). 
+
+        First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
+        (:func:`modelclass.model.fouteval`) 
+        then it evaluates the function and returns the values to a the Dataframe in the databank.
+
+        The text for the evaluater function is placed in the model property **make_los_text** 
+        where it can be inspected 
+        in case of problems.         
+
+        '''
+    #    print('new nwwton')
+        ittotal = 0
+        diffcount = 0
+        starttimesetup = time.time()
+        fair_max_iterations = {**fairopt, **
+                               kwargs}.get('fair_max_iterations ', 1)  # only used for the dump 
+        sol_periode = self.smpl(start, end, databank)
+        self.check_sim_smpl(databank)
+
+        newdata, databank = self.is_newdata(databank)
+
+        self.pronew2d, self.solvenew2d, self.epinew2d = self.makelos(databank, solvename='newton',
+                                                                     ljit=ljit, stringjit=stringjit, transpile_reset=transpile_reset, chunk=chunk, newdata=newdata)
+
+        values = databank.values.copy()
+        outvalues = np.empty_like(values)
+        if not hasattr(self, 'newton_diff_stack'):
+            self.newton_diff_stack = newton_diff(
+                self, forcenum=forcenum, df=databank, ljit=nljit, nchunk=nchunk, timeit=timeit, silent=silent)
+        self.is_residual_eq = np.array(
+            [v.endswith('___RES') for v in  self.newton_diff_stack.endovar],
+            dtype=bool
+        )
+        self.is_residual_eq_stacked = np.tile(self.is_residual_eq, len(sol_periode))
+        if not hasattr(self, 'stackunsolver'):
+            if not silent:
+                print(
+                    f'Calculating new derivatives and create new stacked Newton solver')
+            self.getstackunsolver = self.newton_diff_stack.get_solvestacked
+            diffcount += 1
+            self.stackunsolver = self.getstackunsolver(databank,self.is_residual_eq_stacked)
+            self.old_stack_periode = sol_periode.copy()
+        elif newton_reset or not all(self.old_stack_periode[[0, -1]] == sol_periode[[0, -1]]):
+            print(f'Creating new stacked Newton solver')
+            diffcount += 1
+            self.stackunsolver = self.getstackunsolver(databank,self.is_residual_eq_stacked)
+            self.old_stack_periode = sol_periode.copy()
+
+        newton_col = [databank.columns.get_loc(c) for c in self.newton_diff_stack.endovar]    # equations
+        # breakpoint()
+        newton_col_endo = [databank.columns.get_loc(c) for c in self.newton_diff_stack.declared_endo_list] #unknown
+        self.newton_diff_stack.timeit = timeit
+
+        self.genrcolumns = databank.columns.copy()
+        self.genrindex = databank.index.copy()
+
+        convvar = self.list_names(self.coreorder, conv)
+        # this is how convergence is measured
+        convplace = [databank.columns.get_loc(c) for c in convvar]
+        convergence = True
+
+        if ldumpvar:
+            self.dumplist = []
+            self.dump = self.list_names(
+                 self.newton_diff_stack.declared_endo_list, dumpvar)    
+            dumpplac = [databank.columns.get_loc(v) for v in self.dump]
+
+        ittotal = 0
+        endtimesetup = time.time()
+        
+        
+
+        starttime = time.time()
+        self.stackrows = [databank.index.get_loc(p) for p in sol_periode]
+        self.stackrowindex = np.array(
+            [[r]*len(newton_col) for r in self.stackrows]).flatten()  # rows
+        self.stackcolindex = np.array(
+            [newton_col for r in self.stackrows]).flatten()           # index eq
+        self.stackcolindex_endo = np.array(
+            [newton_col_endo for r in self.stackrows]).flatten()# index unknown 
+
+
+#                if ldumpvar:
+#                    self.dumplist.append([fairiteration,self.periode,int(0)]+[values[row,p]
+#                        for p in dumpplac])
+
+#        itbefore = values[self.stackrows,convplace]
+#        self.pro2d(values, values,  row ,  alfa )
+        for iteration in range(max_iterations):
+            with self.timer(f'\nNewton it:{iteration}', timeit) as xxtt:
+                before = values[self.stackrowindex, self.stackcolindex_endo]
+                with self.timer('calculate new solution', timeit) as t2:
+                    for self.periode, row in zip(sol_periode, self.stackrows):
+                        self.pronew2d(values, outvalues, row,  alfa)
+                        self.solvenew2d(values, outvalues, row,  alfa)
+                        self.epinew2d(values, outvalues, row,  alfa)
+                        ittotal += 1
+                with self.timer('extract new solution', timeit) as t2:
+                    eq_after = outvalues[self.stackrowindex, self.stackcolindex] # calculated equations 
+                    y_implied = outvalues[self.stackrowindex, self.stackcolindex_endo] # calculated unknown 
+
+                    y_old =   values[self.stackrowindex, self.stackcolindex]  # equations 
+                residual = eq_after.copy()
+                residual[~self.is_residual_eq_stacked] = (
+                    y_implied[~self.is_residual_eq_stacked] -
+                    y_old[~self.is_residual_eq_stacked]
+                )
+
+                # Convergence measure BEFORE update (Newton style)
+                newton_conv = np.max(np.abs(residual))
+                # breakpoint()
+
+                if not silent:
+                    print(
+                        f'Iteration  {iteration} Max residual {newton_conv:>{25},.{12}f}')
+                if newton_conv <= newton_absconv:
+                    convergence = True
+                    break
+                if iteration != 0 and nonlin and not (iteration % nonlin):
+                    with self.timer('Updating solver', timeit) as t3:
+                        if not silent:
+                            print(f'Updating solver, iteration {iteration}')
+                        df_now = pd.DataFrame(
+                            values, index=databank.index, columns=databank.columns)
+                        self.stackunsolver = self.getstackunsolver(df_now,self.is_residual_eq_stacked)
+                        diffcount += 1
+
+                with self.timer('Update solution', timeit):
+                    #            update = self.solveinv(distance)
+                    update = self.stackunsolver(residual)
+                    damp = newtonalfa if iteration <= newtonnodamp else 1.0
+                values[self.stackrowindex,
+                       self.stackcolindex_endo] = before - damp * update
+
+                if ldumpvar:
+                    for periode, row in zip(self.current_per, self.stackrows):
+
+                        self.dumplist.append([0, periode, int(iteration+1)]+[values[row, p]
+                                                                             for p in dumpplac])
+    #                if iteration > first_test:
+    #                    itafter=[values[row,c] for c in convplace]
+    #                    convergence = True
+    #                    for after,before in zip(itafter,itbefore):
+    # print(before,after)
+    #                        if before > absconv and abs(after-before)/abs(before)  > relconv:
+    #                            convergence = False
+    #                            break
+    #                    if convergence:
+    #                        break
+    #                    else:
+    #                        itbefore=itafter
+#                self.epistack2d(values, values, row ,  alfa )
+
+        if not silent:
+            if not convergence:
+                print(f'Not converged in {iteration} iterations')
+            else:
+                print(f'Solved in {iteration} iterations')
+
+        if ldumpvar:
+            self.dumpdf = pd.DataFrame(self.dumplist)
+            del self.dumplist
+            self.dumpdf.columns = ['fair', 'per', 'iteration']+self.dump
+            if fair_max_iterations <= 2:
+                self.dumpdf.drop('fair', axis=1, inplace=True)
+
+        outdf = pd.DataFrame(values, index=databank.index,
+                             columns=databank.columns)
+
+        if stats:
+            numberfloats = self.calculate_freq[-1][1]*ittotal
+            diff_numberfloats = self.newton_diff_stack.diff_model.calculate_freq[-1][-1]*len(
+                self.current_per)*diffcount
+            endtime = time.time()
+            self.simtime = endtime-starttime
+            self.setuptime = endtimesetup - starttimesetup
+            print(
+                f'Setup time (seconds)                       :{self.setuptime:>15,.4f}')
+            print(
+                f'Total model evaluations                    :{ittotal:>15,}')
+            print(
+                f'Number of solver update                    :{diffcount:>15,}')
+            print(
+                f'Simulation time (seconds)                  :{self.simtime:>15,.4f}')
+            print(
+                f'Floating point operations in model         : {numberfloats:>15,}')
+            print(
+                f'Floating point operations in jacobi model  : {diff_numberfloats:>15,}')
+
+        if not silent:
+            print(self.name + ' solved  ')
+        return outdf
+
+
+        
+    
+    def newton_implicit(
+            self, databank, start='', end='', silent=1, samedata=0, alfa=1.0,
+            stats=False, first_test=1, newton_absconv=0.001, max_iterations=20,
+            conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False,
+            newton_reset=False, dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5,
+            chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False,
+            init=False, newtonalfa=1.0, newtonnodamp=0, forcenum=False,
+            fairopt={'fair_max_iterations ': 1}, **kwargs):
+        """
+        Unified Newton solver supporting both:
+          - normalized equations:    y = F(y, x)
+          - implicit residual eqs:   y___RES = G(y, x)
+    
+        Mixed system:
+          - Equation list (rows):       endovar  (may contain both VAR and VAR___RES)
+          - Unknowns (columns):         declared_endo_list (base VAR names)
+          - is_residual_eq:             mask marking rows using residual form G(y,x)
+    
+        Newton step:
+          residual_i = {
+              G_i(y,x)                    if is_residual_eq[i]
+              F_i(y,x) - y_i              otherwise (normalized)
+          }
+          J is constructed consistently in newton_diff.get_solve1per(...)
+          update = J^{-1} * residual
+          y_new  = y_old - α * update
+    
+        Extra features (via **kwargs):
+
+          - debug_newton      : bool  (default False)
+          - debug_top         : int   (default 5)
+        """
+    
+        import time
+        import numpy as np
+        import pandas as pd
+    
+        # --- Extra options from kwargs ----------------------------------------
+        newton_linesearch = kwargs.get('newton_linesearch', False)
+        ls_max            = kwargs.get('newton_ls_max', 8)
+        ls_beta           = kwargs.get('newton_ls_beta', 0.5)
+        ls_c              = kwargs.get('newton_ls_c', 1e-4)
+    
+        debug_newton      = kwargs.get('debug_newton', False)
+        debug_top         = kwargs.get('debug_top', 5)
+    
+        starttimesetup = time.time()
+    
+        # --- FAIR options ------------------------------------------------------
+        fair_max_iterations = {**fairopt, **kwargs}.get('fair_max_iterations ', 1)
+    
+        # --- Sample & consistency checks ---------------------------------------
+        sol_periode = self.smpl(start, end, databank)
+        self.check_sim_smpl(databank)
+    
+        # --- New data handling --------------------------------------------------
+        newdata, databank = self.is_newdata(databank)
+    
+        # --- Create evaluators (recursive pre, simultaneous, recursive post) ---
+        self.pronew2d, self.solvenew2d, self.epinew2d = self.makelos(
+            databank,
+            solvename='newton',
+            ljit=ljit,
+            stringjit=stringjit,
+            transpile_reset=transpile_reset,
+            chunk=chunk,
+            newdata=newdata
+        )
+    
+        # Work on numpy copies
+        values = databank.values.copy()
+        outvalues = np.empty_like(values)
+    
+        # ======================================================================
+        # 1) Setup derivative solver / Jacobian factorization
+        # ======================================================================
+        if not hasattr(self, 'newton_diff_implicit') or newton_reset:
+            # --- Determine equation list (rows of Jacobian) --------------------
+            endovar = (self.coreorder  if hasattr(self, 'coreorder') and len(self.coreorder)
+                else self.solveorder)
+    
+            # Declared endogenous list (true unknowns / columns of Jacobian)
+            self.declared_endo_list = [ v[:-6] if v.endswith('___RES') else v
+                for v in endovar]
+    
+            # Mask: which equations are residual form (G(y,x)=0)?
+            self.is_residual_eq = np.array( [v.endswith('___RES') for v in endovar],
+                dtype=bool )
+    
+            if not silent:
+                ...
+                # print(f"Endovar (equations): {endovar}")
+                # print(f"Declared endogenous (unknowns): {self.declared_endo_list}")
+                # print(f"Residual mask: {self.is_residual_eq}")
+    
+            # Build differentiation object (symbolic / numeric derivatives)
+            self.newton_diff_implicit = newton_diff(self, forcenum=forcenum, df=databank,
+             endovar=endovar, ljit=lnjit, nchunk=chunk, onlyendocur=True, silent=silent)
+
+    
+            # Initial factorization for first period (will be refreshed if nonlin)
+            first_per = sol_periode[0] if len(sol_periode) else self.current_per[0]
+            solver_dict = self.newton_diff_implicit.get_solve1per(df=databank,
+                periode=[first_per],is_residual_eq=self.is_residual_eq )
+            
+            self.newton_solver_implicit_first  = solver_dict[first_per]
+
+            
+        self.newton_solver_implicit = self.newton_solver_implicit_first
+    
+        # --- Column locations (indices in values) -------------------------------
+        col_index = databank.columns.get_loc
+    
+        # Equations (rows of Jacobian) correspond to newton_diff_implicit.endovar
+        newton_col = [col_index(c) for c in self.newton_diff_implicit.endovar]
+    
+        # Unknowns: declared endogenous (base names; no ___RES)
+        newton_col_unknown = [col_index(c) for c in self.newton_diff_implicit.declared_endo_list]
+    
+        # Convergence subset (if conv pattern is used)
+        convvar = self.list_names(self.newton_diff_implicit.endovar, conv)
+        convplace = [col_index(c) for c in convvar]
+    
+        # Positions of original endogenous variables (for copying previous period)
+        endoplace = [col_index(c) for c in list(self.endogene)]
+    
+        # Names for debugging
+        eq_names = self.newton_diff_implicit.endovar
+        unk_names = self.newton_diff_implicit.declared_endo_list
+    
+        # --- Dump setup ---------------------------------------------------------
+        if ldumpvar:
+            self.dumplist = []
+            self.dump = self.list_names(self.newton_diff_implicit.endovar, dumpvar)
+            dumpplac = [col_index(v) for v in self.dump]
+    
+        # ======================================================================
+        # 2) Main simulation loops (FAIR outer loop + per-period Newton)
+        # ======================================================================
+        ittotal = 0
+        endtimesetup = time.time()
+        starttime = time.time()
+    
+        for fairiteration in range(fair_max_iterations):
+            if fair_max_iterations >= 2 and not silent:
+                print(f'\nFair-Taylor iteration: {fairiteration}')
+    
+            for self.periode in sol_periode:
+                row = databank.index.get_loc(self.periode)
+    
+                # Initialize with previous period values if requested
+                if init and row > 0:
+                    for c in endoplace:
+                        values[row, c] = values[row - 1, c]
+    
+                # Initial dump before Newton iterations
+                if ldumpvar:
+                    self.dumplist.append(
+                        [fairiteration, self.periode, 0] +
+                        [values[row, p] for p in dumpplac]
+                    )
+    
+                # --------------------------------------------------------------
+                # Recursive "pre" block: update lags, identities, etc.
+                # --------------------------------------------------------------
+    
+                # --------------------------------------------------------------
+                # Newton iterations for this period
+                # --------------------------------------------------------------
+                newton_conv = np.inf  # for post-loop reporting
+    
+                for iteration in range(max_iterations):
+                    with self.timer(
+                        f'sim per:{self.periode} it:{iteration}',
+                        timeit
+                    ) as _:
+    
+                        # 1) Evaluate model at current y: values[row,*]
+                        # all equations are evaluated, some implicit can be in pre or post core 
+                        self.pronew2d(values, values, row, alfa)
+                        self.solvenew2d(values, outvalues, row, alfa)
+                        self.epinew2d(values, values, row, alfa)
+    
+                        # Equation values (for both residual and normalized)
+                        eq_after = outvalues[row, newton_col]
+    
+                        # Unknown values: y before evaluation
+                        y_old = values[row, newton_col_unknown]
+    
+                        # Unknown as implied by F(y,x): take from outvalues
+                        y_implied = outvalues[row, newton_col_unknown]
+    
+                        # Build residual at current y:
+                        #   - residual = G(y,x)              if residual eq
+                        #   - residual = F(y,x) - y          otherwise
+                        residual = eq_after.copy()
+                        residual[~self.is_residual_eq] = (
+                            y_implied[~self.is_residual_eq] -
+                            y_old[~self.is_residual_eq]
+                        )
+    
+                        # Convergence measure BEFORE update (Newton style)
+                        newton_conv = np.max(np.abs(residual))
+    
+                        if not silent:
+                            print(
+                                f'Iteration {iteration:>2} | {self.periode} | '
+                                f'max residual (before step): {newton_conv:>25,.6f}'
+                            )
+    
+                        # Debug: show worst offending equations
+                        if debug_newton and not silent:
+                            worst_idx = np.argsort(-np.abs(residual))[:debug_top]
+                            # print('  Worst residuals:',worst_idx)
+                            for i in worst_idx:
+                                print(
+                                    f'{eq_names[i]:<25}               '
+                                    f'residual: {residual[i]:>25,.6f}'
+                                )
+    
+                        # Convergence test
+                        if newton_conv <= newton_absconv:
+                            break
+    
+                        # 2) Optional Jacobian refresh for non-linear cases
+                        if iteration != 0 and nonlin and not (iteration % nonlin):
+                            if not silent:
+                                print(f'Updating Jacobian, iteration {iteration}')
+                            df_now = pd.DataFrame(
+                                values,
+                                index=databank.index,
+                                columns=databank.columns
+                            )
+                            solver_dict = self.newton_diff_implicit.get_solve1per(
+                                df=df_now,
+                                periode=[self.periode],
+                                is_residual_eq=self.is_residual_eq
+                            )
+                            self.newton_solver_implicit = solver_dict[self.periode]
+    
+                        # 3) Solve for Newton update: J * update = residual
+                        update = self.newton_solver_implicit(residual)
+    
+                        # Safety check: avoid NaN/inf propagation
+                        if not np.all(np.isfinite(update)):
+                            raise ValueError(
+                                f'Non-finite Newton update at {self.periode}, '
+                                f'iteration {iteration}'
+                            )
+    
+                        # Base damping (no line search yet)
+                        if iteration <= newtonnodamp:
+                            base_damp = min(1.0, newtonalfa)
+                        else:
+                            base_damp = 1.0
+    
+
+                        values[row, newton_col_unknown] = (
+                            y_old - base_damp * update
+                        )
+    
+                        ittotal += 1
+    
+                        # Optional variable dump after this iteration
+                        if ldumpvar:
+                            self.dumplist.append(
+                                [fairiteration, self.periode, iteration + 1] +
+                                [values[row, p] for p in dumpplac]
+                            )
+    
+    
+                
+    
+                if not silent:
+                    if newton_conv > newton_absconv:
+                        print(
+                            f'{self.periode} not converged in '
+                            f'{iteration + 1} iterations '
+                            f'(max res≈{newton_conv:,.6g})'
+                        )
+                    else:
+                        print(
+                            f'{self.periode} solved in '
+                            f'{iteration + 1} iterations '
+                            f'(max res≈{newton_conv:,.6g})'
+                        )
+    
+        # ======================================================================
+        # 3) Dumping & statistics
+        # ======================================================================
+    
+        # Optional dump DataFrame of selected variables and iterations
+        if ldumpvar:
+            self.dumpdf = pd.DataFrame(self.dumplist)
+            self.dumpdf.columns = ['fair', 'per', 'iteration'] + self.dump
+            if fair_max_iterations <= 2:
+                # For simple cases, drop FAIR dimension
+                self.dumpdf.drop('fair', axis=1, inplace=True)
+    
+        # Build output DataFrame
+        outdf = pd.DataFrame(values, index=databank.index, columns=databank.columns)
+    
+        # Statistics
+        if stats:
+            endtime = time.time()
+            self.simtime = endtime - starttime
+            self.setuptime = endtimesetup - starttimesetup
+            if hasattr(self, 'calculate_freq') and self.calculate_freq:
+                numberfloats = self.calculate_freq[-1][1] * ittotal
+            else:
+                numberfloats = np.nan
+    
+            print(f'Setup time (s):       {self.setuptime:>15,.2f}')
+            print(f'Total iterations:     {ittotal:>15,}')
+            print(f'Simulation time (s):  {self.simtime:>15,.2f}')
+            if not np.isnan(numberfloats):
+                print(f'Float evals (approx): {numberfloats:>15,.0f}')
+    
+        if not silent:
+            print(self.name + ' solved (newton_implicit)')
+    
+        return outdf
+    
+
 
     def res(self, databank, start='', end='', debug=False, timeit=False, silent=False,
             chunk=None, ljit=0, stringjit=False, transpile_reset=False, alfa=1, stats=0, samedata=False, **kwargs):
@@ -8753,6 +9298,8 @@ def join_name_lag(df):
     newdf = df.copy()
     newdf.index = newindex
     return newdf
+
+
 
 
 @contextmanager

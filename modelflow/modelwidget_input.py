@@ -27,7 +27,180 @@ Some methods and properties of widgets.
      :reset: A function which resets the input values to the initial values. 
      
 
- 
+========================
+Defining and Using Widgets
+========================
+
+All widgets in this framework are defined using a **recursive list-based
+definition format**. Every widget definition must have the structure:
+
+    ['widgettype', {widget_dictionary}]
+
+The widget dictionary always contains configuration parameters and usually
+a 'content' field. Widgets can be nested to form complex layouts.
+
+------------------------
+Basic Widget Types
+------------------------
+
+1) SLIDER WIDGET ("slide")
+-------------------------
+Creates independent sliders which update variables directly.
+
+Example:
+
+    slidedef = ['slide', {
+        'heading': 'Macroeconomic Shocks',
+        'content': {
+            'Productivity': {
+                'var': 'ALFA',
+                'value': 0.5,
+                'min': 0.0,
+                'max': 1.0,
+                'step': 0.01
+            },
+            'Labor growth': {
+                'var': 'LABOR_GROWTH',
+                'value': 0.01,
+                'min': 0.0,
+                'max': 1.0
+            }
+        }
+    }]
+
+
+2) SUM-CONSTRAINED SLIDER WIDGET ("sumslide")
+---------------------------------------------
+Like "slide", but all sliders must sum to a fixed total (e.g. 100%).
+
+Example:
+
+    sharedef = {
+        '1Y bond':  {'var': 'BOND_1Y',  'value': 20, 'min': 0, 'max': 100, 'step': 5},
+        '5Y bond':  {'var': 'BOND_5Y',  'value': 30, 'min': 0, 'max': 100, 'step': 5},
+        '10Y bond': {'var': 'BOND_10Y', 'value': 50, 'min': 0, 'max': 100, 'step': 5}
+    }
+
+    wsharedef = ['sumslide', {
+        'heading': 'Issuance Policy',
+        'content': sharedef,
+        'maxsum': 100.0
+    }]
+
+
+3) BASE CONTAINER WIDGET ("base")
+---------------------------------
+Stacks multiple widgets vertically.
+
+Example:
+
+    basedef = ['base', {
+        'content': [
+            slidedef,
+            wsharedef
+        ]
+    }]
+
+
+4) TAB CONTAINER WIDGET ("tab")
+-------------------------------
+Creates a tabbed or accordion layout.
+
+Structure of 'content':
+
+    [
+        ['Tab title 1', widgetdef1],
+        ['Tab title 2', widgetdef2],
+        ...
+    ]
+
+Example:
+
+    portdef = ['tab', {
+        'content': [
+            ['Markets',  wratedef],
+            ['Issuance', wsharedef]
+        ],
+        'tab': True   # True = tabs, False = accordion
+    }]
+
+
+------------------------
+Creating and Displaying Widgets
+------------------------
+
+Once a widget definition is created, it is converted into a live widget using:
+
+    wport = make_widget(portdef)
+    display(wport.datawidget)
+
+This will render the full interactive widget interface inside Jupyter.
+
+
+------------------------
+Typical Workflow
+------------------------
+
+1) Build parameter dictionaries from a baseline DataFrame:
+
+    ratedef = {
+        d: {
+            'var': v,
+            'value': float(baseline.at[2026, v]),
+            'min': 0,
+            'max': 10.0,
+            'step': 0.1
+        }
+        for v, d in ratedict.items()
+    }
+
+2) Wrap into a widget definition:
+
+    wratedef = ['sumslide', {
+        'content': ratedef,
+        'maxsum': 100.0,
+        'heading': 'Interest Rate Shock'
+    }]
+
+3) Combine into a tab widget:
+
+    portdef = ['tab', {
+        'content': [
+            ['Markets',  wratedef],
+            ['Issuance', wsharedef]
+        ],
+        'tab': True
+    }]
+
+4) Create and display:
+
+    wport = make_widget(portdef)
+    display(wport.datawidget)
+
+
+------------------------
+Important Structural Rules
+------------------------
+
+- Every widget MUST be defined as:
+  
+      ['widgettype', {widgetdict}]
+
+- 'tab' widgets require:
+
+      ['tab', {'content': [[title, widgetdef], ...], 'tab': True}]
+
+- 'base' widgets require:
+
+      ['base', {'content': [widgetdef, widgetdef, ...]}]
+
+- 'sumslide' widgets require:
+
+      ['sumslide', {'content': dict, 'maxsum': float, 'heading': str}]
+
+If any of these structures are violated, widget creation will fail.
+
+
 
 @author: Ib 
 """
@@ -65,7 +238,7 @@ import yaml
 
 from typing import Tuple
 
-
+from modelhelp import debug_var
 
 
 
@@ -189,82 +362,83 @@ class tabwidget(singelwidget):
             w.reset(g)
         
    
- 
-@dataclass
-class sheetwidget(singelwidget):
-    ''' class defefining a widget with lines of slides '''
-
-    df_var: pd.DataFrame = field(init=False)
-    trans: Callable[[str], str] = field(default=lambda x: x)
-    transpose: bool = field(default=False)
-    wexp: widgets.Label = field(init=False)
-    org_df_var: pd.DataFrame = field(init=False)
-    wsheet: DataGrid = field(init=False)
-    org_values: pd.DataFrame = field(init=False)
-    datawidget: VBox | DataGrid = field(init=False)
-    dec : int =  field(init=False)
-    def __post_init__(self):
-        super().__post_init__()  # Call the parent __post_init__
-
-        self.df_var = self.content['df']
-        self.dec = self.content.get('dec',2)
-        self.transpose = self.widgetdef.get('transpose', False)
-        self.wexp = widgets.Label(value=self.heading, layout={'width': '54%'})
-
-        newnamedf = self.df_var.copy().rename(columns=self.trans)
-        self.org_df_var = newnamedf.T if self.transpose else newnamedf
-        
-        max_value = self.org_df_var.abs().max().max()   
-        
-        fmt = f',.{self.dec}f'
-        max_len= len(f'{max_value:{fmt}}')
-        column_widths = {col: max(len(str(col))+4,max_len) * 9 for col in self.org_df_var.columns}
-        renderers={col: TextRenderer(format= fmt,horizontal_alignment='right') for col in self.org_df_var.columns}
-        renderers['index'] = TextRenderer(horizontal_alignment='left')
-        self.wsheet = DataGrid(self.org_df_var,
-                               column_widths = column_widths,
-                               row_header_width = 500 , 
-                               # auto_fit_columns=True, auto_fit_params={'area': 'all'},
-                             #  layout=Layout(width='1500px'),
-                             #    index_columns_widths=[200],
-                                 enable_filters=False, enable_sort=False,
-                                editable=True, index_name='year',
-                               renderers = renderers, 
-                            #    header_align={'index': 'left'}
-                            )
-        # self.wsheet.row_headers_manager.sizes = {0: 200}
-        self.datawidget = VBox([self.wexp, self.wsheet]) if len(self.heading) else self.wsheet
-        #self.datawidget =self.wsheet
-        self.org_values = self.org_df_var.copy()
-
-    def update_df(self, df: pd.DataFrame, current_per=None):
-        updated_df = pd.DataFrame(self.wsheet.data) 
-        if self.transpose:
-            updated_df = updated_df.T
-
-        updated_df.columns = self.df_var.columns
-        updated_df.index = self.df_var.index
-        df.loc[updated_df.index, updated_df.columns] = df.loc[updated_df.index, updated_df.columns] + updated_df
-
-    def reset(self, g: Any):
-        self.wsheet.data = self.org_values
-      
-# from dataclasses import dataclass, field
-from typing import Callable, Any
-# import pandas as pd
-# import ipydatagrid as gd
-# from ipydatagrid.renderer import TextRenderer
-# from ipywidgets import HBox, VBox, Layout, widgets
-
-# @dataclass
-# class singelwidget:
-#     content: dict = field(default_factory=dict)
-#     widgetdef: dict = field(default_factory=dict)
-#     heading: str = field(default="")
-
-#     def __post_init__(self):
-#         pass
-
+try: 
+    @dataclass
+    class sheetwidget(singelwidget):
+        ''' class defefining a widget with lines of slides '''
+    
+        df_var: pd.DataFrame = field(init=False)
+        trans: Callable[[str], str] = field(default=lambda x: x)
+        transpose: bool = field(default=False)
+        wexp: widgets.Label = field(init=False)
+        org_df_var: pd.DataFrame = field(init=False)
+        wsheet: DataGrid = field(init=False)
+        org_values: pd.DataFrame = field(init=False)
+        datawidget: VBox | DataGrid = field(init=False)
+        dec : int =  field(init=False)
+        def __post_init__(self):
+            super().__post_init__()  # Call the parent __post_init__
+    
+            self.df_var = self.content['df']
+            self.dec = self.content.get('dec',2)
+            self.transpose = self.widgetdef.get('transpose', False)
+            self.wexp = widgets.Label(value=self.heading, layout={'width': '54%'})
+    
+            newnamedf = self.df_var.copy().rename(columns=self.trans)
+            self.org_df_var = newnamedf.T if self.transpose else newnamedf
+            
+            max_value = self.org_df_var.abs().max().max()   
+            
+            fmt = f',.{self.dec}f'
+            max_len= len(f'{max_value:{fmt}}')
+            column_widths = {col: max(len(str(col))+4,max_len) * 9 for col in self.org_df_var.columns}
+            renderers={col: TextRenderer(format= fmt,horizontal_alignment='right') for col in self.org_df_var.columns}
+            renderers['index'] = TextRenderer(horizontal_alignment='left')
+            self.wsheet = DataGrid(self.org_df_var,
+                                   column_widths = column_widths,
+                                   row_header_width = 500 , 
+                                   # auto_fit_columns=True, auto_fit_params={'area': 'all'},
+                                 #  layout=Layout(width='1500px'),
+                                 #    index_columns_widths=[200],
+                                     enable_filters=False, enable_sort=False,
+                                    editable=True, index_name='year',
+                                   renderers = renderers, 
+                                #    header_align={'index': 'left'}
+                                )
+            # self.wsheet.row_headers_manager.sizes = {0: 200}
+            self.datawidget = VBox([self.wexp, self.wsheet]) if len(self.heading) else self.wsheet
+            #self.datawidget =self.wsheet
+            self.org_values = self.org_df_var.copy()
+    
+        def update_df(self, df: pd.DataFrame, current_per=None):
+            updated_df = pd.DataFrame(self.wsheet.data) 
+            if self.transpose:
+                updated_df = updated_df.T
+    
+            updated_df.columns = self.df_var.columns
+            updated_df.index = self.df_var.index
+            df.loc[updated_df.index, updated_df.columns] = df.loc[updated_df.index, updated_df.columns] + updated_df
+    
+        def reset(self, g: Any):
+            self.wsheet.data = self.org_values
+          
+    # from dataclasses import dataclass, field
+    from typing import Callable, Any
+    # import pandas as pd
+    # import ipydatagrid as gd
+    # from ipydatagrid.renderer import TextRenderer
+    # from ipywidgets import HBox, VBox, Layout, widgets
+    
+    # @dataclass
+    # class singelwidget:
+    #     content: dict = field(default_factory=dict)
+    #     widgetdef: dict = field(default_factory=dict)
+    #     heading: str = field(default="")
+    
+    #     def __post_init__(self):
+    #         pass
+except:
+    print('no sheetwidget')
 
 
 @dataclass
@@ -360,7 +534,7 @@ class sumslidewidget(singelwidget):
         ...
         super().__init__(widgetdef)
         self.altname = self.widgetdef .get('altname','Alternative')
-        self.basename = self.widgetdef .get('basename','Baseiline')
+        self.basename = self.widgetdef .get('basename','Baseline')
         self.maxsum = self.widgetdef .get('maxsum',1.0)
        # breakpoint() 
        
@@ -788,6 +962,22 @@ class updatewidget:
         self.experiment +=  1 
         self.wname.value = f'Experiment {self.experiment}'
         self.keep_ui.trigger(None) 
+        # --- FULL REBUILD of keep_plot_widget to force scenario refresh ---
+        self.keep_ui = keep_plot_widget(
+            mmodel=self.mmodel,
+            selectfrom=self.varpat,
+            vline=self.vline,
+            relativ_start=self.relativ_start,
+            short=self.short
+        )
+        
+        self.wtotal.children = [
+            self.datawidget.datawidget,
+            self.wtotal.children[1],   # scenario name + variable selector row
+            self.wtotal.children[2],   # buttons
+            self.keep_ui.datawidget    # NEW plot widget
+        ]
+
         
     def setbasis(self,g):
         self.mmodel.keep_solutions={self.current_experiment:self.mmodel.keep_solutions[self.current_experiment]}
@@ -898,7 +1088,6 @@ class keep_plot_widget:
     
     def __post_init__(self):
         from copy import copy 
-        
         minper = self.mmodel.lastdf.index[0]
         maxper = self.mmodel.lastdf.index[-1]
         options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
@@ -958,7 +1147,7 @@ class keep_plot_widget:
         
         with self.mmodel.keepswitch(switch=self.switch,scenarios= '*'):
             gross_keys = list(self.mmodel.keep_solutions.keys())
-       
+            
             scenariobase = Select(options = gross_keys, 
                                   value = gross_keys[0],
                                                description='First scenario',
@@ -1175,6 +1364,7 @@ class keep_plot_widget:
         
         # clear_output()
         with self.mmodel.keepswitch(switch=self.switch,scenarios= self.scenarioselected):
+       
             with self.mmodel.set_smpl(*smpl):
     
                 self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
