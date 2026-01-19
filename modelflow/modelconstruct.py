@@ -16,7 +16,7 @@ from IPython.display import display, Math, Latex, Markdown , Image, SVG, display
 from pprint import pformat
 import textwrap
 
-from modelmanipulation import tofrml,dounloop, sumunroll, list_extract
+from modelmanipulation import tofrml,dounloop, sumunroll, list_extract, un_normalize_expression
 from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts
 from modelpattern import namepat 
 from modelhelp import debug_var

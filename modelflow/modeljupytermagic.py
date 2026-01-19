@@ -510,7 +510,7 @@ try:
         # ------------------------------------------------------------
         # Rendering
         # ------------------------------------------------------------
-        if options.get('render', False):
+        if options.get('render', True):
             if options.get('render_list', True):
                 display_model(model_text, spec=spec)
             else:
@@ -529,9 +529,6 @@ try:
                 
                 emodel.latex_nowrap = markdown_titles_to_latex(model_text_latex_nowrap)
 
-                emodel.latex = markdown_titles_to_latex(
-                    wrap_latex(model_text_latex_nowrap)
-                )
                 LatexRepo( emodel.latex_nowrap,name=exploded_name).pdf(pdfopen=True) 
             except Exception:
                 print("no latex")
@@ -598,6 +595,47 @@ def modeltext_to_latex(source: str) -> str:
     import re
     from textwrap import dedent    
     
+    def wrap_blockquote_equations(text):
+        """
+        Wrap consecutive Markdown lines starting with '>' in LaTeX \\verb blocks.
+    
+        Parameters
+        ----------
+        text : str
+            Full Markdown text
+    
+        Returns
+        -------
+        str
+            LaTeX-safe text
+        """
+        lines = text.splitlines()
+        out = []
+        in_block = False
+    
+        for line in lines:
+            if line.startswith(">"):
+                if not in_block:
+                    out.append(r"\par\noindent")
+                    in_block = True
+    
+                # pick a safe delimiter for \verb
+                for delim in ("|", "!", "/", "+", "#"):
+                    if delim not in line:
+                        break
+    
+                out.append(rf"\verb{delim}{line}{delim}\\")
+            else:
+                if in_block:
+                    out.append(r"\par")
+                    in_block = False
+                out.append(line)
+    
+        if in_block:
+            out.append(r"\par")
+    
+        return "\n".join(out)
+
 
     def markdown_item_lists_to_latex(text):
         """
@@ -715,6 +753,7 @@ def modeltext_to_latex(source: str) -> str:
        
     body = markdown_item_lists_to_latex(source)
     body = replace_markdown_tables(body)
+    body = wrap_blockquote_equations(body)
     
     return body
 
@@ -744,4 +783,6 @@ def markdown_titles_to_latex(text: str) -> str:
     outtext = re.sub(r"^## (.+)$", r"\\subsection{\1}", outtext, flags=re.MULTILINE)
     outtext = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", outtext, flags=re.MULTILINE)
     return outtext
+
+
 
