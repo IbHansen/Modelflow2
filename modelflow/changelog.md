@@ -222,4 +222,5 @@ Version 2.59 uploaded
 Version 2.60 uploaded 
 Differentiation of log and exp now symbolic in modelnewton 
 mv_opt in model_cvx can both maximizee and minimize 
+revised magic with mdmodel and output to latex 
 
