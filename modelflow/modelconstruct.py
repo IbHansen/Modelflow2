@@ -1193,7 +1193,8 @@ class Mexplode(BaseExplode):
                           make_fixable  = kw_frml_name(parts.frmlname, 'EXO')or kw_frml_name(parts.frmlname, 'STOC'),
                           make_fitted  = kw_frml_name(parts.frmlname, 'FIT'),
                           the_endo     = kw_frml_name(parts.frmlname, 'ENDO'),
-                          endo_lhs     = False if 'FALSE' == kw_frml_name(parts.frmlname, 'ENDO_LHS',default='1') else True
+                          endo_lhs     = False if 'FALSE' == kw_frml_name(parts.frmlname, 'ENDO_LHS',default='1') else True,
+                          implicit     = kw_frml_name(parts.frmlname, 'IMPLICIT')
                           )
                         )  
                        

@@ -195,7 +195,7 @@ def fixleads(eq,check=False):
        print(f"After  {res}")
    return res
 
-def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,make_fixable =False,make_fitted=False,eviews=''):
+def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True,make_fixable =False,make_fitted=False,eviews='',implicit=False):
     '''
     normalize an expression g(y,x) = f(y,x) ==> y = F(x,z)
     
@@ -212,6 +212,7 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
         endo_lhs (bool, optional): If false, accept to normalize for a rhs endogeneous variable 
         make_fixable  (bool, optional): also make this equation exogenizable  
         fitted (bool,optional) : create a fitted equations, without exo and adjustment 
+        implicit (bool,optional) : This is an implicit frml so to transform to endo__res = (lhs)-(rhs) 
         
     preprocessing handels 
         
@@ -235,7 +236,25 @@ def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix
     lhs,rhs=ind.strip().split('=',1)
     lhs = lhs.strip()
     # debug_var(len(udtryk_parse(lhs)))
-    if len(udtryk_parse(lhs)) >=2 or not endo_lhs : # we have an expression on the left hand side 
+    
+    if implicit: 
+        endo_name = the_endo.upper() if the_endo else endovar(lhs)
+        res = f'{endo_name}___res = ( {rhs.strip()} ) - ( {lhs.strip()} )'.upper() 
+        result = Normalized_frml(
+                    endo_var=endo_name,
+                    original=ind_o,
+                    preprocessed   = preprocessed,
+                    normalized = res ,
+                    un_normalized=  res) 
+        
+        return result
+                                    
+
+
+    
+        
+    
+    elif len(udtryk_parse(lhs)) >=2 or not endo_lhs : # we have an expression on the left hand side 
         try:
             clash = getclash(ind)
             
@@ -377,7 +396,9 @@ def elem_trans(udtryk, df=None):
          elemtext,elemnumber = elemudtryk_up.replace(' ','').split(',')
          udtryk_up = f'{forelem}({trans_elem(elemtext,elemnumber)}){efterelem}'
          
-    return udtryk_up            
+    return udtryk_up       
+
+
 if __name__ == '__main__':
 
     
@@ -406,3 +427,4 @@ if __name__ == '__main__':
     xx = normal('a = n(-1)',add_add_factor=0,make_fitted = 1)
     xx.eviews = 'ffff '
     normal('a_{b} = D( LOG(QLHP_{ee}(+1)), 0, 1 )').fprint
+    normal('a =b ',implicit=1,the_endo='B')

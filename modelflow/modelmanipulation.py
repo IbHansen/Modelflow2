@@ -1135,17 +1135,18 @@ def findindex_gams(ind00):
         rest = ind
     return frmlname,index,rest
 
-def un_normalize_expression(frml) :
+def un_normalize_expression(frml,implicit=False,endo='') :
     '''This function makes sure that all formulas are unnormalized.
     if the formula is already decorated with <endo=name> this is kept 
     else the lhs_varriable is used in <endo=> 
     ''' 
     frml_name,frml_index,frml_rest = findindex_gams(frml.upper())
+    debug_var(frml_name,frml_index,frml_rest)
     
-    if kw_frml_name(frml_name.upper(), 'IMPLICIT'): 
+    if kw_frml_name(frml_name.upper(), 'IMPLICIT') or implicit: 
         
-        this_endo = kw_frml_name(frml_name.upper(), 'ENDO')
-        # breakpoint()
+        this_endo = endo.upper() if endo else  kw_frml_name(frml_name.upper(), 'ENDO')
+        debug_var(this_endo)
         lhs,rhs  = frml_rest.split('=')
         if this_endo: 
             lhs_var = this_endo.strip()
@@ -1154,7 +1155,6 @@ def un_normalize_expression(frml) :
             lhs_var = lhs.strip()
             # frml_name_out = f'<endo={lhs_var}>' if frml_name == '<>' else f'{frml_name[:-1]},endo={lhs_var}>'
             frml_name_out = frml_name[:]
-        # print(this_endo)
         new_rest = f'{lhs_var}___res = ( {rhs.strip()} ) - ( {lhs.strip()} )'
         res =  f'{frml_name_out} {frml_index if len(frml_index) else ""} {new_rest}'
         return res 
@@ -1402,3 +1402,8 @@ d = x + 3 * a(-1)
     
     print(tofrml(mtest))
     print(explode(mtest))
+#%% unnormlize 
+if __name__ == '__main__' :
+    
+    print(un_normalize_expression('a=b',implicit=True,endo='xx' ))
+    

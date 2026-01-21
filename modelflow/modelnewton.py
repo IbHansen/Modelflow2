@@ -252,7 +252,7 @@ class newton_diff():
                         lookat=re.sub(r'EXP\(','exp(',lookat)
                         
                         kat=sympify(lookat,clash) # we take the the $ out _clash1 makes I is not taken as imiganary
-                        debug_var(lookat)
+                        # debug_var(lookat)
                 except Exception as inst:
                     # breakpoint()
                     print(inst)
@@ -273,11 +273,12 @@ class newton_diff():
                                 ud = re.sub(pt.namepat+r'(?:(\()([0-9]*)(\)))',r'\g<1>\g<2>+\g<3>\g<4>',ud) 
                             except:
                                 ud = numdif(self.mmodel,v,rhv,silent=self.silent)
-                                debug_var(v,rhv,ud)
+                                # debug_var(v,rhv,ud)
 
                             if self.forcenum or 'DERIVATIVE(' in ud.upper() :
                                 if  'DERIVATIVE(' in ud.upper() :
-                                    debug_var(v,rhv,lhs,rhs,ud)
+                                    ...
+                                   # debug_var(v,rhv,lhs,rhs,ud)
                                 ud = numdif(self.mmodel,v,rhv,silent=self.silent)
                                 if not self.silent and 0: print('numdif of {rhv}')
                         diffendocur[v.upper()][rhv.upper()]=ud

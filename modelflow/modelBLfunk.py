@@ -134,7 +134,7 @@ def cdf_lognorm_econ(x, mu, sigma, eps=1e-12):
     z = (log(x_safe / mu) + 0.5 * sigma**2) / sigma
     return float(ndtr(z))
 
-def part_exp_lognorm_safe(k, mu, std, eps=1e-12):
+def part_exp_lognorm(k, mu, std, eps=1e-12):
     """
     Safe scalar equivalent of the GAMS PartExpLogNorm function.
 
