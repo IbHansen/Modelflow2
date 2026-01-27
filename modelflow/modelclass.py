@@ -8250,9 +8250,10 @@ class Solver_Mixin():
     
         # --- Column locations (indices in values) -------------------------------
         col_index = databank.columns.get_loc
-    
+        # breakpoint() 
         # Equations (rows of Jacobian) correspond to newton_diff_implicit.endovar
         newton_col = [col_index(c) for c in self.newton_diff_implicit.endovar]
+        newton_col_residual  = [col_index(c) for c in [v for  v in self.newton_diff_implicit.endovar if v.endswith('___RES') ] ] 
     
         # Unknowns: declared endogenous (base names; no ___RES)
         newton_col_unknown = [col_index(c) for c in self.newton_diff_implicit.declared_endo_list]
@@ -8271,7 +8272,8 @@ class Solver_Mixin():
         # --- Dump setup ---------------------------------------------------------
         if ldumpvar:
             self.dumplist = []
-            self.dump = self.list_names(self.newton_diff_implicit.endovar, dumpvar)
+            endo_and_declares = list(self.newton_diff_implicit.declared_endo_set| self.endogene ) # so we can dump both true endo and ___res 
+            self.dump = self.list_names(endo_and_declares, dumpvar)
             dumpplac = [col_index(v) for v in self.dump]
     
         # ======================================================================
@@ -8317,9 +8319,9 @@ class Solver_Mixin():
     
                         # 1) Evaluate model at current y: values[row,*]
                         # all equations are evaluated, some implicit can be in pre or post core 
-                        self.pronew2d(values, values, row, alfa)
-                        self.solvenew2d(values, outvalues, row, alfa)
-                        self.epinew2d(values, values, row, alfa)
+                        self.pronew2d(values, outvalues, row, alfa)
+                        self.solvenew2d(values, outvalues, row, alfa) # outvalues = G(values)
+                        self.epinew2d(values, outvalues, row, alfa)
     
                         # Equation values (for both residual and normalized)
                         eq_after = outvalues[row, newton_col]
@@ -8359,6 +8361,15 @@ class Solver_Mixin():
                                 )
     
                         # Convergence test
+                        
+                        # Optional variable dump after this iteration
+                        if ldumpvar:
+                            self.dumplist.append(
+                                [fairiteration, self.periode, iteration + 1] +
+                                [outvalues[row, p] for p in dumpplac]
+                            )
+                        
+                        
                         if newton_conv <= newton_absconv:
                             break
     
@@ -8398,32 +8409,26 @@ class Solver_Mixin():
                         values[row, newton_col_unknown] = (
                             y_old - base_damp * update
                         )
+                        # values[row,newton_col_residual] = outvalues[row,newton_col_residual] # TO KEEP THE RES UPDATED 
     
                         ittotal += 1
     
-                        # Optional variable dump after this iteration
-                        if ldumpvar:
-                            self.dumplist.append(
-                                [fairiteration, self.periode, iteration + 1] +
-                                [values[row, p] for p in dumpplac]
-                            )
     
     
                 
     
-                if not silent:
-                    if newton_conv > newton_absconv:
-                        print(
-                            f'{self.periode} not converged in '
-                            f'{iteration + 1} iterations '
-                            f'(max res≈{newton_conv:,.6g})'
-                        )
-                    else:
-                        print(
-                            f'{self.periode} solved in '
-                            f'{iteration + 1} iterations '
-                            f'(max res≈{newton_conv:,.6g})'
-                        )
+                if newton_conv > newton_absconv:
+                    print(
+                        f'{self.periode} not converged in '
+                        f'{iteration + 1} iterations '
+                        f'(max res≈{newton_conv:,.6g})'
+                    )
+                else:
+                    print(
+                        f'{self.periode} solved in '
+                        f'{iteration + 1} iterations '
+                        f'(max res≈{newton_conv:,.6g})'
+                    )
     
         # ======================================================================
         # 3) Dumping & statistics
@@ -8650,7 +8655,7 @@ class Solver_Mixin():
             else:
                 relevantindex = pd.Index(self.dumpdf['per']).unique()
                 per_ = relevantindex[relevantindex.get_loc(per)]
-            # breakpoint()
+            # breakpoint()b
             indf = self.dumpdf.query('per == @per_')
             out0 = indf.query('per == @per_').set_index('iteration',
                                                         drop=True).drop('per', axis=1).copy()

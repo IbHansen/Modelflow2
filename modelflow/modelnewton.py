@@ -159,9 +159,10 @@ class newton_diff():
         self.ljit=ljit
         self.nchunk = nchunk
         if not self.silent: print(f'Prepare model for calculate derivatives for Newton solver')
+        # for all equations list either left hand variable or ENDO in frml name 
         self.declared_endo_list0 =  [pt.kw_frml_name(self.mmodel.allvar[v]['frmlname'], 'ENDO',v) 
            for v in self.endovar]
-        self.declared_endo_list = [v[:-6] if v.endswith('___RES') else v for v in self.declared_endo_list0] # real endogeneous variables 
+        self.declared_endo_list = [v[:-6] if v.endswith('___RES') else v for v in self.declared_endo_list0] # real endogeneous variables we want to find not the ___res variables 
         self.declared_endo_set = set(self.declared_endo_list)
         assert len(self.declared_endo_list) == len(self.declared_endo_set)
         self.placdic   = {v : i for i,v in enumerate(self.endovar)}
@@ -639,6 +640,10 @@ class newton_diff():
            self.jacsparsedic  = { p: jac - diag_mask for p,jac in temp.items()  }
         else: 
             self.jacsparsedic = self.get_diff_mat_1per(df=df,periode=periode)
+            
+        self.jacorgdfdic = {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar) for p,jac in temp.items()}
+        self.jacdfdic = {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar) for p,jac in self.jacsparsedic.items()}
+    
         self.solvelusparsedic = {p: sp.sparse.linalg.factorized(jac) for p,jac in self.jacsparsedic.items()}
         return self.solvelusparsedic
 
