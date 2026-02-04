@@ -8348,14 +8348,13 @@ class Solver_Mixin():
                         # Convergence measure BEFORE update (Newton style)
                         newton_conv = np.max(np.abs(residual))
     
-                        if not silent:
+                        if debug_newton and not silent:
+                        # Debug: show worst offending equations
                             print(
                                 f'Iteration {iteration:>2} | {self.periode} | '
                                 f'max residual (before step): {newton_conv:>25,.6f}'
                             )
     
-                        # Debug: show worst offending equations
-                        if debug_newton and not silent:
                             worst_idx = np.argsort(-np.abs(residual))[:debug_top]
                             # print('  Worst residuals:',worst_idx)
                             for i in worst_idx:
@@ -8374,7 +8373,7 @@ class Solver_Mixin():
                             )
                         
                         
-                        if newton_conv <= newton_absconv:
+                        if newton_conv <= newton_absconv and iteration >= first_test:
                             break
     
                         # 2) Optional Jacobian refresh for non-linear cases
@@ -8428,12 +8427,13 @@ class Solver_Mixin():
                         f'(max res≈{newton_conv:,.6g})'
                     )
                 else:
-                    print(
-                        f'{self.periode} solved in '
-                        f'{iteration + 1} iterations '
-                        f'(max res≈{newton_conv:,.6g})'
-                    )
-    
+                    if not silent: 
+                        print(
+                            f'{self.periode} solved in '
+                            f'{iteration + 1} iterations '
+                            f'(max res≈{newton_conv:,.6g})'
+                        )
+        
         # ======================================================================
         # 3) Dumping & statistics
         # ======================================================================
