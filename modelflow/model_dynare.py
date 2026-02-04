@@ -149,15 +149,15 @@ creates 5 files:
         )
         print(self.inf)
         if save:
-            with open(f'{self.savepath}\{self.modelname}.inf','wt') as inffile:
+            with open(f'{self.savepath}/{self.modelname}.inf','wt') as inffile:
                 inffile.write(self.inf)
-            with open(f'{self.savepath}\{self.modelname}.frm','wt') as frmfile:
+            with open(f'{self.savepath}/{self.modelname}.frm','wt') as frmfile:
                 frmfile.write(self.fthismodel)
-            with open(f'{self.savepath}\{self.modelname}_para.frm','wt') as frmfile:
+            with open(f'{self.savepath}/{self.modelname}_para.frm','wt') as frmfile:
                 frmfile.write(self.fparamodel)
-            with open(f'{self.savepath}\{self.modelname}_res.frm','wt') as frmfile:
+            with open(f'{self.savepath}/{self.modelname}_res.frm','wt') as frmfile:
                 frmfile.write(self.fresmodel)
-            with open(f'{self.savepath}\{self.modelname}_cons.mod','wt') as consfile:
+            with open(f'{self.savepath}/{self.modelname}_cons.mod','wt') as consfile:
                 consfile.write(self.modout)
 
 if __name__ == '__main__' :

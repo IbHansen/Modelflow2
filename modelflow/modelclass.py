@@ -8223,6 +8223,7 @@ class Solver_Mixin():
             self.declared_endo_list = [ v[:-6] if v.endswith('___RES') else v
                 for v in endovar]
     
+    
             # Mask: which equations are residual form (G(y,x)=0)?
             self.is_residual_eq = np.array( [v.endswith('___RES') for v in endovar],
                 dtype=bool )
@@ -8250,9 +8251,11 @@ class Solver_Mixin():
     
         # --- Column locations (indices in values) -------------------------------
         col_index = databank.columns.get_loc
+        self.columns = databank.columns
+        self.col_index = col_index
         # breakpoint() 
         # Equations (rows of Jacobian) correspond to newton_diff_implicit.endovar
-        newton_col = [col_index(c) for c in self.newton_diff_implicit.endovar]
+        newton_col = [col_index(c) for c in self.newton_diff_implicit.endovar] # with ___res
         newton_col_residual  = [col_index(c) for c in [v for  v in self.newton_diff_implicit.endovar if v.endswith('___RES') ] ] 
     
         # Unknowns: declared endogenous (base names; no ___RES)
@@ -8263,11 +8266,11 @@ class Solver_Mixin():
         convplace = [col_index(c) for c in convvar]
     
         # Positions of original endogenous variables (for copying previous period)
-        endoplace = [col_index(c) for c in list(self.endogene)]
+        endoplace = [col_index(c) for c in list(self.endogene)] # with___res
     
         # Names for debugging
-        eq_names = self.newton_diff_implicit.endovar
-        unk_names = self.newton_diff_implicit.declared_endo_list
+        eq_names = self.newton_diff_implicit.endovar # with ___res
+        unk_names = self.newton_diff_implicit.declared_endo_list # with declared endo
     
         # --- Dump setup ---------------------------------------------------------
         if ldumpvar:
@@ -8275,6 +8278,7 @@ class Solver_Mixin():
             endo_and_declares = list(self.newton_diff_implicit.declared_endo_set| self.endogene ) # so we can dump both true endo and ___res 
             self.dump = self.list_names(endo_and_declares, dumpvar)
             dumpplac = [col_index(v) for v in self.dump]
+            # debug_var(self.dump,dumpplac)
     
         # ======================================================================
         # 2) Main simulation loops (FAIR outer loop + per-period Newton)
@@ -8366,7 +8370,7 @@ class Solver_Mixin():
                         if ldumpvar:
                             self.dumplist.append(
                                 [fairiteration, self.periode, iteration + 1] +
-                                [outvalues[row, p] for p in dumpplac]
+                                [values[row, p] for p in dumpplac]
                             )
                         
                         
@@ -8409,7 +8413,7 @@ class Solver_Mixin():
                         values[row, newton_col_unknown] = (
                             y_old - base_damp * update
                         )
-                        # values[row,newton_col_residual] = outvalues[row,newton_col_residual] # TO KEEP THE RES UPDATED 
+                        values[row,newton_col_residual] = outvalues[row,newton_col_residual] # TO KEEP THE RES UPDATED 
     
                         ittotal += 1
     

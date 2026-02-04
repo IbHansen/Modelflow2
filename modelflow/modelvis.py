@@ -98,8 +98,10 @@ class vis():
          if isinstance(df,pd.DataFrame):
              self.thisdf = df 
          else:
-             self.thisdf = self.model.lastdf.loc[:,self.names] 
-             
+             try:
+                 self.thisdf = self.model.lastdf.loc[:,self.names] 
+             except: 
+                 print('No data in the model instance, so only structure information from model.[<something>] ')
              
              
              
@@ -428,6 +430,8 @@ class vis():
      def __getattr__(self, name):
          if name.startswith('_'):
              return 
+         
+            
          allowed = {
            'names' : 'Variable names',
            'des' : 'Descriptions',

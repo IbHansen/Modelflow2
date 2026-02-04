@@ -1879,6 +1879,177 @@ Returns
         display(VBox([year_dropdown, plot_output]))
         plot_eigenvalues_polar_vectors(year_dropdown.value)
 
+def analyze_jacobian_df(
+    J: pd.DataFrame,
+    tol: float = 1e-12,
+    top_k: int = 20,
+    compute_svd: bool = True,
+    max_svd_dim: int = 2000,
+    similarity_threshold: float = 0.999999,
+) -> dict:
+    """
+    Analyze a Jacobian stored as a pandas DataFrame with variable names in both
+    rows and columns (index + columns).
+
+    Returns a dict with:
+      - basic stats
+      - zero rows/cols (by name)
+      - duplicate rows/cols (exact)
+      - "near-duplicate" row pairs (cosine similarity above threshold)
+      - rank/conditioning via SVD (optional, size-limited)
+      - strongest column per row summary (helps spot unmatched structure)
+
+    Parameters
+    ----------
+    J : pd.DataFrame
+        Jacobian matrix, index=equation/row variable names, columns=variable names.
+    tol : float
+        Tolerance used to treat values as zero (|a| < tol).
+    top_k : int
+        How many items to show in top lists (for reporting).
+    compute_svd : bool
+        Whether to compute SVD-based diagnostics (dense).
+    max_svd_dim : int
+        Only compute SVD if both dimensions <= this threshold.
+    similarity_threshold : float
+        Threshold for cosine similarity to flag near-duplicate row pairs.
+    """
+    if not isinstance(J, pd.DataFrame):
+        raise TypeError("J must be a pandas DataFrame")
+
+    if J.shape[0] == 0 or J.shape[1] == 0:
+        raise ValueError("J is empty")
+
+    # ensure numeric
+    Jnum = J.apply(pd.to_numeric, errors="coerce")
+    nonfinite_mask = ~np.isfinite(Jnum.to_numpy(dtype=float))
+    nonfinite_count = int(nonfinite_mask.sum())
+
+    A = Jnum.to_numpy(dtype=float)
+    absA = np.abs(A)
+
+    # basic counts
+    nnz = int((absA > tol).sum())
+    density = nnz / (A.size)
+
+    # zero rows / cols
+    zero_rows = Jnum.index[(absA < tol).all(axis=1)].tolist()
+    zero_cols = Jnum.columns[(absA < tol).all(axis=0)].tolist()
+
+    # exact duplicates
+    dup_row_names = Jnum.index[Jnum.duplicated(keep=False)].tolist()
+    dup_col_names = Jnum.columns[Jnum.T.duplicated(keep=False)].tolist()
+
+    # strongest column per row
+    absdf = Jnum.abs()
+    strongest_col = absdf.idxmax(axis=1)  # column name for each row
+    strongest_val = absdf.max(axis=1)
+    strongest_counts = strongest_col.value_counts()
+
+    # top "weak" rows (small max derivative)
+    weak_rows = strongest_val.sort_values().head(top_k)
+
+    # near-duplicate rows via cosine similarity (skip if huge)
+    near_dup_pairs = []
+    if J.shape[0] <= 5000:  # safety guard
+        row_norm = np.sqrt((A * A).sum(axis=1))
+        safe_norm = np.where(row_norm == 0, 1.0, row_norm)
+        Jr = (A.T / safe_norm).T  # row-normalized
+        # cosine similarity matrix
+        S = Jr @ Jr.T
+        np.fill_diagonal(S, 0.0)
+        pairs = np.argwhere(np.abs(S) >= similarity_threshold)
+        # keep only i<j to avoid duplicates
+        pairs = [(int(i), int(j), float(S[i, j])) for i, j in pairs if i < j]
+        # sort by similarity magnitude
+        pairs.sort(key=lambda x: abs(x[2]), reverse=True)
+        for i, j, sim in pairs[:top_k]:
+            near_dup_pairs.append((Jnum.index[i], Jnum.index[j], sim))
+
+    # SVD-based diagnostics (dense) if not too big
+    svd_info = None
+    if compute_svd and (J.shape[0] <= max_svd_dim and J.shape[1] <= max_svd_dim):
+        try:
+            s = np.linalg.svd(A, compute_uv=False)
+            smin = float(s.min()) if s.size else np.nan
+            smax = float(s.max()) if s.size else np.nan
+            cond = (smax / smin) if smin not in (0.0, np.nan) else np.inf
+            # near-zero singular values (relative criterion)
+            rel = s / smax if smax not in (0.0, np.nan) else s
+            near_zero = int((rel < 1e-12).sum())  # heuristic
+            svd_info = {
+                "min_singular_value": smin,
+                "max_singular_value": smax,
+                "condition_number": float(cond) if np.isfinite(cond) else np.inf,
+                "near_zero_singular_values_count(rel<1e-12)": near_zero,
+            }
+        except Exception as e:
+            svd_info = {"error": repr(e), "note": "SVD failed (possibly ill-conditioned or NaNs)."}
+
+    report = {
+        "shape": J.shape,
+        "tol": tol,
+        "nonfinite_entries_count": nonfinite_count,
+        "nnz(|a|>tol)": nnz,
+        "density": density,
+        "zero_rows": zero_rows,
+        "zero_cols": zero_cols,
+        "duplicate_rows_exact": dup_row_names,
+        "duplicate_cols_exact": dup_col_names,
+        "strongest_col_per_row_counts_top": strongest_counts.head(top_k).to_dict(),
+        "weak_rows_smallest_row_max_abs_top": weak_rows.to_dict(),  # row -> max_abs_value
+        "near_duplicate_row_pairs_top": near_dup_pairs,  # (row_i, row_j, cosine_sim)
+        "svd_info": svd_info,
+    }
+    return report
+
+
+def print_jacobian_report(report: dict, top_k: int = 20) -> None:
+    """Pretty-print key parts of analyze_jacobian_df() output."""
+    print(f"Shape: {report.get('shape')}, tol={report.get('tol')}")
+    print(f"Non-finite entries: {report.get('nonfinite_entries_count')}")
+    print(f"NNZ(|a|>tol): {report.get('nnz(|a|>tol)')}, density={report.get('density'):.6g}")
+
+    zr = report.get("zero_rows", [])
+    zc = report.get("zero_cols", [])
+    print(f"\nZero rows: {len(zr)}")
+    if zr:
+        print("  examples:", zr[:top_k])
+
+    print(f"\nZero cols: {len(zc)}")
+    if zc:
+        print("  examples:", zc[:top_k])
+
+    dr = report.get("duplicate_rows_exact", [])
+    dc = report.get("duplicate_cols_exact", [])
+    print(f"\nExact duplicate rows: {len(dr)}")
+    if dr:
+        print("  examples:", dr[:top_k])
+
+    print(f"\nExact duplicate cols: {len(dc)}")
+    if dc:
+        print("  examples:", dc[:top_k])
+
+    print("\nStrongest column per row (top):")
+    sc = report.get("strongest_col_per_row_counts_top", {})
+    for k, v in list(sc.items())[:top_k]:
+        print(f"  {k}: {v}")
+
+    print("\nWeak rows (smallest row max |derivative|):")
+    wr = report.get("weak_rows_smallest_row_max_abs_top", {})
+    for k, v in list(wr.items())[:top_k]:
+        print(f"  {k}: {v:g}")
+
+    nd = report.get("near_duplicate_row_pairs_top", [])
+    print(f"\nNear-duplicate row pairs (cosine sim thresholded): {len(nd)}")
+    for a, b, sim in nd[:top_k]:
+        print(f"  {a}  <->  {b}   sim={sim:+.6f}")
+
+    svd = report.get("svd_info")
+    if svd:
+        print("\nSVD info:")
+        for k, v in svd.items():
+            print(f"  {k}: {v}")
 
 #%%    
 if __name__ == '__main__':
