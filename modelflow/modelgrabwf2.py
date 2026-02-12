@@ -75,10 +75,15 @@ def wf1_to_wf2(filename,modelname='',eviews_run_lines= []):
 
     '''
     try:
-        import pyeviews as evp
-    except:
-        raise Exception('You have not pyeviews installed try:\n'+
-                        '!conda install pyeviews -c conda-forge -y')
+        import py2eviews as evp
+    except: 
+        try:
+            import pyeviews as evp
+            print('You have installed pyewiews not py2eviews it may works but try:\n'+
+                            '!conda install py2eviews -c -c eviews -y')
+        except:
+            raise Exception('You have not py2eviews installed try:\n'+
+                            '!conda install py2eviews -c -c eviews -y')
     from pathlib import Path
     wfpath = Path(filename)
     if wfpath.suffix not in {'.wf1','.wf2'} :
