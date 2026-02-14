@@ -232,5 +232,4 @@ mv_opt in model_cvx can both maximizee and minimize
 revised magic with mdmodel and output to latex 
 models with both implicit and normalized frml can be handled 
 Version 2.63 uploaded 
-Version 2.63 uploaded 
-Version 2.63 uploaded 
+Handle py2eviews in modelGrabwf2

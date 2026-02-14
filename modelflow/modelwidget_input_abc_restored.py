@@ -1,203 +1,44 @@
 # -*- coding: utf-8 -*-
 """
-modelwidget_input
-=================
+modelwidget_input_abc
+=====================
 
-Jupyter/Shiny-friendly input widgets used to *edit* a pandas DataFrame, run
-ModelFlow-style scenarios, and interactively inspect results.
+Jupyter/Shiny-friendly input widgets used to *edit* a pandas DataFrame and run
+ModelFlow-style scenarios.
 
-This module provides two layers:
+This module is a cleaned-up version of ``modelwidget_input.py`` with a formal,
+runtime-enforced widget interface based on ``abc.ABC``.
 
-1) A **widget framework** (based on a runtime-enforced interface using
-   ``abc.ABC``), where each widget knows how to:
-   - expose a displayable ipywidget (``datawidget``),
-   - apply its current user inputs to a DataFrame (``update_df``),
-   - restore its initial state (``reset``).
+Key ideas
+---------
+- **Leaf widgets** (sliders, grids, radio/check groups, etc.) implement the
+  :class:`WidgetABC` interface:
 
-2) A **scenario runner + plotting UI**:
-   - :class:`updatewidget` builds a small “scenario lab” around a widget tree:
-     update data → run model → store results.
-   - :class:`keep_plot_widget` visualizes stored solutions from the model
-     (typically ``mmodel.keep_solutions``) and can optionally save figures.
+  - ``datawidget``: the displayable ipywidget instance (or widget container)
+  - ``update_df(df, current_per)``: apply user input to a DataFrame
+  - ``reset(g)``: restore widget values to their original state
 
-Motivation
-----------
-The original ``modelwidget_input.py`` grew organically and relied on implicit
-“duck-typing” (certain attributes/methods were assumed to exist). This revision
-makes that contract explicit by introducing an ABC-based interface that is
-validated at runtime.
+- **Container widgets** (VBox, Tab/Accordion) implement :class:`ContainerWidgetABC`
+  and automatically forward ``update_df`` and ``reset`` calls to their children.
 
-Core interfaces
---------------
-**Leaf widgets** implement :class:`WidgetABC`:
+- A small factory (:func:`make_widget`) instantiates widget classes from a
+  widget definition dictionary and validates that the created instance is a
+  proper :class:`WidgetABC`.
 
-- ``datawidget``:
-    The displayable ipywidgets object (or a container of ipywidgets).
-- ``update_df(df, current_per)``:
-    Apply the widget’s user input to ``df``.
-- ``reset(g)``:
-    Restore widget state to the initial values (``g`` is the callback payload
-    from ipywidgets and can be ignored by most widgets).
+Compared to the legacy file:
+- Duplicate class definitions were removed.
+- The first (non-dataclass) ``sumslidewidget`` implementation was dropped.
+- Docstrings were improved throughout.
 
-**Container widgets** implement :class:`ContainerWidgetABC`:
+Notes
+-----
+This module assumes:
+- Your DataFrames are indexed by time/period and variables are columns.
+- ``current_per`` is typically a ModelFlow "current period" selection, often a
+  list/Index slice (for ``df.loc[current_per, var]``) and sometimes a tuple-like
+  where ``current_per[0]`` is the first period (used for impulse operators).
 
-- ``datachildren``:
-    A list of child widgets.
-- ``update_df`` and ``reset``:
-    Default implementations forward to children.
-
-Widget definitions and the factory
----------------------------------
-Widgets are defined using a **recursive list-based definition format**:
-
-    ['widgettype', {widget_dictionary}]
-
-A widget dictionary always contains configuration parameters and usually a
-``'content'`` field. Widgets can be nested to form complex layouts.
-
-Widgets are instantiated with the factory:
-
-    w = make_widget(widgetdef)
-
-The factory validates that the created object satisfies :class:`WidgetABC`
-(so errors appear early and clearly).
-
-Assumptions about data / periods
---------------------------------
-- DataFrames are indexed by time/period and variables are columns.
-- ``current_per`` is typically a ModelFlow “current period” selection; most
-  widgets use ``df.loc[current_per, var]``.
-- Some slider operators treat ``current_per[0]`` as the first period (impulse).
-
-Provided widget types
----------------------
-Containers
-- ``'base'`` → :class:`basewidget`
-    Vertical stack of widgets (VBox).
-- ``'tab'`` → :class:`tabwidget`
-    Tabbed or accordion layout.
-
-Leaf widgets
-- ``'sheet'`` → :class:`sheetwidget`
-    Spreadsheet-like editor (requires ``ipydatagrid``).
-- ``'slide'`` → :class:`slidewidget`
-    One or more sliders that update variables using an operator (add/set/percent,
-    impulse variants, etc.).
-- ``'sumslide'`` → :class:`sumslidewidget`
-    Like ``slide`` but enforces that all slider values sum to ``maxsum``.
-- ``'radio'`` → :class:`radiowidget`
-    One-of-N selection that writes 0/1 indicator variables.
-- ``'check'`` → :class:`checkwidget`
-    On/off selection that writes 0/1 values.
-
-Scenario runner and plotting
-----------------------------
-:class:`updatewidget`
-    A small control panel that ties a widget tree to a ModelFlow-like model:
-
-    - Builds an “experiment” DataFrame from a baseline.
-    - Calls ``datawidget.update_df(experiment_df, mmodel.current_per)``.
-    - Runs the model and stores results (typically in ``mmodel.keep_solutions``).
-    - Presents a :class:`keep_plot_widget` to inspect the stored solutions.
-
-:class:`keep_plot_widget`
-    An interactive viewer for solutions in ``mmodel.keep_solutions``. Lets the
-    user select scenarios and variables and produces matplotlib figures. It can
-    optionally expose a save dialog (:class:`savefigs_widget`).
-
-Defining and using widgets
---------------------------
-
-1) Slider widget (type ``'slide'``)
-Example::
-
-    slidedef = ['slide', {
-        'heading': 'Macroeconomic Shocks',
-        'content': {
-            'Productivity': {
-                'var': 'ALFA',
-                'value': 0.5,
-                'min': 0.0,
-                'max': 1.0,
-                'step': 0.01,
-                'op': '+'
-            },
-            'Labor growth': {
-                'var': 'LABOR_GROWTH',
-                'value': 0.01,
-                'min': 0.0,
-                'max': 1.0,
-                'op': '='
-            }
-        }
-    }]
-
-2) Sum-constrained sliders (type ``'sumslide'``)
-Example::
-
-    sharedef = {
-        '1Y bond':  {'var': 'BOND_1Y',  'value': 20, 'min': 0, 'max': 100, 'step': 5},
-        '5Y bond':  {'var': 'BOND_5Y',  'value': 30, 'min': 0, 'max': 100, 'step': 5},
-        '10Y bond': {'var': 'BOND_10Y', 'value': 50, 'min': 0, 'max': 100, 'step': 5},
-    }
-
-    wsharedef = ['sumslide', {
-        'heading': 'Issuance Policy',
-        'content': sharedef,
-        'maxsum': 100.0
-    }]
-
-3) Base container (type ``'base'``)
-Example::
-
-    basedef = ['base', {'content': [slidedef, wsharedef]}]
-
-4) Tab / accordion container (type ``'tab'``)
-Example::
-
-    portdef = ['tab', {
-        'content': [
-            ['Markets',  basedef],
-            ['Issuance', wsharedef],
-        ],
-        'tab': True   # True = tabs, False = accordion
-    }]
-
-Creating and displaying
-Example::
-
-    wport = make_widget(portdef)
-    display(wport.datawidget)
-
-Typical workflow with a model
------------------------------
-Example::
-
-    wport = make_widget(portdef)
-    ui = updatewidget(mmodel, wport, varpat="*")
-    ui   # (or display(ui))
-
-Structural rules (quick reference)
-----------------------------------
-- Every widget definition must be::
-
-      ['widgettype', {widgetdict}]
-
-- ``'tab'`` widgets use::
-
-      ['tab', {'content': [[title, widgetdef], ...], 'tab': True/False}]
-
-- ``'base'`` widgets use::
-
-      ['base', {'content': [widgetdef, widgetdef, ...]}]
-
-- ``'sumslide'`` widgets require::
-
-      ['sumslide', {'content': dict, 'maxsum': float, ...}]
-
-If these structures are violated, widget creation will fail.
 """
-
 
 from __future__ import annotations
 
@@ -237,7 +78,7 @@ import matplotlib.pyplot as plt
 
 try:
     from ipydatagrid import DataGrid
-    from ipydatagrid import TextRenderer
+    from ipydatagrid.renderer import TextRenderer
     _HAVE_IPYDATAGRID = True
 except Exception:
     DataGrid = object  # type: ignore
@@ -312,15 +153,6 @@ class SingleWidgetBase(WidgetABC):
     def __post_init__(self) -> None:
         self.content = self.widgetdef["content"]
         self.heading = self.widgetdef.get("heading", "")
-        
-    @property
-    def show(self):
-        display(self.datawidget)
-
-    def _ipython_display_(self):
-        """Auto-display in Jupyter when this object is the last expression in a cell."""
-        display(self.datawidget)
-        
 
 
 @dataclass
@@ -350,14 +182,6 @@ class ContainerWidgetBase(ContainerWidgetABC):
     @property
     def datawidget(self) -> Any:
         return self._datawidget
-
-    @property
-    def show(self):
-        display(self.datawidget)
-
-    def _repr_html_(self):
-        display( self.datawidget)
-
 
 
 # ---------------------------------------------------------------------------
