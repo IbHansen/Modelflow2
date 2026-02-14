@@ -233,3 +233,4 @@ revised magic with mdmodel and output to latex
 models with both implicit and normalized frml can be handled 
 Version 2.63 uploaded 
 Handle py2eviews in modelGrabwf2
+ine abc based modelwidget_input
