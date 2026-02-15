@@ -4761,7 +4761,7 @@ class Display_Mixin():
                 xtranspose = transpose 
                 
                 
-            if any([i in keys for i in df.index]) :
+            if any([i in keys for i in df.index]) or any(i in self.allvar_set for i in df.index) :
                 tt = pd.DataFrame([[get_des(v) for t in df.columns] for v in df.index ],index=df.index,columns=df.columns) 
             else:
                 tt = pd.DataFrame([[get_des(v) for v in df.columns ]for t in df.index] ,index=df.index,columns=df.columns) 
