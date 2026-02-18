@@ -414,8 +414,6 @@ class GrabWfModel():
                       var_groups = var_groups, 
                       )
         self.mmodel.eviews_dict =  {v: f.eviews for v,f in  self.all_frml_dict.items()}        
-        self.mmodel.var_description = self.var_description   
-        self.mmodel.model_description  = self.model_description 
 
         
         if self.cty:
@@ -437,6 +435,8 @@ class GrabWfModel():
         self.cty_name = cty_name
         
         print(f'Country {cty}:{cty_name}')
+        self.mmodel.var_description = self.var_description   
+        self.mmodel.model_description  = self.model_description 
         
         # self.mmodel.set_var_description(self.model_all_about['var_description'])
        

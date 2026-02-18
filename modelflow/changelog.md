@@ -235,3 +235,4 @@ Version 2.63 uploaded
 Handle py2eviews in modelGrabwf2
 use abc based modelwidget_input
 fix ibsstyle for tooltips 
+fix var_description and cty in modelgrabwf2 
