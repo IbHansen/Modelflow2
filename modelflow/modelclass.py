@@ -1505,7 +1505,6 @@ class Model_help_Mixin():
                 cxtime.show()
             if error:
                 raise error
-            return
 
     @staticmethod
     def update_from_list(indf, basis, lprint=False):
@@ -9111,9 +9110,9 @@ class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin
 
 
 # wrapper'
-if not hasattr(pd.DataFrame,'upd'):
+if "upd" not in pd.DataFrame.__dict__:
     @pd.api.extensions.register_dataframe_accessor("upd")
-    class upd():
+    class upd:
         '''Extend a dataframe to update variables from string 
         
         look at :any:`Model_help_Mixin.update`  for syntax 
@@ -9121,10 +9120,12 @@ if not hasattr(pd.DataFrame,'upd'):
 
         
         '''
+        __doc__ = model.update.__doc__
+
         def __init__(self, pandas_obj):
     #        self._validate(pandas_obj)
             self._obj = pandas_obj
-            self.__doc__ = model.update.__doc__
+          #  self.__doc__ = model.update.__doc__
     #        print(self._obj)
        
         def __call__(self,updates, lprint=False,scale = 1.0,create=True,keep_growth=False,):
