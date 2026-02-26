@@ -157,14 +157,17 @@ def wf2_to_clean(wf2name,modelname='',save_file = False,freq='A'):
     object_namecounts = {_type: [o['_name'] for o in this_object] for _type,this_object in object_dict.items() }
     # breakpoint()
     # Now extract the  model
-    thismodel_dict = object_dict['model'][0]
-    thismodel_raw = thismodel_dict['data'][0]
-    # breakpoint()
-    thismodel_raw_list = [l for l in thismodel_raw.split('\n') if len(l) > 1]
-    
-    this_clean = [l for l in thismodel_raw_list if l[:4] not in {'@INN','@ADD'}] # The original frmls
-    this_add_vars =  [l.split()[1] for l in thismodel_raw_list if l[:4]  in {'@ADD'}] # variable with add factors
-    this_frml = '\n'.join(this_clean)
+    try: 
+        thismodel_dict = object_dict['model'][0]
+        thismodel_raw = thismodel_dict['data'][0]
+        # breakpoint()
+        thismodel_raw_list = [l for l in thismodel_raw.split('\n') if len(l) > 1]
+        
+        this_clean = [l for l in thismodel_raw_list if l[:4] not in {'@INN','@ADD'}] # The original frmls
+        this_add_vars =  [l.split()[1] for l in thismodel_raw_list if l[:4]  in {'@ADD'}] # variable with add factors
+        this_frml = '\n'.join(this_clean)
+    except: 
+        this_frml = '' 
     # Take all series and make a dataframe 
     series_list = object_dict['series_double']
 
@@ -199,9 +202,12 @@ def wf2_to_clean(wf2name,modelname='',save_file = False,freq='A'):
     mfmsa_dict = {o['_name']:o.get('value','empty') for o in string_list if o.get('_name','').startswith('MFMSA') }
     mfmsa_options = mfmsa_dict.get('MFMSAOPTIONS','')
     
-    estimates = {eq['_name'].upper()+f'.@COEF({idata+1})': str(data)  
-                 for eq in object_dict['equation7'] for idata,data in enumerate(eq['results']['data']) }
-   
+    try:
+        estimates = {eq['_name'].upper()+f'.@COEF({idata+1})': str(data)  
+                     for eq in object_dict['equation7'] for idata,data in enumerate(eq['results']['data']) }
+    except:
+        estimates = {} 
+        
     # breakpoint()
     model_all_about['modelname'] = modelname
     model_all_about['frml'] = this_frml
@@ -1062,7 +1068,7 @@ if __name__ == '__main__':
         
     
         filedict = {f.stem[:3].lower():f for f in Path(r'C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
-        filedict = {f.stem[:3].lower():f for f in Path(r'C:\wb new\Modelflow\ib\developement\original').glob('*.wf1')}
+        filedict = {f.stem[:3].lower():f for f in Path(r'C:\wb new\Modelflow\ib\developement\original').glob('*.wf2')}
         modelname = 'pak'
         filename = filedict[modelname]
         

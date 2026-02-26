@@ -236,3 +236,9 @@ Handle py2eviews in modelGrabwf2
 use abc based modelwidget_input
 fix ibsstyle for tooltips 
 fix var_description and cty in modelgrabwf2 
+no substitution in report writing latex as {} is latex teritory
+more explanation if no substitution 
+wf2_to_clean works even if no model in wf2 file 
+oldkwargs= {} as default in modelload (if no model but data)
+
+

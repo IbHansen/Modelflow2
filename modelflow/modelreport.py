@@ -710,7 +710,9 @@ class LatexRepo:
 \usepackage{graphicx}
 \usepackage{pgf}
 \usepackage{lscape}
-\usepackage{{amsmath,amssymb}}
+\usepackage{amsmath,amssymb}
+\usepackage{placeins} % for \FloatBarrier
+
 
 \begin{document}
 
@@ -1575,7 +1577,7 @@ class DisplayTextDef(DisplayDef):
  
     @property 
     def latex(self) :
-        return self.mmodel.string_substitution(self.latex_text)
+        return self.latex_text
     
   
 

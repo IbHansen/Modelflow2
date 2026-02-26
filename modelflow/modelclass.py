@@ -2917,7 +2917,8 @@ class Description_Mixin():
     def string_substitution(self,astring):
         try:
             return astring.format_map(self.substitution)
-        except:
+        except Exception as e:
+            print(e)
             print('No substitution performed')
             print(f'String:{astring}')
             print('Dictionary: ')
@@ -6097,7 +6098,8 @@ class Json_Mixin():
                     return content.decode('utf-8')
 
         if pinfile.exists():
-            json_string = read_file(pinfile)
+            with model.timer('read',False):
+                json_string = read_file(pinfile)
         else: 
             if infile.startswith(r'https:'):
                 urlfile = infile
@@ -6109,17 +6111,20 @@ class Json_Mixin():
         input = json.loads(json_string)
         version = input['version']
         frml = input['frml']
-        lastdf = pd.read_json(StringIO(input['lastdf']))
+        with model.timer('read lastdf',False):
+
+            lastdf = pd.read_json(StringIO(input['lastdf']))
         current_per = pd.read_json(StringIO(input['current_per']), typ='series').values
         modelname = input['modelname']
         # breakpoint()
         mmodel = cls(frml, modelname=modelname, funks=funks,**kwargs)
-        mmodel.oldkwargs = input['oldkwargs']
+        mmodel.oldkwargs = input.get('oldkwargs',{}) 
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description', {}))
         mmodel.equations_latex = input.get('equations_latex', '')
         if input.get('wb_MFMSAOPTIONS', None) : mmodel.wb_MFMSAOPTIONS = input.get('wb_MFMSAOPTIONS', None)
-        mmodel.keep_solutions = {k : pd.read_json(StringIO(jdf)) for k,jdf in input.get('keep_solutions',{}).items()}
+        with model.timer('read keepsolutions',False):
+            mmodel.keep_solutions = {k : pd.read_json(StringIO(jdf)) for k,jdf in input.get('keep_solutions',{}).items()}
         mmodel.var_groups = input.get('var_groups', {})
         mmodel.reports    = input.get('reports',{} )
         mmodel.model_description = input.get('model_description', '')
