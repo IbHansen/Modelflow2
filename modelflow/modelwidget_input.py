@@ -244,6 +244,8 @@ except Exception:
     TextRenderer = object  # type: ignore
     _HAVE_IPYDATAGRID = False
 
+from modelhelp import debug_var
+
 
 # ---------------------------------------------------------------------------
 # ABC interfaces
@@ -682,6 +684,9 @@ class sumslidewidget(SingleWidgetBase):
     wslide: List[HBox] = field(init=False)
     current_values: Dict[str, Dict[str, Any]] = field(init=False)
     _datawidget: VBox = field(init=False)
+    
+    _in_programmatic_update: bool = field(default=False, init=False)
+  
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -714,6 +719,17 @@ class sumslidewidget(SingleWidgetBase):
         ]
         for w in self.wset:
             w.observe(self._on_slider_change, names="value", type="change")
+            
+            
+        slackvar =  [ '' != cont.get('slack','')
+                     for _, cont in self.content.items()]
+
+        if not any(slackvar):
+            slackvar[-1] = True 
+             
+            
+        self.wslack = [ Checkbox(slack) for slack in slackvar ]
+
 
         waltval = [
             Label(
@@ -722,7 +738,7 @@ class sumslidewidget(SingleWidgetBase):
             )
             for _, cont in self.content.items()
         ]
-        self.wslide = [HBox([s, v]) for s, v in zip(self.wset, waltval)]
+        self.wslide = [HBox([s, v,sla ]) for s, v,sla in zip(self.wset, waltval,self.wslack)]
         self._datawidget = VBox([whead] + self.wslide)
 
         self.current_values = {
@@ -761,28 +777,53 @@ class sumslidewidget(SingleWidgetBase):
 
     def _on_slider_change(self, g: dict) -> None:
         """Maintain the sum constraint when a slider changes."""
+        if self._in_programmatic_update:
+            return 
+
         line_des = g["owner"].description
         line_index = list(self.current_values.keys()).index(line_des)
         self.current_values[line_des]["value"] = g["new"]
+        # debug_var(g,line_des,line_index)
 
         allvalues = [v["value"] for v in self.current_values.values()]
-        if sum(allvalues) <= self.maxsum:
+        
+        self.slacklines = [cb.value for cb in self.wslack]
+        
+        sumall = sum(allvalues)
+        
+        if round(sum(allvalues),2) == round(self.maxsum,2) :
             return
-
+        
+        sumslack = sum(v for v, slack in zip(allvalues, self.slacklines) if slack)
+        sumnoslack = sumall-sumslack 
+        numberslack = float(self.slacklines.count(True))
+        # debug_var(allvalues,self.slacklines,sumall,sumslack,sumnoslack,numberslack)
+        
         # Adjust last slider first
-        newlast = self.maxsum - sum(allvalues[:-1])
-        newlast = max(newlast, self.current_values[self.lastdes]["min"])
-        self.current_values[self.lastdes]["value"] = newlast
+        adjustment = self.maxsum - sumall
+        adjustment_pr_slack = [adjustment/numberslack if a_slack else 0.0 for a_slack in self.slacklines]
+        newvalues = [v+a for v,a in zip(allvalues,adjustment_pr_slack)]
+        newvalues = [max(cont['min'],min(value,cont['max'])) for
+                     cont,value in zip(self.current_values.values(),newvalues)]    
 
-        newsum = sum(v["value"] for v in self.current_values.values())
+        # debug_var('before adjustment',newvalues)
+
+        newsum = sum(newvalues)
+
         if newsum > self.maxsum:
-            # If still too high, reduce the changed slider to fit
-            self.current_values[line_des]["value"] = self.wset[line_index].value - newsum + self.maxsum
-            self.wset[line_index].value = self.current_values[line_des]["value"]
+           newvalues = [max(cont['min'],min(value,cont['max'])) for
+                     cont,value in zip(self.current_values.values(),newvalues)]    
+                   # If still too high, reduce the changed slider to fit
+           newvalues[line_index] = newvalues[line_index] - newsum + self.maxsum
+        self._in_programmatic_update = True
+        # debug_var(newsum, newvalues)
 
-        self.wset[-1].value = newlast
+        for i,v in enumerate(newvalues):  
+            # print(i,v)
+            self.wset[i].value = v
+        self._in_programmatic_update = False
 
-
+    
 @dataclass
 class radiowidget(SingleWidgetBase):
     """
