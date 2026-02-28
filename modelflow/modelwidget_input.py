@@ -697,65 +697,69 @@ class sumslidewidget(SingleWidgetBase):
 
         self.lastdes = list(self.content.keys())[-1]
 
-        # column widths (must match header + rows)
-        slider_col = "60%"
-        alt_col    = "10%"
-        slack_col  = "6%"     # pick something that fits a checkbox nicely
-
-
-
-        wexp = Label(value=self.heading, layout={"width": slider_col})
-        # walt = Label(value=self.altname, layout={"width": alt_col, "border": "hide"})
-        wbas = Label(value=self.basename, layout={"width": alt_col, "border": "hide",'justify_content':"center"})
-        wslack = Label(value='Slack var', layout={"width": slack_col, "border": "hide",'justify_content':"center"})
-        whead = HBox([wexp, wbas,wslack ])
-
+      # fixed columns (won't disappear)
+        val_layout = Layout(
+            width="90px", min_width="90px",
+            flex="0 0 auto",
+            display="flex", justify_content="center", align_items="center",
+        )
+        slack_layout = Layout(
+            width="70px", min_width="70px",
+            flex="0 0 auto",
+            display="flex", justify_content="center", align_items="center",
+        )
+        
+        # slider column (takes the remaining space)
+        slider_layout = Layout(
+            width="auto",
+            flex="1 1 auto",      # <-- this one flexes
+            min_width="260px",    # prevent it collapsing too far
+        )
+        
+        # header uses same locked layouts
+        wexp   = Label(self.heading, layout=Layout(flex="1 1 auto"))  # take remaining space
+        wbas_h = Label(self.basename, layout=val_layout)
+        wsl_h  = Label("Slack var", layout=slack_layout)
+        whead  = HBox([wexp, wbas_h, wsl_h], layout=Layout(width="100%", align_items="center"))
+        
+        # sliders keep description INSIDE
         self.wset = [
             FloatSlider(
                 description=des,
-                min=cont["min"],
-                max=cont["max"],
-                value=cont["value"],
+                min=cont["min"], max=cont["max"], value=cont["value"],
                 step=cont.get("step", 0.01),
-                layout={"width": slider_col},
-                style={"description_width": "40%"},
+                layout=slider_layout,
+                style={"description_width": "40%"},  # you can shrink this to 30% if tight
                 readout_format=f":>,.{cont.get('dec', 2)}f",
                 continuous_update=False,
-                disabled=False,
             )
             for des, cont in self.content.items()
         ]
+        
         for w in self.wset:
             w.observe(self._on_slider_change, names="value", type="change")
-            
-            
-
-
+        
         wbasval = [
-            Label(
-                value=f"{cont['value']:>,.{cont.get('dec', 2)}f}",
-                layout=Layout(display="flex", justify_content="center", width="10%", border="hide"),
-            )
+            Label(f"{cont['value']:>,.{cont.get('dec', 2)}f}", layout=val_layout)
             for _, cont in self.content.items()
         ]
         
-        slackvar =  [ '' != cont.get('slack','')
-                     for _, cont in self.content.items()]
-
-        if not any(slackvar):
-            slackvar[-1] = True 
-             
-            
-        self.wslackval = [ Checkbox(slack) for slack in slackvar ]
-
-        self.wslide = [HBox([s, v,sla ], layout=Layout(width="100%", align_items="center"))
-                       for s, v,sla in zip(self.wset, wbasval,self.wslackval)]
-
-
-
+        slackvar = [ '' != cont.get('slack','') for _, cont in self.content.items()] 
+        if not any(slackvar): 
+            slackvar[-1] = True
         
-        self._datawidget = VBox([whead] + self.wslide)
-
+        self.wslackval = [
+            Checkbox(value=slack, indent=False, layout=slack_layout)
+            for slack in slackvar
+        ]
+        
+        row_layout = Layout(width="100%", align_items="center")
+        self.wslide = [
+            HBox([s, v, sla], layout=row_layout)
+            for s, v, sla in zip(self.wset, wbasval, self.wslackval)
+        ]
+        
+        self._datawidget = VBox([whead] + self.wslide, layout=Layout(width="100%"))
         self.current_values = {
             des: {k: (v.split() if k == "var" else v) for k, v in cont.items()
                   if k in {"value", "var", "op", "min", "max"}}
@@ -821,21 +825,23 @@ class sumslidewidget(SingleWidgetBase):
         newvalues = [max(cont['min'],min(value,cont['max'])) for
                      cont,value in zip(self.current_values.values(),newvalues)]    
 
-        # debug_var('before adjustment',newvalues)
+        # debug_var('before adjustment',allvalues,sumall,adjustment_pr_slack)
 
         newsum = sum(newvalues)
 
-        if newsum > self.maxsum:
+        if not  round(sum(allvalues),6) == round(self.maxsum,6) :
            newvalues = [max(cont['min'],min(value,cont['max'])) for
                      cont,value in zip(self.current_values.values(),newvalues)]    
                    # If still too high, reduce the changed slider to fit
            newvalues[line_index] = newvalues[line_index] - newsum + self.maxsum
         self._in_programmatic_update = True
-        # debug_var(newsum, newvalues)
+        # debug_var(sum(newvalues), newvalues)
 
         for i,v in enumerate(newvalues):  
             # print(i,v)
             self.wset[i].value = v
+            self.current_values[i]["value"] = v
+
         self._in_programmatic_update = False
 
     
