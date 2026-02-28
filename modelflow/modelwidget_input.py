@@ -697,10 +697,18 @@ class sumslidewidget(SingleWidgetBase):
 
         self.lastdes = list(self.content.keys())[-1]
 
-        wexp = Label(value=self.heading, layout={"width": "54%"})
-        walt = Label(value=self.altname, layout={"width": "8%", "border": "hide"})
-        wbas = Label(value=self.basename, layout={"width": "10%", "border": "hide"})
-        whead = HBox([wexp, walt, wbas])
+        # column widths (must match header + rows)
+        slider_col = "60%"
+        alt_col    = "10%"
+        slack_col  = "6%"     # pick something that fits a checkbox nicely
+
+
+
+        wexp = Label(value=self.heading, layout={"width": slider_col})
+        # walt = Label(value=self.altname, layout={"width": alt_col, "border": "hide"})
+        wbas = Label(value=self.basename, layout={"width": alt_col, "border": "hide",'justify_content':"center"})
+        wslack = Label(value='Slack var', layout={"width": slack_col, "border": "hide",'justify_content':"center"})
+        whead = HBox([wexp, wbas,wslack ])
 
         self.wset = [
             FloatSlider(
@@ -709,7 +717,7 @@ class sumslidewidget(SingleWidgetBase):
                 max=cont["max"],
                 value=cont["value"],
                 step=cont.get("step", 0.01),
-                layout={"width": "60%"},
+                layout={"width": slider_col},
                 style={"description_width": "40%"},
                 readout_format=f":>,.{cont.get('dec', 2)}f",
                 continuous_update=False,
@@ -721,6 +729,16 @@ class sumslidewidget(SingleWidgetBase):
             w.observe(self._on_slider_change, names="value", type="change")
             
             
+
+
+        wbasval = [
+            Label(
+                value=f"{cont['value']:>,.{cont.get('dec', 2)}f}",
+                layout=Layout(display="flex", justify_content="center", width="10%", border="hide"),
+            )
+            for _, cont in self.content.items()
+        ]
+        
         slackvar =  [ '' != cont.get('slack','')
                      for _, cont in self.content.items()]
 
@@ -728,17 +746,14 @@ class sumslidewidget(SingleWidgetBase):
             slackvar[-1] = True 
              
             
-        self.wslack = [ Checkbox(slack) for slack in slackvar ]
+        self.wslackval = [ Checkbox(slack) for slack in slackvar ]
+
+        self.wslide = [HBox([s, v,sla ], layout=Layout(width="100%", align_items="center"))
+                       for s, v,sla in zip(self.wset, wbasval,self.wslackval)]
 
 
-        waltval = [
-            Label(
-                value=f"{cont['value']:>,.{cont.get('dec', 2)}f}",
-                layout=Layout(display="flex", justify_content="center", width="10%", border="hide"),
-            )
-            for _, cont in self.content.items()
-        ]
-        self.wslide = [HBox([s, v,sla ]) for s, v,sla in zip(self.wset, waltval,self.wslack)]
+
+        
         self._datawidget = VBox([whead] + self.wslide)
 
         self.current_values = {
@@ -787,7 +802,7 @@ class sumslidewidget(SingleWidgetBase):
 
         allvalues = [v["value"] for v in self.current_values.values()]
         
-        self.slacklines = [cb.value for cb in self.wslack]
+        self.slacklines = [cb.value for cb in self.wslackval]
         
         sumall = sum(allvalues)
         
