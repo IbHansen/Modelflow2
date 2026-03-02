@@ -638,7 +638,11 @@ class slidewidget(SingleWidgetBase):
         for i, (_, cont) in enumerate(self.content.items()):
             self.wset[i].value = cont["value"]
 
-    def update_df(self, df: pd.DataFrame, current_per: Any) -> None:
+    def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
+    # If not provided, operate on the full index
+        if current_per is None:
+            current_per = df.index
+            
         for _, cont in self.current_values.items():
             op = cont.get("op", "=")
             value = cont["value"]
@@ -774,26 +778,35 @@ class sumslidewidget(SingleWidgetBase):
         for i, (_, cont) in enumerate(self.content.items()):
             self.wset[i].value = cont["value"]
 
-    def update_df(self, df: pd.DataFrame, current_per: Any) -> None:
-        for _, cont in self.current_values.items():
-            op = cont.get("op", "=")
-            value = cont["value"]
-            for var in cont["var"]:
-                if op == "+":
-                    df.loc[current_per, var] = df.loc[current_per, var] + value
-                elif op == "+impulse":
-                    df.loc[current_per[0], var] = df.loc[current_per[0], var] + value
-                elif op == "=start-":
-                    startindex = df.index.get_loc(current_per[0])
-                    varloc = df.columns.get_loc(var)
-                    df.iloc[:startindex, varloc] = value
-                elif op == "=":
-                    df.loc[current_per, var] = value
-                elif op == "=impulse":
-                    df.loc[current_per[0], var] = value
-                else:
-                    raise ValueError(f"Unsupported operator {op!r} in sumslide mapping for {var!r}.")
+    def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
+    # If not provided, operate on the full index
+        if current_per is None:
+            current_per = df.index
 
+        
+        for i,cont in enumerate(self.current_values.values()):
+            op = cont.get("op", "=")
+            value = self.wset[i].value
+
+    
+            for var in cont["var"]:
+                match op:
+                    case "+":
+                        df.loc[current_per, var] = df.loc[current_per, var] + value
+    
+                    case "+impulse":
+                        df.loc[current_per[0], var] = df.loc[current_per[0], var] + value
+    
+                    case "=":
+                        df.loc[current_per, var] = value
+    
+                    case "=impulse":
+                        df.loc[current_per[0], var] = value
+    
+                    case _:
+                        raise ValueError(
+                            f"Unsupported operator {op!r} in sumslide mapping for {var!r}."
+                    )
     def _on_slider_change(self, g: dict) -> None:
         """Maintain the sum constraint when a slider changes."""
         if self._in_programmatic_update:
@@ -807,6 +820,11 @@ class sumslidewidget(SingleWidgetBase):
         allvalues = [v["value"] for v in self.current_values.values()]
         
         self.slacklines = [cb.value for cb in self.wslackval]
+        if not any(self.slacklines):
+            self.wslackval[0].value = True 
+            self.slacklines = [cb.value for cb in self.wslackval]
+
+            
         
         sumall = sum(allvalues)
         
@@ -840,7 +858,6 @@ class sumslidewidget(SingleWidgetBase):
         for i,v in enumerate(newvalues):  
             # print(i,v)
             self.wset[i].value = v
-            self.current_values[i]["value"] = v
 
         self._in_programmatic_update = False
 
@@ -894,7 +911,11 @@ class radiowidget(SingleWidgetBase):
         for wradio in self.wradiolist:
             wradio.index = 0
 
-    def update_df(self, df: pd.DataFrame, current_per: Any) -> None:
+    def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
+    # If not provided, operate on the full index
+        if current_per is None:
+            current_per = df.index
+
         for wradio, (_, cont) in zip(self.wradiolist, self.content.items()):
             for _, variable in cont:
                 df.loc[current_per, variable] = 0
@@ -941,7 +962,11 @@ class checkwidget(SingleWidgetBase):
         for wcheck, (_, (variable, val)) in zip(self.wchecklist, self.content.items()):
             wcheck.value = val
 
-    def update_df(self, df: pd.DataFrame, current_per: Any) -> None:
+    def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
+    # If not provided, operate on the full index
+        if current_per is None:
+            current_per = df.index
+
         for wcheck, (_, (variable, _)) in zip(self.wchecklist, self.content.items()):
             df.loc[current_per, variable] = 1.0 if wcheck.value else 0.0
 
