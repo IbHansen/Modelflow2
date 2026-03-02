@@ -348,7 +348,11 @@ def debug_var(*args, **kwargs):
 
     # --- Print positional args ---
     for label, value in zip(arg_labels[:len(args)], args):
-        print(f"  {label} = {pformat(value)}")
+        if pd.DataFrame == type(value):
+            print(f"{label} = ")
+            print(f"{pformat(value)}")
+        else: 
+            print(f"  {label} = {pformat(value)}")
 
     # --- Print keyword args (explicit ones only) ---
     # Align labels for the kwargs we actually received (explicit, not **expansion members)

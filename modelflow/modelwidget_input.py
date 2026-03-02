@@ -227,7 +227,9 @@ from ipywidgets import (
     Tab,
     Text,
     VBox,
+    Box,
 )
+
 
 import matplotlib.pyplot as plt
 
@@ -280,7 +282,7 @@ class ContainerWidgetABC(WidgetABC):
         """Return child widgets in display order."""
         raise NotImplementedError
 
-    def update_df(self, df: pd.DataFrame, current_per: Any) -> None:
+    def update_df(self, df: pd.DataFrame, current_per: Any=None) -> None:
         """Forward updates to all children."""
         for child in self.datachildren:
             child.update_df(df, current_per)
@@ -313,7 +315,7 @@ class SingleWidgetBase(WidgetABC):
 
     def __post_init__(self) -> None:
         self.content = self.widgetdef["content"]
-        self.heading = self.widgetdef.get("heading", "")
+        self.heading = self.widgetdef.get("heading", "Heading")
         
     @property
     def show(self):
@@ -343,7 +345,7 @@ class ContainerWidgetBase(ContainerWidgetABC):
 
     def __post_init__(self) -> None:
         self.content = self.widgetdef["content"]
-        self.heading = self.widgetdef.get("heading", "")
+        self.heading = self.widgetdef.get("heading", "Heading")
 
     @property
     def datachildren(self) -> List[WidgetABC]:
@@ -357,8 +359,8 @@ class ContainerWidgetBase(ContainerWidgetABC):
     def show(self):
         display(self.datawidget)
 
-    def _repr_html_(self):
-        display( self.datawidget)
+    def _ipython_display_(self):
+        display(self.datawidget)
 
 
 
@@ -494,24 +496,47 @@ class sheetwidget(SingleWidgetBase):
     ``update_df`` adds the edited grid values to the corresponding cells in ``df``.
     """
 
-    df_var: pd.DataFrame = field(init=False)
+    df_var: pd.DataFrame = field(init=False) # input update dataframe before transpose and rename 
+    org_df_var: pd.DataFrame = field(init=False) # input datadateframe as displayed by sheet, so renamed and transposed 
+    org_values: pd.DataFrame = field(init=False) # copy of abowe for reset of update 
+    # df_to_update: pd.DataFrame = field(init=False) # A dataframe to update 
+
     trans: Callable[[str], str] = field(default=lambda x: x)
     transpose: bool = field(default=False)
     wexp: Label = field(init=False)
-    org_df_var: pd.DataFrame = field(init=False)
     wsheet: Any = field(init=False)
-    org_values: pd.DataFrame = field(init=False)
     _datawidget: Any = field(init=False)
     dec: int = field(init=False, default=2)
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        if not _HAVE_IPYDATAGRID:
-            raise ImportError("sheetwidget requires ipydatagrid. Install ipydatagrid to use this widget.")
+        self.op = self.content.get('operator','+')
 
-        self.df_var = self.content["df"]
+        update_col   = self.content.get("update_col", None)
+        update_index = self.content.get("update_index", None)
+        update_df    = self.content.get("update_df", None)
+        
+        if update_col is not None and update_index is not None:
+            # normalize to Index objects (handles list/tuple/Index)
+            cols = pd.Index(update_col) if not isinstance(update_col, pd.Index) else update_col
+            idx  = pd.Index(update_index) if not isinstance(update_index, pd.Index) else update_index
+        
+            self.df_var = pd.DataFrame(0, index=idx, columns=cols)
+        
+        elif isinstance(update_df, pd.DataFrame):
+            self.df_var = update_df
+        
+        elif update_df is not None and not isinstance(update_df, pd.DataFrame):
+            raise TypeError("'update_df' must be a pandas DataFrame")
+        else:
+            raise ValueError(
+                "Provide either both 'update_col' and 'update_index', or 'update_df'."
+            )
+
         self.dec = int(self.content.get("dec", 2))
         self.transpose = bool(self.widgetdef.get("transpose", True))
+        if not self.transpose: 
+            raise Exception('Transpose not implemented in sheetwidget yet')
         self.wexp = Label(value=self.heading, layout={"width": "54%"})
 
         newnamedf = self.df_var.copy().rename(columns=self.trans)
@@ -524,9 +549,9 @@ class sheetwidget(SingleWidgetBase):
         column_widths = {col: max(len(str(col)) + 4, max_len) * 9 for col in self.org_df_var.columns}| { "Year": row_header_width}  
 
         renderers = {col: TextRenderer(format=fmt, horizontal_alignment="right") for col in self.org_df_var.columns}
-        renderers["index"] = TextRenderer(horizontal_alignment="left")
+        renderers["Year"] = TextRenderer(horizontal_alignment="left")
         
-        debug_var(self.org_df_var,self.org_df_var.index,row_header_width)
+        # debug_var(self.org_df_var,self.org_df_var.index,row_header_width)
         self.wsheet = DataGrid(
             self.org_df_var,
             column_widths=column_widths,
@@ -537,7 +562,27 @@ class sheetwidget(SingleWidgetBase):
             index_name="Year",
             renderers=renderers,
         )
-        self._datawidget = VBox([self.wexp, self.wsheet]) if len(self.heading) else self.wsheet
+        
+        # constrain the grid itself
+        self.wsheet.layout = Layout(
+            height="360px",          # <- key: forces internal vertical scroll
+            width="100%",
+            min_width="900px"        # <- key: enables horizontal scroll when output area is narrower
+        )
+        
+        grid_container = Box(
+            [self.wsheet],
+            layout=Layout(
+                width="100%",
+                height="360px",
+                overflow="auto",
+                border="1px solid #ddd"
+            )
+        )
+        
+        self._datawidget = VBox([self.wexp, grid_container]) if len(self.heading) else grid_container   
+        
+        
         self.org_values = self.org_df_var.copy()
 
     @property
@@ -551,7 +596,28 @@ class sheetwidget(SingleWidgetBase):
 
         updated_df.columns = self.df_var.columns
         updated_df.index = self.df_var.index
-        df.loc[updated_df.index, updated_df.columns] = df.loc[updated_df.index, updated_df.columns] + updated_df
+        df_copy = df.loc[updated_df.index, updated_df.columns].copy()  
+        # debug_var(updated_df,df_copy)
+        match self.op:
+            case "+":
+                df.loc[updated_df.index, updated_df.columns] =df_copy + updated_df
+
+            case "=":
+                df.loc[updated_df.index, updated_df.columns] = updated_df
+
+            case "*":
+                df.loc[updated_df.index, updated_df.columns] = df_copy * updated_df
+
+            case "%":
+                df.loc[updated_df.index, updated_df.columns] = df_copy * (1+updated_df/100) 
+
+
+            case _:
+                raise ValueError(
+                    f"Unsupported operator {self.operator!r} in sheetwidget mapping for {self.heading!r}."
+            )
+
+        
 
     def reset(self, g: Any) -> None:
         self.wsheet.data = self.org_values
