@@ -470,6 +470,12 @@ class tabwidget(ContainerWidgetBase):
 # ---------------------------------------------------------------------------
 # Leaf widgets
 # ---------------------------------------------------------------------------
+def auto_row_header_width(df: pd.DataFrame, *, min_px=120, max_px=800, px_per_char=9, padding_px=24):
+    # longest index label (as shown in the row header)
+    labels = [str(x) for x in df.index]
+    max_chars = max((len(s) for s in labels), default=0)
+    est = max_chars * px_per_char + padding_px
+    return max(min_px, min(max_px, est))
 
 @dataclass
 class sheetwidget(SingleWidgetBase):
@@ -505,7 +511,7 @@ class sheetwidget(SingleWidgetBase):
 
         self.df_var = self.content["df"]
         self.dec = int(self.content.get("dec", 2))
-        self.transpose = bool(self.widgetdef.get("transpose", False))
+        self.transpose = bool(self.widgetdef.get("transpose", True))
         self.wexp = Label(value=self.heading, layout={"width": "54%"})
 
         newnamedf = self.df_var.copy().rename(columns=self.trans)
@@ -514,19 +520,21 @@ class sheetwidget(SingleWidgetBase):
         max_value = self.org_df_var.abs().max().max()
         fmt = f",.{self.dec}f"
         max_len = len(f"{max_value:{fmt}}")
-        column_widths = {col: max(len(str(col)) + 4, max_len) * 9 for col in self.org_df_var.columns}
+        row_header_width = auto_row_header_width(self.org_df_var)
+        column_widths = {col: max(len(str(col)) + 4, max_len) * 9 for col in self.org_df_var.columns}| { "Year": row_header_width}  
 
         renderers = {col: TextRenderer(format=fmt, horizontal_alignment="right") for col in self.org_df_var.columns}
         renderers["index"] = TextRenderer(horizontal_alignment="left")
-
+        
+        debug_var(self.org_df_var,self.org_df_var.index,row_header_width)
         self.wsheet = DataGrid(
             self.org_df_var,
             column_widths=column_widths,
-            row_header_width=500,
+            row_header_width=row_header_width,
             enable_filters=False,
             enable_sort=False,
             editable=True,
-            index_name="year",
+            index_name="Year",
             renderers=renderers,
         )
         self._datawidget = VBox([self.wexp, self.wsheet]) if len(self.heading) else self.wsheet
