@@ -297,6 +297,8 @@ class ContainerWidgetABC(WidgetABC):
 # Helper bases
 # ---------------------------------------------------------------------------
 
+
+
 @dataclass
 class SingleWidgetBase(WidgetABC):
     """
@@ -479,6 +481,37 @@ def auto_row_header_width(df: pd.DataFrame, *, min_px=120, max_px=800, px_per_ch
     est = max_chars * px_per_char + padding_px
     return max(min_px, min(max_px, est))
 
+
+def df_to_grid(df,dec):
+    max_value = df.abs().max().max()
+    fmt = f",.{dec}f"
+    max_len = len(f"{max_value:{fmt}}")
+    row_header_width = auto_row_header_width(df)
+    column_widths = {col: max(len(str(col)) + 4, max_len) * 9 for col in df.columns}| { "Year": row_header_width}  
+
+    renderers = {col: TextRenderer(format=fmt, horizontal_alignment="right") for col in df.columns}
+    renderers["Year"] = TextRenderer(horizontal_alignment="left")
+    
+    # debug_var(self.org_df_var,self.org_df_var.index,row_header_width)
+    wsheet = DataGrid(
+        df,
+        column_widths=column_widths,
+        row_header_width=row_header_width,
+        enable_filters=False,
+        enable_sort=False,
+        editable=True,
+        index_name="Year",
+        renderers=renderers,
+    )
+    
+    # constrain the grid itself
+    wsheet.layout = Layout(
+        height="360px",          # <- key: forces internal vertical scroll
+        width="100%",
+        min_width="900px"        # <- key: enables horizontal scroll when output area is narrower
+    )
+    return wsheet
+
 @dataclass
 class sheetwidget(SingleWidgetBase):
     """
@@ -541,35 +574,14 @@ class sheetwidget(SingleWidgetBase):
 
         newnamedf = self.df_var.copy().rename(columns=self.trans)
         self.org_df_var = newnamedf.T if self.transpose else newnamedf
-
-        max_value = self.org_df_var.abs().max().max()
-        fmt = f",.{self.dec}f"
-        max_len = len(f"{max_value:{fmt}}")
-        row_header_width = auto_row_header_width(self.org_df_var)
-        column_widths = {col: max(len(str(col)) + 4, max_len) * 9 for col in self.org_df_var.columns}| { "Year": row_header_width}  
-
-        renderers = {col: TextRenderer(format=fmt, horizontal_alignment="right") for col in self.org_df_var.columns}
-        renderers["Year"] = TextRenderer(horizontal_alignment="left")
         
-        # debug_var(self.org_df_var,self.org_df_var.index,row_header_width)
-        self.wsheet = DataGrid(
-            self.org_df_var,
-            column_widths=column_widths,
-            row_header_width=row_header_width,
-            enable_filters=False,
-            enable_sort=False,
-            editable=True,
-            index_name="Year",
-            renderers=renderers,
-        )
         
-        # constrain the grid itself
-        self.wsheet.layout = Layout(
-            height="360px",          # <- key: forces internal vertical scroll
-            width="100%",
-            min_width="900px"        # <- key: enables horizontal scroll when output area is narrower
-        )
         
+        self.wsheet = df_to_grid(self.org_df_var, self.dec)
+        # self.wsheet2 = df_to_grid(self.org_df_var-1.0, self.dec)
+        
+        # wtab = Tab([self.wsheet,self.wsheet2])
+            
         grid_container = Box(
             [self.wsheet],
             layout=Layout(
@@ -580,7 +592,7 @@ class sheetwidget(SingleWidgetBase):
             )
         )
         
-        self._datawidget = VBox([self.wexp, grid_container]) if len(self.heading) else grid_container   
+        self._datawidget = VBox([self.wexp, self.wsheet]) 
         
         
         self.org_values = self.org_df_var.copy()
