@@ -240,5 +240,6 @@ no substitution in report writing latex as {} is latex teritory
 more explanation if no substitution 
 wf2_to_clean works even if no model in wf2 file 
 oldkwargs= {} as default in modelload (if no model but data)
+sheetwidget has been remade to make sheets scrollable and use dfferent operators =,+,*,% 
 
 
