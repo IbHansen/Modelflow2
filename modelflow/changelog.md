@@ -243,3 +243,5 @@ oldkwargs= {} as default in modelload (if no model but data)
 sheetwidget has been remade to make sheets scrollable and use dfferent operators =,+,*,% 
 
 
+Version 2.63 uploaded 
+Version 2.64 uploaded 
