@@ -370,7 +370,7 @@ class ContainerWidgetBase(ContainerWidgetABC):
 # Factory
 # ---------------------------------------------------------------------------
 
-def make_widget(widgetdef_or_type, widgetdict=None):
+def make_widget(widgetdef_or_type, widgetdict=None,render_mode = 'classic'):
     """
     Instantiate a widget from a definition.
 
@@ -405,7 +405,14 @@ def make_widget(widgetdef_or_type, widgetdict=None):
     else:
         widgettype = widgetdef_or_type
 
-    clsname = f"{widgettype}widget"
+    if render_mode == 'classic':
+        clsname = f"{widgettype}widget"
+    else: 
+        if widgettype == 'tab':
+            clsname = f"colab{widgettype}widget"
+        else:     
+            clsname = f"{widgettype}widget"
+
     cls = globals()[clsname]
     obj = cls(widgetdict)
 
