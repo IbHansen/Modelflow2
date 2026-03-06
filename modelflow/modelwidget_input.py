@@ -454,7 +454,7 @@ class tabwidget(ContainerWidgetBase):
     def __post_init__(self) -> None:
         super().__post_init__()
 
-        self.selected_index = self.widgetdef.get("selected_index", "0")
+        self.selected_index = int(self.widgetdef.get("selected_index", "0"))
         self.tab = self.widgetdef.get("tab", True)
 
         tab_titles = [tab_title for tab_title, _ in self.content]
@@ -469,6 +469,54 @@ class tabwidget(ContainerWidgetBase):
         )
         for i, title in enumerate(tab_titles):
             self._datawidget.set_title(i, title)
+
+
+@dataclass
+class colabtabwidget(ContainerWidgetBase):
+    """
+    Colab-safe replacement for Tab/Accordion.
+    Uses a selector to switch the visible child widget.
+    """
+
+    selected_index: int = 0
+    tab: bool = True  # kept only for compatibility
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        self.selected_index = int(self.widgetdef.get("selected_index", 0))
+        entries = list(self.content)
+
+        titles = [str(title) for title, _ in entries]
+        self._children = [
+            make_widget(subtype, subdef)
+            for _, (subtype, subdef) in entries
+        ]
+
+        self._selector = Select(
+            options=titles,
+            value=titles[self.selected_index] if titles else None,
+            description="Section:",
+            layout=Layout(width="250px"),
+            style={"description_width": "initial"},
+        )
+
+        self._panel = VBox(
+            [self._children[self.selected_index].datawidget] if self._children else [],
+            layout=Layout(width="100%")
+        )
+
+        def _change(change):
+            if change["name"] == "value" and change["new"] in titles:
+                idx = titles.index(change["new"])
+                self._panel.children = (self._children[idx].datawidget,)
+
+        self._selector.observe(_change, names="value")
+
+        self._datawidget = VBox(
+            [self._selector, self._panel],
+            layout=Layout(width="100%", border="1px solid #999", padding="8px")
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1091,70 +1139,9 @@ class shinywidget(SingleWidgetBase):
         self.inner.reset(g)
 
 
-# ---------------------------------------------------------------------------
-# Plot saving helper
-# ---------------------------------------------------------------------------
 
 @dataclass
-class savefigs_widget:
-    """
-    A small dialog to save figures produced by :class:`keep_plot_widget`.
-
-    The actual saving is performed by :meth:`save_figs`, which expects a dict
-    mapping figure names to matplotlib figures.
-    """
-
-    location: str = "./graph"
-    datawidget: VBox = field(init=False)
-    wlocation: Text = field(init=False)
-    wsave: Button = field(init=False)
-    wstatus: HTML = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.wlocation = Text(
-            value=self.location,
-            description="Save to:",
-            layout={"width": "70%"},
-            style={"description_width": "20%"},
-        )
-        self.wsave = Button(description="Save figures")
-        self.wstatus = HTML(value="")
-        self.datawidget = VBox([HBox([self.wlocation, self.wsave]), self.wstatus])
-
-    def bind(self, get_figs: Callable[[], Dict[str, Any]]) -> None:
-        """Bind the save button to a callable returning the current figure dict."""
-        def _on_click(_):
-            figs = get_figs()
-            self.save_figs(figs)
-        self.wsave.on_click(_on_click)
-
-    def save_figs(self, figs: Dict[str, Any]) -> None:
-        """
-        Save figures to disk.
-
-        Figures are saved as PNG into ``self.wlocation.value``.
-        """
-        outdir = Path(self.wlocation.value).expanduser()
-        outdir.mkdir(parents=True, exist_ok=True)
-
-        saved = 0
-        for name, fig in figs.items():
-            try:
-                fig.savefig(outdir / f"{name}.png", bbox_inches="tight")
-                saved += 1
-            except Exception as e:
-                self.wstatus.value = f"<b>Error saving {name}:</b> {e}"
-                return
-
-        self.wstatus.value = f"Saved <b>{saved}</b> figure(s) to <code>{outdir}</code>."
-
-
-# ---------------------------------------------------------------------------
-# Scenario plotting widget (kept mostly intact, cleaned docstring + typing)
-# ---------------------------------------------------------------------------
-
-@dataclass
-class keep_plot_widget:
+class keep_plot_widget_no_colab:
     """
     Interactive plotting widget for ModelFlow model instances.
 
@@ -1345,6 +1332,7 @@ class updatewidget:
     vline  : list = field(default_factory=list)
     relativ_start : int = 0 
     short :bool = False 
+    plot_render_mode : str ="classic"
     
     exodif   : any = field(default_factory=pd.DataFrame)          # definition 
     
@@ -1404,7 +1392,8 @@ class updatewidget:
             self.keep_ui = keep_plot_widget(mmodel = self.mmodel, 
                                       selectfrom = self.varpat,
                                       vline=self.vline,relativ_start=self.relativ_start,
-                                      short = self.short) 
+                                      short = self.short,
+                                      render_mode = self.plot_render_mode) 
             
             # self.wtotal = VBox([self.datawidget.datawidget,winputstring,wbut,
             #                             self.keep_ui.datawidget])
@@ -1450,12 +1439,14 @@ class updatewidget:
         self.wname.value = f'Experiment {self.experiment}'
         self.keep_ui.trigger(None) 
         # --- FULL REBUILD of keep_plot_widget to force scenario refresh ---
+        # debug_var(self.plot_render_mode)
         self.keep_ui = keep_plot_widget(
             mmodel=self.mmodel,
             selectfrom=self.varpat,
             vline=self.vline,
             relativ_start=self.relativ_start,
-            short=self.short
+            short=self.short,
+            render_mode = self.plot_render_mode
         )
         
         self.wtotal.children = [
@@ -1495,408 +1486,6 @@ def fig_to_image(fig,format='svg'):
     
 
 
-@dataclass
-class keep_plot_widget:
-    """
-    Provides an interactive widget to plot data from ModelFlow model instances. 
-    It allows for selection of variables, scenarios, and display types, and can show 
-    differences between scenarios in various formats.
-
-    Args:
-        mmodel: A ModelFlow model instance.
-        smpl (Tuple[str, str], optional): Sample period for plotting (start, end). 
-            Defaults to ('', '').
-        use_smpl (bool, optional): If True, enables a sample period selection slider. 
-            Defaults to False.
-        selectfrom (str, optional): Space-separated string of variable names to select 
-            from. If empty, all kept variables are available. Defaults to '*'.
-        legend (bool, optional): If True, displays legends next to the plots. 
-            Defaults to False.
-        dec (str, optional): Format string for decimal places on the y-axis. 
-            Defaults to ''.
-        use_descriptions (bool, optional): If True, uses variable descriptions from 
-            the model. Defaults to True.
-        vline (any, optional): List of vertical lines for the plot (position, text). 
-            Defaults to None.
-        add_var_name (bool, optional): If True, adds variable names to descriptions. 
-            Defaults to False.
-        short (any, optional): If set, reduces the number of input fields. 
-            Defaults to 0.
-        select_scenario (bool, optional): If True, allows selecting scenarios to display. 
-            Defaults to True.
-        switch (bool, optional): If True, uses scenarios from mmodel.basedf and 
-            mmodel.lastdf. Defaults to False.
-        var_groups (dict, optional): Dictionary of variable patterns for selection, 
-            like country groups. If empty use mmodel.var_groups. Defaults to an empty dict.
-        use_var_groups (bool, optional): If True, enables selection using var_groups. 
-            Defaults to True.
-        displaytype (str, optional): Type of display ('tab', 'accordion', or other). 
-            Defaults to 'tab'.
-        save_location (str, optional): Default location for saving plots. 
-            Defaults to './graph'.
-        use_smpl (bool, optional): If True, enables a sample selection slider. 
-            Defaults to False.
-
-    Properties:
-        show: Displays the widget.
-        datawidget: The actual interactive widget.
-
-    Returns:
-        An instance of keep_plot_widget. This instance's 'keep_wiz_figs' property is 
-        set to a dictionary containing the figures, which can be used for creating 
-        publication-quality files.
-    """
-
-    mmodel : any  # a model
-    smpl : Tuple[str, str] = ('', '')
-    relativ_start : int = 0
-    selected : str = ''
-    selectfrom : str = '*'
-    showselectfrom : bool = True
-    legend : bool = False
-    dec : str = ''
-    use_descriptions : bool = True
-    select_width : str = ''
-    select_height : str = '200px'
-    vline : any = None
-    var_groups : dict = field(default_factory=dict)
-    use_var_groups : bool = True
-    add_var_name : bool = False
-    short : any = 0
-    select_scenario : bool = True
-    displaytype : str = 'tab'
-    save_location : str = './graph'
-    switch : bool = False
-    use_smpl : bool = False
-    init_dif : bool = False
-    prefix_dict :  dict = field(default_factory=dict,init=False)
-
-  
-    
-    def __post_init__(self):
-        from copy import copy 
-        minper = self.mmodel.lastdf.index[0]
-        maxper = self.mmodel.lastdf.index[-1]
-        options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
-        self.first_prefix = True 
-        
-        self.old_current_per = copy(self.mmodel.current_per) 
-        # print(f'Før {self.mmodel.current_per=}')
-        
-        self.select_scenario = False if self.switch else self.select_scenario
-       
-        with self.mmodel.set_smpl(*self.smpl):
-            # print(f'efter set smpl  {self.mmodel.current_per=}')
-            with self.mmodel.set_smpl_relative(self.relativ_start,0):
-                # print(f'efter set smpl relativ  {self.mmodel.current_per=}')
-                ...
-                show_per = copy(list(self.mmodel.current_per)[:])
-        self.mmodel.current_per = copy(self.old_current_per)       
-        
-        self.save_dialog = savefigs_widget(location = self.save_location)
-        # Now variable selection 
-
-        allkeepvar = [set(df.columns) for df in self.mmodel.keep_solutions.values()]
-        keepvar = sorted(allkeepvar[0].intersection(*allkeepvar[1:]))   # keept variables in all experiments
-
-        
-        wselectfrom = Text(value= self.selectfrom,placeholder='Type something',description='Display variables:',
-                        layout={'width':'65%'},style={'description_width':'30%'})
-        
-        wselectfrom.layout.visibility = 'visible' if self.showselectfrom else 'hidden'
-        
-        self.wxopen = Checkbox(value=False,description = 'Allow save figures',disabled=False,
-                                     layout={'width':'25%'}    ,style={'description_width':'10%'})
-        
-        gross_selectfrom = []        
-        def changeselectfrom(g):
-            nonlocal gross_selectfrom
-            # print(f'{wselectfrom.value=}')
-            # print(f'{keepvar=}')
-            _selectfrom = [s.upper() for s in self.mmodel.vlist(wselectfrom.value) if s in keepvar  ] if self.selectfrom else keepvar
-            gross_selectfrom =  [(f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',v)
-                                 for v in _selectfrom] 
-            try: # Only if this is done after the first call
-                selected_vars.options=gross_selectfrom
-                selected_vars.value  = [gross_selectfrom[0][1]]
-            except Exception as e:
-                # print(e)
-                ...
-        wselectfrom.observe(changeselectfrom,names='value',type='change')   
-        self.wxopen.observe(self.trigger,names='value',type='change')
-        
-        changeselectfrom(None)
-            
-            
-
-        # Now the selection of scenarios 
-        
-        
-        with self.mmodel.keepswitch(switch=self.switch,scenarios= '*'):
-            gross_keys = list(self.mmodel.keep_solutions.keys())
-            
-            scenariobase = Select(options = gross_keys, 
-                                  value = gross_keys[0],
-                                               description='First scenario',
-                                               layout=Layout(width='50%', font="monospace"))
-            scenarioselect = SelectMultiple(options = [s for s in gross_keys if not s == scenariobase.value],
-                                            value=  [s for s in gross_keys if not s == scenariobase.value],
-                                            description = 'Next',
-                                               layout=Layout(width='50%', font="monospace"))
-            keep_keys = list(self.mmodel.keep_solutions.keys())
-            self.scenarioselected = '|'.join(keep_keys)
-            keep_first = keep_keys[0]
-
-        
-        def changescenariobase(g):
-            scenarioselect.options=[s for s in gross_keys if not s == scenariobase.value]
-            scenarioselect.value  =[s for s in gross_keys if not s == scenariobase.value]
-            self.scenarioselected = '|'.join([scenariobase.value] + list(scenarioselect.value) )
-            # print(f'{self.scenarioselected=}')
-           
-            
-        def changescenarioselect(g):
-            # print(f'{scenarioselect.value}')
-            self.scenarioselected = '|'.join([scenariobase.value] + list(scenarioselect.value) )
-            self.trigger(None)
-            diff.description = fr'Difference to: "{scenariobase.value}"'
-            # print(f'{self.scenarioselected=}')
-            
-        scenariobase.observe(changescenariobase,names='value',type='change')
-        scenarioselect.observe(changescenarioselect,names='value',type='change')
-        
-        wscenario = HBox([scenariobase, scenarioselect])
-        
-        
-        wscenario.layout.visibility = 'visible' if self.select_scenario else 'hidden'
-            
-        
-        
-        
-        
-        # print(f'efter context  set smpl  {self.mmodel.current_per=}')
-        # breakpoint() 
-        init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
-        init_end = self.mmodel.lastdf.index.get_loc(show_per[-1])
-        # print(f'{gross_selectfrom=}')
-        width = self.select_width if self.select_width else '50%' if self.use_descriptions else '50%'
-    
-
-        description_width = 'initial'
-        description_width_long = 'initial'
-        
-        if self.use_var_groups:
-            if len(self.var_groups):
-                self.prefix_dict = self.var_groups
-            elif hasattr(self.mmodel,'var_groups') and len(self.mmodel.var_groups):
-                self.prefix_dict = self.mmodel.var_groups
-            else: 
-                self.prefix_dict = {}
-                self.prefix_dict = {k:v for k,v in self.prefix_dict.items() }
-        else: 
-                self.prefix_dict = {}
-                
-        
-        select_prefix = [(iso,c) for iso,c in self.prefix_dict.items()]
-        # print(f'{select_prefix=}')
-        i_smpl = SelectionRangeSlider(value=[init_start, init_end], continuous_update=False, options=options, min=minper,
-                                      max=maxper, layout=Layout(width='75%'), description='Show interval')
-        selected_vars = SelectMultiple( options=gross_selectfrom, layout=Layout(width=width, height=self.select_height, font="monospace"),
-                                        description='Select one or more', style={'description_width': description_width})
-        
-        diff = RadioButtons(options=[('No', False), ('Yes', True), ('In percent', 'pct')], description=fr'Difference to: "{keep_first}"',
-                            value=self.init_dif, style={'description_width': 'auto'}, layout=Layout(width='auto'))
-        showtype = RadioButtons(options=[('Level', 'level'), ('Growth', 'growth')],
-                                description='Data type', value='level', style={'description_width': description_width})
-        scale = RadioButtons(options=[('Linear', 'linear'), ('Log', 'log')], description='Y-scale',
-                              value='linear', style={'description_width': description_width})
-        # 
-        legend = RadioButtons(options=[('Yes', 1), ('No', 0)], description='Legends', value=self.legend, style={
-                              'description_width': description_width},layout=Layout(width='auto',margin="0% 0% 0% 5%"))
-        
-        self.widget_dict = {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
-                                            'scale': scale, 'legend': legend}
-        
-        
-        
-        for wid in self.widget_dict.values():
-            wid.observe(self.trigger,names='value',type='change')
-            
-        # breakpoint()
-        self.out_widget =VBox([HTML(value="Hello <b>World</b>",
-                                  placeholder='',
-                                  description='',)])
-        
-       
-        
-        def get_prefix(g):
-            # from modelclass import model
-            ''' this function is triggered when the prefix selection is changed. Used only when a  prefix_dict has ben set. 
-            
-            g['new]'] contains the new prefix
-            
-            It sets the variables the user can select from 
-            
-            '''
-            # print(f'{g=}')
-            try:
-                # fint the suffix for the variables in the current selection of variables
-                # to ensure we get the same variables for the next prefix 
-                current_suffix = {v[len(g['old'][0]):] for v in selected_vars.value}
-            except:
-                # we are at the first call to getprefix 
-                current_suffix = ''
-                
-            new_prefix = g['new']  # returns the selected prefix as tuple as therre can be more 
-            # print(new_prefix)
-            # find the variables which starts with the prefix 
-            if 0: # only prefix
-                selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
-                                        if any([variable.startswith(n) 
-                                                
-                                                for n in new_prefix]))
-            else: 
-                gross_selectfrom_vars = [self.mmodel.string_substitution(variable) for des,variable in gross_selectfrom ]
-                gross_pat             = ' '.join([self.mmodel.string_substitution(ppat) for ppat in new_prefix])
-                selected_match_var = set(self.mmodel.list_names(gross_selectfrom_vars,gross_pat))
-                
-                selected_prefix_var =  tuple((des,variable) for des,variable in gross_selectfrom  
-                                        if variable in selected_match_var)
-                
-            # print(f'{selected_prefix_var=}')
-            # An exception is trigered but has no consequences     
-            try:                      
-                selected_vars.options = selected_prefix_var # Sets the variables to be selected from 
-            except: 
-                ...
-                
-                
-            # print(f'{current_suffix=} \n{selected_prefix_var=}')
-
-            if not self.first_prefix:
-                new_selection   = [f'{n}{c}' for c in current_suffix for n in new_prefix
-                                        if f'{n}{c}' in {s  for p,s in selected_prefix_var}]
-                selected_vars.value  = new_selection 
-                # print(f"{new_selection=}{current_suffix=}{g['old']=}")
-            else:    
-                # we are where no prefix has been selected
-                self.first_prefix = False 
-                if len(selected_prefix_var):
-                    selected_vars.value  = [varname for des,varname in  selected_prefix_var]
-                
-                   
-        if len(self.prefix_dict): 
-            selected_prefix = SelectMultiple(value=[select_prefix[0][1]], options=select_prefix, 
-                                              layout=Layout(width='25%', height=self.select_height, font="monospace"),
-                                        description='')
-               
-            selected_prefix.observe(get_prefix,names='value',type='change')
-            select = HBox([selected_vars,selected_prefix])
-            # print(f'{select_prefix=}')
-            # we call get_prefix when the widget is set up. 
-            get_prefix({'new':select_prefix[0]})
-        else: 
-            # no prefix, so we only have to select variable names. 
-            select = VBox([selected_vars])
-            selected_vars.value  = [gross_selectfrom[0][1]]
-
-        options1 = HBox([diff]) if self.short >=2 else HBox([diff,legend])
-        options2 = HBox([scale, showtype, self.wxopen])
-        if self.short:
-            vui = [select, options1,]
-        else:
-            if self.select_scenario:
-                vui = [wscenario, select, options1, options2,]  
-            else: 
-                vui = [           select, options1, options2,]  
-        vui =  vui + [i_smpl] if self.use_smpl else vui 
-        
-        self.datawidget= VBox(vui+[self.out_widget])
-        # show = interactive_output(explain, {'i_smpl': i_smpl, 'selected_vars': selected_vars, 'diff': diff, 'showtype': showtype,
-        #                                     'scale': scale, 'legend': legend})
-        # print('klar til register')
-        
-        
-    @property
-    def show(self):
-        display(self.datawidget)
-
-        
-        
-
-    def _repr_html_(self):
-        display( self.datawidget)
-        
-    def __repr__(self):
-        return ' '
-
-        
-    def explain(self, i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend= None):
-        # print(f'Start explain:\n {self.mmodel.current_per[0]=}\n{selected_vars=}\n')
-        variabler = ' '.join(v for v in selected_vars)
-        smpl = (self.mmodel.lastdf.index[i_smpl[0]], self.mmodel.lastdf.index[i_smpl[1]])
-        if type(diff) == str:
-            diffpct = True
-            ldiff = False
-        else: 
-            ldiff = diff
-            diffpct = False
-        self.save_dialog.waddname.value =(
-                    ('_level'   if showtype == 'level' else '_growth') +   
-                    ('_diff'    if ldiff     else ''  )+
-                    ('_diffpct' if diffpct   else '' ) + 
-                    ('_log'     if scale == 'log' else '')
-                    )
-        # print(self.save_dialog.addname)
-        
-        # clear_output()
-        with self.mmodel.keepswitch(switch=self.switch,scenarios= self.scenarioselected):
-       
-            with self.mmodel.set_smpl(*smpl):
-    
-                self.keep_wiz_figs = self.mmodel.keep_plot(variabler, diff=ldiff, diffpct = diffpct, 
-                                                    scale=scale, showtype=showtype,
-                                                    showfig=False,
-                                                    legend=legend, dec=self.dec, vline=self.vline)
-                plt.close('all')
-                return self.keep_wiz_figs  
-            
-            
-        # print(f'Efter plot {self.mmodel.current_per=}')
-
-
-    def  trigger(self,g):
-        self.mmodel.current_per = copy(self.old_current_per)     
-        
-
-        values = {widname : wid.value for widname,wid in self.widget_dict.items() }
-        # print(f'Triggerd:\n{values} \n Start trigger {self.mmodel.current_per=}\n')
-        if len(values['selected_vars']):
-
-            figs = self.explain(**values)
-            figlist = [HTML(fig_to_image(a_fig),width='100%',format = 'svg',layout=Layout(width='90%'))  
-                      for key,a_fig in figs.items() ]
-            
-            if self.displaytype in { 'tab' , 'accordion'}:
-                ...
-                wtab = Tab(figlist) if  self.displaytype  == 'tab' else  Accordion(figlist)
-                for i,v in enumerate(figs.keys()):
-                   wtab.set_title(i,f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}')
-                wtab.selected_index = 0   
-                res = [wtab]
-
-            else:     
-                res = figlist 
-            
-            self.save_dialog.figs = figs
-            self.out_widget.children = (res + [self.save_dialog.datawidget]) if self.wxopen.value else res
-            self.out_widget.layout.visibility = 'visible'
-            # print(f'end  trigger {self.mmodel.current_per[0]=}')
-        else: 
-            self.out_widget.layout.visibility = 'hidden'
-
-from dataclasses import dataclass, field
-from ipywidgets import widgets, HBox
 
 @dataclass
 class savefigs_widget:
@@ -1957,6 +1546,438 @@ class savefigs_widget:
         self.datawidget = VBox([HBox([wgo, wxopen]), wexperimentname, wlocation, self.waddname, 
                                         wextensions, wsavelocation])
    
+
+from dataclasses import dataclass, field
+import matplotlib.pyplot as plt
+
+from ipywidgets import (
+    VBox, HBox, HTML, Text, Checkbox, Select, SelectMultiple,
+    SelectionRangeSlider, RadioButtons, Layout, Output, Tab, Accordion
+)
+
+
+@dataclass
+class keep_plot_widget:
+    """
+    Interactive plotting widget for ModelFlow solutions.
+
+    render_mode:
+        - 'classic': old behavior using HTML/SVG and Tab/Accordion
+        - 'colab':   Colab-safe behavior using Select + Output
+    """
+
+    mmodel: Any
+    smpl: Tuple[str, str] = ('', '')
+    relativ_start: int = 0
+    selected: str = ''
+    selectfrom: str = '*'
+    showselectfrom: bool = True
+    legend: bool = False
+    dec: str = ''
+    use_descriptions: bool = True
+    select_width: str = ''
+    select_height: str = '200px'
+    vline: Any = None
+    var_groups: dict = field(default_factory=dict)
+    use_var_groups: bool = True
+    add_var_name: bool = False
+    short: Any = 0
+    select_scenario: bool = True
+    displaytype: str = 'tab'
+    save_location: str = './graph'
+    switch: bool = False
+    use_smpl: bool = False
+    init_dif: bool = False
+
+    # new
+    render_mode: str = 'classic'          # 'classic' or 'colab'
+    colab_selector_width: str = '350px'
+
+    prefix_dict: dict = field(default_factory=dict, init=False)
+
+    def __post_init__(self):
+        minper = self.mmodel.lastdf.index[0]
+        maxper = self.mmodel.lastdf.index[-1]
+        options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
+        self.first_prefix = True
+
+        self.old_current_per = copy(self.mmodel.current_per)
+        self.select_scenario = False if self.switch else self.select_scenario
+
+        with self.mmodel.set_smpl(*self.smpl):
+            with self.mmodel.set_smpl_relative(self.relativ_start, 0):
+                show_per = copy(list(self.mmodel.current_per)[:])
+
+        self.mmodel.current_per = copy(self.old_current_per)
+
+        self.save_dialog = savefigs_widget(location=self.save_location)
+
+        allkeepvar = [set(df.columns) for df in self.mmodel.keep_solutions.values()]
+        keepvar = sorted(allkeepvar[0].intersection(*allkeepvar[1:])) if allkeepvar else []
+
+        wselectfrom = Text(
+            value=self.selectfrom,
+            placeholder='Type something',
+            description='Display variables:',
+            layout={'width': '65%'},
+            style={'description_width': '30%'}
+        )
+        wselectfrom.layout.visibility = 'visible' if self.showselectfrom else 'hidden'
+
+        self.wxopen = Checkbox(
+            value=False,
+            description='Allow save figures',
+            disabled=False,
+            layout={'width': '25%'},
+            style={'description_width': '10%'}
+        )
+
+        gross_selectfrom = []
+
+        def changeselectfrom(g):
+            nonlocal gross_selectfrom
+            _selectfrom = [s.upper() for s in self.mmodel.vlist(wselectfrom.value) if s in keepvar] if self.selectfrom else keepvar
+            gross_selectfrom = [
+                (
+                    f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',
+                    v
+                )
+                for v in _selectfrom
+            ]
+            try:
+                selected_vars.options = gross_selectfrom
+                if len(gross_selectfrom):
+                    selected_vars.value = [gross_selectfrom[0][1]]
+                else:
+                    selected_vars.value = []
+            except Exception:
+                ...
+
+        wselectfrom.observe(changeselectfrom, names='value', type='change')
+        self.wxopen.observe(self.trigger, names='value', type='change')
+        changeselectfrom(None)
+
+        with self.mmodel.keepswitch(switch=self.switch, scenarios='*'):
+            gross_keys = list(self.mmodel.keep_solutions.keys())
+
+            scenariobase = Select(
+                options=gross_keys,
+                value=gross_keys[0] if gross_keys else None,
+                description='First scenario',
+                layout=Layout(width='50%', font="monospace")
+            )
+
+            scenarioselect = SelectMultiple(
+                options=[s for s in gross_keys if s != scenariobase.value],
+                value=[s for s in gross_keys if s != scenariobase.value],
+                description='Next',
+                layout=Layout(width='50%', font="monospace")
+            )
+
+            keep_keys = list(self.mmodel.keep_solutions.keys())
+            self.scenarioselected = '|'.join(keep_keys)
+            keep_first = keep_keys[0] if keep_keys else ""
+
+        def changescenariobase(g):
+            scenarioselect.options = [s for s in gross_keys if s != scenariobase.value]
+            scenarioselect.value = [s for s in gross_keys if s != scenariobase.value]
+            self.scenarioselected = '|'.join([scenariobase.value] + list(scenarioselect.value))
+            diff.description = fr'Difference to: "{scenariobase.value}"'
+            self.trigger(None)
+
+        def changescenarioselect(g):
+            self.scenarioselected = '|'.join([scenariobase.value] + list(scenarioselect.value))
+            diff.description = fr'Difference to: "{scenariobase.value}"'
+            self.trigger(None)
+
+        scenariobase.observe(changescenariobase, names='value', type='change')
+        scenarioselect.observe(changescenarioselect, names='value', type='change')
+
+        wscenario = HBox([scenariobase, scenarioselect])
+        wscenario.layout.visibility = 'visible' if self.select_scenario else 'hidden'
+
+        init_start = self.mmodel.lastdf.index.get_loc(show_per[0])
+        init_end = self.mmodel.lastdf.index.get_loc(show_per[-1])
+        width = self.select_width if self.select_width else '50%'
+
+        description_width = 'initial'
+
+        if self.use_var_groups:
+            if len(self.var_groups):
+                self.prefix_dict = self.var_groups
+            elif hasattr(self.mmodel, 'var_groups') and len(self.mmodel.var_groups):
+                self.prefix_dict = self.mmodel.var_groups
+            else:
+                self.prefix_dict = {}
+        else:
+            self.prefix_dict = {}
+
+        select_prefix = [(iso, c) for iso, c in self.prefix_dict.items()]
+
+        i_smpl = SelectionRangeSlider(
+            value=[init_start, init_end],
+            continuous_update=False,
+            options=options,
+            min=minper,
+            max=maxper,
+            layout=Layout(width='75%'),
+            description='Show interval'
+        )
+
+        selected_vars = SelectMultiple(
+            options=gross_selectfrom,
+            layout=Layout(width=width, height=self.select_height, font="monospace"),
+            description='Select one or more',
+            style={'description_width': description_width}
+        )
+
+        diff = RadioButtons(
+            options=[('No', False), ('Yes', True), ('In percent', 'pct')],
+            description=fr'Difference to: "{keep_first}"',
+            value=self.init_dif,
+            style={'description_width': 'auto'},
+            layout=Layout(width='auto')
+        )
+
+        showtype = RadioButtons(
+            options=[('Level', 'level'), ('Growth', 'growth')],
+            description='Data type',
+            value='level',
+            style={'description_width': description_width}
+        )
+
+        scale = RadioButtons(
+            options=[('Linear', 'linear'), ('Log', 'log')],
+            description='Y-scale',
+            value='linear',
+            style={'description_width': description_width}
+        )
+
+        legend = RadioButtons(
+            options=[('Yes', 1), ('No', 0)],
+            description='Legends',
+            value=self.legend,
+            style={'description_width': description_width},
+            layout=Layout(width='auto', margin="0% 0% 0% 5%")
+        )
+
+        self.widget_dict = {
+            'i_smpl': i_smpl,
+            'selected_vars': selected_vars,
+            'diff': diff,
+            'showtype': showtype,
+            'scale': scale,
+            'legend': legend
+        }
+
+        for wid in self.widget_dict.values():
+            wid.observe(self.trigger, names='value', type='change')
+
+        # output areas
+        self.out_widget = VBox([HTML(value="")])   # classic mode
+        self.plot_output = Output()                # colab mode
+        self.figure_selector = None
+        self.figure_box = VBox()
+        self._current_figs = {}
+        self._current_titles = {}
+
+        def get_prefix(g):
+            try:
+                current_suffix = {v[len(g['old'][0]):] for v in selected_vars.value}
+            except Exception:
+                current_suffix = ''
+
+            new_prefix = g['new']
+
+            gross_selectfrom_vars = [self.mmodel.string_substitution(variable) for des, variable in gross_selectfrom]
+            gross_pat = ' '.join([self.mmodel.string_substitution(ppat) for ppat in new_prefix])
+            selected_match_var = set(self.mmodel.list_names(gross_selectfrom_vars, gross_pat))
+
+            selected_prefix_var = tuple(
+                (des, variable) for des, variable in gross_selectfrom
+                if variable in selected_match_var
+            )
+
+            try:
+                selected_vars.options = selected_prefix_var
+            except Exception:
+                ...
+
+            if not self.first_prefix:
+                new_selection = [
+                    f'{n}{c}' for c in current_suffix for n in new_prefix
+                    if f'{n}{c}' in {s for p, s in selected_prefix_var}
+                ]
+                selected_vars.value = new_selection
+            else:
+                self.first_prefix = False
+                if len(selected_prefix_var):
+                    selected_vars.value = [varname for des, varname in selected_prefix_var]
+
+        if len(self.prefix_dict):
+            selected_prefix = SelectMultiple(
+                value=[select_prefix[0][1]],
+                options=select_prefix,
+                layout=Layout(width='25%', height=self.select_height, font="monospace"),
+                description=''
+            )
+            selected_prefix.observe(get_prefix, names='value', type='change')
+            select = HBox([selected_vars, selected_prefix])
+            get_prefix({'new': select_prefix[0]})
+        else:
+            select = VBox([selected_vars])
+            if len(gross_selectfrom):
+                selected_vars.value = [gross_selectfrom[0][1]]
+
+        options1 = HBox([diff]) if self.short >= 2 else HBox([diff, legend])
+        options2 = HBox([scale, showtype, self.wxopen])
+
+        if self.short:
+            vui = [select, options1]
+        else:
+            if self.select_scenario:
+                vui = [wscenario, select, options1, options2]
+            else:
+                vui = [select, options1, options2]
+
+        vui = vui + [i_smpl] if self.use_smpl else vui
+
+        if self.render_mode == 'colab':
+            self.datawidget = VBox(vui + [self.figure_box])
+        else:
+            self.datawidget = VBox(vui + [self.out_widget])
+
+    @property
+    def show(self):
+        display(self.datawidget)
+
+    def _repr_html_(self):
+        display(self.datawidget)
+
+    def __repr__(self):
+        return ' '
+
+    def _make_figure_title(self, varname: str) -> str:
+        return f'{(varname+" ") if self.add_var_name else ""}{self.mmodel.var_description[varname] if self.use_descriptions else varname}'
+
+    def explain(self, i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend=None):
+        variabler = ' '.join(v for v in selected_vars)
+        smpl = (self.mmodel.lastdf.index[i_smpl[0]], self.mmodel.lastdf.index[i_smpl[1]])
+
+        if type(diff) == str:
+            diffpct = True
+            ldiff = False
+        else:
+            ldiff = diff
+            diffpct = False
+
+        self.save_dialog.waddname.value = (
+            ('_level' if showtype == 'level' else '_growth') +
+            ('_diff' if ldiff else '') +
+            ('_diffpct' if diffpct else '') +
+            ('_log' if scale == 'log' else '')
+        )
+
+        with self.mmodel.keepswitch(switch=self.switch, scenarios=self.scenarioselected):
+            with self.mmodel.set_smpl(*smpl):
+                self.keep_wiz_figs = self.mmodel.keep_plot(
+                    variabler,
+                    diff=ldiff,
+                    diffpct=diffpct,
+                    scale=scale,
+                    showtype=showtype,
+                    showfig=False,
+                    legend=legend,
+                    dec=self.dec,
+                    vline=self.vline
+                )
+                plt.close('all')
+                return self.keep_wiz_figs
+
+    def _show_selected_figure(self, key: str) -> None:
+        with self.plot_output:
+            self.plot_output.clear_output(wait=True)
+            fig = self._current_figs[key]
+            display(fig)
+            plt.close(fig)
+
+    def _render_figures_colab(self, figs: dict) -> None:
+        titles = {self._make_figure_title(k): k for k in figs.keys()}
+        title_list = list(titles.keys())
+
+        if not title_list:
+            self.figure_box.children = ()
+            return
+
+        self._current_figs = figs
+        self._current_titles = titles
+
+        if self.figure_selector is None:
+            self.figure_selector = Select(
+                options=title_list,
+                value=title_list[0],
+                description='Figure:',
+                layout=Layout(width=self.colab_selector_width),
+                style={'description_width': 'initial'}
+            )
+
+            def _on_select(change):
+                if change['name'] == 'value' and change['new'] in self._current_titles:
+                    self._show_selected_figure(self._current_titles[change['new']])
+
+            self.figure_selector.observe(_on_select, names='value')
+        else:
+            old = self.figure_selector.value
+            self.figure_selector.options = title_list
+            self.figure_selector.value = old if old in title_list else title_list[0]
+
+        self._show_selected_figure(self._current_titles[self.figure_selector.value])
+
+        children = [self.figure_selector, self.plot_output]
+        self.save_dialog.figs = figs
+        if self.wxopen.value:
+            children.append(self.save_dialog.datawidget)
+
+        self.figure_box.children = tuple(children)
+
+    def _render_figures_classic(self, figs: dict) -> None:
+        figlist = [
+            HTML(fig_to_image(a_fig), width='100%', format='svg', layout=Layout(width='90%'))
+            for key, a_fig in figs.items()
+        ]
+
+        if self.displaytype in {'tab', 'accordion'}:
+            wtab = Tab(figlist) if self.displaytype == 'tab' else Accordion(figlist)
+            for i, v in enumerate(figs.keys()):
+                wtab.set_title(i, self._make_figure_title(v))
+            wtab.selected_index = 0
+            res = [wtab]
+        else:
+            res = figlist
+
+        self.save_dialog.figs = figs
+        self.out_widget.children = tuple(res + [self.save_dialog.datawidget]) if self.wxopen.value else tuple(res)
+        self.out_widget.layout.visibility = 'visible'
+
+    def trigger(self, g):
+        self.mmodel.current_per = copy(self.old_current_per)
+        values = {widname: wid.value for widname, wid in self.widget_dict.items()}
+
+        if len(values['selected_vars']):
+            figs = self.explain(**values)
+            self.keep_wiz_figs = figs
+
+            if self.render_mode == 'colab':
+                self._render_figures_colab(figs)
+            else:
+                self._render_figures_classic(figs)
+        else:
+            if self.render_mode == 'colab':
+                self.figure_box.children = ()
+                with self.plot_output:
+                    self.plot_output.clear_output(wait=True)
+            else:
+                self.out_widget.layout.visibility = 'hidden'
         
 class shinywidget:
     '''A to translate a widget to shiny widget '''

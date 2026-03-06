@@ -241,7 +241,7 @@ more explanation if no substitution
 wf2_to_clean works even if no model in wf2 file 
 oldkwargs= {} as default in modelload (if no model but data)
 sheetwidget has been remade to make sheets scrollable and use dfferent operators =,+,*,% 
-
-
 Version 2.63 uploaded 
 Version 2.64 uploaded 
+in modelhelp these for use in debt simulations build_sorted_rate_desc_dict and build_sorted_bond_desc_dict
+Version 2.65 uploaded 

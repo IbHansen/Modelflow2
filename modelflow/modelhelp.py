@@ -371,7 +371,133 @@ def debug_var(*args, **kwargs):
     if starstar_note:
         print(f"  (source included {starstar_note})")
         
+def build_sorted_bond_desc_dict(var_names):
+    """
+    Build an ordered dictionary mapping variable names to human-readable bond descriptions.
+
+    The function expects variable names to follow a naming convention where the
+    relevant bond information appears after a double underscore, for example:
+
+        PREFIX__10_YEAR_DOM
+        PREFIX__5_YEAR_USD
+
+    From this suffix, the function extracts:
+    - maturity: the first element, interpreted as an integer number of years
+    - currency: the third element, expected to be ``DOM`` or another currency code
+
+    It then creates descriptions such as:
+    - ``"10 year domestic bond"``
+    - ``"5 year USD bond"``
+
+    The returned dictionary is sorted first by currency, with domestic bonds
+    appearing before foreign-currency bonds, and then by maturity in ascending order.
+
+    Parameters
+    ----------
+    var_names : iterable of str
+        Collection of variable names formatted like ``PREFIX__<maturity>_YEAR_<currency>``.
+
+    Returns
+    -------
+    dict
+        An ordered dictionary-like mapping from each variable name to its
+        generated description. In Python 3.7 and later, the standard ``dict``
+        preserves insertion order.
+
+    Raises
+    ------
+    IndexError
+        If a variable name does not contain the expected ``"__"`` separator or
+        does not have enough underscore-separated parts after it.
+    ValueError
+        If the maturity part cannot be converted to an integer.
+
+    Example
+    -------
+    >>> build_sorted_bond_desc_dict(["BOND__10_YEAR_DOM", "BOND__5_YEAR_USD", "BOND__2_YEAR_DOM"])
+    {
+        "BOND__2_YEAR_DOM": "2 year domestic bond",
+        "BOND__10_YEAR_DOM": "10 year domestic bond",
+        "BOND__5_YEAR_USD": "5 year USD bond"
+    }
+    """
+    parsed = []
+
+    for v in var_names:
+        tail = v.split('__')[1]          # e.g. '10_YEAR_DOM'
+        parts = tail.split('_')          # ['10', 'YEAR', 'DOM']
+
+        maturity = int(parts[0])         # numeric for sorting
+        currency = parts[2].lower()      # dom or usd
+
+        currency_label = 'domestic' if currency == 'dom' else currency.upper()
+        description = f"{maturity} year {currency_label} bond"
+
+        # sort key: domestic first (0), then usd (1), then maturity
+        currency_order = 0 if currency == 'dom' else 1
+
+        parsed.append((currency_order, maturity, v, description))
+
+    # Sort by currency first, then maturity
+    parsed.sort()
+
+    # Build ordered dict (normal dict preserves order in Python 3.7+)
+    return {v: desc for _, _, v, desc in parsed}
     
+def build_sorted_rate_desc_dict(var_names):
+    """
+    Build an ordered dictionary mapping interest-rate variable names to
+    human-readable bond interest rate descriptions.
+
+    Variable names are expected to end with ``__<maturity>``. If the part
+    before the final separator ends with ``_<CCY>``, where ``<CCY>`` is a
+    3-letter alphabetic currency mnemonic, that mnemonic is used as the
+    currency label. Otherwise, the bond is treated as domestic-currency
+    denominated.
+
+    The result is sorted with domestic bonds first, then foreign-currency
+    bonds alphabetically by currency mnemonic, and then by maturity.
+
+    Parameters
+    ----------
+    var_names : iterable of str
+        Variable names such as ``interest_rate__10``,
+        ``interest_rate_USD__5``, or ``interest_rate_EUR__2``.
+
+    Returns
+    -------
+    dict
+        Ordered mapping from variable names to descriptions.
+
+    Raises
+    ------
+    IndexError
+        If a variable name does not contain ``"__"``.
+    ValueError
+        If the maturity suffix cannot be parsed as an integer.
+    """
+    parsed = []
+
+    for v in var_names:
+        left, maturity = v.rsplit('__', 1)
+        maturity = int(maturity)
+
+        suffix = left.rsplit('_', 1)[-1]
+        if len(suffix) == 3 and suffix.isalpha():
+            currency = suffix.upper()
+            currency_order = 1
+            currency_label = currency
+        else:
+            currency = ''
+            currency_order = 0
+            currency_label = 'domestic'
+
+        description = f"{maturity} year {currency_label} bond interest rate"
+        parsed.append((currency_order, currency, maturity, v, description))
+
+    parsed.sort()
+
+    return {v: desc for _, _, _, v, desc in parsed}
   
     
 if __name__ == '__main__':
