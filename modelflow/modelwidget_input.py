@@ -370,7 +370,7 @@ class ContainerWidgetBase(ContainerWidgetABC):
 # Factory
 # ---------------------------------------------------------------------------
 
-def make_widget(widgetdef_or_type, widgetdict=None,render_mode = 'classic'):
+def make_widget(widgetdef_or_type, widgetdict=None,render_mode = None):
     """
     Instantiate a widget from a definition.
 
@@ -400,6 +400,13 @@ def make_widget(widgetdef_or_type, widgetdict=None,render_mode = 'classic'):
     TypeError
         If the created object does not implement :class:`WidgetABC`.
     """
+    if render_mode == None: 
+        if 'google.colab' in str(get_ipython()):
+            render_mode = 'colab'
+        else:
+            render_mode = 'classic'
+        
+
     if widgetdict is None:
         widgettype, widgetdict = widgetdef_or_type
     else:
@@ -1339,13 +1346,21 @@ class updatewidget:
     vline  : list = field(default_factory=list)
     relativ_start : int = 0 
     short :bool = False 
-    plot_render_mode : str ="classic"
+    render_mode : any = None
     
     exodif   : any = field(default_factory=pd.DataFrame)          # definition 
     
     
     
     def __post_init__(self):
+        if self.render_mode == None: 
+            if 'google.colab' in str(get_ipython()):
+                self.render_mode = 'colab'
+            else:
+                self.render_mode = 'classic'
+
+        
+        
         self.baseline = self.mmodel.basedf.copy()
         self.wrun    = Button(description="Run scenario")
         self.wrun .on_click(self.run)
@@ -1400,7 +1415,7 @@ class updatewidget:
                                       selectfrom = self.varpat,
                                       vline=self.vline,relativ_start=self.relativ_start,
                                       short = self.short,
-                                      render_mode = self.plot_render_mode) 
+                                      render_mode = self.render_mode) 
             
             # self.wtotal = VBox([self.datawidget.datawidget,winputstring,wbut,
             #                             self.keep_ui.datawidget])
