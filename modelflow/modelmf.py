@@ -230,48 +230,48 @@ if not hasattr(pd.DataFrame,'mf'):
             print('hello from ibloc')
             return 
         
-def mfquery(pat, df):
-    '''
-    Returns a DataFrame with columns matching the pattern(s), case-insensitive.
-    The pattern can be a string or a list of patterns.
-    Wildcards: * and ?
-
-    Args:
-        pat (string or list of strings)
-        df  (DataFrame)
-    Returns:
-        DataFrame subset
-    '''
-    if isinstance(pat, list):
-        patterns = pat
-    else:
-        patterns = [pat]
-
-    # Lowercase lookup for case-insensitive matching
-    col_map = {c.lower(): c for c in df.columns}
-    lower_cols = list(col_map.keys())
-
-    seen = set()
-    names = []
-
-    for p in patterns:
-        for up in p.lower().split():
-            for v in fnmatch.filter(lower_cols, up):
-                orig = col_map[v]
-                if orig not in seen:
-                    seen.add(orig)
-                    names.append(orig)
-
-    return df.loc[:, names]
-
-
+    def mfquery_0(pat, df):
+        '''
+        Returns a DataFrame with columns matching the pattern(s), case-insensitive.
+        The pattern can be a string or a list of patterns.
+        Wildcards: * and ?
+    
+        Args:
+            pat (string or list of strings)
+            df  (DataFrame)
+        Returns:
+            DataFrame subset
+        '''
+        if isinstance(pat, list):
+            patterns = pat
+        else:
+            patterns = [pat]
+    
+        # Lowercase lookup for case-insensitive matching
+        col_map = {str(c) .lower(): c for c in df.columns}
+        lower_cols = list(col_map.keys())
+    
+        seen = set()
+        names = []
+    
+        for p in patterns:
+            for up in p.lower().split():
+                for v in fnmatch.filter(lower_cols, up):
+                    orig = col_map[v]
+                    if orig not in seen:
+                        seen.add(orig)
+                        names.append(orig)
+    
+        return df.loc[:, names]
+    
+    
     @pd.api.extensions.register_dataframe_accessor("mfquery")
-    class DFQueryAccessor:
+    class mfquery:
         def __init__(self, pandas_obj):
             self._obj = pandas_obj
-
+    
         def __call__(self, pat):
-            return mfquery(pat, self._obj)
+            return mfquery_0(pat, self._obj)
 
 
 def f(a):

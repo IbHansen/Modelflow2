@@ -248,3 +248,7 @@ Version 2.65 uploaded
 Colab version of tab container 
 Version 2.67 uploaded 
 modelwidget_input cleaned up 
+Version 2.67 uploaded 
+Version 2.68 uploaded 
+in modelmf mfquery can handle column names of float type 
+Version 2.69 uploaded 
