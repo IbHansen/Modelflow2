@@ -204,7 +204,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple
 
 import pandas as pd
@@ -227,9 +226,11 @@ from ipywidgets import (
     Tab,
     Text,
     VBox,
-    Box,
+    Box,Output
 )
 
+from ipydatagrid import DataGrid
+from ipydatagrid import TextRenderer
 
 import matplotlib.pyplot as plt
 
@@ -237,18 +238,28 @@ import matplotlib.pyplot as plt
 # Optional dependency: ipydatagrid
 # ---------------------------------------------------------------------------
 
-try:
-    from ipydatagrid import DataGrid
-    from ipydatagrid import TextRenderer
-    _HAVE_IPYDATAGRID = True
-except Exception:
-    DataGrid = object  # type: ignore
-    TextRenderer = object  # type: ignore
-    _HAVE_IPYDATAGRID = False
 
 from modelhelp import debug_var
 
+WIDGET_REGISTRY = {}
 
+def register_widget(cls):
+    WIDGET_REGISTRY[cls.__name__] = cls
+    
+    
+    return cls
+
+
+# safe helper near the top of the file
+def _detect_render_mode() -> str:
+    try:
+        from IPython import get_ipython
+        ip = get_ipython()
+        if ip is not None and 'google.colab' in str(ip):
+            return 'colab'
+    except Exception:
+        pass
+    return 'classic'
 # ---------------------------------------------------------------------------
 # ABC interfaces
 # ---------------------------------------------------------------------------
@@ -274,7 +285,7 @@ class WidgetABC(ABC):
 
 
 class ContainerWidgetABC(WidgetABC):
-    """A widget that contains child """
+    """A widget that contains basic widgets as children  """
 
     @property
     @abstractmethod
@@ -332,7 +343,7 @@ class SingleWidgetBase(WidgetABC):
 @dataclass
 class ContainerWidgetBase(ContainerWidgetABC):
     """
-    Base for container 
+    Base for container which contains widgets 
 
     Subclasses should build:
     - ``self._children``: list of :class:`WidgetABC`
@@ -370,42 +381,67 @@ class ContainerWidgetBase(ContainerWidgetABC):
 # Factory
 # ---------------------------------------------------------------------------
 
-def make_widget(widgetdef_or_type, widgetdict=None,render_mode = None):
+
+def make_widget(widgetdef_or_type, widgetdict=None, render_mode=None):
     """
-    Instantiate a widget from a definition.
+    Create and return a widget instance from a widget type and definition.
 
-    This function supports **both** calling conventions used across the legacy
-    codebase:
-
-    1) ``make_widget([widgettype, widgetdict])``  (a 2-item sequence)
-    2) ``make_widget(widgettype, widgetdict)``    (two arguments)
+    The function resolves the widget class name from the requested widget type
+    and rendering mode, looks it up in ``WIDGET_REGISTRY``, instantiates it with
+    ``widgetdict``, and verifies that the created object inherits from
+    ``WidgetABC``.
 
     Parameters
     ----------
-    widgetdef_or_type:
-        Either the widget type string (e.g. ``"slide"``) or a 2-item sequence
-        ``(widgettype, widgetdict)`` / ``[widgettype, widgetdict]``.
-    widgetdict:
-        The widget definition dict when using the two-argument calling style.
+    widgetdef_or_type : str or tuple[str, dict]
+        Either the widget type as a string, or a ``(widgettype, widgetdict)``
+        pair. If ``widgetdict`` is not provided, this argument must be the pair.
+    widgetdict : dict, optional
+        Dictionary with the widget configuration passed to the widget class
+        constructor. If omitted, ``widgetdef_or_type`` is expected to contain
+        both the widget type and the widget definition.
+    render_mode : {"classic", "colab"}, optional
+        Rendering mode used to select the widget class name. If omitted, the
+        mode is detected automatically: ``"colab"`` when running in Google
+        Colab, otherwise ``"classic"``.
 
     Returns
     -------
     WidgetABC
-        The instantiated widget.
+        An instantiated widget object.
 
     Raises
     ------
     KeyError
-        If ``<widgettype>widget`` is not found in module globals.
+        If the resolved widget class name is not found in ``WIDGET_REGISTRY``.
     TypeError
-        If the created object does not implement :class:`WidgetABC`.
+        If the instantiated object does not inherit from ``WidgetABC``.
+
+    Notes
+    -----
+    For ``render_mode="classic"``, the class name is resolved as
+    ``f"{widgettype}widget"``.
+
+    For other render modes, the class name is usually also
+    ``f"{widgettype}widget"``, except for ``widgettype == "tab"``, where the
+    Colab-specific class name ``f"colab{widgettype}widget"`` is used.
+
+    Examples
+    --------
+    Create a widget from a type and config::
+
+        w = make_widget("sheet", {"title": "Overview"})
+
+    Create a widget from a ``(type, config)`` tuple::
+
+        w = make_widget(("sheet", {"title": "Overview"}))
+
+    Force Colab rendering::
+
+        w = make_widget("tab", {"tabs": [...]}, render_mode="colab")
     """
-    if render_mode == None: 
-        if 'google.colab' in str(get_ipython()):
-            render_mode = 'colab'
-        else:
-            render_mode = 'classic'
-        
+    if render_mode is None:
+        render_mode = _detect_render_mode()        
 
     if widgetdict is None:
         widgettype, widgetdict = widgetdef_or_type
@@ -414,26 +450,30 @@ def make_widget(widgetdef_or_type, widgetdict=None,render_mode = None):
 
     if render_mode == 'classic':
         clsname = f"{widgettype}widget"
-    else: 
-        if widgettype == 'tab':
-            clsname = f"colab{widgettype}widget"
-        else:     
-            clsname = f"{widgettype}widget"
+    else:
+        clsname = f"colab{widgettype}widget" if widgettype == "tab" else f"{widgettype}widget"
 
-    cls = globals()[clsname]
+    try:
+        cls = WIDGET_REGISTRY[clsname]
+    except KeyError as e:
+        print(f"Unknown widget class: {clsname[:-6]}. These are alloved:"+
+                       '\n' + '\n'.join(v[:-6] for v in WIDGET_REGISTRY.keys() ))
+
+        raise KeyError(f"Unknown widget class: {clsname[:-6]}")  from e
+
     obj = cls(widgetdict)
 
-    # Runtime interface validation (useful with dynamic factory)
     if not isinstance(obj, WidgetABC):
-        raise TypeError(f"{clsname} must inherit WidgetABC/ContainerWidgetABC (got {type(obj)!r}).")
+        raise TypeError(
+            f"{clsname} must inherit WidgetABC/ContainerWidgetABC (got {type(obj)!r})."
+        )
 
     return obj
-
-
 # ---------------------------------------------------------------------------
 # Container widgets
 # ---------------------------------------------------------------------------
 
+@register_widget
 @dataclass
 class basewidget(ContainerWidgetBase):
     """
@@ -448,7 +488,7 @@ class basewidget(ContainerWidgetBase):
         self._children = [make_widget(widgettype, widgetdict) for widgettype, widgetdict in self.content]
         self._datawidget = VBox([child.datawidget for child in self._children])
 
-
+@register_widget
 @dataclass
 class tabwidget(ContainerWidgetBase):
     """
@@ -484,7 +524,7 @@ class tabwidget(ContainerWidgetBase):
         for i, title in enumerate(tab_titles):
             self._datawidget.set_title(i, title)
 
-
+@register_widget
 @dataclass
 class colabtabwidget(ContainerWidgetBase):
     """
@@ -574,6 +614,8 @@ def df_to_grid(df,dec):
     )
     return wsheet
 
+
+@register_widget
 @dataclass
 class sheetwidget(SingleWidgetBase):
     """
@@ -631,7 +673,7 @@ class sheetwidget(SingleWidgetBase):
         self.dec = int(self.content.get("dec", 2))
         self.transpose = bool(self.widgetdef.get("transpose", True))
         if not self.transpose: 
-            raise Exception('Transpose not implemented in sheetwidget yet')
+            raise NotImplementedError("Non-transposed sheetwidget is not implemented yet.")
         self.wexp = Label(value=self.heading, layout={"width": "54%"})
 
         newnamedf = self.df_var.copy().rename(columns=self.trans)
@@ -688,7 +730,7 @@ class sheetwidget(SingleWidgetBase):
 
             case _:
                 raise ValueError(
-                    f"Unsupported operator {self.operator!r} in sheetwidget mapping for {self.heading!r}."
+                    f"Unsupported operator {self.op!r} in sheetwidget mapping for {self.heading!r}."
             )
 
         
@@ -696,7 +738,7 @@ class sheetwidget(SingleWidgetBase):
     def reset(self, g: Any) -> None:
         self.wsheet.data = self.org_values
 
-
+@register_widget
 @dataclass
 class slidewidget(SingleWidgetBase):
     """
@@ -817,7 +859,7 @@ class slidewidget(SingleWidgetBase):
         line_des = g["owner"].description
         self.current_values[line_des]["value"] = g["new"]
 
-
+@register_widget
 @dataclass
 class sumslidewidget(SingleWidgetBase):
     """
@@ -923,8 +965,13 @@ class sumslidewidget(SingleWidgetBase):
         return self._datawidget
 
     def reset(self, g: Any) -> None:
-        for i, (_, cont) in enumerate(self.content.items()):
-            self.wset[i].value = cont["value"]
+        self._in_programmatic_update = True
+        try:
+            for i, (_, cont) in enumerate(self.content.items()):
+                self.wset[i].value = cont["value"]
+        finally:
+            self._in_programmatic_update = False        
+
 
     def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
     # If not provided, operate on the full index
@@ -955,7 +1002,7 @@ class sumslidewidget(SingleWidgetBase):
                         raise ValueError(
                             f"Unsupported operator {op!r} in sumslide mapping for {var!r}."
                     )
-    def _on_slider_change(self, g: dict) -> None:
+    def _on_slider_change_old (self, g: dict) -> None:
         """Maintain the sum constraint when a slider changes."""
         if self._in_programmatic_update:
             return 
@@ -976,7 +1023,7 @@ class sumslidewidget(SingleWidgetBase):
         
         sumall = sum(allvalues)
         
-        if round(sum(allvalues),2) == round(self.maxsum,2) :
+        if round(sum(allvalues),6) == round(self.maxsum,6) :
             return
         
         sumslack = sum(v for v, slack in zip(allvalues, self.slacklines) if slack)
@@ -1008,8 +1055,53 @@ class sumslidewidget(SingleWidgetBase):
             self.wset[i].value = v
 
         self._in_programmatic_update = False
-
+        
+    def _on_slider_change(self, g: dict) -> None:
+        """Maintain the sum constraint when a slider changes."""
+        if self._in_programmatic_update:
+            return
     
+        line_des = g["owner"].description
+        line_index = list(self.current_values.keys()).index(line_des)
+        self.current_values[line_des]["value"] = g["new"]
+    
+        values = [v["value"] for v in self.current_values.values()]
+        slacklines = [cb.value for cb in self.wslackval]
+    
+        # Ensure at least one slack variable
+        if not any(slacklines):
+            self.wslackval[-1].value = True
+            slacklines = [cb.value for cb in self.wslackval]
+    
+        total = sum(values)
+        if round(total, 6) == round(self.maxsum, 6):
+            return
+    
+        slack_count = slacklines.count(True)
+        adjustment = (self.maxsum - total) / slack_count
+    
+        newvalues = []
+        for value, is_slack, cont in zip(values, slacklines, self.current_values.values()):
+            candidate = value + adjustment if is_slack else value
+            candidate = max(cont["min"], min(candidate, cont["max"]))
+            newvalues.append(candidate)
+    
+        # Final correction on the changed slider to hit maxsum exactly
+        gap = self.maxsum - sum(newvalues)
+        cont = list(self.current_values.values())[line_index]
+        newvalues[line_index] = max(
+            cont["min"],
+            min(newvalues[line_index] + gap, cont["max"])
+        )
+    
+        self._in_programmatic_update = True
+        try:
+            for widget, value in zip(self.wset, newvalues):
+                widget.value = value
+        finally:
+            self._in_programmatic_update = False        
+
+@register_widget    
 @dataclass
 class radiowidget(SingleWidgetBase):
     """
@@ -1070,7 +1162,7 @@ class radiowidget(SingleWidgetBase):
             selected_variable = cont[wradio.index][1]
             df.loc[current_per, selected_variable] = 1
 
-
+@register_widget
 @dataclass
 class checkwidget(SingleWidgetBase):
     """
@@ -1119,207 +1211,7 @@ class checkwidget(SingleWidgetBase):
             df.loc[current_per, variable] = 1.0 if wcheck.value else 0.0
 
 
-# ---------------------------------------------------------------------------
-# Wrapper for shiny integration
-# ---------------------------------------------------------------------------
 
-@dataclass
-class shinywidget(SingleWidgetBase):
-    """
-    Wrapper widget used when running under Shiny.
-
-    It simply exposes a child widget's ``datawidget`` while delegating
-    ``update_df`` and ``reset``.
-    """
-
-    inner: WidgetABC = field(init=False)
-    _datawidget: Any = field(init=False)
-
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        inner_type = self.content["type"]
-        inner_def = self.content["widgetdef"]
-        self.inner = make_widget(inner_type, inner_def)
-        self._datawidget = self.inner.datawidget
-
-    @property
-    def datawidget(self) -> Any:
-        return self._datawidget
-
-    def update_df(self, df: pd.DataFrame, current_per: Any) -> None:
-        self.inner.update_df(df, current_per)
-
-    def reset(self, g: Any) -> None:
-        self.inner.reset(g)
-
-
-
-@dataclass
-class keep_plot_widget_no_colab:
-    """
-    Interactive plotting widget for ModelFlow model instances.
-
-    This widget reads scenario solutions from ``mmodel.keep_solutions`` and lets
-    the user select variables/scenarios to visualize.
-
-    The implementation here follows the structure from the legacy module; the
-    main changes are docstrings, minor cleanups, and stable defaults.
-
-    Parameters
-    ----------
-    mmodel:
-        Model instance with attributes typically present in ModelFlow:
-        ``basedf``, ``lastdf``, ``keep_solutions`` (dict of DataFrames),
-        ``set_smpl`` / ``set_smpl_relative`` context managers, and plotting helpers.
-    smpl:
-        Optional (start, end) sample passed to ``mmodel.set_smpl``.
-    selectfrom:
-        Variable selection pattern/string.
-    vline:
-        Optional vertical lines to draw.
-    """
-
-    mmodel: Any
-    smpl: Tuple[str, str] = ("", "")
-    relativ_start: int = 0
-    selected: str = ""
-    selectfrom: str = "*"
-    showselectfrom: bool = True
-    legend: bool = False
-    dec: str = ""
-    use_descriptions: bool = True
-    select_width: str = ""
-    select_height: str = "200px"
-    vline: Any = None
-    var_groups: dict = field(default_factory=dict)
-    use_var_groups: bool = True
-    add_var_name: bool = False
-    short: Any = 0
-    select_scenario: bool = True
-    displaytype: str = "tab"
-    save_location: str = "./graph"
-    switch: bool = False
-    use_smpl: bool = False
-    init_dif: bool = False
-    prefix_dict: dict = field(default_factory=dict, init=False)
-
-    datawidget: VBox = field(init=False)
-    keep_wiz_figs: Dict[str, Any] = field(default_factory=dict, init=False)
-
-    def __post_init__(self) -> None:
-        # The original implementation is large; we keep the main structure.
-        # To avoid import-time matplotlib costs, plotting remains inside callbacks.
-        minper = self.mmodel.lastdf.index[0]
-        maxper = self.mmodel.lastdf.index[-1]
-        options = [(ind, nr) for nr, ind in enumerate(self.mmodel.lastdf.index)]
-        self.old_current_per = copy(self.mmodel.current_per)
-
-        self.select_scenario = False if self.switch else self.select_scenario
-
-        with self.mmodel.set_smpl(*self.smpl):
-            with self.mmodel.set_smpl_relative(self.relativ_start, 0):
-                show_per = copy(list(self.mmodel.current_per)[:])
-        self.mmodel.current_per = copy(self.old_current_per)
-
-        self.save_dialog = savefigs_widget(location=self.save_location)
-
-        # Variables available in all kept solutions
-        allkeepvar = [set(df.columns) for df in self.mmodel.keep_solutions.values()]
-        keepvar = sorted(allkeepvar[0].intersection(*allkeepvar[1:])) if allkeepvar else []
-
-        wselectfrom = Text(
-            value=self.selectfrom,
-            placeholder="Type something",
-            description="Display variables:",
-            layout={"width": "65%"},
-            style={"description_width": "30%"},
-        )
-        wselectfrom.layout.visibility = "visible" if self.showselectfrom else "hidden"
-
-        self.wxopen = Checkbox(
-            value=False,
-            description="Allow save figures",
-            disabled=False,
-        )
-
-        self.wscenario = SelectMultiple(
-            options=list(self.mmodel.keep_solutions.keys()),
-            value=tuple(list(self.mmodel.keep_solutions.keys())[:2]),
-            description="Scenarios:",
-            layout={"width": "40%", "height": self.select_height},
-            style={"description_width": "30%"},
-        )
-
-        self.wvariables = SelectMultiple(
-            options=keepvar,
-            value=tuple(keepvar[: min(8, len(keepvar))]),
-            description="Variables:",
-            layout={"width": "60%", "height": self.select_height},
-            style={"description_width": "20%"},
-        )
-
-        # Trigger button to (re)draw
-        self.wplot = Button(description="Update plot")
-        self.wplot.style.button_color = "LightBlue"
-
-        # Main layout
-        top = HBox([wselectfrom, self.wxopen])
-        sels = HBox([self.wscenario, self.wvariables]) if self.select_scenario else HBox([self.wvariables])
-        self.datawidget = VBox([top, sels, self.wplot])
-
-        # Save dialog binding
-        def _get_figs() -> Dict[str, Any]:
-            return self.keep_wiz_figs
-        self.save_dialog.bind(_get_figs)
-
-        def _toggle_save(_):
-            if self.wxopen.value:
-                self.datawidget.children = tuple(list(self.datawidget.children) + [self.save_dialog.datawidget])
-            else:
-                self.datawidget.children = tuple([c for c in self.datawidget.children if c is not self.save_dialog.datawidget])
-
-        self.wxopen.observe(_toggle_save, names="value")
-
-        def _on_plot(_):
-            self.trigger(None)
-
-        self.wplot.on_click(_on_plot)
-
-        # Initial plot attempt
-        if self.init_dif:
-            self.trigger(None)
-
-    def trigger(self, g: Any) -> None:
-        """
-        Build/update figures based on current selections.
-
-        The legacy module called into ModelFlow plotting helpers. Here we keep a
-        lightweight default: plot the selected scenario DataFrames using pandas
-        .plot() if matplotlib is available. If your ``mmodel`` provides richer
-        plotting, you can adapt this method.
-        """
-        import matplotlib.pyplot as plt  # local import
-
-        scenarios = list(self.wscenario.value) if self.select_scenario else list(self.mmodel.keep_solutions.keys())[:1]
-        variables = list(self.wvariables.value)
-
-        self.keep_wiz_figs = {}
-
-        for var in variables:
-            fig, ax = plt.subplots()
-            for scn in scenarios:
-                df = self.mmodel.keep_solutions[scn]
-                if var in df.columns:
-                    df[var].plot(ax=ax, label=scn)
-            ax.set_title(var)
-            if self.legend:
-                ax.legend()
-            self.keep_wiz_figs[var] = fig
-
-
-# ---------------------------------------------------------------------------
-# Scenario runner (input -> update -> run -> keep plot)
-# ---------------------------------------------------------------------------
 
 @dataclass
 class updatewidget:   
@@ -1329,8 +1221,8 @@ class updatewidget:
     
     '''
     
-    mmodel : any     # a model 
-    datawidget : any # a widget  to update from  
+    mmodel : Any     # a model 
+    datawidget : Any # a widget  to update from  
     basename : str ='Business as usual'
     keeppat   : str = '*'
     varpat    : str ='*'
@@ -1340,24 +1232,21 @@ class updatewidget:
     lwreset  :  bool = True
     lwsetbas  :  bool = True
     outputwidget : str  = 'jupviz'
-    display_first :any = None 
+    display_first :Any = None 
   # to the plot widget  
 
     vline  : list = field(default_factory=list)
     relativ_start : int = 0 
     short :bool = False 
-    render_mode : any = None
+    render_mode : Any = None
     
-    exodif   : any = field(default_factory=pd.DataFrame)          # definition 
+    exodif   : Any = field(default_factory=pd.DataFrame)          # definition 
     
     
     
     def __post_init__(self):
-        if self.render_mode == None: 
-            if 'google.colab' in str(get_ipython()):
-                self.render_mode = 'colab'
-            else:
-                self.render_mode = 'classic'
+        if self.render_mode is None:
+            self.render_mode = _detect_render_mode()        
 
         
         
@@ -1468,7 +1357,7 @@ class updatewidget:
             vline=self.vline,
             relativ_start=self.relativ_start,
             short=self.short,
-            render_mode = self.plot_render_mode
+            render_mode = self.render_mode
         )
         
         self.wtotal.children = [
@@ -1480,6 +1369,9 @@ class updatewidget:
 
         
     def setbasis(self,g):
+        if not hasattr(self, "current_experiment"):
+            return
+
         self.mmodel.keep_solutions={self.current_experiment:self.mmodel.keep_solutions[self.current_experiment]}
         
         self.mmodel.keep_exodif[self.current_experiment] = self.exodif 
@@ -1569,13 +1461,7 @@ class savefigs_widget:
                                         wextensions, wsavelocation])
    
 
-from dataclasses import dataclass, field
-import matplotlib.pyplot as plt
 
-from ipywidgets import (
-    VBox, HBox, HTML, Text, Checkbox, Select, SelectMultiple,
-    SelectionRangeSlider, RadioButtons, Layout, Output, Tab, Accordion
-)
 
 
 @dataclass
@@ -1964,7 +1850,8 @@ class keep_plot_widget:
 
     def _render_figures_classic(self, figs: dict) -> None:
         figlist = [
-            HTML(fig_to_image(a_fig), width='100%', format='svg', layout=Layout(width='90%'))
+         #   HTML(fig_to_image(a_fig), width='100%', format='svg', layout=Layout(width='90%'))
+            HTML(value = fig_to_image(a_fig), layout=Layout(width='90%'))
             for key, a_fig in figs.items()
         ]
 
@@ -2002,9 +1889,8 @@ class keep_plot_widget:
                 self.out_widget.layout.visibility = 'hidden'
         
 class shinywidget:
-    '''A to translate a widget to shiny widget '''
-
-    a_widget : any # The datawidget to wrap 
+    """Placeholder for a future Shiny wrapper."""
+    a_widget : Any # The datawidget to wrap 
     widget_id  : str 
     
     def __post_init__(self):
