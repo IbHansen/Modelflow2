@@ -590,6 +590,11 @@ class DisplayDef:
           
             
                 out = DisplayContainerDef(mmodel=self.mmodel,reports= [linstance,self])
+                
+        elif isinstance(other, int):
+            # used in sums 
+            return self
+        
         else:
             return NotImplemented
 
