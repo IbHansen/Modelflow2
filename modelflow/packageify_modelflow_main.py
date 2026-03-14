@@ -53,6 +53,15 @@ FILE_LIST = [
 
 MODULES = {Path(name).stem for name in FILE_LIST}
 
+EXTRA_FILE_LIST = [
+    "README.md",
+    "LICENSE.md",
+    "requirements.txt",
+    "setup.cfg",
+    "MANIFEST.in",
+]
+
+
 
 def split_import_items(spec):
     return [item.strip() for item in spec.split(",") if item.strip()]
@@ -175,7 +184,7 @@ name = "{package_name}"
 version = "0.1.0"
 description = "Packaged Modelflow codebase with compatibility wrappers"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 
 [tool.setuptools]
 include-package-data = true
@@ -235,7 +244,23 @@ def write_wrappers(out_dir, package_name, module_names):
         wrapper = build_wrapper(mod, package_name)
         (out_dir / f"{mod}.py").write_text(wrapper, encoding="utf-8")
 
+def copy_extra_files(source, out_dir):
+    copied = []
+    missing = []
 
+    for relname in EXTRA_FILE_LIST:
+        src = source / relname
+        dst = out_dir / relname
+
+        if not src.exists():
+            missing.append(relname)
+            continue
+
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        copied.append(relname)
+
+    return copied, missing
 def create_support_structure(out_dir, package_name):
     docs_dir = out_dir / "docs"
     tests_dir = out_dir / "tests"
@@ -301,6 +326,8 @@ def main():
 
     write_wrappers(out_dir, package_name, copied)
     create_support_structure(out_dir, package_name)
+
+    copied_extra, missing_extra = copy_extra_files(source, out_dir)
 
     print("Created package in:", out_dir)
 

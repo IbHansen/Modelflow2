@@ -1818,36 +1818,38 @@ class Model_help_Mixin():
             return dataframe
 
     @staticmethod
-    def in_notebook():
+    def in_notebook() -> bool:
         try:
             from IPython import get_ipython
-            if 'IPythonKernel' not in str(get_ipython().kernel):  # pragma: no cover
+            shell = get_ipython()
+            if shell is None:  # pragma: no cover
                 return False
+            return hasattr(shell, "kernel")
+        except ImportError:
+            return False    
+        
+        
+    @staticmethod
+    def is_running_in_jupyter() -> bool:
+        try:
+            from IPython import get_ipython
+            shell = get_ipython()
+            if shell is None:
+                return False
+            return shell.__class__.__name__ == "ZMQInteractiveShell"
         except ImportError:
             return False
-        return True
-    
-    @staticmethod   
-    def is_running_in_jupyter():
+        
+        
+    @staticmethod
+    def is_running_in_colab() -> bool:
         try:
-            # Check if the 'get_ipython' function is available
-            shell = get_ipython().__class__.__name__
-            if shell == 'ZMQInteractiveShell':
-                # Running in Jupyter Notebook or JupyterLab
-                return True
-        except NameError:
-            # 'get_ipython' function not found, not running in Jupyter Notebook
-            pass
-    
-        return False
-
-    @staticmethod 
-    def is_running_in_colab():
-        try:
-            return 'google.colab' in str(get_ipython())
-        except: 
+            import google.colab  # noqa: F401
+            return True
+        except ImportError:
             return False
-
+    
+    
     # @staticmethod
     class defsub(dict):
         '''A subclass of dict.

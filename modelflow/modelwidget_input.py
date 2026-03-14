@@ -816,7 +816,8 @@ class slidewidget(SingleWidgetBase):
 
         # Normalize current_values (notably split var strings)
         self.current_values = {
-            des: {k: (v.split() if k == "var" else v) for k, v in cont.items() if k in {"value", "var", "op"}}
+            # des: {k: (v.split() if k == "var" else v) for k, v in cont.items() if k in {"value", "var", "op"}}
+            des: {k: (v.split() if k == "var" else v) for k, v in cont.items()}
             for des, cont in self.widgetdef["content"].items()
         }
 
@@ -836,6 +837,7 @@ class slidewidget(SingleWidgetBase):
         for _, cont in self.current_values.items():
             op = cont.get("op", "=")
             value = cont["value"]
+            # debug_var(value,current_per)
             for var in cont["var"]:
                 if op == "+":
                     df.loc[current_per, var] = df.loc[current_per, var] + value
@@ -850,7 +852,25 @@ class slidewidget(SingleWidgetBase):
                 elif op == "=impulse":
                     df.loc[current_per[0], var] = value
                 elif op == "%":
-                    df.loc[current_per, var] = df.loc[current_per, var] * (1 - value / 100)
+                    df.loc[current_per, var] = df.loc[current_per, var] * (1 + value / 100)
+                elif op == "%growth":
+                    startindex = df.index.get_loc(current_per[0])
+                    varloc = df.columns.get_loc(var)
+                    start_value = cont.get('start_value','')
+
+                    if startindex < 1: 
+                        if start_value :
+                           df.iloc[startindex,varloc]= float(start_value)
+                        else:    
+                            raise ValueError('For %growth we need a start value=')
+                    else: 
+
+                        df.iloc[startindex,varloc]= df.iloc[startindex-1,varloc] * (1 + value / 100)
+                       
+                    for i,per in enumerate(current_per) :    
+                       if i == 0: 
+                           continue 
+                       df.iloc[i+startindex,varloc]= df.iloc[i+startindex-1,varloc] * (1 + value / 100)
                 else:
                     raise ValueError(f"Unsupported operator {op!r} in slider mapping for {var!r}.")
 

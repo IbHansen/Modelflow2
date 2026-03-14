@@ -253,3 +253,5 @@ Version 2.68 uploaded
 in modelmf mfquery can handle column names of float type 
 Version 2.69 uploaded 
 in modelreport __radd__ handels int in order to use sum on array of figs 
+in modelclass in_notebook improvd
+packageifymodelflow_main a script to make modelflow to a package 
