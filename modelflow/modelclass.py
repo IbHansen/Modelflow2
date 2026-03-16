@@ -634,7 +634,7 @@ class BaseModel():
         fib2.append(
             longer + 'print("Error in",allvar[solveorder[sys.exc_info()[2].tb_lineno-'+str(startline)+']]["frml"])\n')
         fib2.append(
-            longer + f'errorfunk(values,sys.exc_info()[2].tb_lineno,overhead={startline},overeq={0})\n')
+            longer + f'errorfunk(values,sys.exc_info()[2].tb_lineno,overhead={startline-1},overeq={0})\n')
         
         fib2.append(longer + 'raise\n')
         fib2.append(long + 'return \n')
@@ -8654,10 +8654,11 @@ class Solver_Mixin():
         def find_log_arguments(text):
             """Return all arguments inside balanced LOG(...) calls."""
             out = []
+            upper = text.upper()
             target = 'LOG('
             i = 0
             while True:
-                start = text.find(target, i)
+                start = upper.find(target, i)
                 if start == -1:
                     break
                 j = start + len(target)
@@ -8675,7 +8676,7 @@ class Solver_Mixin():
                 else:
                     break
             return out
-            
+    
         self.errdump = pd.DataFrame(values, columns=self.genrcolumns, index=self.genrindex)
         self.lastdf = self.errdump.copy()
     
@@ -8685,15 +8686,28 @@ class Solver_Mixin():
         varposition = linenr - overhead - 1 + overeq
         print('>> varposition  :', varposition)
     
+        if not (0 <= varposition < len(self.solveorder)):
+            print('>> Could not map traceback line to solveorder')
+            print('A snapshot of the data at the error point is at .errdump')
+            print('Also .lastdf contains a copy of .errdump for inspecting')
+            return
+    
         errvar = self.solveorder[varposition]
         print('>> Err variable :', errvar)
         outeq = self.allvar[errvar]['frml']
     
-        print('>> Equation     :', outeq)
-    
-        # compact term/value display
+        print('>> Equation     :', outeq,'\n')
+        terms = self.allvar[errvar]['terms']
+        
+        # allowed_funks= sorted(pt.funkname + [f.__name__.upper()  for f in self.funks])
+        for i,t in enumerate(terms[:-1]): 
+            if t.var:
+                if terms[i+1].op  =='(' :
+                    print(f'UPS {t.var} looks like a function call, but it is not an allowed function name') 
+                    return 
+                    
+   
         try:
-            terms = self.allvar[errvar]['terms']
             basepos = self.errdump.index.get_loc(self.periode)
             rows = []
             seen = set()
@@ -8721,40 +8735,39 @@ class Solver_Mixin():
         except Exception as e:
             print('>> Could not print compact values:', e)
     
-        # LOG argument check
         try:
             log_args = find_log_arguments(outeq)
             if log_args:
                 log_rows = []
                 tmpvar = 'ZZZ__ERR_LOG_ARG'
-            
+    
                 for arg in log_args:
-        
                     try:
                         val = self.errdump.mfcalc(
                             f'<{self.periode}> {tmpvar} = {arg}'
                         ).loc[self.periode, tmpvar]
-                        status = '<=0 or nan' if pd.isna(val) or val <= 0 else 'ok'
+                        status = 'bad log argument' if pd.isna(val) or val <= 0 else 'ok'
                     except Exception:
                         val = ''
-                        status = 'skipped'
-            
+                        status = 'could not evaluate'
+    
                     log_rows.append({'log(arg)': arg, 'value': val, 'status': status})
-            
+    
                 print('>> LOG check:')
                 print(pd.DataFrame(log_rows).to_string(index=False))
-                
-        except Exception as e:                    
-                print('>> Could not check LOG arguments:', e)
     
-        print('A snapshot of the data at the error point is at .errdump')
+        except Exception as e:
+            print('>> Could not check LOG arguments:', e)
+    
+        print('\nA snapshot of the data at the error point is at .errdump')
         print('Also .lastdf contains a copy of .errdump for inspecting')
     
         if hasattr(self, 'dumplist'):
             self.dumpdf = pd.DataFrame(self.dumplist)
             del self.dumplist
             self.dumpdf.columns = ['fair', 'per', 'iteration'] + self.dump
-
+            
+            
     def show_iterations(self, pat='*', per='', last=0, change=False,top=.9):
         '''
         shows the last iterations for the most recent simulation. 

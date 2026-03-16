@@ -438,6 +438,19 @@ try:
                     print(f"⚠️ Warning: replacements '{repl_arg}' not found or invalid.")
                     replacements = None
 
+        funks=[]
+        if 'funks' in options:
+             funks_arg = options['funks']
+             try:
+                 funks = ast.literal_eval(funks_arg)
+             except (ValueError, SyntaxError):
+                 if funks_arg in user_ns:
+                     funks = user_ns[funks_arg]
+                 else:
+                     print(f"⚠️ Warning: funks '{funks_arg}' not found or invalid.")
+                     funks = []
+        
+
         # ------------------------------------------------------------
         # Handle segmented models
         # ------------------------------------------------------------
@@ -502,7 +515,7 @@ try:
         # ------------------------------------------------------------
         # Create Mexplode model
         # ------------------------------------------------------------
-        emodel = Mexplode(model_text, replacements=replacements)
+        emodel = Mexplode(model_text, replacements=replacements,funks=funks)
 
      
         user_ns[exploded_name] = emodel

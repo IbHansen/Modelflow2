@@ -1102,7 +1102,7 @@ class BaseExplode:
     original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
     normal_frml           : str       = field(default="",init=False,         metadata={"description": "Output normalized expressions"})
     markdown_model        :  str       = field(default="",init=False,         metadata={"description": "As markdown"})
-    funks: List[Any] = field(default_factory=list)
+    funks                 : List[Any] = field(default_factory=list, metadata={"description": "List of user specified functions to be used in model"})
     
     
 
@@ -1149,7 +1149,6 @@ class Mexplode(BaseExplode):
     normal_expressions    : List[Any] = field(init=False,        metadata={"description": "List of normal expressions"})
     list_specification    : str       = field(init=False,        metadata={"description": "All list specifications in string "})
     modellist             : str       = field(init=False,        metadata={"description": "The lists defined in string as a dictionary"})
-    funks                 : List[Any] = field(default_factory=list, metadata={"description": "List of user specified functions to be used in model"})
     type_input            : str       = field(default= 'markdown'     ,metadata={"description": "Originaal as type modelflow or markdown"})
     
     def __post_init__(self):      
