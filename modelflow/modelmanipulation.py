@@ -666,6 +666,7 @@ def check_syntax_frml(frml):
         return True
     except:
         return False
+    
 def check_syntax_udtryk(udtryk):
     ''' check syntax of frml ''' 
     try:
@@ -674,6 +675,57 @@ def check_syntax_udtryk(udtryk):
     except:
         return False
 
+def check_syntax(expression_list, noprint=False, raise_error=True):
+    """
+    Check the Python syntax of one or more expressions.
+
+    Parameters
+    ----------
+    expression_list : str or iterable of str
+        A single expression or a collection of expressions to check.
+        Each expression is passed to `check_syntax_udtryk_new`.
+
+    noprint : bool, default False
+        If False, syntax errors are printed when found.
+        If True, printing is suppressed.
+
+
+    raise_error : bool, default True
+        If True, a SyntaxError is raised when one or more syntax errors
+        are detected.
+        If False, errors are not raised.
+
+
+    Returns
+    -------
+    None
+        This function does not return a value.
+
+    Notes
+    -----
+    If `expression_list` is a string, it is treated as a single expression.
+    If syntax errors are found, they can be printed and/or raised depending
+    on the values of `noprint` and `raise_error`.
+    """
+    expressions = [expression_list] if isinstance(expression_list, str) else expression_list
+
+    errlist = []
+    for udtryk in expressions:
+        ok, text = check_syntax_udtryk_new(udtryk)
+        if not ok:
+            errlist.append(text)
+
+    if errlist:
+        message = "\n\n".join(errlist)
+        if not noprint:
+            print(message)
+        if raise_error:
+            if noprint:
+                raise SyntaxError(message)
+            else: 
+                raise SyntaxError() from None
+            
+            
 def check_syntax_udtryk_new(udtryk):
     '''Check syntax of an expression, pinpoint errors, and show error location.'''
     try:
