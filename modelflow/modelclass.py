@@ -615,7 +615,7 @@ class BaseModel():
                 return 'values[row'+t.lag+','+str(columnsnr[t.var])+']'
 
         columnsnr = self.get_columnsnr(databank)
-        fib1 = ['def make_los(funks=[]):\n']
+        fib1 = ['def make_los(funks=[],errorfunk=None):\n']
         fib1.append(short + 'from modeluserfunk import ' +
                     (', '.join(pt.userfunk)).lower()+'\n')
         fib1.append(short + 'from modelBLfunk import ' +
@@ -633,6 +633,9 @@ class BaseModel():
         fib2 = [long + 'except :\n']
         fib2.append(
             longer + 'print("Error in",allvar[solveorder[sys.exc_info()[2].tb_lineno-'+str(startline)+']]["frml"])\n')
+        fib2.append(
+            longer + f'errorfunk(values,sys.exc_info()[2].tb_lineno,overhead={startline},overeq={0})\n')
+        
         fib2.append(longer + 'raise\n')
         fib2.append(long + 'return \n')
         fib2.append(short + 'return los\n')
@@ -691,12 +694,15 @@ class BaseModel():
                 databank[i] = databank[i].astype(object)
                 # databank.loc[:, i] = databank.loc[:, i].astype('O')
             self.genrcolumns = databank.columns.copy()
+            self.genrindex = databank.index.copy()
+
             make_los_text = self.outeval(databank)
             self.make_los_text = make_los_text
             exec(make_los_text, globals())  # creates the los function
-            self.solve_dag = make_los(self.funks)
+            self.solve_dag = make_los(self.funks,self.errfunk)
         values = databank.values.copy()  #
         for periode in sol_periode:
+            self.periode = periode
             row = databank.index.get_loc(periode)
             self.solve_dag(values, row, self.solveorder, self.allvar)
             if not silent:
@@ -8608,7 +8614,7 @@ class Solver_Mixin():
         self.saveeval3(self.values_, self.row_, a)
         self.errfunk(self.values_, linenr, overhead, overeq)
 
-    def errfunk(self, values, linenr, overhead=4, overeq=0):
+    def errfunk_old(self, values, linenr, overhead=4, overeq=0):
         ''' developement function
 
         to handle run time errors in model calculations'''
@@ -8616,7 +8622,7 @@ class Solver_Mixin():
 #        winsound.Beep(500,1000)
         self.errdump = pd.DataFrame(
             values, columns=self.genrcolumns, index=self.genrindex)
-        self.lastdf = self.errdump
+        self.lastdf = self.errdump.copy()
 
         print('>> Error in     :', self.name)
         print('>> In           :', self.periode)
@@ -8630,15 +8636,124 @@ class Solver_Mixin():
         errvar = self.solveorder[varposition]
         outeq = self.allvar[errvar]['frml']
         print('>> Equation     :', outeq)
+        self.print_eq_values(errvar, self.errdump, per=[self.periode])
+
         print('A snapshot of the data at the error point is at .errdump ')
         print('Also the .lastdf contains .errdump,  for inspecting ')
-        self.print_eq_values(errvar, self.errdump, per=[self.periode])
+
         if hasattr(self, 'dumplist'):
             self.dumpdf = pd.DataFrame(self.dumplist)
             del self.dumplist
             self.dumpdf.columns = ['fair', 'per', 'iteration']+self.dump
 
-    pass
+    def errfunk(self, values, linenr, overhead=4, overeq=0):
+        '''Development function to handle run time errors in model calculations'''
+    
+        import pandas as pd
+    
+        def find_log_arguments(text):
+            """Return all arguments inside balanced LOG(...) calls."""
+            out = []
+            target = 'LOG('
+            i = 0
+            while True:
+                start = text.find(target, i)
+                if start == -1:
+                    break
+                j = start + len(target)
+                depth = 1
+                argstart = j
+                while j < len(text) and depth:
+                    if text[j] == '(':
+                        depth += 1
+                    elif text[j] == ')':
+                        depth -= 1
+                    j += 1
+                if depth == 0:
+                    out.append(text[argstart:j-1].strip())
+                    i = j
+                else:
+                    break
+            return out
+            
+        self.errdump = pd.DataFrame(values, columns=self.genrcolumns, index=self.genrindex)
+        self.lastdf = self.errdump.copy()
+    
+        print('>> Error in     :', self.name)
+        print('>> In           :', self.periode)
+    
+        varposition = linenr - overhead - 1 + overeq
+        print('>> varposition  :', varposition)
+    
+        errvar = self.solveorder[varposition]
+        print('>> Err variable :', errvar)
+        outeq = self.allvar[errvar]['frml']
+    
+        print('>> Equation     :', outeq)
+    
+        # compact term/value display
+        try:
+            terms = self.allvar[errvar]['terms']
+            basepos = self.errdump.index.get_loc(self.periode)
+            rows = []
+            seen = set()
+    
+            for t in terms:
+                var = t.var
+                if not var:
+                    continue
+    
+                lagtxt = t.lag
+                lag = int(lagtxt) if str(lagtxt).strip() else 0
+                key = (var, lag)
+                if key in seen:
+                    continue
+                seen.add(key)
+    
+                pos = basepos + lag
+                value = self.errdump.iloc[pos][var] if 0 <= pos < len(self.errdump.index) else float('nan')
+                term = f'{var}({lag:+})' if lag else var
+                rows.append({'term': term, 'value': value})
+    
+            if rows:
+                print('>> Values used:')
+                print(pd.DataFrame(rows).to_string(index=False))
+        except Exception as e:
+            print('>> Could not print compact values:', e)
+    
+        # LOG argument check
+        try:
+            log_args = find_log_arguments(outeq)
+            if log_args:
+                log_rows = []
+                tmpvar = 'ZZZ__ERR_LOG_ARG'
+            
+                for arg in log_args:
+        
+                    try:
+                        val = self.errdump.mfcalc(
+                            f'<{self.periode}> {tmpvar} = {arg}'
+                        ).loc[self.periode, tmpvar]
+                        status = '<=0 or nan' if pd.isna(val) or val <= 0 else 'ok'
+                    except Exception:
+                        val = ''
+                        status = 'skipped'
+            
+                    log_rows.append({'log(arg)': arg, 'value': val, 'status': status})
+            
+                print('>> LOG check:')
+                print(pd.DataFrame(log_rows).to_string(index=False))
+                
+        except Exception as e:                    
+                print('>> Could not check LOG arguments:', e)
+    
+        print('A snapshot of the data at the error point is at .errdump')
+        print('Also .lastdf contains a copy of .errdump for inspecting')
+    
+        if hasattr(self, 'dumplist'):
+            self.dumpdf = pd.DataFrame(self.dumplist)
+            del self.dumplist
+            self.dumpdf.columns = ['fair', 'per', 'iteration'] + self.dump
 
     def show_iterations(self, pat='*', per='', last=0, change=False,top=.9):
         '''
