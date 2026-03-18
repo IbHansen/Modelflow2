@@ -17,7 +17,7 @@ from collections import namedtuple
 from collections import defaultdict
 from typing import NamedTuple, Optional
 
-
+import modelmanipulation as mp
 import modelBLfunk
 
 class FrmlParts(NamedTuple):
@@ -275,17 +275,25 @@ def list_extract(equations,silent=True):
 def check_syntax_model(equations,test=True):
     ''' cheks if equations have syntax errors by calling the python compile.parse '''
     import ast
-    error=True
+    ok =True
     try:
         for frml in find_frml(equations):
             a, fr, n, udtryk = split_frml(frml)
             ast.parse(re.sub(r'\n','',re.sub(' ','',udtryk[:-1])))
     except SyntaxError:
         print('Syntax error in:',frml)            
-        error=False 
-        assert  test
-    return error
+        ok =False 
+    return ok 
     
+def get_expressions(equations):
+    ''' returns a generator of expressions in a model with frml <> expression $ '''
+    expressions = (split_frml(f)[3][:-1].replace(r'\n','').replace(r' ','') for f in  find_frml(equations))
+    return expressions 
+
+def check_syntax_model(equations):    
+    mp.check_syntax(get_expressions(equations))
+    return True
+
 
 def udtryk_parse(udtryk,funks=[]):
     '''returns a list of terms from an expression ie: lhs=rhs $ 

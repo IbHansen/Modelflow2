@@ -631,8 +631,8 @@ class BaseModel():
                    for v in self.solveorder)
 
         fib2 = [long + 'except :\n']
-        fib2.append(
-            longer + 'print("Error in",allvar[solveorder[sys.exc_info()[2].tb_lineno-'+str(startline)+']]["frml"])\n')
+        # fib2.append(
+        #     longer + 'print("Error in",allvar[solveorder[sys.exc_info()[2].tb_lineno-'+str(startline)+']]["frml"])\n')
         fib2.append(
             longer + f'errorfunk(values,sys.exc_info()[2].tb_lineno,overhead={startline-1},overeq={0})\n')
         
@@ -8680,11 +8680,11 @@ class Solver_Mixin():
         self.errdump = pd.DataFrame(values, columns=self.genrcolumns, index=self.genrindex)
         self.lastdf = self.errdump.copy()
     
-        print('>> Error in     :', self.name)
-        print('>> In           :', self.periode)
+        print('Houston, we have a problem\nThis equation raises and error:\n')
+        # print('>> Error in     :', self.name)
     
         varposition = linenr - overhead - 1 + overeq
-        print('>> varposition  :', varposition)
+        # print('>> varposition  :', varposition)
     
         if not (0 <= varposition < len(self.solveorder)):
             print('>> Could not map traceback line to solveorder')
@@ -8693,10 +8693,11 @@ class Solver_Mixin():
             return
     
         errvar = self.solveorder[varposition]
-        print('>> Err variable :', errvar)
+        # print('>> Err variable :', errvar)
         outeq = self.allvar[errvar]['frml']
     
-        print('>> Equation     :', outeq,'\n')
+        print('>>:', outeq,)
+        print('In:', self.periode)
         terms = self.allvar[errvar]['terms']
         
         # allowed_funks= sorted(pt.funkname + [f.__name__.upper()  for f in self.funks])
@@ -8746,10 +8747,10 @@ class Solver_Mixin():
                         val = self.errdump.mfcalc(
                             f'<{self.periode}> {tmpvar} = {arg}'
                         ).loc[self.periode, tmpvar]
-                        status = 'bad log argument' if pd.isna(val) or val <= 0 else 'ok'
+                        status = 'Bad log argument' if pd.isna(val) or val <= 0 else 'ok'
                     except Exception:
                         val = ''
-                        status = 'could not evaluate'
+                        status = 'Could not evaluate'
     
                     log_rows.append({'log(arg)': arg, 'value': val, 'status': status})
     

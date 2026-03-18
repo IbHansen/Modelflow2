@@ -17,6 +17,7 @@ import fnmatch
 
 from modelclass import model
 import modelvis as mv
+from modelmanipulation import check_syntax 
 
 
 if not hasattr(pd.DataFrame,'mf'):
@@ -66,8 +67,11 @@ if not hasattr(pd.DataFrame,'mf'):
                 
         def makemodel(self,eq,**kwargs):
             '''Makes a model from equations'''
+            # self.eq = eq
+            self.eq = "\n".join(line.lstrip() for line in eq.splitlines())
+            # check_syntax(self.eq)
             self.modelopt = {**self.modelopt,**kwargs} 
-            self.eq = eq
+            
             self.model = model.from_eq(self.eq,**kwargs)
             return self.copy()
         
