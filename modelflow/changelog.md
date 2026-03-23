@@ -258,4 +258,5 @@ packageifymodelflow_main a script to make modelflow to a package (but not used i
 syntax errors now reports errorlocation for all errors in model 
 errfunk works in xgenr
 errfunk now displays more information including all arguments to log 
-errfunk will report function calls to unknown functions Version 2.70 uploaded 
+errfunk will report function calls to unknown functions 
+Version 2.70 uploaded 
