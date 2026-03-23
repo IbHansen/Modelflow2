@@ -8680,7 +8680,7 @@ class Solver_Mixin():
         self.errdump = pd.DataFrame(values, columns=self.genrcolumns, index=self.genrindex)
         self.lastdf = self.errdump.copy()
     
-        print('Houston, we have a problem\nThis equation raises and error:\n')
+        print('Houston, we have a problem!\nThis equation raises an error:\n')
         # print('>> Error in     :', self.name)
     
         varposition = linenr - overhead - 1 + overeq
@@ -8697,7 +8697,8 @@ class Solver_Mixin():
         outeq = self.allvar[errvar]['frml']
     
         print('>>:', outeq,)
-        print('In:', self.periode)
+        print('In:', self.periode,'\n')
+        print('Below you will find information which might help you identify the problem')
         terms = self.allvar[errvar]['terms']
         
         # allowed_funks= sorted(pt.funkname + [f.__name__.upper()  for f in self.funks])
@@ -8731,7 +8732,7 @@ class Solver_Mixin():
                 rows.append({'term': term, 'value': value})
     
             if rows:
-                print('>> Values used:')
+                print('\n>> Values of terms in used:')
                 print(pd.DataFrame(rows).to_string(index=False))
         except Exception as e:
             print('>> Could not print compact values:', e)
@@ -8754,11 +8755,11 @@ class Solver_Mixin():
     
                     log_rows.append({'log(arg)': arg, 'value': val, 'status': status})
     
-                print('>> LOG check:')
+                print('\n>> This shows the arguments to LOG, they should be numbers > 0:')
                 print(pd.DataFrame(log_rows).to_string(index=False))
     
         except Exception as e:
-            print('>> Could not check LOG arguments:', e)
+            print('\n>> Could not check LOG arguments:', e)
     
         print('\nA snapshot of the data at the error point is at .errdump')
         print('Also .lastdf contains a copy of .errdump for inspecting')
