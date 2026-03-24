@@ -1763,8 +1763,8 @@ class Model_help_Mixin():
             try:
                 varstring,opstring,valuestring =re.split(operatorpat,l)
             except ValueError as e:
-                print(f'Error in this upd sstring:  <{l}>')
-                print('Could not parse the sting. Remember blank after variable name')
+                print(f'Error in this upd string:  "{l}"')
+                print('Could not parse the sting. Remember blank after variable name and after operator')
                 raise Exception(f'{e}"')
                  
             value=valuestring.split()
