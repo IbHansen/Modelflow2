@@ -1760,7 +1760,12 @@ class Model_help_Mixin():
             # print(f'{current=}')    
 
             time1,time2 = current[0],current[-1] 
-            varstring,opstring,valuestring =re.split(operatorpat,l)
+            try:
+                varstring,opstring,valuestring =re.split(operatorpat,l)
+            except ValueError as e:
+                print(f'Error in upd {l}')
+                print('Could not parse the sting: remember blank after variable name')
+                raise Exception(f'{e}"')
                  
             value=valuestring.split()
             op= opstring.strip()

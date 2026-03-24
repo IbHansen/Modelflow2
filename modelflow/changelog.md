@@ -260,3 +260,5 @@ errfunk works in xgenr
 errfunk now displays more information including all arguments to log 
 errfunk will report function calls to unknown functions 
 Version 2.70 uploaded 
+mfcalc rewritten to work in pandas version 3
+better error message when variable name and operator is not seperated in upd 
