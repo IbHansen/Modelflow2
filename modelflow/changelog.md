@@ -262,3 +262,4 @@ errfunk will report function calls to unknown functions
 Version 2.70 uploaded 
 mfcalc rewritten to work in pandas version 3
 better error message when variable name and operator is not seperated in upd 
+if pattern prefixed with @ it will do regex selection not fnmatch (for search on variable naame and description)
