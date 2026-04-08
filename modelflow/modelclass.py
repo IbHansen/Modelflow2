@@ -66,6 +66,9 @@ import copy
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
+from typing import Iterable
+
+
 import zipfile
 from functools import partial,cached_property,lru_cache
 from tqdm.auto import tqdm
@@ -1192,7 +1195,8 @@ class Org_model_Mixin():
             out = [v for  up in patlist  for v in sorted(
                 self.deslist(up[1:] ) if up.startswith('!')
                 else 
-                fnmatch.filter(self.allvar.keys(), up.upper())                
+                self.smart_filter(self.allvar.keys(), up)               
+                # fnmatch.filter(self.allvar.keys(), up.upper())                
                 )]
         except:
             ''' in case the model instance is an empty instance around datatframes, typical for visualization'''
@@ -1203,13 +1207,62 @@ class Org_model_Mixin():
                 ]
         return out
     
-    
+    @staticmethod
+    def smart_filter(names: Iterable[str], pat: str) -> list[str]:
+            """
+            Filter names using fnmatch syntax by default, or regex syntax when the
+            pattern starts with '@'.
+        
+            Parameters
+            ----------
+            names : Iterable[str]
+                Names to filter. The names are assumed to already be uppercase.
+            pat : str
+                Pattern used for filtering.
+        
+                - If ``pat`` starts with ``'@'``, then ``pat[1:]`` is treated as a
+                  regular expression.
+                - Otherwise, ``pat`` is treated as an ``fnmatch`` pattern, and
+                  ``pat.upper()`` is used for matching.
+        
+            Returns
+            -------
+            list[str]
+                A list of names that match the pattern.
+        
+            Notes
+            -----
+            The fnmatch branch uses ``pat.upper()`` because the input names are
+            assumed to already be uppercase.
+        
+            The regex branch does not uppercase the pattern, because changing the
+            case of a regular expression can change its meaning. For example,
+            ``\\d`` would become ``\\D``. Instead, regex matching uses
+            ``re.IGNORECASE``.
+        
+            Examples
+            --------
+            >>> smart_filter(["ABC", "ABX", "TEST"], "ab*")
+            ['ABC', 'ABX']
+        
+            >>> smart_filter(["BASELINE", "BASELINE—IB", "OTHER"], "@^baseline")
+            ['BASELINE', 'BASELINE—IB']
+            """
+            names = list(names)
+            # debug_var(pat,names)
+            if pat.startswith("@"):
+                regex = re.compile(pat[1:], re.IGNORECASE)
+                return [name for name in names if regex.search(name)]
+        
+            return fnmatch.filter(names, pat.upper())
+
+        
     def vlist_names(self,input, pat):
         '''returns a list of variable in input  matching the pattern'''
         gross_list = self.vlist(pat)
         out = [v for v in gross_list if v in input]
         return out
-
+        
 
 
     @staticmethod
@@ -3055,11 +3108,12 @@ class Description_Mixin():
             upat = [pat]
 
         ipat = upat
-
+        # debug_var(ipat)
         
         out = [v for p in ipat for up in p.split('|') for v in sorted(
                 [self.var_description_reverse[v] for v in 
-                 fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
+                 self.smart_filter(self.var_description_reverse.keys(),up)])]
+                 # fnmatch.filter(self.var_description_reverse.keys(),up.upper())])]
 
         return out
         
@@ -6056,7 +6110,7 @@ class Json_Mixin():
         '''Loads a model and an solution '''
         import io
         import urllib.request
-
+        debug=False 
         def make_current_from_quarters(base, json_current_per):
             ''' Handle json for quarterly data to recover the right date index
 
@@ -6124,7 +6178,7 @@ class Json_Mixin():
         input = json.loads(json_string)
         version = input['version']
         frml = input['frml']
-        with model.timer('read lastdf',False):
+        with model.timer('read lastdf',debug):
 
             lastdf = pd.read_json(StringIO(input['lastdf']))
         current_per = pd.read_json(StringIO(input['current_per']), typ='series').values
@@ -6136,7 +6190,7 @@ class Json_Mixin():
         mmodel.set_var_description(input.get('var_description', {}))
         mmodel.equations_latex = input.get('equations_latex', '')
         if input.get('wb_MFMSAOPTIONS', None) : mmodel.wb_MFMSAOPTIONS = input.get('wb_MFMSAOPTIONS', None)
-        with model.timer('read keepsolutions',False):
+        with model.timer('read keepsolutions',debug):
             mmodel.keep_solutions = {k : pd.read_json(StringIO(jdf)) for k,jdf in input.get('keep_solutions',{}).items()}
         mmodel.var_groups = input.get('var_groups', {})
         mmodel.reports    = input.get('reports',{} )
