@@ -371,6 +371,34 @@ def debug_var(*args, **kwargs):
     if starstar_note:
         print(f"  (source included {starstar_note})")
         
+def colab_link(notebook, folder='simulation',
+               user='IbHansen', repo='wb-debt-simulation', branch='main', badge=False, render=True):
+    """Display or print a Google Colab link for a Jupyter notebook hosted on GitHub.
+
+    Args:
+        notebook: Notebook name without .ipynb extension, e.g. 'my_notebook'.
+        folder: Repository folder containing the notebook.
+        user: GitHub username.
+        repo: GitHub repository name.
+        branch: Git branch.
+        badge: If True, use the 'Open in Colab' badge image instead of a plain URL.
+        render: If True and badge=True, render the badge in the notebook. 
+                If False, print the raw HTML string for copy-pasting.
+
+    Returns:
+        None. Output is displayed or printed.
+    """
+    url = f'https://colab.research.google.com/github/{user}/{repo}/blob/{branch}/{folder}/{notebook}.ipynb'
+    if badge:
+        badge_html = f'<a href="{url}" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>'
+        if render:
+            from IPython.display import HTML, display
+            display(HTML(badge_html))
+        else:
+            print(badge_html)
+    else:
+        print(url)
+        
 def build_sorted_bond_desc_dict(var_names):
     """
     Build an ordered dictionary mapping variable names to human-readable bond descriptions.

@@ -672,6 +672,7 @@ class sheetwidget(SingleWidgetBase):
 
         self.dec = int(self.content.get("dec", 2))
         self.transpose = bool(self.widgetdef.get("transpose", True))
+        self.trans = self.widgetdef.get("trans", {})
         if not self.transpose: 
             raise NotImplementedError("Non-transposed sheetwidget is not implemented yet.")
         self.wexp = Label(value=self.heading, layout={"width": "54%"})
