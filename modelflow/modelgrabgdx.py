@@ -30,6 +30,7 @@ import pandas as pd
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 from modelclass import model 
@@ -120,76 +121,6 @@ def symbols_to_df_t(symbols):
 
 
 
-
-
-def free_to_timeseries_t(bytype, dfs, t_name="t", value_col="level", sep="__"):
-    """
-    gams.transfer version of free_to_timeseries.
-    Selects all FREE variables where the last domain dimension is `t_name`,
-    pivots to wide format, and concatenates.
-    """
-    def _find_col(df, name):
-        """Case-insensitive column lookup; returns actual name or None."""
-        if name in df.columns:
-            return name
-        return next((c for c in df.columns if c.lower() == name.lower()), None)
-
-    
-    var_symbols = bytype.get("Variable", [])
-
-    # Filter to free variables with last dimension == t_name
-    selected = []
-    for s in var_symbols:
-        # gams.transfer uses s.type which is a VarType enum; "free" == 0
-        if s.type != 0 and str(s.type).lower() != "free":
-            continue
-
-        dom_list = s.domain_names  # e.g. ['i', 'j', 't']
-        if not dom_list or dom_list[-1] != t_name:
-            continue
-
-        selected.append(s.name)
-
-    selected = [v for v in selected if v in dfs and dfs[v] is not None]
-
-    # ---- build wide frames per variable ----
-    wide_frames = []
-    value_cols = {"level", "marginal", "lower", "upper", "scale", "value"}
-
-    for v in selected:
-        df = dfs[v].copy()
-
-        if t_name not in df.columns or len(df) == 0:
-            continue
-
-        col = _find_col(df, value_col)
-        if col is None:
-            continue
-        
-        dims = [c for c in df.columns if c.lower() not in value_cols]
-
-        other_dims = [c for c in dims if c != t_name]
-
-        if other_dims:
-            df["_colkey"] = v + sep + df[other_dims].astype(str).agg(sep.join, axis=1)
-        else:
-            df["_colkey"] = v
-
-        wide = df.pivot(index=t_name, columns="_colkey", values=col)
-        wide.columns = wide.columns.astype(str)
-        wide_frames.append(wide)
-
-    if not wide_frames:
-        return pd.DataFrame()
-
-    out = pd.concat(wide_frames, axis=1).sort_index()
-    out.index.name = t_name
-    out.index = [int(i) for i in out.index]
-    out_upper = out.rename(columns=str.upper)
-    return out_upper
-
-    
-from tqdm import tqdm
 import numpy as np
 
 def free_to_timeseries_t(bytype, dfs, t_name="t", value_col="level", sep="__"):
@@ -209,7 +140,7 @@ def free_to_timeseries_t(bytype, dfs, t_name="t", value_col="level", sep="__"):
     value_cols_set = {"level", "marginal", "lower", "upper", "scale", "value"}
     
     chunks = []
-    for v in tqdm(selected, desc="Building timeseries", unit="var"):
+    for v in selected:
         df = dfs[v]
         if t_name not in df.columns or len(df) == 0:
             continue
@@ -290,7 +221,7 @@ class GdxDataset:
             print('Number of periods  : 0')
     
      
-def model_grab_gdx(gdx_files, gams_dir=r"C:\GAMS\47"):
+def model_grab_gdx(gdx_files, gams_dir=r"C:\GAMS\47", max_workers=None):
     """Build a model from one or more GDX files.
     
     Parameters
@@ -299,11 +230,36 @@ def model_grab_gdx(gdx_files, gams_dir=r"C:\GAMS\47"):
         One or more paths to .gdx files.
     gams_dir : str
         GAMS system directory.
+    max_workers : int or None
+        Number of threads for parallel GDX loading.
+        None  = min(len(gdx_files), 8)  (auto).
+        1     = sequential (old behaviour, useful for debugging).
     """
     if isinstance(gdx_files, (str, Path)):
         gdx_files = [gdx_files]
 
-    GdxDataset_list = [GdxDataset(f, gams_dir=gams_dir) for f in gdx_files]
+    n_files = len(gdx_files)
+    
+    if n_files == 1 or max_workers == 1:
+        # sequential – no thread overhead
+        GdxDataset_list = [GdxDataset(f, gams_dir=gams_dir) for f in gdx_files]
+    else:
+        # parallel – GDX reading releases the GIL (C library),
+        # and numpy/pandas pivot work also largely releases it.
+        workers = max_workers or min(n_files, 8)
+        
+        # We need to preserve the original file order, so submit 
+        # with an index and sort afterwards.
+        results = [None] * n_files
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(GdxDataset, f, gams_dir): i
+                for i, f in enumerate(gdx_files)
+            }
+            for fut in as_completed(futures):
+                idx = futures[fut]
+                results[idx] = fut.result()   # propagates exceptions
+        GdxDataset_list = results
 
     col_sets = [set(g.df.columns) for g in GdxDataset_list]
     common_cols = sorted(set.intersection(*col_sets))    
@@ -323,6 +279,8 @@ def model_grab_gdx(gdx_files, gams_dir=r"C:\GAMS\47"):
     mmodel.oldkwargs = {}
     mmodel.var_description = common_var_descriptions
     return mmodel
+
+
 if __name__ == '__main__':
     
 #%%   

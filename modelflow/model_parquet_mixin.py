@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Parquet_Mixin: Fast model dump/load using Feather (Arrow IPC) for DataFrames.
+Parquet_Mixin: Optional fast model dump/load using Feather for large models.
 
-Instead of serializing DataFrames as JSON text (slow, large), this mixin
-stores them as Feather files inside a single zip archive (.pcimz).
-Feather is written uncompressed; the zip applies deflate for good ratio.
+By default ``modeldump`` uses the original JSON/gzip format (``.pcim``).
+For large models (CGE etc.) pass ``large=True`` to get the fast
+Feather/zip format (``.pcimz``).
 
-Archive layout::
+``modelload`` auto-detects the format — no extra parameter needed.
+
+Archive layout for large=True::
 
     model.pcimz
     ├── metadata.json            # all scalar/dict fields (no DataFrames)
@@ -15,26 +17,23 @@ Archive layout::
     ├── keep/Baseline.feather    # one file per keep_solutions entry
     └── keep/Scenario1.feather
 
-Requires: pyarrow  (``pip install pyarrow``)
+Requires: pyarrow  (``pip install pyarrow``) — only when large=True.
 
-Drop-in replacement for ``Zip_Mixin + Json_Mixin`` dump/load.
-To use, put ``Parquet_Mixin`` *before* ``Json_Mixin`` in the MRO so that
-``modeldump`` / ``modelload`` resolve to these fast versions, while the
-JSON fallback remains available as ``modeldump_base`` / the original
-``modelload``.
-
-Example
--------
-::
+Usage
+-----
+Put ``Parquet_Mixin`` *before* ``Zip_Mixin`` and ``Json_Mixin`` in the MRO::
 
     class model(Parquet_Mixin, Zip_Mixin, Json_Mixin, ...):
         pass
 
-    # dump  ──  produces a single .pcimz file
+    # normal models — old behaviour, .pcim
     mmodel.modeldump('mymodel/mymodel', keep=True)
 
-    # load
-    mmodel, df = model.modelload('mymodel/mymodel.pcimz', run=True)
+    # large CGE models — fast feather, .pcimz
+    mmodel.modeldump('mymodel/mymodel', keep=True, large=True)
+
+    # load — auto-detects format
+    mmodel, df = model.modelload('mymodel/mymodel')
 
 @author: Claude / Ib
 """
@@ -137,28 +136,39 @@ def _df_from_feather_bytes(raw_bytes):
 # ---------------------------------------------------------------------------
 
 class Parquet_Mixin:
-    """Fast dump/load using Feather (Arrow IPC) for DataFrames inside a zip archive.
+    """Optional fast dump/load for large models.
 
-    Methods
-    -------
-    modeldump(file_path, keep=False)
-        Save the model to a single ``.pcimz`` file.
-    modelload(infile, funks=[], run=False, keep_json=False, ...)
-        Class method – load a model from a ``.pcimz`` file.
+    ``modeldump``
+        *large=False* (default) → delegates to the original JSON/gzip
+        path via ``Zip_Mixin.modeldump`` / ``Json_Mixin.modeldump_base``.
+        *large=True* → writes a ``.pcimz`` feather/zip archive.
+
+    ``modelload``
+        Auto-detects format. Zip archive → fast feather path.
+        Anything else → legacy JSON/gzip path.
     """
 
     # ── dump ──────────────────────────────────────────────────────────────
 
-    def modeldump(self, file_path='', keep=False, **kwargs):
-        """Dump model + DataFrames to a single zip archive with Feather.
+    def modeldump(self, file_path='', keep=False, large=False, **kwargs):
+        """Dump model to disk.
 
         Parameters
         ----------
         file_path : str
-            Destination path.  Extension defaults to ``.pcimz``.
+            Destination path.
         keep : bool
             If True, also persist ``self.keep_solutions``.
+        large : bool
+            If False (default), use the original JSON/gzip ``.pcim`` format.
+            If True, use the fast Feather/zip ``.pcimz`` format —
+            recommended for large CGE models with many variables.
         """
+        if not large:
+            # ── original JSON/gzip path ──────────────────────────────────
+            return super().modeldump(file_path=file_path, keep=keep, **kwargs)
+
+        # ── fast feather/zip path ────────────────────────────────────────
         pathname = Path(file_path)
         if not pathname.suffix:
             pathname = pathname.with_suffix('.pcimz')
@@ -230,11 +240,7 @@ class Parquet_Mixin:
         ),
         **kwargs,
     ):
-        """Load a model from a ``.pcimz`` (feather/zip) or ``.pcim`` file.
-
-        If the file is a zip archive produced by :meth:`modeldump` it uses
-        the fast Feather path.  Otherwise it falls back to the legacy
-        JSON/gzip reader so old ``.pcim`` files keep working.
+        """Load a model — auto-detects ``.pcimz`` vs ``.pcim`` format.
 
         Parameters
         ----------
@@ -265,24 +271,22 @@ class Parquet_Mixin:
 
         # ── detect format ────────────────────────────────────────────────
         if pinfile.exists() and zipfile.is_zipfile(pinfile):
-            return cls._load_parquet_zip(
+            return cls._load_feather_zip(
                 pinfile, funks=funks, run=run,
                 keep_json=keep_json, **kwargs,
             )
 
         # ── fallback to legacy JSON/gzip path ────────────────────────────
-        # Delegate to Json_Mixin.modelload via super()
-        # We need to call the *next* modelload in the MRO (Json_Mixin's).
         return super(Parquet_Mixin, cls).modelload(
             infile, funks=funks, run=run,
             keep_json=keep_json, default_url=default_url,
             **kwargs,
         )
 
-    # ── internal: load from parquet/zip ──────────────────────────────────
+    # ── internal: load from feather/zip ──────────────────────────────────
 
     @classmethod
-    def _load_parquet_zip(cls, pinfile, funks=[], run=False,
+    def _load_feather_zip(cls, pinfile, funks=[], run=False,
                           keep_json=False, **kwargs):
         """Read a .pcimz archive and reconstruct the model."""
         import datetime
