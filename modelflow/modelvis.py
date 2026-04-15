@@ -100,7 +100,8 @@ class vis():
          else:
              try:
                  self.thisdf = self.model.lastdf.loc[:,self.names] 
-             except: 
+             except Exception as e: 
+                 print(e)
                  print('No data in the model instance, so only structure information from model.[<something>] ')
              
              

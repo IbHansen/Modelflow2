@@ -211,7 +211,9 @@ delete staticmethod in class defsub
 create def is_running_in_colab and use it in load worldbank
 Version 2.57 uploaded ver
 ...readme.ipynb in display_toc_github will be forcet to lewer case  
+
 Version 2.58 uploaded (the pinned as modelflow_book)
+
 astype('float') in dekomp, as it triggers a future warning 
 use_fbmin set to False as order can be different in different runs if True 
 Version 2.59 uploaded 
@@ -245,7 +247,7 @@ Version 2.63 uploaded
 Version 2.64 uploaded 
 in modelhelp these for use in debt simulations build_sorted_rate_desc_dict and build_sorted_bond_desc_dict
 Version 2.65 uploaded 
-Colab version of tab container 
+modelwidget_input  Colab version of tab container 
 Version 2.67 uploaded 
 modelwidget_input cleaned up 
 Version 2.67 uploaded 
@@ -264,3 +266,9 @@ mfcalc rewritten to work in pandas version 3
 better error message when variable name and operator is not seperated in upd 
 if pattern prefixed with @ it will do regex selection not fnmatch (for search on variable naame and description)
 in modelhelp colab_link vil provide a link/badge to open a jupyter notebook in colab
+fix modelwidget_input to start quick when many variables 
+model_parquet_mixin.py to make modelload and modeldump fast using .pcimx
+modelgrabgdx.py to load GAMS gdx files into dataframes and a dummy model to alow reporting 
+if no data structural information can still be shown
+speedup of modelwidget_input keep_plot_widget for large models > 100,000 variables. 
+

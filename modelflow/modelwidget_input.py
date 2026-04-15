@@ -1545,7 +1545,7 @@ class keep_plot_widget:
 
         allkeepvar = [set(df.columns) for df in self.mmodel.keep_solutions.values()]
         keepvar = sorted(allkeepvar[0].intersection(*allkeepvar[1:])) if allkeepvar else []
-
+        keepvar_set  = set(keepvar)
         wselectfrom = Text(
             value=self.selectfrom,
             placeholder='Type something',
@@ -1567,7 +1567,7 @@ class keep_plot_widget:
 
         def changeselectfrom(g):
             nonlocal gross_selectfrom
-            _selectfrom = [s.upper() for s in self.mmodel.vlist(wselectfrom.value) if s in keepvar] if self.selectfrom else keepvar
+            _selectfrom = [s.upper() for s in self.mmodel.vlist(wselectfrom.value) if s in keepvar_set] if self.selectfrom else keepvar
             gross_selectfrom = [
                 (
                     f'{(v+" ") if self.add_var_name else ""}{self.mmodel.var_description[v] if self.use_descriptions else v}',
