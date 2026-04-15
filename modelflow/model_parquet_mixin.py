@@ -91,20 +91,30 @@ def _df_to_feather_bytes(df):
     in a single pass for a good compression ratio.  No Thrift layer,
     so no size-limit issues like Parquet has.
     
-    The index is stored as a regular column so that PeriodIndex and other
-    non-default index types survive the round-trip.
+    The index is stored as a regular column with a marker prefix
+    so that PeriodIndex and other non-default index types survive
+    the round-trip.  RangeIndex is left as-is (feather handles it).
     """
     buf = BytesIO()
-    # reset_index() promotes the index to a column; feather needs RangeIndex
+    
+    if isinstance(df.index, pd.RangeIndex):
+        # feather handles RangeIndex natively — nothing to do
+        df.to_feather(buf, compression='uncompressed')
+        return buf.getvalue()
+    
     df_out = df.reset_index()
-    # If the index was a PeriodIndex, convert to string so Arrow can handle it
     idx_col = df_out.columns[0]
+    
     if hasattr(df.index, 'freqstr'):
-        # store freq info as column name suffix so we can recover it
+        # PeriodIndex → convert to string, encode freq in column name
         new_name = f'__period_index__|{df.index.freqstr}|{df.index.name or ""}'
         df_out = df_out.rename(columns={idx_col: new_name})
         df_out[new_name] = df_out[new_name].astype(str)
-    # uncompressed here — the outer zip applies deflate for good ratio
+    else:
+        # integer/datetime/other index → mark with prefix
+        new_name = f'__index__|{idx_col if idx_col is not None else ""}'
+        df_out = df_out.rename(columns={idx_col: new_name})
+    
     df_out.to_feather(buf, compression='uncompressed')
     return buf.getvalue()
 
@@ -115,20 +125,23 @@ def _df_from_feather_bytes(raw_bytes):
     buf = BytesIO(raw_bytes)
     df = pd.read_feather(buf)
     
-    # check if the first column is a stored period index
     first_col = df.columns[0]
-    if isinstance(first_col, str) and first_col.startswith('__period_index__'):
+    if not isinstance(first_col, str):
+        return df
+    
+    if first_col.startswith('__period_index__'):
         parts = first_col.split('|')
         freq = parts[1]
         idx_name = parts[2] if parts[2] else None
         df.index = pd.PeriodIndex(df[first_col], freq=freq, name=idx_name)
         df = df.drop(columns=[first_col])
-    elif first_col == 'index' or (isinstance(first_col, str) and first_col != df.columns[1] if len(df.columns) > 1 else False):
-        # generic index restoration
+    elif first_col.startswith('__index__'):
+        parts = first_col.split('|', 1)
+        idx_name = parts[1] if parts[1] else None
         df = df.set_index(first_col)
-        if df.index.name == 'index':
-            df.index.name = None
+        df.index.name = idx_name
     
+    # no prefix → RangeIndex, leave as-is
     return df
 
 
@@ -151,7 +164,7 @@ class Parquet_Mixin:
 
     # ── dump ──────────────────────────────────────────────────────────────
 
-    def modeldump(self, file_path='', keep=False, large=False, **kwargs):
+    def modeldump(self, file_path='', keep=False, large=False, compact=False, **kwargs):
         """Dump model to disk.
 
         Parameters
@@ -164,6 +177,11 @@ class Parquet_Mixin:
             If False (default), use the original JSON/gzip ``.pcim`` format.
             If True, use the fast Feather/zip ``.pcimz`` format —
             recommended for large CGE models with many variables.
+        compact : bool
+            If True (only effective when large=True), store float64
+            columns as float32 and reduce the file size. Mostly the data is used for vizualization.
+            take care if used for store data for simulation. 
+            
         """
         if not large:
             # ── original JSON/gzip path ──────────────────────────────────
@@ -203,7 +221,16 @@ class Parquet_Mixin:
             'eviews_dict': self.eviews_dict,
             'substitution': self.substitution,
             'keep_names': list(self.keep_solutions.keys()) if keep else [],
+            'compact': compact,
         }
+
+        # --- optionally downcast to float32 for storage -------------------
+        def _maybe_compact(df):
+            if not compact:
+                return df
+            return pd.DataFrame(
+                df.values.astype('float32'), index=df.index, columns=df.columns
+            )
 
         # --- write the zip archive ---------------------------------------
         with zipfile.ZipFile(
@@ -214,14 +241,13 @@ class Parquet_Mixin:
             # current_per
             zf.writestr('current_per.json', current_per_json)
             # lastdf  →  feather
-            zf.writestr('lastdf.feather', _df_to_feather_bytes(self.lastdf))
-            # keep_solutions  →  one feather each
+            zf.writestr('lastdf.feather', _df_to_feather_bytes(_maybe_compact(self.lastdf)))
+            # keep_solutions  →  one feather each, indexed by position
             if keep:
-                for name, df in self.keep_solutions.items():
-                    safe_name = name.replace('/', '_').replace('\\', '_')
+                for i, (name, df) in enumerate(self.keep_solutions.items()):
                     zf.writestr(
-                        f'keep/{safe_name}.feather',
-                        _df_to_feather_bytes(df),
+                        f'keep/{i}.feather',
+                        _df_to_feather_bytes(_maybe_compact(df)),
                     )
 
         print(f'Model dumped (feather/zip): {pathname}')
@@ -322,9 +348,8 @@ class Parquet_Mixin:
             current_per_bytes = zf.read('current_per.json')
             lastdf_bytes = zf.read('lastdf.feather')
             keep_bytes = {}
-            for name in meta.get('keep_names', []):
-                safe_name = name.replace('/', '_').replace('\\', '_')
-                keep_bytes[name] = zf.read(f'keep/{safe_name}.feather')
+            for i, name in enumerate(meta.get('keep_names', [])):
+                keep_bytes[name] = zf.read(f'keep/{i}.feather')
 
         # ── phase 2: deserialize in parallel, overlap with model build ───
         current_per = pd.read_json(
