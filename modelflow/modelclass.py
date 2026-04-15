@@ -9293,8 +9293,9 @@ class Report_Mixin:
          
              return out 
              
+from model_parquet_mixin import Parquet_Mixin
 
-class model(Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
+class model(Parquet_Mixin, Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
             Fix_Mixin,Stability_Mixin,Report_Mixin):
     '''This is the main model definition'''

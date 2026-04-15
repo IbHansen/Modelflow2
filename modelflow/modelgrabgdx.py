@@ -65,8 +65,9 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
 def get_gdx_t(filename="baseline.gdx", gams_dir=r"C:\GAMS\47"):
     
     _require_gams(gams_dir)
-
+    print(f'\nStart reading {filename}')
     container = gt.Container(filename, system_directory=gams_dir)
+    print(f'Finished reading {filename}')
 
     dfs = {}
     bytype = {}
@@ -76,6 +77,7 @@ def get_gdx_t(filename="baseline.gdx", gams_dir=r"C:\GAMS\47"):
             continue
         bytype.setdefault(tname, []).append(sym)  # sym, not the tuple
         dfs[name] = sym.records
+    print(f'Finished tranferring {filename}')
 
     return bytype, dfs
 
