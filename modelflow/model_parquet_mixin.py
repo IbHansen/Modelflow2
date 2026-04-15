@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Parquet_Mixin: Fast model dump/load using Parquet for DataFrames.
+Parquet_Mixin: Fast model dump/load using Feather (Arrow IPC) for DataFrames.
 
 Instead of serializing DataFrames as JSON text (slow, large), this mixin
-stores them as Parquet files inside a single zip archive (.pcimz).
+stores them as Feather files inside a single zip archive (.pcimz).
+Feather is written uncompressed; the zip applies deflate for good ratio.
 
 Archive layout::
 
     model.pcimz
     ├── metadata.json            # all scalar/dict fields (no DataFrames)
     ├── current_per.json         # current_per series (small, keep as JSON)
-    ├── lastdf.parquet           # the lastdf DataFrame
-    ├── keep/Baseline.parquet    # one file per keep_solutions entry
-    └── keep/Scenario1.parquet
+    ├── lastdf.feather           # the lastdf DataFrame
+    ├── keep/Baseline.feather    # one file per keep_solutions entry
+    └── keep/Scenario1.feather
 
 Requires: pyarrow  (``pip install pyarrow``)
 
@@ -83,17 +84,52 @@ def _period_series_to_json(series):
     return json.dumps(result_dict)
 
 
-def _df_to_parquet_bytes(df):
-    """Serialize a DataFrame to an in-memory Parquet blob (bytes)."""
+def _df_to_feather_bytes(df):
+    """Serialize a DataFrame to in-memory Feather/Arrow IPC bytes.
+    
+    Written uncompressed so the outer zip archive can apply deflate
+    in a single pass for a good compression ratio.  No Thrift layer,
+    so no size-limit issues like Parquet has.
+    
+    The index is stored as a regular column so that PeriodIndex and other
+    non-default index types survive the round-trip.
+    """
     buf = BytesIO()
-    df.to_parquet(buf, engine='pyarrow')
+    # reset_index() promotes the index to a column; feather needs RangeIndex
+    df_out = df.reset_index()
+    # If the index was a PeriodIndex, convert to string so Arrow can handle it
+    idx_col = df_out.columns[0]
+    if hasattr(df.index, 'freqstr'):
+        # store freq info as column name suffix so we can recover it
+        new_name = f'__period_index__|{df.index.freqstr}|{df.index.name or ""}'
+        df_out = df_out.rename(columns={idx_col: new_name})
+        df_out[new_name] = df_out[new_name].astype(str)
+    # uncompressed here — the outer zip applies deflate for good ratio
+    df_out.to_feather(buf, compression='uncompressed')
     return buf.getvalue()
 
 
-def _df_from_parquet_bytes(raw_bytes):
-    """Deserialize a DataFrame from in-memory Parquet bytes."""
+def _df_from_feather_bytes(raw_bytes):
+    """Deserialize a DataFrame from in-memory Feather bytes,
+    restoring the original index (including PeriodIndex)."""
     buf = BytesIO(raw_bytes)
-    return pd.read_parquet(buf, engine='pyarrow')
+    df = pd.read_feather(buf)
+    
+    # check if the first column is a stored period index
+    first_col = df.columns[0]
+    if isinstance(first_col, str) and first_col.startswith('__period_index__'):
+        parts = first_col.split('|')
+        freq = parts[1]
+        idx_name = parts[2] if parts[2] else None
+        df.index = pd.PeriodIndex(df[first_col], freq=freq, name=idx_name)
+        df = df.drop(columns=[first_col])
+    elif first_col == 'index' or (isinstance(first_col, str) and first_col != df.columns[1] if len(df.columns) > 1 else False):
+        # generic index restoration
+        df = df.set_index(first_col)
+        if df.index.name == 'index':
+            df.index.name = None
+    
+    return df
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +137,7 @@ def _df_from_parquet_bytes(raw_bytes):
 # ---------------------------------------------------------------------------
 
 class Parquet_Mixin:
-    """Fast dump/load using Parquet for DataFrames inside a zip archive.
+    """Fast dump/load using Feather (Arrow IPC) for DataFrames inside a zip archive.
 
     Methods
     -------
@@ -114,7 +150,7 @@ class Parquet_Mixin:
     # ── dump ──────────────────────────────────────────────────────────────
 
     def modeldump(self, file_path='', keep=False, **kwargs):
-        """Dump model + DataFrames to a single zip archive with Parquet.
+        """Dump model + DataFrames to a single zip archive with Feather.
 
         Parameters
         ----------
@@ -139,7 +175,7 @@ class Parquet_Mixin:
         # --- metadata dict (everything *except* DataFrames) --------------
         metadata = {
             'version': '2.00',
-            'format': 'parquet_zip',
+            'format': 'feather_zip',
             'frml': self.equations,
             'modelname': self.name,
             'oldkwargs': self.oldkwargs,
@@ -166,18 +202,18 @@ class Parquet_Mixin:
             zf.writestr('metadata.json', json.dumps(metadata))
             # current_per
             zf.writestr('current_per.json', current_per_json)
-            # lastdf  →  parquet
-            zf.writestr('lastdf.parquet', _df_to_parquet_bytes(self.lastdf))
-            # keep_solutions  →  one parquet each
+            # lastdf  →  feather
+            zf.writestr('lastdf.feather', _df_to_feather_bytes(self.lastdf))
+            # keep_solutions  →  one feather each
             if keep:
                 for name, df in self.keep_solutions.items():
                     safe_name = name.replace('/', '_').replace('\\', '_')
                     zf.writestr(
-                        f'keep/{safe_name}.parquet',
-                        _df_to_parquet_bytes(df),
+                        f'keep/{safe_name}.feather',
+                        _df_to_feather_bytes(df),
                     )
 
-        print(f'Model dumped (parquet/zip): {pathname}')
+        print(f'Model dumped (feather/zip): {pathname}')
 
     # ── load ──────────────────────────────────────────────────────────────
 
@@ -194,10 +230,10 @@ class Parquet_Mixin:
         ),
         **kwargs,
     ):
-        """Load a model from a ``.pcimz`` (parquet/zip) or ``.pcim`` file.
+        """Load a model from a ``.pcimz`` (feather/zip) or ``.pcim`` file.
 
         If the file is a zip archive produced by :meth:`modeldump` it uses
-        the fast Parquet path.  Otherwise it falls back to the legacy
+        the fast Feather path.  Otherwise it falls back to the legacy
         JSON/gzip reader so old ``.pcim`` files keep working.
 
         Parameters
@@ -268,7 +304,7 @@ class Parquet_Mixin:
             base.index = base_dates
             return base, current_dates
 
-        print(f'Parquet/zip file read: {pinfile}')
+        print(f'Feather/zip file read: {pinfile}')
 
         with zipfile.ZipFile(pinfile, 'r') as zf:
             # --- metadata ------------------------------------------------
@@ -280,15 +316,15 @@ class Parquet_Mixin:
                 typ='series',
             ).values
 
-            # --- lastdf (parquet) ----------------------------------------
-            lastdf = _df_from_parquet_bytes(zf.read('lastdf.parquet'))
+            # --- lastdf (feather) ----------------------------------------
+            lastdf = _df_from_feather_bytes(zf.read('lastdf.feather'))
 
-            # --- keep_solutions (parquet) --------------------------------
+            # --- keep_solutions (feather) --------------------------------
             keep_solutions = {}
             for name in meta.get('keep_names', []):
                 safe_name = name.replace('/', '_').replace('\\', '_')
-                path_in_zip = f'keep/{safe_name}.parquet'
-                keep_solutions[name] = _df_from_parquet_bytes(
+                path_in_zip = f'keep/{safe_name}.feather'
+                keep_solutions[name] = _df_from_feather_bytes(
                     zf.read(path_in_zip)
                 )
 

@@ -67,7 +67,7 @@ def get_gdx_t(filename="baseline.gdx", gams_dir=r"C:\GAMS\47"):
     _require_gams(gams_dir)
     print(f'\nStart reading {filename}')
     container = gt.Container(filename, system_directory=gams_dir)
-    print(f'Finished reading {filename}')
+    # print(f'Finished reading {filename}')
 
     dfs = {}
     bytype = {}
@@ -77,7 +77,7 @@ def get_gdx_t(filename="baseline.gdx", gams_dir=r"C:\GAMS\47"):
             continue
         bytype.setdefault(tname, []).append(sym)  # sym, not the tuple
         dfs[name] = sym.records
-    print(f'Finished tranferring {filename}')
+    # print(f'Finished tranferring {filename}')
 
     return bytype, dfs
 
@@ -188,7 +188,73 @@ def free_to_timeseries_t(bytype, dfs, t_name="t", value_col="level", sep="__"):
     out_upper = out.rename(columns=str.upper)
     return out_upper
 
-  
+    
+from tqdm import tqdm
+import numpy as np
+
+def free_to_timeseries_t(bytype, dfs, t_name="t", value_col="level", sep="__"):
+    var_symbols = bytype.get("Variable", [])
+    
+    selected = [
+        s.name for s in var_symbols
+        if (s.type == 0 or str(s.type).lower() == "free")
+        and s.domain_names
+        and s.domain_names[-1] == t_name
+        and s.name in dfs
+        and dfs[s.name] is not None
+    ]
+    if not selected:
+        return pd.DataFrame()
+
+    value_cols_set = {"level", "marginal", "lower", "upper", "scale", "value"}
+    
+    chunks = []
+    for v in tqdm(selected, desc="Building timeseries", unit="var"):
+        df = dfs[v]
+        if t_name not in df.columns or len(df) == 0:
+            continue
+
+        col = value_col if value_col in df.columns else next(
+            (c for c in df.columns if c.lower() == value_col.lower()), None)
+        if col is None:
+            continue
+
+        dims = [c for c in df.columns if c.lower() not in value_cols_set]
+        other_dims = [c for c in dims if c != t_name]
+
+        t_vals = df[t_name].values
+        v_vals = df[col].values
+
+        if other_dims:
+            parts = [df[d].values.astype(str) for d in other_dims]
+            if len(parts) == 1:
+                colkeys = np.char.add(v + sep, parts[0])
+            else:
+                combined = parts[0]
+                for p in parts[1:]:
+                    combined = np.char.add(np.char.add(combined, sep), p)
+                colkeys = np.char.add(v + sep, combined)
+        else:
+            colkeys = np.full(len(df), v, dtype=object)
+
+        chunks.append((t_vals, colkeys, v_vals))
+
+    if not chunks:
+        return pd.DataFrame()
+
+    all_t = np.concatenate([c[0] for c in chunks])
+    all_k = np.concatenate([c[1] for c in chunks])
+    all_v = np.concatenate([c[2] for c in chunks])
+
+    out = (
+        pd.DataFrame({t_name: all_t, "_k": all_k, "_v": all_v})
+        .pivot(index=t_name, columns="_k", values="_v")
+    )
+    out.index = out.index.astype(int)
+    out.columns = out.columns.str.upper()
+    out.sort_index(inplace=True)
+    out.index.name = t_name
+    return out
 
 
 @dataclass
