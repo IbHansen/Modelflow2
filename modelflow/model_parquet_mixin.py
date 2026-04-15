@@ -43,6 +43,7 @@ import zipfile
 import io
 from pathlib import Path
 from io import BytesIO, StringIO
+from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 
@@ -288,7 +289,12 @@ class Parquet_Mixin:
     @classmethod
     def _load_feather_zip(cls, pinfile, funks=[], run=False,
                           keep_json=False, **kwargs):
-        """Read a .pcimz archive and reconstruct the model."""
+        """Read a .pcimz archive and reconstruct the model.
+        
+        Deserialization of feather DataFrames runs in threads
+        (pyarrow C code releases the GIL) overlapped with model
+        construction.
+        """
         import datetime
 
         def make_current_from_quarters(base, json_current_per):
@@ -310,47 +316,53 @@ class Parquet_Mixin:
 
         print(f'Feather/zip file read: {pinfile}')
 
+        # ── phase 1: read raw bytes from zip (sequential, fast) ──────────
         with zipfile.ZipFile(pinfile, 'r') as zf:
-            # --- metadata ------------------------------------------------
             meta = json.loads(zf.read('metadata.json'))
-
-            # --- current_per ---------------------------------------------
-            current_per = pd.read_json(
-                StringIO(zf.read('current_per.json').decode('utf-8')),
-                typ='series',
-            ).values
-
-            # --- lastdf (feather) ----------------------------------------
-            lastdf = _df_from_feather_bytes(zf.read('lastdf.feather'))
-
-            # --- keep_solutions (feather) --------------------------------
-            keep_solutions = {}
+            current_per_bytes = zf.read('current_per.json')
+            lastdf_bytes = zf.read('lastdf.feather')
+            keep_bytes = {}
             for name in meta.get('keep_names', []):
                 safe_name = name.replace('/', '_').replace('\\', '_')
-                path_in_zip = f'keep/{safe_name}.feather'
-                keep_solutions[name] = _df_from_feather_bytes(
-                    zf.read(path_in_zip)
-                )
+                keep_bytes[name] = zf.read(f'keep/{safe_name}.feather')
 
-        # --- reconstruct the model object --------------------------------
-        frml = meta['frml']
-        modelname = meta['modelname']
+        # ── phase 2: deserialize in parallel, overlap with model build ───
+        current_per = pd.read_json(
+            StringIO(current_per_bytes.decode('utf-8')),
+            typ='series',
+        ).values
 
-        mmodel = cls(frml, modelname=modelname, funks=funks, **kwargs)
-        mmodel.oldkwargs = meta.get('oldkwargs', {})
-        mmodel.json_current_per = current_per
-        mmodel.set_var_description(meta.get('var_description', {}))
-        mmodel.equations_latex = meta.get('equations_latex', '')
+        with ThreadPoolExecutor(max_workers=max(1, 1 + len(keep_bytes))) as pool:
+            # submit all DataFrame deserializations
+            lastdf_future = pool.submit(_df_from_feather_bytes, lastdf_bytes)
+            keep_futures = {
+                name: pool.submit(_df_from_feather_bytes, raw)
+                for name, raw in keep_bytes.items()
+            }
 
-        if meta.get('wb_MFMSAOPTIONS', None):
-            mmodel.wb_MFMSAOPTIONS = meta['wb_MFMSAOPTIONS']
+            # while threads work, build the model object (parses equations)
+            frml = meta['frml']
+            modelname = meta['modelname']
+            mmodel = cls(frml, modelname=modelname, funks=funks, **kwargs)
+            mmodel.oldkwargs = meta.get('oldkwargs', {})
+            mmodel.json_current_per = current_per
+            mmodel.set_var_description(meta.get('var_description', {}))
+            mmodel.equations_latex = meta.get('equations_latex', '')
 
-        mmodel.keep_solutions = keep_solutions
-        mmodel.var_groups = meta.get('var_groups', {})
-        mmodel.reports = meta.get('reports', {})
-        mmodel.model_description = meta.get('model_description', '')
-        mmodel.eviews_dict = meta.get('eviews_dict', {})
-        mmodel.substitution = meta.get('substitution', {})
+            if meta.get('wb_MFMSAOPTIONS', None):
+                mmodel.wb_MFMSAOPTIONS = meta['wb_MFMSAOPTIONS']
+
+            mmodel.var_groups = meta.get('var_groups', {})
+            mmodel.reports = meta.get('reports', {})
+            mmodel.model_description = meta.get('model_description', '')
+            mmodel.eviews_dict = meta.get('eviews_dict', {})
+            mmodel.substitution = meta.get('substitution', {})
+
+            # collect deserialized DataFrames
+            lastdf = lastdf_future.result()
+            mmodel.keep_solutions = {
+                name: fut.result() for name, fut in keep_futures.items()
+            }
 
         if keep_json:
             mmodel.json_keep = meta
