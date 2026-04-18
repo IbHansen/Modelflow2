@@ -220,7 +220,7 @@ def list_extract(equations,silent=True):
             else:
                 this_dict = defaultdict(list)
                 for i in list_value.split('/'):
-                    name, items = i.split(':')
+                    name, items =[part.strip() for part in i.split(':', 1)]
                     if '*' in i:
                         start,end = items.split('*')
                         startitems =  re.split(r'(^[A-Z0-9_]*[A-Z_])([0-9]+$)',start.strip())
@@ -244,6 +244,7 @@ def list_extract(equations,silent=True):
                     else:
                         
                         itemlist = [t.strip() for t in re.split(r'[\s,]\s*',items) if t != '']
+                        
                     this_dict[name.strip()] = itemlist
                     
                 
@@ -345,4 +346,4 @@ if __name__ == '__main__' and 1 :
     list_extract('list bankdic = bank	:   Danske , Nordea  $')
     list_extract('list agedic = age  :     age0 * age101  $')
     list_extract('list yeardic = year  :     2023 * 2031 / lag1 : 2022 * 2030  $')
-    
+    list_extract('list ages = ages : age_0 * age_5 /  a0t17   : 1 1 1 1  0 $') 

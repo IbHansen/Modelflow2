@@ -179,9 +179,8 @@ class Parquet_Mixin:
             recommended for large CGE models with many variables.
         compact : bool
             If True (only effective when large=True), store float64
-            columns as float32 and reduce the file size. Mostly the data is used for vizualization.
-            take care if used for store data for simulation. 
-            
+            columns as float32 to roughly halve file size.
+            On load the data is restored to float64.
         """
         if not large:
             # ── original JSON/gzip path ──────────────────────────────────
@@ -233,8 +232,10 @@ class Parquet_Mixin:
             )
 
         # --- write the zip archive ---------------------------------------
+        # compact already halves raw size; skip deflate to save CPU on load
+        zip_compression = zipfile.ZIP_STORED if compact else zipfile.ZIP_DEFLATED
         with zipfile.ZipFile(
-            pathname, 'w', compression=zipfile.ZIP_DEFLATED
+            pathname, 'w', compression=zip_compression
         ) as zf:
             # metadata
             zf.writestr('metadata.json', json.dumps(metadata))

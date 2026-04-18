@@ -98,8 +98,9 @@ def clean_expressions(original_statements: str) -> str:
                 out.append(block_text)  # NO '$' on purpose
 
             i = j
-
-        return '\n'.join(out)
+        res = '\n'.join(out)
+        debug_var(res)
+        return res
 
     flattened = up if '$' in up else normalize_lists(up) 
 
@@ -239,7 +240,7 @@ def clean_expressions(original_statements: str) -> str:
                 rebuilt += "  $"
             out.append(rebuilt)
             i = j
-
+        debug_var('\n'.join(out))    
         return '\n'.join(out)
 
     return restore_lists(frml_added)
@@ -1175,7 +1176,6 @@ class Mexplode(BaseExplode):
         self.post_doable = doable_unroll(self.clean_frml_statements ,self.funks)
         # assert 1==2
         self.post_do  = dounloop(self.post_doable)        #  we unroll the do loops 
-        
         
         self.modellist = list_extract(self.post_do) 
         self.post_sum = sumunroll(self.post_do,listin=self.modellist)    # then we unroll the sum 
