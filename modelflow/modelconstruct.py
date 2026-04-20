@@ -16,8 +16,8 @@ from IPython.display import display, Math, Latex, Markdown , Image, SVG, display
 from pprint import pformat
 import textwrap
 
-from modelmanipulation import tofrml,dounloop, sumunroll, list_extract, un_normalize_expression
-from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts
+from modelmanipulation import tofrml,dounloop, sumunroll
+from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts,rebuild_list
 from modelpattern import namepat 
 from modelhelp import debug_var
 from model_latex_class import a_latex_model,a_latex_equation,defrack, depower,debrace,defunk
@@ -29,222 +29,141 @@ class ModelSpecificationError(Exception):
 
 def clean_expressions(original_statements: str) -> str:
     """
-    Pipeline:
-      1) Uppercase the entire DSL.
-      2) normalize_lists: collapse LIST blocks to one line (no '$').
-         - A multi-line LIST continues while each line ends with '/'.
-         - If a LIST line ends with '$', that ends the block too.
-      3) tofrml: your existing enhancer to add FRML/<>/$ as needed.
-      4) restore_lists: reformat LIST blocks (with or without $):
-         - each sublist on its own line
-         - names aligned before ':'
-         - values aligned in columns (per block)
-         - '/' placed at the END of each sublist line except the last
-         - '$' added back only if it was present in the original LIST block
-         - validates equal token counts across sublists
+    Pipeline
+    --------
+    1. Uppercase the DSL.
+    2. Collapse LIST blocks to one line, preserving whether they ended with '$'.
+    3. Run tofrml().
+    4. Rebuild LIST blocks through:
+           list_extract(..., add_auto_sublists=False)
+           rebuild_list(...)
     """
     import re
 
-    # ---------- 1) Uppercase ----------
-    up = original_statements.upper()
+    stmt_start = re.compile(r'^\s*(LIST|FRML|DO|ENDDO|DOABLE)\b')
 
-    # ---------- 2) normalize_lists ----------
-    def normalize_lists(text: str) -> str:
+    def is_list_start(line: str) -> bool:
+        return bool(re.match(r'^\s*LIST\b', line))
+
+    def collect_list_block(lines, start_index):
         """
-        Find LIST blocks (no $ required).
-        A LIST block starts at a line beginning with LIST and spans subsequent lines:
-          - If a line ends with '/', the block continues.
-          - If a line ends with '$', the block ends there.
-          - Otherwise, the block ends at that line.
-        Output is a single-line "LIST ..." with clean spacing and WITHOUT a trailing '$'.
+        Collect one LIST block starting at start_index.
+
+        A block continues while the current line ends with '/'.
+        A block ends when the current line ends with '$', or when
+        the current line does not end with '/'.
         """
-        lines = text.splitlines()
-        out = []
-        i, n = 0, len(lines)
+        block_lines = [lines[start_index].rstrip()]
+        j = start_index + 1
 
-        def is_list_start(line: str) -> bool:
-            return bool(re.match(r'^\s*LIST\b', line))
+        while j < len(lines):
+            prev = block_lines[-1].rstrip()
 
-        while i < n:
-            line = lines[i]
-            if not is_list_start(line):
-                out.append(line)
-                i += 1
+            if prev.endswith('$'):
+                break
+
+            if prev.endswith('/'):
+                block_lines.append(lines[j].rstrip())
+                j += 1
                 continue
 
-            # Collect LIST block lines
-            block_lines = [line.rstrip()]
-            j = i + 1
-            while j < n:
-                prev = block_lines[-1].rstrip()
-                if prev.endswith('/'):
-                    block_lines.append(lines[j].rstrip())
-                    j += 1
-                else:
-                    break
+            break
 
-            # If the last collected line ends with '$', block ends here; else already ended
-            # Build flattened content
-            block_text = ' '.join(l.strip() for l in block_lines)
-            # Remove a single trailing '$' and any trailing '/'
-            block_text = re.sub(r'\s*\$\s*$', '', block_text)
-            block_text = re.sub(r'\s*/\s*$', '', block_text)
+        return '\n'.join(block_lines), j
 
-            # Squeeze whitespace
-            block_text = re.sub(r'\s+', ' ', block_text).strip()
-
-            # Keep only a single space after 'LIST'
-            if block_text.upper().startswith('LIST '):
-                out.append(block_text)  # NO '$' on purpose
-
-            i = j
-        res = '\n'.join(out)
-        debug_var(res)
-        return res
-
-    flattened = up if '$' in up else normalize_lists(up) 
-
-    # ---------- 3) tofrml ----------
-    # Your existing function; assumed available in scope.
-    frml_added = tofrml(flattened)
-    # debug_var(frml_added)
-    # ---------- 4) restore_lists ----------
-    def restore_lists(text: str) -> str:
+    def normalize_list_block(block: str) -> str:
         """
-        Reformat LIST blocks (with or without '$' in the source).
-        - Detects blocks starting at a 'LIST' line; the block ends at:
-          * a line ending with '$', or
-          * the next statement start (LIST/FRML/DO/ENDDO/DOABLE), or
-          * end of text.
-        - Splits sublists by ' / ' (single-line case from normalize) or by suffix '/' (multi-line case).
-        - Aligns names and value columns; adds '/' at END of each sublist except the last.
-        - Preserves a trailing '$' only if the original block had it.
-        - Validates equal token counts across sublists.
+        Flatten one LIST block to a single line.
+        Preserve a trailing '$' if present in the original block.
         """
-        stmt_start = re.compile(r'^\s*(LIST|FRML|DO|ENDDO|DOABLE)\b', re.M)
+        saw_dollar = bool(re.search(r'\$\s*$', block))
 
-        # Work line-wise for robust block slicing
+        flat = ' '.join(line.strip() for line in block.splitlines())
+        flat = re.sub(r'\s+', ' ', flat).strip()
+
+        # remove one trailing '$' and one trailing '/'
+        flat = re.sub(r'\s*\$\s*$', '', flat)
+        flat = re.sub(r'\s*/\s*$', '', flat)
+
+        if saw_dollar:
+            flat = flat + ' $'
+
+        return flat
+
+    def normalize_lists(text: str) -> str:
         lines = text.splitlines()
         out = []
-        i, n = 0, len(lines)
+        i = 0
 
-        def is_list_start(line: str) -> bool:
-            return bool(re.match(r'^\s*LIST\b', line))
-
-        while i < n:
+        while i < len(lines):
             if not is_list_start(lines[i]):
                 out.append(lines[i])
                 i += 1
                 continue
 
-            # Slice the block from i to end boundary
-            start_idx = i
-            j = i
-            saw_dollar = False
-            while j < n:
-                line = lines[j]
-                if line.rstrip().endswith('$'):
-                    saw_dollar = True
-                    j += 1
-                    break
-                # If next line starts a new statement and current line does not end with '/'
-                if j + 1 < n and stmt_start.match(lines[j + 1]) and not line.rstrip().endswith('/'):
-                    j += 1
-                    break
-                j += 1
-            block = '\n'.join(lines[start_idx:j])
+            block, next_i = collect_list_block(lines, i)
+            out.append(normalize_list_block(block))
+            i = next_i
 
-            # --- Parse head, tail ---
-            # Head is everything up to '=', else the whole head if '=' missing
-            if '=' in block:
-                head, tail = block.split('=', 1)
-                head = head.rstrip()
-                raw_tail = tail
-            else:
-                # Non-standard: treat whole block as head; no tail to format
-                out.append(block)
-                i = j
-                continue
-
-            # Collect sublists
-            # Strategy:
-            #   1) If the block appears single-line style (sections separated by ' / '), split on ' / '.
-            #   2) Otherwise (multi-line with suffix '/'), split by lines and trim trailing '/' from each.
-            tail_no_dollar = re.sub(r'\s*\$\s*$', '', raw_tail.strip())
-            if ' / ' in tail_no_dollar:
-                parts = [p.strip() for p in tail_no_dollar.split('/') if p.strip()]
-            else:
-                tail_lines = [ln.strip() for ln in tail_no_dollar.splitlines() if ln.strip()]
-                parts = [re.sub(r'\s*/\s*$', '', ln).strip() for ln in tail_lines]
-
-            # Parse NAME : tokens
-            rows = []
-            for p in parts:
-                if ':' in p:
-                    name, rhs = p.split(':', 1)
-                    name = name.strip()
-                    tokens = rhs.strip().split()
-                else:
-                    name = ""
-                    tokens = p.split()
-                rows.append((name, tokens))
-
-            if not rows:
-                # Empty list—emit minimal well-formed block
-                rebuilt = f"{head.rstrip()} =\n$\n" if saw_dollar else f"{head.rstrip()} =\n"
-                out.append(rebuilt.rstrip('\n'))
-                i = j
-                continue
-
-            # Validate equal token counts
-            lengths = [len(toks) for _, toks in rows]
-            if len(set(lengths)) > 1: 
-                       
-                list_label_m = re.match(r'\s*LIST\s+(.*?)\s*$', head, flags=re.DOTALL)
-                list_label = (list_label_m.group(1).strip() if list_label_m else head.strip()) or "LIST"
-                details = ", ".join(f"{(nm or '<unnamed>')}:{cnt}" for (nm, _), cnt in zip(rows, lengths))
-                raise ValueError(
-                    f"LIST '{list_label}' has inconsistent sublist lengths (expected uniform columns). "
-                    f"Lengths -> {details}"
-                )
-
-            # Compute widths
-            name_width = max((len(nm) for nm, _ in rows), default=0)
-            max_cols = lengths[0]
-            col_widths = [0] * max_cols
-            for _, toks in rows:
-                for k, tok in enumerate(toks):
-                    if len(tok) > col_widths[k]:
-                        col_widths[k] = len(tok)
-
-            def fmt_values(tokens):
-                # left-align per column
-                return " ".join(f"{tokens[k]:<{col_widths[k]}}" for k in range(max_cols)).rstrip()
-
-            def fmt_line(name, tokens):
-                left = f"{name:<{name_width}} :" if name_width > 0 else ":"
-                return f"{left} {fmt_values(tokens)}".rstrip()
-
-            # Build with trailing '/' on all but last row
-            lines_block = []
-            for idx, (nm, toks) in enumerate(rows):
-                suffix = " /" if idx < len(rows) - 1 else ""
-                if idx == 0:
-                    lines_block.append("    " + fmt_line(nm, toks) + suffix)
-                else:
-                    # match the indent style while using suffix slash
-                    lines_block.append("    " + fmt_line(nm, toks) + suffix)
-
-            rebuilt = f"{head.rstrip()} =\n" + "\n".join(lines_block)
-            if saw_dollar:
-                rebuilt += "  $"
-            out.append(rebuilt)
-            i = j
-        debug_var('\n'.join(out))    
         return '\n'.join(out)
 
-    return restore_lists(frml_added)
+    def restore_list_block(block: str) -> str:
+        """
+        Rebuild one LIST block through list_extract() + rebuild_list().
+        """
+        saw_dollar = bool(re.search(r'\$\s*$', block))
 
+        parse_block = block if saw_dollar else block.rstrip() + ' $'
+        list_dict = list_extract(parse_block, add_auto_sublists=False)
+        rebuilt = rebuild_list(list_dict)
+
+        if not saw_dollar:
+            rebuilt = re.sub(r'\s*\$\s*$', '', rebuilt)
+
+        return rebuilt
+
+    def restore_lists(text: str) -> str:
+        lines = text.splitlines()
+        out = []
+        i = 0
+
+        while i < len(lines):
+            if not is_list_start(lines[i]):
+                out.append(lines[i])
+                i += 1
+                continue
+
+            # after normalize_lists(), LIST blocks are normally single-line,
+            # but we keep block collection here for robustness
+            block_lines = [lines[i].rstrip()]
+            j = i + 1
+
+            while j < len(lines):
+                prev = block_lines[-1].rstrip()
+
+                if prev.endswith('$'):
+                    break
+
+                if prev.endswith('/'):
+                    block_lines.append(lines[j].rstrip())
+                    j += 1
+                    continue
+
+                if stmt_start.match(lines[j]):
+                    break
+
+                break
+
+            block = '\n'.join(block_lines)
+            out.append(restore_list_block(block))
+            i = j
+
+        return '\n'.join(out)
+
+    up = original_statements.upper()
+    flattened = normalize_lists(up)
+    frml_added = tofrml(flattened)
+    return restore_lists(frml_added)
 
 def doable_unroll(in_equations,funks=[]):
     ''' expands all sum(list,'expression') in a model

@@ -200,78 +200,130 @@ def model_parse(equations,funks=[]):
     return ibh
 
 
-def list_extract(equations,silent=True):
-    ''' creates lists used in a model 
-    
+def list_extract(equations, silent=True, add_auto_sublists=True):
+    ''' creates lists used in a model
+
         returns a dictonary with the lists
         if a list is defined several times, the first definition is used'''
-    # assert 1==2     
-    liste_dict = defaultdict(
-        list)  # opretter modellens lister - skal laves til en klasse
+    liste_dict = {}
+
     for comment, command, value in find_statements(equations):
         if command.upper() == 'LIST':
-            stripvalue = value.replace('\n', '').upper()
-            list_name, list_value = stripvalue[0:-1].split('=')
-            list_name = list_name.strip() 
+            stripvalue = ' '.join(value.upper().splitlines())
+            list_name, list_value = stripvalue[:-1].split('=', 1)
+            list_name = list_name.strip()
+
             if list_name in liste_dict:
-                if not silent: 
+                if not silent:
                     print('Warning ', list_name, 'Defined 2 times')
                     print('Use     ', list_name, liste_dict[list_name])
-            else:
-                this_dict = defaultdict(list)
-                for i in list_value.split('/'):
-                    name, items =[part.strip() for part in i.split(':', 1)]
-                    if '*' in i:
-                        start,end = items.split('*')
-                        startitems =  re.split(r'(^[A-Z0-9_]*[A-Z_])([0-9]+$)',start.strip())
-                        enditems   =  re.split(r'(^[A-Z0-9_]*[A-Z_])([0-9]+$)',end.strip())
-                        
-                        if len(startitems) != len(startitems):
-                           breakpoint() 
-                           raise Exception(f'Range of lists wrong {startitems=} {enditems=}')
-                        if len(startitems) == 4:   # we have a charactrer label 
-                            label = startitems[1]
-                            startint = int( startitems[2])
-                            endint  =  int(enditems[2])
-                        elif len(startitems) == 1 : 
-                            label ='' 
-                            startint = int( startitems[0])
-                            endint  =  int(enditems[0])
-                        else: 
-                            raise Exception(f'wrong range in list: {startitems=} {enditems=}')
-                            
-                        itemlist = [label+str(i) for i in range(startint,endint) ]
+                continue
+
+            this_dict = {}
+
+            for i in list_value.split('/'):
+                name, items = [part.strip() for part in i.split(':', 1)]
+
+                if '*' in items:
+                    start, end = [x.strip() for x in items.split('*', 1)]
+                    startitems = re.split(r'(^[A-Z0-9_]*[A-Z_])([0-9]+$)', start)
+                    enditems   = re.split(r'(^[A-Z0-9_]*[A-Z_])([0-9]+$)', end)
+
+                    if len(startitems) != len(enditems):
+                        raise Exception(f'Range of lists wrong {startitems=} {enditems=}')
+
+                    if len(startitems) == 4:
+                        if startitems[1] != enditems[1]:
+                            raise Exception(f'Range prefix mismatch {start=} {end=}')
+                        label = startitems[1]
+                        startint = int(startitems[2])
+                        endint = int(enditems[2])
+                    elif len(startitems) == 1:
+                        label = ''
+                        startint = int(startitems[0])
+                        endint = int(enditems[0])
                     else:
-                        
-                        itemlist = [t.strip() for t in re.split(r'[\s,]\s*',items) if t != '']
-                        
-                    this_dict[name.strip()] = itemlist
-                    
-                
-                first_sublist_name = list(this_dict.keys())[0]  
-                first_sublist = this_dict[first_sublist_name]
-                
-                this_dict[first_sublist_name+'_END'] =(['0']*  (len(first_sublist)-1))+['1']    
-                this_dict[first_sublist_name+'_NOEND'] =(['1']*(len(first_sublist)-1))+['0']    
-                this_dict[first_sublist_name+'_START'] =['1'] +(['0']*(len(first_sublist)-1))   
-                this_dict[first_sublist_name+'_NOSTART'] =['0'] +(['1']*(len(first_sublist)-1))  
-                if len(first_sublist)>=3:
-                    this_dict[first_sublist_name+'_MIDDLE'] =['0'] + (['1']*(len(first_sublist)-2))+['0']    
-                this_dict[first_sublist_name+'_BEFORE'] =['0'] + first_sublist[:-1] 
-                this_dict[first_sublist_name+'_AFTER'] =first_sublist[1:] + ['0']     
+                        raise Exception(f'wrong range in list: {startitems=} {enditems=}')
 
-                
-                list_len = len(first_sublist)
-                
-                
-                for sublist,values in this_dict.items(): 
-                    if len(values) !=  list_len:                        
-                        raise Exception(f'In {list_name} the length of sublist {sublist} is {len(values)} should be {list_len} ')
+                    itemlist = [label + str(i) for i in range(startint, endint)]
+                else:
+                    itemlist = [t for t in re.split(r'[\s,]+', items) if t]
 
-                liste_dict[list_name] = this_dict
-    #             print(f'\n{first_sublist_name=}\n{first_sublist=} ')            
-    # print(f'\n{liste_dict=}')            
+                this_dict[name] = itemlist
+
+            if not this_dict:
+                raise Exception(f'Empty list definition for {list_name}')
+
+            first_sublist_name = list(this_dict.keys())[0]
+            first_sublist = this_dict[first_sublist_name]
+            list_len = len(first_sublist)
+
+            for sublist, values in this_dict.items():
+                if len(values) != list_len:
+                    raise Exception(
+                        f'In {list_name} the length of sublist {sublist} is {len(values)} should be {list_len}'
+                    )
+
+            if add_auto_sublists:
+                this_dict[first_sublist_name + '_END'] = ['0'] * (list_len - 1) + ['1']
+                this_dict[first_sublist_name + '_NOEND'] = ['1'] * (list_len - 1) + ['0']
+                this_dict[first_sublist_name + '_START'] = ['1'] + ['0'] * (list_len - 1)
+                this_dict[first_sublist_name + '_NOSTART'] = ['0'] + ['1'] * (list_len - 1)
+                if list_len >= 3:
+                    this_dict[first_sublist_name + '_MIDDLE'] = ['0'] + ['1'] * (list_len - 2) + ['0']
+                this_dict[first_sublist_name + '_BEFORE'] = ['0'] + first_sublist[:-1]
+                this_dict[first_sublist_name + '_AFTER'] = first_sublist[1:] + ['0']
+
+            liste_dict[list_name] = this_dict
+
     return liste_dict
+
+def rebuild_list(list_dict):
+    """
+    Rebuild one LIST statement from the result of:
+
+        list_extract(block, add_auto_sublists=False)
+    """
+    if len(list_dict) != 1:
+        raise Exception(f'Expected exactly one list, got {list(list_dict.keys())}')
+
+    list_name, sublist_dict = next(iter(list_dict.items()))
+
+    if not sublist_dict:
+        return f'LIST {list_name} = $'
+
+    subitems = list(sublist_dict.items())
+
+    namewidth = max(len(subname) for subname, _ in subitems)
+    nval = len(subitems[0][1])
+
+    colwidths = [
+        max(len(values[i]) for _, values in subitems)
+        for i in range(nval)
+    ]
+
+    def format_values(values):
+        return ' '.join(
+            f'{v:>{w}}' for v, w in zip(values, colwidths)
+        ).rstrip()
+
+    parts = [
+        f"{subname:<{namewidth}} : {format_values(values)}"
+        for subname, values in subitems
+    ]
+
+    prefix = f"LIST {list_name} = "
+    indent = " " * len(prefix)
+
+    if len(parts) == 1:
+        return prefix + parts[0] + " $"
+
+    lines = [prefix + parts[0] + " /"]
+    for i, part in enumerate(parts[1:], start=1):
+        ending = " $" if i == len(parts) - 1 else " /"
+        lines.append(indent + part + ending)
+
+    return "\n".join(lines)
 
 def check_syntax_model(equations,test=True):
     ''' cheks if equations have syntax errors by calling the python compile.parse '''
@@ -346,4 +398,7 @@ if __name__ == '__main__' and 1 :
     list_extract('list bankdic = bank	:   Danske , Nordea  $')
     list_extract('list agedic = age  :     age0 * age101  $')
     list_extract('list yeardic = year  :     2023 * 2031 / lag1 : 2022 * 2030  $')
-    list_extract('list ages = ages : age_0 * age_5 /  a0t17   : 1 1 1 1  0 $') 
+    t = list_extract('LIST AGES = AGES : AGE_0 * AGE_5 / A0T17 : 1 1 1 1 0 $') 
+    print(rebuild_list(t))
+    t2 = list_extract('LIST AGES = AGES : AGE_0 * AGE_5 / A0T17 : 1 1 1 1 0 $',add_auto_sublists=False) 
+    print(rebuild_list(t2))

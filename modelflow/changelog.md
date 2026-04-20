@@ -269,6 +269,8 @@ in modelhelp colab_link vil provide a link/badge to open a jupyter notebook in c
 fix modelwidget_input to start quick when many variables 
 model_parquet_mixin.py to make modelload and modeldump fast using .pcimx
 modelgrabgdx.py to load GAMS gdx files into dataframes and a dummy model to alow reporting 
-if no data structural information can still be shown
+if no data in a model instance structural information can still be shown
 speedup of modelwidget_input keep_plot_widget for large models > 100,000 variables. 
-
+modelconstruct improved list processing 
+modelpattern new list_extract with add_auto_sublists default to True
+modelpattern rebuild_list to rebuild list as string from list_dict 
