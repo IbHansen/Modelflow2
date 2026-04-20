@@ -5910,47 +5910,97 @@ class Display_Mixin():
             display(HTML(
                 f'&nbsp; &nbsp; <a href="{fname}" target="_blank">{name}</a>'))
 
+  
     @staticmethod
     def widescreen():
-        '''Makes a jupyter notebook use all the avaiable real estate
+        '''Make the notebook use more of the available browser width.
+    
+        Works on Classic Notebook (<=6), Jupyter Notebook 7, and JupyterLab.
         '''
         from IPython.display import HTML, display
-        display(HTML(data="""
-        <style>
-            div#notebook-container    { width: 95%; }
-            div#menubar-container     { width: 65%; }
-            div#maintoolbar-container { width: 99%; }
+        display(HTML("""
+        <style id="mf-widescreen">
+            /* Classic Notebook (<=6) */
+            div#notebook-container    { width: 95% !important; }
+            div#menubar-container     { width: 65% !important; }
+            div#maintoolbar-container { width: 99% !important; }
+    
+            /* Notebook 7 / JupyterLab */
+            .jp-Notebook,
+            .jp-WindowedPanel-outer,
+            .jp-WindowedPanel-inner { max-width: none !important; }
+            .jp-Notebook .jp-Cell   { max-width: none !important; }
+            /* Some themes constrain the notebook via a centered column: */
+            .jp-NotebookPanel       { max-width: none !important; }
         </style>
-        """))
+        """))    
+    
+       
 
-           
     @staticmethod
     def scroll_off():
-            try:
-                from IPython.display import display, Javascript
-                display(Javascript("""
-                    IPython.OutputArea.prototype._should_scroll = function(lines){
-                        return false;
+        """Disable the 'scroll long outputs into a scrollbox' behavior.
+    
+        Works on classic Jupyter Notebook (<=6), Jupyter Notebook 7,
+        and JupyterLab. Silently does nothing on frontends where
+        neither mechanism applies (e.g. VS Code, plain terminal).
+        """
+        try:
+            from IPython.display import display, Javascript, HTML
+    
+            # Classic Notebook (<=6): IPython.OutputArea global exists.
+            # Guarded so Notebook 7 / Lab don't throw 'IPython is not defined'.
+            display(Javascript("""
+                try {
+                    if (typeof IPython !== 'undefined'
+                        && IPython.OutputArea
+                        && IPython.OutputArea.prototype) {
+                        IPython.OutputArea.prototype._should_scroll =
+                            function(lines) { return false; };
                     }
-                """))
-            except Exception as e:
-                print(f'Error: {e}. Unable to turn off scrolling.')
-        
-           
-           
+                } catch (e) { /* ignore */ }
+            """))
+    
+            # Notebook 7 / JupyterLab: remove the scrolled-output max-height
+            # and the scrolled modifier wherever it is applied.
+            display(HTML("""
+            <style id="mf-scroll-off">
+                .jp-OutputArea-output.jp-OutputArea-output { max-height: none !important; }
+                .jp-mod-outputsScrolled .jp-OutputArea-child {
+                    max-height: none !important;
+                }
+            </style>
+            """))
+        except Exception as e:
+            print(f'Error: {e}. Unable to turn off scrolling.')
+    
+    
     @staticmethod
     def scroll_on():
+        """Re-enable scrolled outputs. Inverse of scroll_off()."""
         try:
-            from IPython.display import display, Javascript
+            from IPython.display import display, Javascript, HTML
+    
             display(Javascript("""
-                IPython.OutputArea.prototype._should_scroll = function(lines){
-                    return true;
-                }
+                try {
+                    if (typeof IPython !== 'undefined'
+                        && IPython.OutputArea
+                        && IPython.OutputArea.prototype) {
+                        IPython.OutputArea.prototype._should_scroll =
+                            function(lines) { return true; };
+                    }
+                } catch (e) { /* ignore */ }
+            """))
+    
+            # Remove the override stylesheet we injected above, if present.
+            display(Javascript("""
+                try {
+                    var s = document.getElementById('mf-scroll-off');
+                    if (s) { s.parentNode.removeChild(s); }
+                } catch (e) { /* ignore */ }
             """))
         except Exception as e:
             print(f'Error: {e}. Unable to turn on scrolling.')
-
-
 
     @staticmethod
     def modelflow_auto(run=True):
