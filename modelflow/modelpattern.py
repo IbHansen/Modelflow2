@@ -325,18 +325,18 @@ def rebuild_list(list_dict):
 
     return "\n".join(lines)
 
-def check_syntax_model(equations,test=True):
-    ''' cheks if equations have syntax errors by calling the python compile.parse '''
-    import ast
-    ok =True
-    try:
-        for frml in find_frml(equations):
-            a, fr, n, udtryk = split_frml(frml)
-            ast.parse(re.sub(r'\n','',re.sub(' ','',udtryk[:-1])))
-    except SyntaxError:
-        print('Syntax error in:',frml)            
-        ok =False 
-    return ok 
+# def check_syntax_model(equations,test=True):
+#     ''' cheks if equations have syntax errors by calling the python compile.parse '''
+#     import ast
+#     ok =True
+#     try:
+#         for frml in find_frml(equations):
+#             a, fr, n, udtryk = split_frml(frml)
+#             ast.parse(re.sub(r'\n','',re.sub(' ','',udtryk[:-1])))
+#     except SyntaxError:
+#         print('Syntax error in:',frml)            
+#         ok =False 
+#     return ok 
     
 def get_expressions(equations):
     ''' returns a generator of expressions in a model with frml <> expression $ '''

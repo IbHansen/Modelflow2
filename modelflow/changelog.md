@@ -274,6 +274,6 @@ speedup of modelwidget_input keep_plot_widget for large models > 100,000 variabl
 modelconstruct improved list processing 
 modelpattern new list_extract with add_auto_sublists default to True
 modelpattern rebuild_list to rebuild list as string from list_dict 
-Version 2.70 uploaded 
 Version 2.71 uploaded 
-Version 2.71 uploaded 
+widescreen and scroll on off prepared for notebook version 7 
+modelconstruct now incorporates syntaf for the whole model 

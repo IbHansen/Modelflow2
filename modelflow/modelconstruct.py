@@ -18,7 +18,7 @@ import textwrap
 
 from modelmanipulation import tofrml,dounloop, sumunroll
 from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts,rebuild_list
-from modelpattern import namepat 
+from modelpattern import namepat, check_syntax_model
 from modelhelp import debug_var
 from model_latex_class import a_latex_model,a_latex_equation,defrack, depower,debrace,defunk
 from modelreport import LatexRepo
@@ -1135,6 +1135,8 @@ class Mexplode(BaseExplode):
                           ])
         
         self.normal_frml = '\n'.join( [self.normal_main,self.normal_fit,self.normal_calc_add]) 
+        
+        check_syntax_model(self.normal_frml)
       
         self.list_specification = self.get_lists()
         return 
