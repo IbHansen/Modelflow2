@@ -277,3 +277,4 @@ modelpattern rebuild_list to rebuild list as string from list_dict
 Version 2.71 uploaded 
 widescreen and scroll on off prepared for notebook version 7 
 modelconstruct now incorporates syntaf for the whole model 
+modelmf created as_df_method decorator for construction dataframe methods (very smart but not used yet)

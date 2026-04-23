@@ -192,6 +192,61 @@ if not hasattr(pd.DataFrame,'mfcalc'):
 def f(a):
     return 42
 
+from functools import wraps
+
+
+
+def as_df_method(func):
+    """Register a function as a method directly on ``pandas.DataFrame``.
+    
+    The decorated function must take a DataFrame as its first argument.
+    It becomes callable as ``df.<func_name>(...)`` and remains callable
+    as a plain function.
+    
+    Refuses to overwrite pandas built-ins. Methods previously registered
+    by this decorator are silently re-registered on module reload, which
+    keeps notebook workflows smooth.
+    
+    Raises
+    ------
+    AttributeError
+        If the function's name collides with a pandas built-in attribute.
+    
+    Examples
+    --------
+    >>> @as_df_method
+    ... def top_n(df, col, n=5):
+    ...     return df.nlargest(n, col)
+    >>> df.top_n('Z', n=2)
+    """
+    # Store the registry on DataFrame itself so it survives module reloads.
+    # If we kept it on the decorator function, re-importing would wipe the
+    # set and our previously-attached methods would look like built-ins.
+    REGISTRY_ATTR = "_as_df_method_registered"
+    if not hasattr(pd.DataFrame, REGISTRY_ATTR):
+        setattr(pd.DataFrame, REGISTRY_ATTR, set())
+    registered = getattr(pd.DataFrame, REGISTRY_ATTR)
+    
+    name = func.__name__
+    
+    # If the name exists on DataFrame but wasn't added by us, it's a
+    # pandas built-in (or another extension). Refuse to shadow it.
+    if hasattr(pd.DataFrame, name) and name not in registered:
+        raise AttributeError(
+            f"{name!r} is already an attribute of pandas.DataFrame "
+            f"(likely a built-in). Refusing to overwrite it — pick a "
+            f"different name."
+        )
+    
+    @wraps(func)
+    def method(self, *args, **kwargs):
+        return func(self, *args, **kwargs)
+    
+    setattr(pd.DataFrame, name, method)
+    registered.add(name)
+    return func
+
+
 if __name__ == '__main__':
     #this is for testing 
         df2 = pd.DataFrame({'Z':[1., 22., 33,43] , 'TY':[10.,20.,30.,40.] ,'YD':[10.,20.,30.,40.]},index=[2017,2018,2019,2020])
@@ -211,4 +266,11 @@ if __name__ == '__main__':
         df4 = pd.DataFrame({'Z':[ 223., 333] , 'YD':[203.,303.] },index=[2018,2019])            
         x = df2.mfupdate(df4)
         #%% test graph 
+        df2
+
+
+        @as_df_method
+        def top_n(df, col, n=5):
+            return df.nlargest(n, col)
         
+        df2.top_n('Z',n=2)
