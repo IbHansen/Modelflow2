@@ -196,7 +196,7 @@ from functools import wraps
 
 
 
-def as_df_method(func):
+def as_df_method_simple(func):
     """Register a function as a method directly on ``pandas.DataFrame``.
     
     The decorated function must take a DataFrame as its first argument.
@@ -245,6 +245,79 @@ def as_df_method(func):
     setattr(pd.DataFrame, name, method)
     registered.add(name)
     return func
+
+
+
+
+import warnings
+
+
+def as_df_method(name=None):
+    """Register ``func(df, *args, **kwargs)`` as a callable DataFrame method.
+
+    Usable as ``@as_df_method`` or ``@as_df_method("custom_name")``.
+    After registration, ``df.<name>(...)`` calls ``func(df, ...)``. The
+    function also remains callable directly.
+
+    Re-running the decorator (e.g. on notebook reload) updates the
+    registered function in place without re-registering the accessor,
+    avoiding pandas' "already registered" warning.
+
+    If ``name`` is already bound on ``pd.DataFrame`` by something other
+    than this decorator, a warning is issued and the existing attribute
+    is shadowed.
+    """
+    # Bare usage: @as_df_method  (name is actually the function)
+    if callable(name):
+        func, name = name, None
+        return as_df_method(name)(func)
+
+    def decorator(func):
+        accessor_name = name or func.__name__
+
+        # Registry lives on DataFrame so it survives module reloads in
+        # notebooks. Note: this is shared across all modules using this
+        # decorator — last writer wins.
+        REGISTRY_ATTR = "_as_df_method_registry"
+        if not hasattr(pd.DataFrame, REGISTRY_ATTR):
+            setattr(pd.DataFrame, REGISTRY_ATTR, {})
+        registry = getattr(pd.DataFrame, REGISTRY_ATTR)
+
+        if hasattr(pd.DataFrame, accessor_name) and accessor_name not in registry:
+            warnings.warn(
+                f"{accessor_name!r} is already bound on pandas.DataFrame; "
+                "shadowing it. Pick another name if this is unintentional.",
+                stacklevel=2,
+            )
+
+        # Fast path: already registered. Swap the underlying function on
+        # the existing accessor class so reloads pick up code changes
+        # without pandas complaining about duplicate registration.
+        if accessor_name in registry:
+            accessor_cls = registry[accessor_name]
+            accessor_cls._func = staticmethod(func)
+            accessor_cls.__doc__ = func.__doc__
+            return func
+
+        class _Accessor:
+            __doc__ = func.__doc__
+            _func = staticmethod(func)
+
+            def __init__(self, pandas_obj):
+                self._obj = pandas_obj
+
+            def __call__(self, *args, **kwargs):
+                # Read _func off the class so reloads are picked up.
+                return type(self)._func(self._obj, *args, **kwargs)
+
+        _Accessor.__name__ = f"{func.__name__}_method"
+        _Accessor.__qualname__ = _Accessor.__name__
+
+        pd.api.extensions.register_dataframe_accessor(accessor_name)(_Accessor)
+        registry[accessor_name] = _Accessor
+        return func
+
+    return decorator
 
 
 if __name__ == '__main__':
