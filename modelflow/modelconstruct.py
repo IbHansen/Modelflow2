@@ -40,10 +40,17 @@ def clean_expressions(original_statements: str) -> str:
     """
     import re
 
-    stmt_start = re.compile(r'^\s*(LIST|FRML|DO|ENDDO|DOABLE)\b')
+    stmt_start = re.compile(r'^\s*(LIST|TLIST|FRML|DO|ENDDO|DOABLE)\b')
 
     def is_list_start(line: str) -> bool:
-        return bool(re.match(r'^\s*LIST\b', line))
+        # Both LIST and TLIST start a list block. TLIST is the transposed
+        # form: the second "row" gives sublist names and values run down
+        # the columns. TLIST is converted to standard LIST during
+        # normalize_lists() so downstream code only ever sees LIST.
+        return bool(re.match(r'^\s*(LIST|TLIST)\b', line))
+
+    def is_tlist_start(line: str) -> bool:
+        return bool(re.match(r'^\s*TLIST\b', line))
 
     def collect_list_block(lines, start_index):
         """
@@ -71,12 +78,88 @@ def clean_expressions(original_statements: str) -> str:
 
         return '\n'.join(block_lines), j
 
+    def _convert_tlist_to_list(flat_no_dollar: str) -> str:
+        """
+        Convert a flattened TLIST single-line form to standard LIST form.
+
+        Input  (flat, no trailing '$'):
+            TLIST <name> = h1 h2 h3 / v11 v12 v13 / v21 v22 v23 / v31 v32 v33
+
+        Output:
+            LIST <name> = h1 : v11 v21 v31 / h2 : v12 v22 v32 / h3 : v13 v23 v33
+
+        The first '/'-separated chunk after '=' is the header row giving
+        sublist names. Each subsequent chunk is one tuple of values, one
+        value per sublist. Data therefore runs *down* the columns, hence
+        'transposed list'.
+        """
+        # strip the leading TLIST keyword
+        m = re.match(r'^\s*TLIST\b\s*(.*)$', flat_no_dollar, flags=re.IGNORECASE)
+        if not m:
+            raise ModelSpecificationError(
+                f"Internal: _convert_tlist_to_list called on non-TLIST: {flat_no_dollar!r}"
+            )
+        body = m.group(1).strip()
+
+        if '=' not in body:
+            raise ModelSpecificationError(
+                f"TLIST is missing '=' between name and contents: {flat_no_dollar!r}"
+            )
+        list_name, rhs = body.split('=', 1)
+        list_name = list_name.strip()
+        if not list_name:
+            raise ModelSpecificationError(
+                f"TLIST has empty name: {flat_no_dollar!r}"
+            )
+
+        # split rows on '/'
+        raw_rows = [r.strip() for r in rhs.split('/')]
+        raw_rows = [r for r in raw_rows if r != '']
+        if len(raw_rows) < 2:
+            raise ModelSpecificationError(
+                f"TLIST {list_name} needs a header row and at least one value row "
+                f"(rows separated by '/'); got: {flat_no_dollar!r}"
+            )
+
+        def tokens(row: str):
+            # split on whitespace or commas, drop empties
+            return [t for t in re.split(r'[\s,]+', row.strip()) if t != '']
+
+        header = tokens(raw_rows[0])
+        value_rows = [tokens(r) for r in raw_rows[1:]]
+
+        if not header:
+            raise ModelSpecificationError(
+                f"TLIST {list_name} has empty header row"
+            )
+
+        ncols = len(header)
+        for k, vr in enumerate(value_rows, 1):
+            if len(vr) != ncols:
+                raise ModelSpecificationError(
+                    f"TLIST {list_name}: value row {k} has {len(vr)} entries "
+                    f"but header has {ncols} ({header})"
+                )
+
+        # transpose: column j across all value rows becomes the j-th sublist
+        sublists = []
+        for j, sublist_name in enumerate(header):
+            col = [vr[j] for vr in value_rows]
+            sublists.append(f"{sublist_name} : {' '.join(col)}")
+
+        return f"LIST {list_name} = " + ' / '.join(sublists)
+
     def normalize_list_block(block: str) -> str:
         """
-        Flatten one LIST block to a single line.
+        Flatten one LIST or TLIST block to a single line.
         Preserve a trailing '$' if present in the original block.
+
+        TLIST blocks are transposed into the canonical LIST form here, so
+        every later stage (tofrml, list_extract, rebuild_list, ...) only
+        ever sees LIST.
         """
         saw_dollar = bool(re.search(r'\$\s*$', block))
+        is_tlist   = bool(re.match(r'^\s*TLIST\b', block))
 
         flat = ' '.join(line.strip() for line in block.splitlines())
         flat = re.sub(r'\s+', ' ', flat).strip()
@@ -84,6 +167,9 @@ def clean_expressions(original_statements: str) -> str:
         # remove one trailing '$' and one trailing '/'
         flat = re.sub(r'\s*\$\s*$', '', flat)
         flat = re.sub(r'\s*/\s*$', '', flat)
+
+        if is_tlist:
+            flat = _convert_tlist_to_list(flat)
 
         if saw_dollar:
             flat = flat + ' $'
@@ -1406,6 +1492,5 @@ and yes
         
 #%% latex  
     leq = r'CRF^{l,es,d}=\frac{DiscountRate^{l,es,d}}{1 - \left(1 + DiscountRate^{l,es,d}\right)^{-LifeSpan^{l,es,d}}}'
-    meq = latex_to_doable('ii',leq) 
-    print(meq)
-             
+    meq = latex_to_doable(leq, '<ii>') 
+    print(meq)  
