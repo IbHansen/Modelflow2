@@ -385,7 +385,7 @@ class EquationParse:
         tree = ast.parse(f"{lhs_var} = {rhs_raw}", mode="exec")
         rhs_ast = ast.parse(rhs_raw.strip(), mode="eval")
         lhs_ast = ast.parse(lhs_raw.strip(), mode="eval")
-        lines = self._extract_subterms_from_ast(tree, lhs_raw, rhs_ast)
+        lines = self._extract_subterms_from_ast(tree, lhs_raw)
         return lines, lhs_raw, lhs_ast, rhs_raw, rhs_ast, endo_var
 
     def _sanitize_lhs(self, lhs: str) -> Tuple[str, str]:
@@ -400,120 +400,163 @@ class EquationParse:
 
     # -- main AST walk + validation -------------------------------------------
 
-    def _extract_subterms_from_ast(self, tree, lhs_raw, rhs_ast) -> List[str]:
+    def _extract_subterms_from_ast(self, tree, lhs_raw) -> List[str]:
+        """Walk the RHS, validate parameter positions, and emit mfcalc lines.
+
+        Negative signs in front of parameter terms are accepted and folded
+        into the regressor expression. ``- C__n * <expr>`` becomes a
+        regressor column equal to ``-(<expr>)``, fitted against ``C__n``.
+        The estimated value of ``C__n`` then matches the user's mental
+        model — the same number EViews would produce — and substituting
+        it back into the original equation reproduces what the user wrote.
+
+        For the conventional intercept slot, ``C__1`` becomes a column of
+        ``1.0``; ``-C__1`` becomes a column of ``-1.0``. Either way the
+        coefficient slot is ``C__1``.
+        """
         rhs_expr = tree.body[0].value
         subexprs = [f"LHS = {lhs_raw}"]
         model_expr = f"LHS_ORG_EQ = {self._ast_to_source(rhs_expr)}"
-        c_terms: Dict[int, ast.AST] = {}
 
         # Annotate parents so we can do simple ancestry checks.
         def annotate_parents(node, parent=None):
             for child in ast.iter_child_nodes(node):
                 child._parent = node
                 annotate_parents(child, node)
-
         annotate_parents(rhs_expr)
-        rhs_root = rhs_ast.body
-        annotate_parents(rhs_root)
 
-        # --- Validation: forbid unary minus directly preceding a parameter
-        #     or a parameter*expr term. This catches things like
-        #         Y = -C__2 * X
-        #         Y = C__1 + -C__2 * X
-        #         Y = (-C__2) * X
-        #         Y = -C__2
-        #     all of which would silently flip the sign of the estimate.
-        #     We check this BEFORE the generic nesting check so the user
-        #     gets a precise message instead of the generic one.
-        for node in ast.walk(rhs_expr):
-            if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
-                operand = node.operand
-                # Case (a): -C__n
-                if isinstance(operand, ast.Name):
-                    m = re.match(self.param_regex, operand.id)
-                    if m:
-                        raise ValueError(
-                            f"Invalid usage: coefficient "
-                            f"{self.est_param}__{m.group(1)} is preceded by "
-                            "a unary minus. Re-sign the coefficient itself "
-                            "(write the equation so the parameter appears "
-                            "with a positive sign)."
-                        )
-                # Case (b): -(C__n * expr)
-                if (isinstance(operand, ast.BinOp)
-                        and isinstance(operand.op, ast.Mult)
-                        and isinstance(operand.left, ast.Name)):
-                    m = re.match(self.param_regex, operand.left.id)
-                    if m:
-                        raise ValueError(
-                            f"Invalid usage: coefficient "
-                            f"{self.est_param}__{m.group(1)} is preceded by "
-                            "a unary minus. Re-sign the coefficient itself "
-                            "(write the equation so the parameter appears "
-                            "with a positive sign)."
-                        )
-
-        # --- Validation: parameter tokens may only appear at the top level
-        #     of the RHS, defined as: either directly at the root, or as a
-        #     term of a +/- chain whose every BinOp ancestor (up to the
-        #     root) is itself a +/- BinOp.
-        #
-        #     Allowed positions for a parameter Name:
-        #       (a) the parameter itself is at the top level
-        #           e.g.  Y = C__1
-        #                 Y = C__1 + C__3 * X
-        #       (b) the parameter is the left operand of a Mult that is
-        #           itself at the top level
-        #           e.g.  Y = C__2 * X
-        #                 Y = C__1 + C__2 * (X / Z)
-        #
-        #     Anything else — parameter inside a function call, inside a
-        #     division, inside a power, inside a parenthesized sub-expression
-        #     that is multiplied or otherwise combined — is rejected.
         def is_at_top_level(target: ast.AST) -> bool:
-            """True iff ``target`` sits in a +/- chain that reaches the
-            very top of the RHS.
+            """True iff ``target`` sits in a chain of allowed link nodes
+            (+/- BinOps and UnaryOp(USub)) that reaches the very top of
+            the RHS.
 
-            Concretely: every BinOp on the path from ``target`` (exclusive)
-            up to ``rhs_root`` (inclusive, when ``rhs_root`` is itself a
-            BinOp) must be a +/- BinOp. If ``rhs_root`` is anything other
-            than a +/- BinOp, then ``target`` is at top level only if it
-            *is* ``rhs_root`` (i.e. the entire RHS is just ``target``).
+            If ``target is rhs_expr``, trivially True. Otherwise we walk
+            up through allowed link nodes until we either:
+              - hit a non-allowed node → not at top level, OR
+              - reach ``rhs_expr`` itself → top level only if ``rhs_expr``
+                is also an allowed link node (so that the whole RHS is
+                an additive/unary expression that ``target`` is one term
+                of).
+
+            For ``Y = C__1 + C__2 * X`` the param is at top level via the
+            +/- chain: rhs_expr is an Add, target's parent is the Add.
+            For ``Y = -C__2 * X`` the param's parent is a UnaryOp, but
+            then the UnaryOp's parent is a Mult (which IS rhs_expr) — so
+            the param is NOT at top level: the Mult breaks the chain.
             """
-            if target is rhs_root:
+            if target is rhs_expr:
                 return True
+
+            def is_allowed_link(node: ast.AST) -> bool:
+                if isinstance(node, ast.BinOp) and isinstance(
+                    node.op, (ast.Add, ast.Sub)
+                ):
+                    return True
+                if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+                    return True
+                return False
+
             cur = target
             while True:
                 parent = getattr(cur, "_parent", None)
                 if parent is None:
-                    # Reached the top of the annotated subtree without
-                    # passing through rhs_root — shouldn't normally
-                    # happen, but treat as not-top-level conservatively.
-                    return cur is rhs_root
-                if parent is rhs_root:
-                    # We made it up to the root via cur. The chain is
-                    # valid only if rhs_root itself is a +/- BinOp
-                    # (so cur is one term of that top-level chain).
-                    return (isinstance(rhs_root, ast.BinOp)
-                            and isinstance(rhs_root.op, (ast.Add, ast.Sub)))
-                if not (isinstance(parent, ast.BinOp)
-                        and isinstance(parent.op, (ast.Add, ast.Sub))):
+                    return cur is rhs_expr
+                if parent is rhs_expr:
+                    # Reaching rhs_expr counts only if rhs_expr is itself
+                    # an allowed link node (we're one term in it).
+                    return is_allowed_link(rhs_expr)
+                if not is_allowed_link(parent):
                     return False
                 cur = parent
 
-        for node in ast.walk(rhs_root):
+        def effective_sign(target: ast.AST) -> int:
+            """Return +1 or -1: the effective sign of ``target`` in the
+            additive expansion of the RHS.
+
+            Each time we are the right child of a binary ``Sub`` or the
+            operand of a ``UnaryOp(USub)``, the sign flips. The walk
+            stops at ``rhs_expr`` — but if ``rhs_expr`` itself is a Sub
+            (and we're its right child) or a UnaryOp(USub), the flip
+            still applies to that final step.
+            """
+            sign = 1
+            cur = target
+            while True:
+                parent = getattr(cur, "_parent", None)
+                if parent is None or parent is rhs_expr:
+                    # Apply the final-step flip if rhs_expr itself is a
+                    # node whose position relative to cur changes the sign.
+                    if (isinstance(rhs_expr, ast.BinOp)
+                            and isinstance(rhs_expr.op, ast.Sub)
+                            and rhs_expr.right is cur):
+                        sign = -sign
+                    elif (isinstance(rhs_expr, ast.UnaryOp)
+                          and isinstance(rhs_expr.op, ast.USub)
+                          and rhs_expr.operand is cur):
+                        sign = -sign
+                    return sign
+                if isinstance(parent, ast.BinOp) and isinstance(parent.op, ast.Sub):
+                    if parent.right is cur:
+                        sign = -sign
+                elif isinstance(parent, ast.UnaryOp) and isinstance(
+                    parent.op, ast.USub
+                ):
+                    sign = -sign
+                cur = parent
+
+        # --- Validation: parameter tokens may only appear at the top level
+        #     of the RHS, where "top level" includes +/- chains AND unary
+        #     minus prefixes. Allowed positions for a parameter Name:
+        #
+        #       (a) the parameter itself is at the top level
+        #             Y = C__1
+        #             Y = C__1 + C__3 * X
+        #             Y = -C__1                 (negative intercept)
+        #       (b) the parameter is the left operand of a Mult that is
+        #           itself at the top level
+        #             Y = C__2 * X
+        #             Y = -C__2 * X             (negative slope)
+        #             Y = C__1 - C__2 * X       (binary minus before Mult)
+        #             Y = C__1 + C__2 * (X / Z)
+        #
+        #     Anything else — parameter inside a function call, inside a
+        #     division, inside a power, inside a parenthesized sub-expression
+        #     that is multiplied or otherwise combined — is rejected.
+        #
+        #     A bare parameter at the top level is only accepted for the
+        #     conventional intercept slot ({prefix}__1), regardless of sign.
+        #     A standalone non-intercept parameter (e.g. "Y = C__1 + C__2")
+        #     would be silently dropped by the regressor-collection step,
+        #     so we reject rather than fit a smaller model than the user wrote.
+        intercept_slot = f"{self.est_param}__1"
+
+        def parameterized_term(node: ast.AST) -> Optional[Tuple[ast.Name, ast.AST, int]]:
+            """If ``node`` is a parameterized term — ``Name(C__n) * expr`` or
+            ``-Name(C__n) * expr`` — return ``(name_node, rhs_expr, sign)``.
+            Otherwise return None.
+
+            The ``sign`` here is just the local sign from a UnaryOp wrapper
+            on the left operand (–1 if present, +1 otherwise). Effective
+            sign in the surrounding additive chain is computed separately.
+            """
+            if not (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult)):
+                return None
+            left = node.left
+            local_sign = 1
+            if isinstance(left, ast.UnaryOp) and isinstance(left.op, ast.USub):
+                left = left.operand
+                local_sign = -1
+            if isinstance(left, ast.Name) and re.match(self.param_regex, left.id):
+                return left, node.right, local_sign
+            return None
+
+        for node in ast.walk(rhs_expr):
             if isinstance(node, ast.Name) and re.match(self.param_regex, node.id):
                 parent = getattr(node, "_parent", None)
 
                 # Case (a): the Name itself sits at the top level.
-                # A bare parameter at the top level is only valid for the
-                # conventional intercept slot ({prefix}__1). Any other
-                # standalone parameter (e.g. "Y = C__1 + C__2") would be
-                # silently dropped by the regressor-collection step —
-                # statsmodels never sees a column for it — so we reject
-                # rather than fit a smaller model than the user wrote.
                 if is_at_top_level(node):
-                    if node.id == f"{self.est_param}__1":
+                    if node.id == intercept_slot:
                         continue
                     raise ValueError(
                         f"Invalid usage: coefficient {node.id} appears as "
@@ -526,12 +569,25 @@ class EquationParse:
                         "regressor."
                     )
 
-                # Case (b): the Name is the left operand of a Mult, and
-                # that Mult itself sits at the top level.
+                # Case (b): the Name is the left operand of a Mult, possibly
+                # wrapped in a unary minus, and that Mult itself sits at
+                # the top level.
+                #   Direct:     parent = Mult, Mult.left is Name
+                #   Negated:    parent = UnaryOp(USub), grandparent = Mult,
+                #               Mult.left is UnaryOp
+                mult_node: Optional[ast.AST] = None
                 if (isinstance(parent, ast.BinOp)
                         and isinstance(parent.op, ast.Mult)
-                        and parent.left is node
-                        and is_at_top_level(parent)):
+                        and parent.left is node):
+                    mult_node = parent
+                elif (isinstance(parent, ast.UnaryOp)
+                      and isinstance(parent.op, ast.USub)):
+                    grand = getattr(parent, "_parent", None)
+                    if (isinstance(grand, ast.BinOp)
+                            and isinstance(grand.op, ast.Mult)
+                            and grand.left is parent):
+                        mult_node = grand
+                if mult_node is not None and is_at_top_level(mult_node):
                     continue
 
                 raise ValueError(
@@ -543,96 +599,54 @@ class EquationParse:
                     "that is then combined with another operator."
                 )
 
-        # --- Validation: forbid any "negated parameter" form by tracking
-        #     the effective sign as we walk from each parameter up to the
-        #     root of the additive chain.
-        #
-        #     This catches:
-        #         Y = expr - C__n               (bare param on right of -)
-        #         Y = expr - C__n * other       (param*expr on right of -)
-        #         Y = expr - (C__n + C__m)      (param sum on right of -)
-        #     and any deeper additive nesting where the effective sign of
-        #     the parameter ends up negative.
-        #
-        #     We only run this for parameters that have already passed the
-        #     nesting check, so we know the path consists entirely of +/-
-        #     BinOps up to the root (or a top-level Mult whose left we are).
-        def effective_sign_is_negative(target: ast.AST) -> bool:
-            """Walk up from ``target`` to the root, flipping the sign each
-            time we are the right child of a Sub. Returns True iff the
-            effective sign is negative."""
-            sign = 1
-            cur = target
-            while True:
-                parent = getattr(cur, "_parent", None)
-                if parent is None or parent is rhs_root:
-                    # If rhs_root itself is a Sub and we're its right child,
-                    # the loop above already handled it on the previous step.
-                    break
-                if isinstance(parent, ast.BinOp):
-                    if isinstance(parent.op, ast.Sub) and parent.right is cur:
-                        sign = -sign
-                cur = parent
-            # Special handling when rhs_root is itself a Sub and our last cur
-            # is its right child.
-            if (isinstance(rhs_root, ast.BinOp)
-                    and isinstance(rhs_root.op, ast.Sub)
-                    and rhs_root.right is cur):
-                sign = -sign
-            return sign < 0
-
-        for node in ast.walk(rhs_root):
-            if isinstance(node, ast.Name) and re.match(self.param_regex, node.id):
-                parent = getattr(node, "_parent", None)
-                # Determine the "effective node" — the thing whose ancestry
-                # carries the parameter's sign in the additive chain.
-                # If the param is the left of a Mult, we use the Mult itself
-                # (the entire C__n * expr term is what gets added/subtracted).
-                # Otherwise the param Name is at the top level directly.
-                if (isinstance(parent, ast.BinOp)
-                        and isinstance(parent.op, ast.Mult)
-                        and parent.left is node):
-                    target = parent
-                else:
-                    target = node
-                if effective_sign_is_negative(target):
-                    m = re.match(self.param_regex, node.id)
-                    raise ValueError(
-                        f"Invalid usage: coefficient "
-                        f"{self.est_param}__{m.group(1)} ends up with a "
-                        "negative effective sign in the additive chain "
-                        "(it appears on the right of a binary minus, or "
-                        "inside a parenthesized group that is subtracted). "
-                        "Re-sign the coefficient instead — write the "
-                        "equation so the parameter appears with a positive "
-                        "effective sign."
-                    )
-
-        # --- Collect "{prefix}__n * expr" terms.
+        # --- Collect parameterized regressor terms with effective signs.
+        # For each parameterized Mult term found, record the index, the
+        # right-hand expression, and the effective sign of the whole term.
+        # The effective sign combines (a) any local unary minus on the
+        # parameter (e.g. ``-C__n * X``) with (b) the sign accumulated from
+        # the surrounding additive chain. The sign gets folded into the
+        # emitted regressor so the estimated coefficient matches the user's
+        # written equation.
+        c_terms: Dict[int, Tuple[ast.AST, int]] = {}
         for node in ast.walk(rhs_expr):
-            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
-                left = node.left
-                if isinstance(left, ast.Name):
-                    m = re.match(self.param_regex, left.id)
-                    if m:
-                        c_terms[int(m.group(1))] = node.right
+            term = parameterized_term(node)
+            if term is None:
+                continue
+            name_node, rhs_node, local_sign = term
+            n = int(re.match(self.param_regex, name_node.id).group(1))
+            sign = local_sign * effective_sign(node)
+            c_terms[n] = (rhs_node, sign)
 
         # --- Optional explicit constant placeholder.
-        # Use a word-boundary match so C__10, C__11, ... don't falsely
-        # trigger the C__1 constant emission (the previous "in" substring
-        # check did).
-        if self.const and re.search(
-            rf"\b{re.escape(self.est_param)}__1\b", self.org_eq_clean
-        ):
-            subexprs.append(f"{self.est_param}__1 = 1.0")
+        # Determine the effective sign of the C__1 token if it appears bare
+        # at the top level (it can also appear inside a Mult, in which case
+        # it's collected above instead).
+        if self.const:
+            for node in ast.walk(rhs_expr):
+                if (isinstance(node, ast.Name)
+                        and node.id == intercept_slot
+                        and is_at_top_level(node)):
+                    c1_sign = effective_sign(node)
+                    subexprs.append(
+                        f"{intercept_slot} = {1.0 * c1_sign}"
+                    )
+                    break
 
         # --- ECM term (parameter #2 is the speed-of-adjustment by convention).
         if self.ecm and 2 in c_terms:
-            subexprs.append(f"EC_TERM = {self._ast_to_source(c_terms[2])}")
+            expr_node, sign = c_terms[2]
+            ec_src = self._ast_to_source(expr_node)
+            if sign < 0:
+                ec_src = f"-({ec_src})"
+            subexprs.append(f"EC_TERM = {ec_src}")
 
         # --- Remaining parameterized regressors.
         for n in sorted(k for k in c_terms if not (self.ecm and k == 2)):
-            subexprs.append(f"c__{n} = {self._ast_to_source(c_terms[n])}")
+            expr_node, sign = c_terms[n]
+            src = self._ast_to_source(expr_node)
+            if sign < 0:
+                src = f"-({src})"
+            subexprs.append(f"c__{n} = {src}")
 
         subexprs.append(model_expr)
         return [line.upper() for line in subexprs]
@@ -2076,7 +2090,7 @@ _REPORT_HEADER = """\
 
 if __name__ == "__main__":
     eviews_eq = """
-    DLOG(BOLNECONPRVTKN) = C(2) * (
+    DLOG(BOLNECONPRVTKN) = - C(2) * (
     LOG(BOLNECONPRVTKN(-1)) - LOG((BOLNYYWBTOTLCN(-1) - BOLGGREVDRCTCN(-1) + BOLBXFSTREMTCD(-1) * BOLPANUSATLS(-1)) / BOLNECONPRVTXN(-1))
     ) + C(10) * DLOG((BOLNYYWBTOTLCN - BOLGGREVDRCTCN + BOLBXFSTREMTCD * BOLPANUSATLS) / BOLNECONPRVTXN)
     + C(11) * (BOLFMLBLLRLCFR / 100 - DLOG(BOLNECONPRVTKN))
