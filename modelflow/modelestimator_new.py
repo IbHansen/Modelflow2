@@ -19,8 +19,10 @@ Provided estimators
 - :class:`Estimate_nls_eviews` — Nonlinear least squares via ``EViews``
   (using ``py2eviews`` to round-trip a temporary workfile).
 
-A compatibility shim :func:`Estimate_nls` keeps the old
-``Estimate_nls(..., solver='lmfit'|'eviews')`` call style working.
+A factory class :class:`Estimate_nls` keeps the older single-class API
+working — ``Estimate_nls(eq, solver='lmfit'|'eviews', ...)`` dispatches
+to the appropriate concrete backend, and supports the same
+``with_defaults`` factory pattern as the concrete backends.
 
 Adding a new estimator
 ----------------------
@@ -1446,30 +1448,97 @@ class Estimate_nls_eviews(EstimatorBackend):
 
 
 # =============================================================================
-# Estimate_nls — backwards-compatibility shim
+# Estimate_nls — factory class dispatching on solver
 # =============================================================================
 
-def Estimate_nls(
-    org_eq: str = "",
-    *,
-    solver: str = "lmfit",
-    **kwargs,
-):
-    """Construct an NLS estimator. Backwards-compatible factory.
+class Estimate_nls:
+    """Factory class dispatching on ``solver`` to the right NLS backend.
 
-    Dispatches on ``solver`` to either :class:`Estimate_nls_lmfit` (default)
-    or :class:`Estimate_nls_eviews`. New code should instantiate the concrete
-    class directly; this shim exists so existing call sites of the form
-    ``Estimate_nls(eq, solver='eviews', ...)`` keep working.
+    Calling ``Estimate_nls(eq, solver='lmfit', ...)`` returns an
+    :class:`Estimate_nls_lmfit` instance; ``solver='eviews'`` returns an
+    :class:`Estimate_nls_eviews`. The factory itself is never instantiated
+    — ``__new__`` returns the concrete subclass directly.
+
+    This class is the backwards-compatible entry point for code written
+    against the older single-class API. New code can call the concrete
+    classes directly. Either way, :meth:`with_defaults` is available and
+    behaves identically to the version on the concrete backends — so
+    ``Estimate_nls.with_defaults(input_df=df, smpl=(...), solver='lmfit')``
+    works the same as ``Estimate_nls_lmfit.with_defaults(...)``.
+
+    Examples
+    --------
+    >>> ls = Estimate_nls.with_defaults(input_df=df, smpl=(2012, 2019))
+    >>> m1 = ls("DLOG(Y) = C(1) + C(2)*DLOG(X)")
+    >>> # Pass solver='eviews' as a default if you want EViews:
+    >>> ev = Estimate_nls.with_defaults(input_df=df, solver='eviews')
+    >>> m2 = ev("DLOG(Y) = C(1) - C(2) * (LOG(Y(-1)) - LOG(X(-1)))")
     """
-    if solver == "lmfit":
-        return Estimate_nls_lmfit(org_eq=org_eq, **kwargs)
-    if solver == "eviews":
-        return Estimate_nls_eviews(org_eq=org_eq, **kwargs)
-    raise ValueError(
-        f"Unknown solver {solver!r}. Use 'lmfit' or 'eviews', or instantiate "
-        "the concrete class (Estimate_nls_lmfit / Estimate_nls_eviews) directly."
-    )
+
+    def __new__(cls, org_eq: str = "", *, solver: str = "lmfit", **kwargs):
+        # The factory never produces an instance of itself; it picks a
+        # concrete backend and returns *that*. Python skips __init__ on
+        # the calling class when __new__ returns a different class, so
+        # the concrete backend's dataclass __init__ runs normally.
+        if solver == "lmfit":
+            return Estimate_nls_lmfit(org_eq=org_eq, **kwargs)
+        if solver == "eviews":
+            return Estimate_nls_eviews(org_eq=org_eq, **kwargs)
+        raise ValueError(
+            f"Unknown solver {solver!r}. Use 'lmfit' or 'eviews', or "
+            "instantiate the concrete class (Estimate_nls_lmfit / "
+            "Estimate_nls_eviews) directly."
+        )
+
+    @classmethod
+    def with_defaults(cls, input_df=None, **default_kwargs):
+        """Return a callable that constructs NLS estimators with pre-filled
+        defaults.
+
+        Behaves identically to :meth:`EstimatorBackend.with_defaults` —
+        the only difference is that ``cls(**params)`` here goes through
+        :meth:`__new__`, so a ``solver=...`` default (or override on a
+        per-call basis) is honored.
+
+        Examples
+        --------
+        >>> ls = Estimate_nls.with_defaults(
+        ...     input_df=df, smpl=(2012, 2019),  # solver defaults to 'lmfit'
+        ... )
+        >>> m1 = ls("DLOG(Y) = C(1) + C(2)*DLOG(X)")
+        >>>
+        >>> # Override solver per call:
+        >>> m2 = ls("DLOG(Y) = C(1) - C(2)*X", solver="eviews")
+        """
+        def factory(*args, **overrides):
+            if args:
+                if len(args) > 1:
+                    raise TypeError(
+                        f"{cls.__name__}.with_defaults factory accepts at "
+                        "most one positional argument (the equation string)."
+                    )
+                org_eq = args[0]
+            else:
+                try:
+                    org_eq = overrides.pop("org_eq")
+                except KeyError:
+                    raise TypeError(
+                        "Missing equation. Provide it positionally or as "
+                        "org_eq='...'."
+                    )
+            params = {
+                "input_df": input_df,
+                **default_kwargs,
+                **overrides,
+                "org_eq": org_eq,
+            }
+            # Light pre-processing matching the concrete backends' helpers.
+            params["org_eq"] = (
+                params["org_eq"].upper().replace("@ABS", "ABS")
+            )
+            return cls(**params)
+
+        return factory
 
 
 # =============================================================================
