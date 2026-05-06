@@ -2087,7 +2087,14 @@ def export_estimation_reports_to_html(
         anchor = f"eq_{i}"
         var_name = eq.endo_var
         desc = eq.omodel.var_description.get(var_name, "")
-        body = _equation_html_body(eq, plot_format)
+        # Get the per-equation HTML body. Estimator backends carry an
+        # `mfresult` (an LSResult); LSResult instances expose
+        # `get_html_report` directly. Inlined rather than extracted so
+        # the export function stays self-contained.
+        if hasattr(eq, "mfresult"):
+            body = eq.mfresult.get_html_report(plot_format=plot_format)
+        else:
+            body = eq.get_html_report(plot_format=plot_format)
         html_parts.append(
             f'<button class="accordion" id="{anchor}">'
             f"{eq.caption}: {var_name}: {desc}</button>"
@@ -2102,15 +2109,6 @@ def export_estimation_reports_to_html(
 
     if open_file:
         webbrowser.open(f"file://{full_path.resolve()}")
-
-
-def _equation_html_body(eq: Any, plot_format: str) -> str:
-    """Get the per-equation HTML body, accepting either an estimator backend
-    (which has ``mfresult``) or an :class:`LSResult` (which has
-    ``get_html_report`` directly)."""
-    if hasattr(eq, "mfresult"):
-        return eq.mfresult.get_html_report(plot_format=plot_format)
-    return eq.get_html_report(plot_format=plot_format)
 
 
 _REPORT_HEADER = """\
