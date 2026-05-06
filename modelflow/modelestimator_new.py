@@ -1796,6 +1796,57 @@ class EqContainer:
             display(full["#ENDO"].dif.df * multiplier)
         return aligned
 
+    def estimation_report(
+        self,
+        path: str = "html",
+        filename: str = "estimation_report.html",
+        plot_format: str = "svg",
+        title: str = "Estimation Summary",
+        open_file: bool = False,
+    ) -> None:
+        """Export an interactive HTML report covering every estimated
+        equation in this container.
+
+        Iterates over ``self.equations``, keeps the ones that are
+        estimator instances (subclasses of :class:`EstimatorBackend`),
+        and hands them to :func:`export_estimation_reports_to_html`.
+        Identity equations (:class:`Eq` instances) are silently skipped
+        — they have no fit, residuals, or summary to report.
+
+        If the container holds no estimated equations, no file is written
+        and a short message is printed instead.
+
+        Parameters
+        ----------
+        path, filename, plot_format, title, open_file
+            Forwarded to :func:`export_estimation_reports_to_html`. See
+            that function for details.
+        """
+        estimations = [eq for eq in self.equations
+                       if isinstance(eq, EstimatorBackend)]
+        skipped = len(self.equations) - len(estimations)
+        if not estimations:
+            print(
+                f"[EqContainer.estimation_report] No estimated equations "
+                f"in container (all {skipped} entries are identities). "
+                "Nothing to report."
+            )
+            return
+        if skipped:
+            print(
+                f"[EqContainer.estimation_report] Including "
+                f"{len(estimations)} estimated equation(s); skipping "
+                f"{skipped} identity equation(s)."
+            )
+        export_estimation_reports_to_html(
+            equations=estimations,
+            path=path,
+            filename=filename,
+            plot_format=plot_format,
+            title=title,
+            open_file=open_file,
+        )
+
     # -- container arithmetic -------------------------------------------------
 
     def __add__(self, other) -> "EqContainer":
@@ -1983,29 +2034,30 @@ def eviews_output_to_html(eviews_text: str) -> str:
     return "\n".join(html)
 
 
-def export_ols_reports_to_html(
-    models: List[Any],
+def export_estimation_reports_to_html(
+    equations: List[Any],
     path: str = "html",
-    filename: str = "ols_report.html",
+    filename: str = "estimation_report.html",
     plot_format: str = "svg",
     title: str = "Estimation Summary",
     open_file: bool = False,
 ) -> None:
-    """Export multiple estimator results into one interactive HTML document.
+    """Export multiple estimated equations into one interactive HTML document.
 
     The generated page has a collapsible Table of Contents, expandable
-    per-model sections, and Expand/Collapse/Print/Download buttons.
+    per-equation sections, and Expand/Collapse/Print/Download buttons.
 
     Parameters
     ----------
-    models : list
-        Each element must be either an :class:`EstimatorBackend` instance
-        (any of :class:`Estimate_ols`, :class:`Estimate_nls_lmfit`,
-        :class:`Estimate_nls_eviews`) or an :class:`LSResult`. Both expose
-        ``caption``, ``endo_var``, and ``omodel`` directly.
+    equations : list
+        Each element is *one* estimated equation — either an
+        :class:`EstimatorBackend` instance (any of :class:`Estimate_ols`,
+        :class:`Estimate_nls_lmfit`, :class:`Estimate_nls_eviews`) or an
+        :class:`LSResult`. Both expose ``caption``, ``endo_var``, and
+        ``omodel`` directly.
     path : str, default "html"
         Output directory (created if missing).
-    filename : str, default "ols_report.html"
+    filename : str, default "estimation_report.html"
         File name (written inside ``path``).
     plot_format : {"svg", "png"}, default "svg"
         Format for embedded plots.
@@ -2021,24 +2073,24 @@ def export_ols_reports_to_html(
     html_parts: List[str] = [_REPORT_HEADER.format(title=title, filename=filename)]
 
     # Table of contents
-    for i, m in enumerate(models):
-        anchor = f"model_{i}"
-        var_name = m.endo_var
-        desc = m.omodel.var_description.get(var_name, "")
+    for i, eq in enumerate(equations):
+        anchor = f"eq_{i}"
+        var_name = eq.endo_var
+        desc = eq.omodel.var_description.get(var_name, "")
         html_parts.append(
-            f"<li><a href='#{anchor}'>{m.caption}: {var_name}: {desc}</a></li>"
+            f"<li><a href='#{anchor}'>{eq.caption}: {var_name}: {desc}</a></li>"
         )
     html_parts.append("</ul></div>")
 
-    # Per-model panels
-    for i, m in enumerate(models):
-        anchor = f"model_{i}"
-        var_name = m.endo_var
-        desc = m.omodel.var_description.get(var_name, "")
-        body = _result_html_body(m, plot_format)
+    # Per-equation panels
+    for i, eq in enumerate(equations):
+        anchor = f"eq_{i}"
+        var_name = eq.endo_var
+        desc = eq.omodel.var_description.get(var_name, "")
+        body = _equation_html_body(eq, plot_format)
         html_parts.append(
             f'<button class="accordion" id="{anchor}">'
-            f"{m.caption}: {var_name}: {desc}</button>"
+            f"{eq.caption}: {var_name}: {desc}</button>"
             f'<div class="panel">{body}'
             f'<br><a class="back-to-top" href="#top">⬆ Back to Top</a>'
             f"</div>"
@@ -2052,13 +2104,13 @@ def export_ols_reports_to_html(
         webbrowser.open(f"file://{full_path.resolve()}")
 
 
-def _result_html_body(m: Any, plot_format: str) -> str:
-    """Get the per-model HTML body, accepting either an estimator backend
+def _equation_html_body(eq: Any, plot_format: str) -> str:
+    """Get the per-equation HTML body, accepting either an estimator backend
     (which has ``mfresult``) or an :class:`LSResult` (which has
     ``get_html_report`` directly)."""
-    if hasattr(m, "mfresult"):
-        return m.mfresult.get_html_report(plot_format=plot_format)
-    return m.get_html_report(plot_format=plot_format)
+    if hasattr(eq, "mfresult"):
+        return eq.mfresult.get_html_report(plot_format=plot_format)
+    return eq.get_html_report(plot_format=plot_format)
 
 
 _REPORT_HEADER = """\
