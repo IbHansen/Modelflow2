@@ -862,6 +862,7 @@ class Eq(Eq_parent):
     :class:`Eq` and the result is wrapped in an :class:`EqContainer`.
     """
     frml_name: str = "<IDENT>"
+    caption: str = "Identity"
     ecm: bool = False  # identity equations are not ECM forms
 
     def __new__(cls, org_eq: str = "", *args, **kwargs):
@@ -1603,9 +1604,16 @@ class LSResult:
 
     def _build_title_html(self) -> str:
         est_param = getattr(self.olsmodel, "est_param", "C")
-        fmt_eq = _add_linebreaks_before_long_params(
-            self.olsmodel.org_eq, param=est_param
-        )
+        # Apply the same line-break helper to all three rendered forms so
+        # they wrap consistently. On the original and normalized forms it
+        # breaks before C__10, C__11, ... ; on the expanded form (which
+        # has had its parameters substituted with numeric values) it's a
+        # no-op, but applying it uniformly avoids the asymmetry where one
+        # equation wraps and the others run on as a single long line.
+        wrap = lambda eq: _add_linebreaks_before_long_params(eq, param=est_param)
+        original = wrap(self.olsmodel.org_eq)
+        expanded = wrap(self.olsmodel.org_eq_unlinked)
+        normalized = wrap(self.normal.normalized)
         start, end = self.olsmodel.estimation_smpl
         endo = self.olsmodel.endo_var
         desc = self.omodel.var_description.get(endo, "")
@@ -1613,11 +1621,11 @@ class LSResult:
             f"<h2>{self.olsmodel.caption}: {endo}: {desc}</h2>"
             f"<p><strong>Sample:</strong> {start} to {end}</p>"
             f"<p><strong>Original Equation:</strong><br>"
-            f"<pre><code>{fmt_eq}</code></pre></p>"
+            f"<pre><code>{original}</code></pre></p>"
             f"<p><strong>Expanded Equation:</strong><br>"
-            f"<pre><code>{self.olsmodel.org_eq_unlinked}</code></pre></p>"
+            f"<pre><code>{expanded}</code></pre></p>"
             f"<p><strong>Normalized Equation:</strong><br>"
-            f"<pre><code>{self.normal.normalized}</code></pre></p>"
+            f"<pre><code>{normalized}</code></pre></p>"
         )
 
     def _build_plot_html(self, plot_format: str) -> str:
@@ -1803,48 +1811,62 @@ class EqContainer:
         plot_format: str = "svg",
         title: str = "Estimation Summary",
         open_file: bool = False,
+        report_all: bool = False,
     ) -> None:
-        """Export an interactive HTML report covering every estimated
-        equation in this container.
+        """Export an interactive HTML report for the equations in this
+        container.
 
-        Iterates over ``self.equations``, keeps the ones that are
-        estimator instances (subclasses of :class:`EstimatorBackend`),
-        and hands them to :func:`export_estimation_reports_to_html`.
-        Identity equations (:class:`Eq` instances) are silently skipped
-        — they have no fit, residuals, or summary to report.
+        By default, only estimated equations (subclasses of
+        :class:`EstimatorBackend`) are included. Identity equations
+        (:class:`Eq` instances) are silently filtered out. With
+        ``report_all=True``, identities are also included as minimal
+        panels showing just the equation text.
 
-        If the container holds no estimated equations, no file is written
+        If the container holds nothing reportable (no estimations and
+        ``report_all=False``, or completely empty), no file is written
         and a short message is printed instead.
 
         Parameters
         ----------
-        path, filename, plot_format, title, open_file
+        path, filename, plot_format, title, open_file, report_all
             Forwarded to :func:`export_estimation_reports_to_html`. See
             that function for details.
         """
-        estimations = [eq for eq in self.equations
-                       if isinstance(eq, EstimatorBackend)]
-        skipped = len(self.equations) - len(estimations)
-        if not estimations:
-            print(
-                f"[EqContainer.estimation_report] No estimated equations "
-                f"in container (all {skipped} entries are identities). "
-                "Nothing to report."
-            )
-            return
-        if skipped:
-            print(
-                f"[EqContainer.estimation_report] Including "
-                f"{len(estimations)} estimated equation(s); skipping "
-                f"{skipped} identity equation(s)."
-            )
+        if report_all:
+            to_report = list(self.equations)
+            if not to_report:
+                print(
+                    "[EqContainer.estimation_report] Container is empty. "
+                    "Nothing to report."
+                )
+                return
+        else:
+            to_report = [eq for eq in self.equations
+                         if isinstance(eq, EstimatorBackend)]
+            skipped = len(self.equations) - len(to_report)
+            if not to_report:
+                print(
+                    f"[EqContainer.estimation_report] No estimated "
+                    f"equations in container (all {skipped} entries are "
+                    "identities). Pass report_all=True to include them. "
+                    "Nothing to report."
+                )
+                return
+            if skipped:
+                print(
+                    f"[EqContainer.estimation_report] Including "
+                    f"{len(to_report)} estimated equation(s); skipping "
+                    f"{skipped} identity equation(s). Pass report_all=True "
+                    "to include identities too."
+                )
         export_estimation_reports_to_html(
-            equations=estimations,
+            equations=to_report,
             path=path,
             filename=filename,
             plot_format=plot_format,
             title=title,
             open_file=open_file,
+            report_all=report_all,
         )
 
     # -- container arithmetic -------------------------------------------------
@@ -2041,8 +2063,9 @@ def export_estimation_reports_to_html(
     plot_format: str = "svg",
     title: str = "Estimation Summary",
     open_file: bool = False,
+    report_all: bool = False,
 ) -> None:
-    """Export multiple estimated equations into one interactive HTML document.
+    """Export estimated equations into one interactive HTML document.
 
     The generated page has a collapsible Table of Contents, expandable
     per-equation sections, and Expand/Collapse/Print/Download buttons.
@@ -2050,11 +2073,13 @@ def export_estimation_reports_to_html(
     Parameters
     ----------
     equations : list
-        Each element is *one* estimated equation — either an
-        :class:`EstimatorBackend` instance (any of :class:`Estimate_ols`,
-        :class:`Estimate_nls_lmfit`, :class:`Estimate_nls_eviews`) or an
-        :class:`LSResult`. Both expose ``caption``, ``endo_var``, and
-        ``omodel`` directly.
+        Each element is one equation. Estimator instances
+        (:class:`EstimatorBackend` subclasses) and :class:`LSResult`
+        objects render with the full estimation report (regression
+        summary, A/F plot, etc.). :class:`Eq` identity instances render
+        with a minimal panel (just the equation text) when
+        ``report_all=True``; they are silently ignored when
+        ``report_all=False`` (the default).
     path : str, default "html"
         Output directory (created if missing).
     filename : str, default "estimation_report.html"
@@ -2065,10 +2090,20 @@ def export_estimation_reports_to_html(
         Page title.
     open_file : bool, default False
         If True, opens the report in the system's default browser.
+    report_all : bool, default False
+        If True, also include identity equations in the TOC and as
+        expandable panels (with a minimal "equation only" body). If
+        False, identities are filtered out so the report shows estimated
+        equations only.
     """
     out_dir = Path(path)
     out_dir.mkdir(parents=True, exist_ok=True)
     full_path = out_dir / filename
+
+    # Filter out identities unless report_all is set.
+    if not report_all:
+        equations = [eq for eq in equations
+                     if not _is_identity_only(eq)]
 
     html_parts: List[str] = [_REPORT_HEADER.format(title=title, filename=filename)]
 
@@ -2087,14 +2122,16 @@ def export_estimation_reports_to_html(
         anchor = f"eq_{i}"
         var_name = eq.endo_var
         desc = eq.omodel.var_description.get(var_name, "")
-        # Get the per-equation HTML body. Estimator backends carry an
-        # `mfresult` (an LSResult); LSResult instances expose
-        # `get_html_report` directly. Inlined rather than extracted so
-        # the export function stays self-contained.
+        # Three render paths:
+        #   1. Estimator backend → full report via .mfresult
+        #   2. LSResult          → full report via .get_html_report
+        #   3. Anything else (Eq identity) → minimal body, equation only
         if hasattr(eq, "mfresult"):
             body = eq.mfresult.get_html_report(plot_format=plot_format)
-        else:
+        elif hasattr(eq, "get_html_report"):
             body = eq.get_html_report(plot_format=plot_format)
+        else:
+            body = _identity_html_body(eq)
         html_parts.append(
             f'<button class="accordion" id="{anchor}">'
             f"{eq.caption}: {var_name}: {desc}</button>"
@@ -2109,6 +2146,24 @@ def export_estimation_reports_to_html(
 
     if open_file:
         webbrowser.open(f"file://{full_path.resolve()}")
+
+
+def _is_identity_only(eq: Any) -> bool:
+    """True if ``eq`` has no fit / regression result to render — i.e. a
+    plain identity equation rather than an estimator or LSResult."""
+    return (not hasattr(eq, "mfresult")
+            and not hasattr(eq, "get_html_report"))
+
+
+def _identity_html_body(eq: Any) -> str:
+    """Minimal panel body for an identity equation: just the equation
+    text in a fixed-width block, no regression summary or plot."""
+    return (
+        f"<h3>Identity equation</h3>"
+        f"<p><strong>Endogenous variable:</strong> {eq.endo_var}</p>"
+        f"<p><strong>Equation:</strong></p>"
+        f"<pre><code>{eq.org_eq}</code></pre>"
+    )
 
 
 _REPORT_HEADER = """\
