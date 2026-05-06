@@ -2187,6 +2187,29 @@ _REPORT_HEADER = """\
                     panel.style.display = (panel.style.display === "block") ? "none" : "block";
                 }});
             }}
+
+            // Force-open the panel for an anchor (e.g. #eq_3). Used when
+            // the user clicks a TOC link or arrives via a deep link.
+            // We FORCE OPEN rather than toggle, so a click on an already-
+            // open panel's TOC entry doesn't accidentally collapse it.
+            function openPanelForHash(hash) {{
+                if (!hash || hash === "#top") return;
+                const target = document.querySelector(hash);
+                if (!target || !target.classList.contains("accordion")) return;
+                target.classList.add("active");
+                const panel = target.nextElementSibling;
+                if (panel) panel.style.display = "block";
+                // Re-scroll after expansion: the initial scroll happened
+                // while the panel was still hidden, so the position is now
+                // off. A small delay lets the layout reflow first.
+                setTimeout(() => target.scrollIntoView({{behavior: "smooth", block: "start"}}), 50);
+            }}
+
+            // Run once for the initial URL hash (deep links).
+            openPanelForHash(window.location.hash);
+            // And on every subsequent navigation (TOC clicks).
+            window.addEventListener("hashchange",
+                () => openPanelForHash(window.location.hash));
         }});
     </script>
 </head>
