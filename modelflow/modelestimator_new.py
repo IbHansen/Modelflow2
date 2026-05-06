@@ -1605,11 +1605,10 @@ class LSResult:
     def _build_title_html(self) -> str:
         est_param = getattr(self.olsmodel, "est_param", "C")
         # Apply the same line-break helper to all three rendered forms so
-        # they wrap consistently. On the original and normalized forms it
-        # breaks before C__10, C__11, ... ; on the expanded form (which
-        # has had its parameters substituted with numeric values) it's a
-        # no-op, but applying it uniformly avoids the asymmetry where one
-        # equation wraps and the others run on as a single long line.
+        # they wrap consistently. The helper has two passes: one for
+        # parameter tokens (C__10, ...) used in the original and
+        # normalized forms, and one for substituted numeric literals
+        # ((0.5), ...) used in the expanded form.
         wrap = lambda eq: _add_linebreaks_before_long_params(eq, param=est_param)
         original = wrap(self.olsmodel.org_eq)
         expanded = wrap(self.olsmodel.org_eq_unlinked)
@@ -1647,17 +1646,41 @@ class LSResult:
 def _add_linebreaks_before_long_params(
     equation: str, param: str = "C"
 ) -> str:
-    """Insert a newline before any ``{param}__<2-or-more-digits>`` token
-    for readability in the rendered report.
+    """Insert a newline before each parameterized term so long equations
+    render readably in the report.
 
-    Operates on the canonicalized equation form (``C__10``, ``C__11``, …)
-    that the parser produces — not the EViews ``C(10)`` form, which has
-    already been rewritten by the time the report is built. A trailing
-    word boundary keeps the match from extending into longer identifiers
-    that happen to start with ``{param}__N``.
+    Two passes:
+
+    1. Before any ``{param}__<2-or-more-digits>`` token. Catches
+       ``C__10``, ``C__11``, ... in the *original* and *normalized* forms,
+       where placeholders are still present.
+    2. Before any parenthesized numeric literal that sits on a ``+`` /
+       ``-`` boundary. Catches ``(0.5)``, ``(-0.3)``, ``(1.234567)``, ... in
+       the *expanded* form, where placeholders have been substituted with
+       their estimated values. The lookbehind for ``+``/``-`` is what
+       distinguishes a substituted-parameter term (which always sits at
+       an additive boundary) from a user-written parenthesized constant
+       (which typically sits next to ``*`` or ``/`` instead).
+
+    A trailing word boundary on the parameter pattern keeps the match
+    from extending into longer identifiers that happen to start with
+    ``{param}__N``.
     """
-    pattern = rf"\s*{re.escape(param)}__\d{{2,}}\b"
-    return re.sub(pattern, lambda m: "\n" + m.group(0).strip(), equation)
+    # Pass 1: before C__10, C__11, ... — the original / normalized form.
+    pattern_param = rf"\s*{re.escape(param)}__\d{{2,}}\b"
+    equation = re.sub(
+        pattern_param, lambda m: "\n" + m.group(0).strip(), equation
+    )
+    # Pass 2: before (0.5), (-0.3), ... when they sit on a binary +/-
+    # boundary — i.e. the substituted form. The leading capture group
+    # ([A-Za-z0-9_)]) requires the operator to be preceded by an
+    # operand-ending character, distinguishing a binary +/- from a unary
+    # minus at expression start (where the preceding char is `=`, `(`, or
+    # space). Whitespace on either side of the operator is optional —
+    # both spaced ('A + (0.5)') and dense ('A+(0.5)') forms match.
+    pattern_subst = r"([A-Za-z0-9_)])\s*([+\-])\s*(?=\(-?\d+(?:\.\d+)?\))"
+    equation = re.sub(pattern_subst, r"\1\2\n", equation)
+    return equation
 
 
 # =============================================================================
