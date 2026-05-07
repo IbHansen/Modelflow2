@@ -1265,7 +1265,7 @@ def _get_estimator_class(estimator_name, estimator_classes: Optional[dict] = Non
         )
 
     try:
-        import modelestimator_new as me 
+        import modelestimator_new as me
     except ImportError as exc:
         raise ModelSpecificationError(
             "Equations with <estimator=...> require modelestimator_new to be importable."
@@ -1553,6 +1553,138 @@ def _estimate_and_bake_expression(
     return baked, estimator_obj
 
 
+
+def _markdown_escape_cell(value) -> str:
+    """Render a value safely inside a simple Markdown table cell."""
+    if value is None:
+        text = ""
+    else:
+        text = str(value)
+    return text.replace("\n", "<br>").replace("|", r"\|")
+
+
+def _markdown_format_number(value) -> str:
+    """Compact numeric formatting for estimation markdown tables."""
+    try:
+        return f"{float(value):.10g}"
+    except Exception:
+        return str(value)
+
+
+def _estimator_coefficients_for_markdown(estimator_obj) -> dict:
+    """Return coefficients from an EstimatorBackend-like object as a dict."""
+    coefs = getattr(estimator_obj, "coef_estimate_dict", None)
+    if hasattr(coefs, "to_dict"):
+        coefs = coefs.to_dict()
+    if isinstance(coefs, dict):
+        return coefs
+    coef_ser = getattr(estimator_obj, "coef_ser", None)
+    if hasattr(coef_ser, "to_dict"):
+        return coef_ser.to_dict()
+    return _extract_params_from_estimator(estimator_obj)
+
+
+def _estimation_record_to_markdown(record: dict) -> str:
+    """Create a compact Markdown report block for one Mexplode estimation."""
+    est = record.get("estimator_object")
+    estimator_name = record.get("estimator") or type(est).__name__
+    requested_smpl = record.get("smpl", "")
+    try:
+        effective_smpl = getattr(est, "estimation_smpl")
+    except Exception:
+        effective_smpl = getattr(est, "_effective_smpl", "")
+
+    original = record.get("original_expression") or getattr(est, "org_eq", "")
+    baked = record.get("baked_expression") or getattr(est, "org_eq_unlinked", "")
+
+    summary_rows = [
+        ("Estimator", estimator_name),
+        ("Requested sample", requested_smpl),
+        ("Effective sample", effective_smpl),
+        ("Original equation", original),
+        ("Estimated equation", baked),
+    ]
+
+    regression_model = getattr(est, "regression_model", None)
+    for attr in ("success", "message", "chisqr", "redchi", "aic", "bic"):
+        if regression_model is not None and hasattr(regression_model, attr):
+            value = getattr(regression_model, attr)
+            if attr in {"chisqr", "redchi", "aic", "bic"}:
+                value = _markdown_format_number(value)
+            summary_rows.append((attr, value))
+
+    try:
+        if regression_model is not None and hasattr(regression_model, "rsquared"):
+            summary_rows.append(("R-squared", _markdown_format_number(regression_model.rsquared)))
+        if regression_model is not None and hasattr(regression_model, "rsquared_adj"):
+            summary_rows.append(("Adj. R-squared", _markdown_format_number(regression_model.rsquared_adj)))
+    except Exception:
+        pass
+
+    lines = [
+        "",
+        "**Estimation output**",
+        "",
+        "| Item | Value |",
+        "|:--|:--|",
+    ]
+    lines.extend(
+        f"| {_markdown_escape_cell(k)} | {_markdown_escape_cell(v)} |"
+        for k, v in summary_rows
+        if v not in (None, "")
+    )
+
+    coefs = _estimator_coefficients_for_markdown(est)
+    if coefs:
+        lines.extend([
+            "",
+            "| Parameter | Estimate |",
+            "|:--|--:|",
+        ])
+        for key in sorted(coefs, key=lambda x: (str(x).split("__")[0], int(str(x).split("__")[-1]) if str(x).split("__")[-1].lstrip("-").isdigit() else str(x))):
+            lines.append(
+                f"| {_markdown_escape_cell(key)} | {_markdown_escape_cell(_markdown_format_number(coefs[key]))} |"
+            )
+
+    return "\n".join(lines) + "\n"
+
+
+def _line_has_estimator_tag(line: str) -> bool:
+    """True when a source line appears to contain a ModelFlow estimator flag."""
+    return bool(re.search(r"<[^>]*\bestimator\b[^>]*>", line, flags=re.IGNORECASE))
+
+
+def _markdown_with_estimation_blocks(original_text: str, estimation_records: list[dict]) -> str:
+    """Insert estimation markdown blocks after estimator-tagged source lines.
+
+    This preserves the original user-facing Markdown as much as possible. For
+    the common notebook syntax, each line beginning with ``>`` and containing
+    ``<estimator=...>`` gets the next estimation block inserted immediately
+    after it. If template expansion creates more estimated equations than can
+    be matched to source lines, the remaining blocks are appended at the end.
+    """
+    records = list(estimation_records or [])
+    if not records:
+        return original_text
+
+    out = []
+    rec_i = 0
+    for line in original_text.splitlines():
+        out.append(line)
+        if rec_i < len(records) and _line_has_estimator_tag(line):
+            out.append(_estimation_record_to_markdown(records[rec_i]).rstrip())
+            rec_i += 1
+
+    if rec_i < len(records):
+        if out and out[-1].strip():
+            out.append("")
+        out.append("## Estimation output")
+        for rec in records[rec_i:]:
+            out.append(_estimation_record_to_markdown(rec).rstrip())
+
+    return "\n".join(out)
+
+
 @dataclass
 class BaseExplode:
     """Common parent for Mexplode and Lexplode."""
@@ -1808,6 +1940,25 @@ class Mexplode(BaseExplode):
             report_all=report_all,
         )
 
+    @property
+    def markdown_with_estimation(self) -> str:
+        """Original Markdown input with compact estimation tables inserted.
+
+        Each source equation line containing an ``<estimator=...>`` flag gets
+        a Markdown summary table and coefficient table inserted immediately
+        after it. The underlying model equations are not changed; this is only
+        a documentation/reporting string.
+        """
+        return _markdown_with_estimation_blocks(
+            self.original_statements,
+            self.estimation_records,
+        )
+
+    @property
+    def markdown_model_with_estimation(self) -> str:
+        """Alias for :attr:`markdown_with_estimation`."""
+        return self.markdown_with_estimation
+
 
     def get_lists (self) -> str:
         """
@@ -2012,6 +2163,19 @@ class Lexplode(BaseExplode):
             open_file=open_file,
             report_all=report_all,
         )
+
+    @property
+    def markdown_with_estimation(self) -> str:
+        """Concatenate member Mexplode markdown-with-estimation strings."""
+        return "\n\n".join(
+            mex.markdown_with_estimation
+            for mex in self.mexplodes
+        )
+
+    @property
+    def markdown_model_with_estimation(self) -> str:
+        """Alias for :attr:`markdown_with_estimation`."""
+        return self.markdown_with_estimation
 
     # __str__(self):
         
