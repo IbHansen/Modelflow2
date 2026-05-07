@@ -1161,14 +1161,96 @@ def _parse_smpl(smpl):
     return (maybe_int(left), maybe_int(right))
 
 
-def _get_estimator_class(estimator_name: str, estimator_classes: Optional[dict] = None):
-    """Resolve an estimator method name to the corresponding estimator class."""
-    if not estimator_name:
+def _estimator_display_name(estimator_spec) -> str:
+    """Short user/debug label for either a string estimator or a callable factory."""
+    if isinstance(estimator_spec, str):
+        return estimator_spec.strip().lower()
+    name = getattr(estimator_spec, "__name__", None)
+    if name and name != "factory":
+        return name
+    qualname = getattr(estimator_spec, "__qualname__", None)
+    if qualname:
+        return qualname
+    return type(estimator_spec).__name__
+
+
+def _caller_estimator_namespace() -> dict:
+    """Return caller locals/globals so notebook names can be used in <estimator=name>.
+
+    This is intentionally best-effort. Explicit ``estimator_classes`` passed to
+    Mexplode still takes precedence over anything found in the caller scope.
+    """
+    import inspect
+
+    frame = inspect.currentframe()
+    try:
+        frame = frame.f_back if frame else None
+        while frame is not None:
+            module_name = frame.f_globals.get('__name__')
+            function_name = frame.f_code.co_name
+            # Skip frames inside this module and the generated dataclass __init__.
+            if module_name != __name__ and function_name not in {'__init__'}:
+                namespace = {}
+                namespace.update(frame.f_globals)
+                namespace.update(frame.f_locals)
+                return namespace
+            frame = frame.f_back
+    finally:
+        del frame
+    return {}
+
+
+def _merge_estimator_namespaces(
+    explicit: Optional[dict] = None,
+    namespace: Optional[dict] = None,
+) -> dict:
+    """Merge caller-scope estimator names with explicit estimator_classes.
+
+    Only callable objects are copied from the caller namespace. Explicit
+    estimator_classes wins on name collisions. Keys are kept as written;
+    lookup remains case-insensitive in _get_estimator_class().
+    """
+    merged = {}
+    for source in (namespace or {},):
+        for key, value in source.items():
+            if isinstance(key, str) and callable(value):
+                merged[key] = value
+    for key, value in (explicit or {}).items():
+        merged[key] = value
+    return merged
+
+
+def _get_estimator_class(estimator_name, estimator_classes: Optional[dict] = None):
+    """Resolve an estimator spec to a constructor/factory.
+
+    ``estimator_name`` can be:
+      - a built-in method name: ``"ols"``, ``"nls_lmfit"``, ``"nls_eviews"``;
+      - a key in ``estimator_classes`` whose value is either a class or a
+        callable factory;
+      - a callable/factory directly, e.g. ``Estimate_nls.with_defaults(...)``.
+
+    The resolved object is only required to be callable here. After it is
+    called with the equation, the returned object is validated with
+    ``isinstance(result, modelestimator_new.EstimatorBackend)``.
+    """
+    if estimator_name is None or estimator_name is False:
         raise ModelSpecificationError("Estimator flag was present, but no estimator method was supplied")
 
+    if callable(estimator_name) and not isinstance(estimator_name, str):
+        return estimator_name
+
     name = str(estimator_name).strip().lower()
-    if estimator_classes and name in estimator_classes:
-        return estimator_classes[name]
+    if not name:
+        raise ModelSpecificationError("Estimator flag was present, but no estimator method was supplied")
+
+    if estimator_classes:
+        # Accept both exact and lower-case keys, so {'LS': ls} and {'ls': ls}
+        # both work after clean_expressions() has upper-cased the DSL.
+        if name in estimator_classes:
+            return estimator_classes[name]
+        for key, value in estimator_classes.items():
+            if str(key).strip().lower() == name:
+                return value
 
     class_names = {
         'ols': 'Estimate_ols',
@@ -1179,11 +1261,11 @@ def _get_estimator_class(estimator_name: str, estimator_classes: Optional[dict] 
         allowed = ', '.join(sorted(class_names))
         raise ModelSpecificationError(
             f"Unknown estimator={estimator_name!r}. Expected one of: {allowed}, "
-            "or pass estimator_classes={name: class}."
+            "a callable estimator=..., or pass estimator_classes={name: class_or_factory}."
         )
 
     try:
-        import modelestimator_new as me
+        import modelestimator_new as me 
     except ImportError as exc:
         raise ModelSpecificationError(
             "Equations with <estimator=...> require modelestimator_new to be importable."
@@ -1385,24 +1467,81 @@ def _bake_params_into_expression(expression: str, params: dict) -> str:
     return out
 
 
+def _instantiate_estimator(estimator_constructor, expression: str, kwargs: dict):
+    """Instantiate a class or local factory with the equation.
+
+    modelestimator_new.with_defaults factories accept either ``org_eq=...`` or
+    the equation as the first positional argument. Custom local factories often
+    choose the positional style, so we support both.
+    """
+    if not callable(estimator_constructor):
+        raise ModelSpecificationError(
+            f"Estimator {estimator_constructor!r} is not callable. "
+            "Use an estimator class, an estimator factory such as "
+            "Estimate_nls.with_defaults(...), or a local callable returning "
+            "an EstimatorBackend instance."
+        )
+    try:
+        return estimator_constructor(org_eq=expression, **kwargs)
+    except TypeError as first_exc:
+        try:
+            return estimator_constructor(expression, **kwargs)
+        except TypeError:
+            raise first_exc
+
+
+def _require_estimator_backend_instance(estimator_obj, estimator_spec):
+    """Validate the instantiated estimator against the shared backend contract.
+
+    A local estimator specification such as ``Estimate_nls.with_defaults(...)``
+    is a callable factory, not an EstimatorBackend instance. Therefore we first
+    instantiate/call it with the equation, and only then require that the result
+    is an instance of modelestimator_new.EstimatorBackend.
+    """
+    try:
+        from modelestimator_new import EstimatorBackend
+    except ImportError as exc:
+        raise ModelSpecificationError(
+            "Equations with <estimator=...> require modelestimator_new "
+            "to be importable so returned estimator objects can be checked "
+            "against EstimatorBackend."
+        ) from exc
+
+    if not isinstance(estimator_obj, EstimatorBackend):
+        raise ModelSpecificationError(
+            f"Estimator {_estimator_display_name(estimator_spec)!r} returned "
+            f"{type(estimator_obj).__name__}, but it must return an "
+            "instance of modelestimator_new.EstimatorBackend. "
+            "Use Estimate_ols, Estimate_nls_lmfit, Estimate_nls_eviews, "
+            "Estimate_nls.with_defaults(...), or a custom subclass of "
+            "EstimatorBackend."
+        )
+    return estimator_obj
+
+
 def _estimate_and_bake_expression(
     expression: str,
     *,
-    estimator_name: str,
-    input_df,
+    estimator_name,
+    input_df=None,
     smpl=None,
     estimator_kwargs: Optional[dict] = None,
     estimator_classes: Optional[dict] = None,
 ):
-    """Instantiate an estimator, run it, and return (baked_expression, estimator_obj)."""
-    estimator_class = _get_estimator_class(estimator_name, estimator_classes)
+    """Instantiate an estimator/factory, run it, and return (baked_expression, estimator_obj)."""
+    estimator_constructor = _get_estimator_class(estimator_name, estimator_classes)
     kwargs = dict(estimator_kwargs or {})
-    kwargs['org_eq'] = expression
-    kwargs['input_df'] = input_df
-    if smpl is not None:
+
+    # Do not pass None defaults into a local with_defaults factory; it may
+    # already carry input_df/smpl/var_description. Explicit constructor kwargs
+    # still override the factory's stored defaults.
+    if input_df is not None and 'input_df' not in kwargs:
+        kwargs['input_df'] = input_df
+    if smpl is not None and 'smpl' not in kwargs:
         kwargs['smpl'] = smpl
 
-    estimator_obj = estimator_class(**kwargs)
+    estimator_obj = _instantiate_estimator(estimator_constructor, expression, kwargs)
+    estimator_obj = _require_estimator_backend_instance(estimator_obj, estimator_name)
     fit_result = _maybe_run_estimator_fit(estimator_obj)
 
     baked = _extract_expression_from_estimator(estimator_obj, fit_result)
@@ -1473,10 +1612,11 @@ class Mexplode(BaseExplode):
     # contains <estimator=...> or <estimator>. If <estimator> has no value,
     # the global estimator below is used. Untagged equations remain identities.
     input_df              : Optional[Any] = field(default=None, metadata={"description": "DataFrame used when tagged equations are estimated"})
-    estimator             : Optional[str] = field(default=None, metadata={"description": "Default estimator for tagged equations, e.g. ols, nls_lmfit, nls_eviews"})
+    estimator             : Optional[Any] = field(default=None, metadata={"description": "Default estimator for tagged equations: method name or callable factory"})
     smpl                  : Any           = field(default=None, metadata={"description": "Default estimation sample; equation <smpl=...> overrides it"})
     estimator_kwargs      : dict          = field(default_factory=dict, metadata={"description": "Shared kwargs passed to estimator constructors"})
     estimator_classes     : Optional[dict] = field(default=None, metadata={"description": "Optional method-name to estimator-class mapping"})
+    estimator_namespace   : Optional[dict] = field(default=None, metadata={"description": "Optional namespace for resolving <estimator=name>; defaults to caller locals/globals"})
     estimation_records    : List[Any]     = field(init=False, metadata={"description": "Information about equations estimated during construction"})
     normal_input_expressions : List[str]  = field(init=False, metadata={"description": "Expressions sent to modelnormalize, after optional estimation"})
     normal_output_frmlnames  : List[str]  = field(init=False, metadata={"description": "FRML names emitted after removing estimation-only flags"})
@@ -1491,6 +1631,15 @@ class Mexplode(BaseExplode):
         coefficients are baked into the expression before modelnormalize sees it.
         Untagged equations are treated exactly as before.
         '''
+
+        # Allow notebook-local factories such as:
+        #     ls = Estimate_nls.with_defaults(...)
+        #     Mexplode('><estimator=ls> ...')
+        # Explicit estimator_classes still wins over caller-scope names.
+        self.estimator_classes = _merge_estimator_namespaces(
+            explicit=self.estimator_classes,
+            namespace=self.estimator_namespace or _caller_estimator_namespace(),
+        )
         
         if   self.type_input == 'markdown': 
             extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
@@ -1525,15 +1674,34 @@ class Mexplode(BaseExplode):
             _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None) is not None
             for parts in self.expanded_frml_split
         )
-        if has_estimated_equations and self.input_df is None:
-            raise ModelSpecificationError(
-                "input_df is required when any equation has an <estimator=...> flag"
-            )
+        if has_estimated_equations and self.input_df is None and self.estimator is None:
+            # String estimators such as <estimator=nls_lmfit> need input_df
+            # here. A callable/factory estimator may already have input_df
+            # captured through Estimate_nls.with_defaults(...), so that case
+            # is allowed when self.estimator is supplied.
+            explicit_estimators = [
+                _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None)
+                for parts in self.expanded_frml_split
+                if _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None) is not None
+            ]
+            if not any(
+                isinstance(flag, str)
+                and self.estimator_classes
+                and str(flag).strip().lower() in {str(k).strip().lower() for k in self.estimator_classes}
+                for flag in explicit_estimators
+            ):
+                raise ModelSpecificationError(
+                    "input_df is required when any equation has an <estimator=...> flag, "
+                    "unless you pass a callable/factory estimator that already carries input_df"
+                )
   
 # def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True, =False,make_fitted=False,eviews=''):
         self.normal = []
-        for parts in self.expanded_frml_split:
-            expression_for_normal = self._expression_after_optional_estimation(parts)
+        for equation_index, parts in enumerate(self.expanded_frml_split):
+            expression_for_normal = self._expression_after_optional_estimation(
+                parts,
+                equation_index=equation_index,
+            )
             self.normal_input_expressions.append(expression_for_normal)
             self.normal_output_frmlnames.append(
                 _strip_frml_options(parts.frmlname, {'ESTIMATOR', 'SMPL'})
@@ -1576,7 +1744,7 @@ class Mexplode(BaseExplode):
         self.list_specification = self.get_lists()
         return 
 
-    def _expression_after_optional_estimation(self, parts) -> str:
+    def _expression_after_optional_estimation(self, parts, *, equation_index: Optional[int] = None) -> str:
         """Return parts.expression, or an estimated/baked version when tagged."""
         estimator_flag = _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None)
         if estimator_flag is None:
@@ -1603,15 +1771,42 @@ class Mexplode(BaseExplode):
             estimator_classes=self.estimator_classes,
         )
         self.estimation_records.append({
+            'equation_index': equation_index,
             'frmlname': parts.frmlname,
             'output_frmlname': _strip_frml_options(parts.frmlname, {'ESTIMATOR', 'SMPL'}),
-            'estimator': str(estimator_name).lower(),
+            'estimator': _estimator_display_name(estimator_name),
             'smpl': smpl,
             'original_expression': parts.expression,
             'baked_expression': baked_expression,
             'estimator_object': estimator_obj,
         })
         return baked_expression
+
+    def estimation_report(
+        self,
+        path: str = "html",
+        filename: str = "mexplode_estimation_report.html",
+        plot_format: str = "svg",
+        title: str = "Mexplode Estimation Summary",
+        open_file: bool = False,
+        report_all: bool = False,
+    ) -> None:
+        """Export an HTML report for estimations embedded in this Mexplode.
+
+        The report reuses :func:`modelestimator_new.export_estimation_reports_to_html`.
+        By default, only equations tagged with ``<estimator=...>`` are included.
+        With ``report_all=True``, unestimated identity equations are included as
+        minimal panels alongside the full estimation reports.
+        """
+        return export_mexplode_estimation_reports_to_html(
+            self,
+            path=path,
+            filename=filename,
+            plot_format=plot_format,
+            title=title,
+            open_file=open_file,
+            report_all=report_all,
+        )
 
 
     def get_lists (self) -> str:
@@ -1798,9 +1993,171 @@ class Lexplode(BaseExplode):
     def __repr__(self):
         return f"Lexplode(mexplodes={self.mexplodes!r})"
 
+    def estimation_report(
+        self,
+        path: str = "html",
+        filename: str = "lexplode_estimation_report.html",
+        plot_format: str = "svg",
+        title: str = "Lexplode Estimation Summary",
+        open_file: bool = False,
+        report_all: bool = False,
+    ) -> None:
+        """Export an HTML report for estimations embedded in all member Mexplodes."""
+        return export_mexplode_estimation_reports_to_html(
+            self,
+            path=path,
+            filename=filename,
+            plot_format=plot_format,
+            title=title,
+            open_file=open_file,
+            report_all=report_all,
+        )
+
     # __str__(self):
         
 
+
+
+def _iter_mexplode_report_sources(obj):
+    """Yield Mexplode instances from a Mexplode or Lexplode report source."""
+    if isinstance(obj, Mexplode):
+        yield obj
+        return
+    if isinstance(obj, Lexplode):
+        for mex in obj.mexplodes:
+            yield from _iter_mexplode_report_sources(mex)
+        return
+    raise TypeError(
+        "Expected a Mexplode or Lexplode instance, "
+        f"got {type(obj).__name__}."
+    )
+
+
+def _is_estimator_backend_instance(eq) -> bool:
+    """True for concrete modelestimator_new estimator backends.
+
+    This is the canonical way to distinguish estimated equations from
+    identity-only Eq objects. All built-in estimators and local user-defined
+    estimators should subclass :class:`modelestimator_new.EstimatorBackend`.
+    """
+    try:
+        from modelestimator_new import EstimatorBackend
+    except Exception:
+        return False
+    return isinstance(eq, EstimatorBackend)
+
+
+def mexplode_report_equations(mexplode_obj, *, report_all: bool = False) -> list:
+    """Return reportable equation objects from a Mexplode/Lexplode.
+
+    Estimated equations are identified by ``isinstance(eq, EstimatorBackend)``.
+    When ``report_all=True``, unestimated equations are wrapped as lightweight
+    :class:`modelestimator_new.Eq` instances so the shared HTML exporter can
+    render minimal identity panels.
+    """
+    from modelestimator_new import Eq
+
+    equations = []
+    for mex in _iter_mexplode_report_sources(mexplode_obj):
+        records = list(getattr(mex, "estimation_records", []))
+        records_by_index = {
+            rec.get("equation_index"): rec
+            for rec in records
+            if rec.get("equation_index") is not None
+        }
+
+        # New objects have equation_index in each record, so we can preserve
+        # the expanded-equation order and optionally interleave identities.
+        if records_by_index:
+            normal_inputs = list(getattr(mex, "normal_input_expressions", []))
+            for i, parts in enumerate(getattr(mex, "expanded_frml_split", [])):
+                rec = records_by_index.get(i)
+                if rec is not None:
+                    eq = rec.get("estimator_object")
+                    if _is_estimator_backend_instance(eq):
+                        equations.append(eq)
+                    continue
+                if not report_all:
+                    continue
+                expression = (
+                    normal_inputs[i]
+                    if i < len(normal_inputs)
+                    else parts.expression
+                )
+                equations.append(Eq(
+                    org_eq=expression,
+                    frml_name=_strip_frml_options(parts.frmlname, {"ESTIMATOR", "SMPL"}),
+                ))
+            continue
+
+        # Backwards compatibility for Mexplode objects created before
+        # equation_index was added: report EstimatorBackend instances, but
+        # exact interleaving with identities is not available.
+        equations.extend(
+            eq
+            for eq in (rec.get("estimator_object") for rec in records)
+            if _is_estimator_backend_instance(eq)
+        )
+
+    return equations
+
+
+def export_mexplode_estimation_reports_to_html(
+    mexplode_obj,
+    path: str = "html",
+    filename: str = "mexplode_estimation_report.html",
+    plot_format: str = "svg",
+    title: str = "Mexplode Estimation Summary",
+    open_file: bool = False,
+    report_all: bool = False,
+) -> None:
+    """Export an HTML report for the estimated equations in a Mexplode.
+
+    Parameters mirror :func:`modelestimator_new.export_estimation_reports_to_html`.
+    ``mexplode_obj`` may be either a single :class:`Mexplode` or a
+    :class:`Lexplode` combining several of them.
+    """
+    from modelestimator_new import export_estimation_reports_to_html
+
+    equations = mexplode_report_equations(
+        mexplode_obj,
+        report_all=report_all,
+    )
+
+    if not equations:
+        print(
+            "[Mexplode.estimation_report] No estimated equations found. "
+            "Add <estimator=...> to one or more equations before requesting "
+            "an estimation report."
+        )
+        return
+
+    if not report_all:
+        identity_count = 0
+        for mex in _iter_mexplode_report_sources(mexplode_obj):
+            n_expanded = len(getattr(mex, "expanded_frml_split", []))
+            n_estimated = sum(
+                1
+                for rec in getattr(mex, "estimation_records", [])
+                if _is_estimator_backend_instance(rec.get("estimator_object"))
+            )
+            identity_count += max(0, n_expanded - n_estimated)
+        if identity_count:
+            print(
+                f"[Mexplode.estimation_report] Including {len(equations)} "
+                f"estimated equation(s); skipping {identity_count} identity "
+                "equation(s). Pass report_all=True to include identities too."
+            )
+
+    return export_estimation_reports_to_html(
+        equations=equations,
+        path=path,
+        filename=filename,
+        plot_format=plot_format,
+        title=title,
+        open_file=open_file,
+        report_all=report_all,
+    )
 
 
 if __name__ == '__main__' :
