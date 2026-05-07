@@ -25,7 +25,7 @@ from model_latex import latextotxt
 from modelclass import model
 from modelmanipulation import explode
 from model_latex_class import a_latex_model
-from modelconstruct import Mexplode, display_model
+from modelconstruct_estimation import Mexplode, display_model
 from modelhelp import debug_var
 from modelreport import LatexRepo
 
@@ -515,7 +515,8 @@ try:
         # ------------------------------------------------------------
         # Create Mexplode model
         # ------------------------------------------------------------
-        emodel = Mexplode(model_text, replacements=replacements,funks=funks)
+        emodel = Mexplode(model_text, replacements=replacements,                          
+                          estimator_namespace=user_ns,funks=funks)
 
      
         user_ns[exploded_name] = emodel

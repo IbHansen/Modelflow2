@@ -801,7 +801,7 @@ class Eq_parent:
         )
         return model(fdummy)
 
-    @cached_property
+    @property
     def varname_all(self) -> List[str]:
         """Sorted list of every variable name referenced by this equation."""
         return sorted(self.mdummy.allvar_set)
