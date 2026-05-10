@@ -1157,26 +1157,91 @@ def _strip_frml_options(frml_name: str, remove_keys: set[str]) -> str:
     return '<' + ','.join(kept) + '>' if kept else '<>'
 
 
-def _parse_smpl(smpl):
-    """Convert '2012:2019' to (2012, 2019); leave richer sample specs unchanged."""
+def _parse_smpl(smpl, df=None):
+    """Parse an estimation sample specification.
+
+    Preferred FRML syntax is::
+
+        <smpl=start end>
+
+    where ``start`` and ``end`` are separated by one or more blanks. The
+    labels are **not** coerced to integers, because the dataframe index may be
+    a PeriodIndex, DatetimeIndex, quarterly strings, or another custom index
+    type. If ``df`` is supplied, its index is used via ``slice_locs`` to
+    validate the sample and to return the actual boundary labels present in
+    the dataframe.
+
+    Backwards compatibility: ``start:end`` is still accepted.
+    """
     if smpl in (None, '', False):
         return None
-    if isinstance(smpl, (tuple, list, slice)):
-        return smpl
+
+    def _slice_on_df(start, end, df_):
+        """Return (first_label, last_label) selected by df_.index.slice_locs."""
+        if df_ is None:
+            return (start, end)
+
+        idx = df_.index
+
+        attempts = [(start, end)]
+        # Compatibility only: if the index is numeric and the user wrote
+        # ``smpl=2012 2019`` as text, try integer labels after trying the raw
+        # labels. We never coerce first, so quarterly/date/string labels keep
+        # their natural interpretation.
+        try:
+            attempts.append((int(start), int(end)))
+        except Exception:
+            pass
+
+        last_error = None
+        for s, e in attempts:
+            try:
+                istart, iend = idx.slice_locs(s, e)
+                per = idx[istart:iend]
+                if len(per) == 0:
+                    raise IndexError(
+                        f"sample {start!r} {end!r} selects no rows"
+                    )
+                return (per[0], per[-1])
+            except Exception as exc:
+                last_error = exc
+
+        raise ModelSpecificationError(
+            f"Could not resolve sample {start!r} {end!r} on dataframe index "
+            f"of type {type(idx).__name__}: {last_error}"
+        )
+
+    if isinstance(smpl, slice):
+        start, end = smpl.start, smpl.stop
+        if start is None or end is None:
+            return smpl
+        return _slice_on_df(start, end, df)
+
+    if isinstance(smpl, (tuple, list)):
+        if len(smpl) != 2:
+            raise ModelSpecificationError(
+                f"Sample tuple/list must have exactly two elements: {smpl!r}"
+            )
+        return _slice_on_df(smpl[0], smpl[1], df)
 
     text = str(smpl).strip()
-    if ':' not in text:
-        return text
+    if not text:
+        return None
 
-    left, right = [p.strip() for p in text.split(':', 1)]
+    # New preferred syntax: <smpl=start end>. Keep old colon syntax so older
+    # notebooks do not break.
+    if ':' in text and len(text.split()) == 1:
+        start, end = [p.strip() for p in text.split(':', 1)]
+    else:
+        parts = text.split()
+        if len(parts) != 2:
+            raise ModelSpecificationError(
+                "SMPL must be written as 'start end' separated by blanks "
+                f"(or legacy 'start:end'); got {smpl!r}"
+            )
+        start, end = parts
 
-    def maybe_int(x):
-        try:
-            return int(x)
-        except ValueError:
-            return x
-
-    return (maybe_int(left), maybe_int(right))
+    return _slice_on_df(start, end, df)
 
 
 def _estimator_display_name(estimator_spec) -> str:
@@ -1763,7 +1828,7 @@ class Makemodel(BaseExplode):
     # the global estimator below is used. Untagged equations remain identities.
     input_df              : Optional[Any] = field(default=None, metadata={"description": "DataFrame used when tagged equations are estimated"})
     estimator             : Optional[Any] = field(default=None, metadata={"description": "Default estimator for tagged equations: method name or callable factory"})
-    smpl                  : Any           = field(default=None, metadata={"description": "Default estimation sample; equation <smpl=...> overrides it"})
+    smpl                  : Any           = field(default=None, metadata={"description": "Default estimation sample; equation <smpl=start end> overrides it"})
     estimator_kwargs      : dict          = field(default_factory=dict, metadata={"description": "Shared kwargs passed to estimator constructors"})
     estimator_classes     : Optional[dict] = field(default=None, metadata={"description": "Optional method-name to estimator-class mapping"})
     estimator_namespace   : Optional[dict] = field(default=None, metadata={"description": "Optional namespace for resolving <estimator=name>; defaults to caller locals/globals"})
@@ -1908,8 +1973,8 @@ class Makemodel(BaseExplode):
             )
 
         local_smpl = _frml_option_value(parts.frmlname, 'SMPL', default=None)
-        smpl = _parse_smpl(local_smpl if local_smpl is not None else self.smpl)
-
+        smpl = _parse_smpl(local_smpl if local_smpl is not None else self.smpl, df=self.input_df)
+        debug_var(smpl,local_smpl)
         baked_expression, estimator_obj = _estimate_and_bake_expression(
             parts.expression,
             estimator_name=estimator_name,

@@ -372,7 +372,7 @@ def kw_frml_name(frml_name0, kw,default=None):
                 if len(keyvalue) == 2:
                     out = keyvalue[1].strip() 
                 else:
-                    True = 1
+                    out = True
     if type(out)  == type(None) and type(default)!=type(None):
         out=default 
     return out
