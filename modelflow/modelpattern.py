@@ -362,16 +362,17 @@ def udtryk_parse(udtryk,funks=[]):
 def kw_frml_name(frml_name0, kw,default=None):
     ''' find keywords and associated value from string '<kw=xxx,res=kdkdk>' '''
     out = None
-    frml_name=frml_name0.replace(' ','')
+    # frml_name=frml_name0.replace(' ','')  
+    frml_name=frml_name0 # we want to enable values with blanks
     if '<' in frml_name:
         j = frml_name.find('<')  # where is the <
         for s in frml_name[j + 1:-1].split(','):
             keyvalue = s.split('=')
-            if keyvalue[0].upper() == kw.upper():
+            if keyvalue[0].upper().strip() == kw.upper():
                 if len(keyvalue) == 2:
-                    out = keyvalue[1]
+                    out = keyvalue[1].strip() 
                 else:
-                    out = 1
+                    True = 1
     if type(out)  == type(None) and type(default)!=type(None):
         out=default 
     return out

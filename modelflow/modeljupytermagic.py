@@ -25,7 +25,7 @@ from model_latex import latextotxt
 from modelclass import model
 from modelmanipulation import explode
 from model_latex_class import a_latex_model
-from modelconstruct_estimation import Mexplode, display_model
+from modelconstruct_estimation import Makemodel, display_model
 from modelhelp import debug_var
 from modelreport import LatexRepo
 
@@ -385,30 +385,7 @@ try:
     
     
 
-    @register_cell_magic
-    def mdmodel_old(line, cell):
-        """
-        %%mdmodel <name> [options...]
-        
-        Takes Markdown input containing model equations starting with '>'
-        and creates a Mexplode instance in the global namespace.
-        """
-        ip = get_ipython()
-        name, options = get_options(line)
-    
-        model_code = extract_model_from_markdown(cell)
-        model = Mexplode(model_code)
-        
-        # Assign to the global namespace
-        ip.push({name: model})
-        
-        # Optional: display documentation and model preview
-        display(Markdown(cell))
-        print(f"✅ Created Mexplode model: {name}")
-        print(model)
-
-    
-
+   
 
 
 
@@ -513,9 +490,9 @@ try:
             exploded_name = name
 
         # ------------------------------------------------------------
-        # Create Mexplode model
+        # Create Makemodel model
         # ------------------------------------------------------------
-        emodel = Mexplode(model_text, replacements=replacements,                          
+        emodel = Makemodel(model_text, replacements=replacements,                          
                           estimator_namespace=user_ns,funks=funks)
 
      
@@ -564,7 +541,7 @@ try:
     # Cell magic
     # -----------------------------------------------------------------
     @register_cell_magic
-    def mdmodel(line, cell):
+    def Makemymodel(line, cell):
         _ =  _mdmodel_impl(line, cell)
 
 

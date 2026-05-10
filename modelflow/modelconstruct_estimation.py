@@ -1105,7 +1105,7 @@ def display_mixed_markdown(md: str):
 
 
 # =============================================================================
-# Optional in-Mexplode estimation support
+# Optional in-Makemodel estimation support
 # =============================================================================
 
 def _split_frml_options(frml_name: str) -> list[str]:
@@ -1119,17 +1119,35 @@ def _split_frml_options(frml_name: str) -> list[str]:
 
 
 def _frml_option_value(frml_name: str, key: str, default=None):
-    """Read KEY or KEY=value from a FRML-name flag without depending on kw_frml_name."""
-    key = key.upper()
-    for part in _split_frml_options(frml_name):
-        lhs, sep, rhs = part.partition('=')
-        if lhs.strip().upper() == key:
-            return rhs.strip() if sep else True
+    """Read KEY or KEY=value from a FRML-name flag using kw_frml_name.
+
+    ``EST`` is accepted as a short alias for ``ESTIMATOR``:
+
+        <est=ls>        -> estimator named ``ls``
+        <est>           -> use the global/default estimator
+        <estimator=ols> -> built-in OLS estimator
+
+    ``kw_frml_name`` now returns True for bare flags. For compatibility with
+    older versions that returned 1, this helper normalizes 1 to True.
+    """
+    aliases = {
+        "ESTIMATOR": ("ESTIMATOR", "EST"),
+    }
+    keys = aliases.get(str(key).upper(), (key,))
+    for lookup_key in keys:
+        value = kw_frml_name(frml_name, lookup_key, default=None)
+        if value is not None:
+            return True if value == 1 else value
     return default
 
 
 def _strip_frml_options(frml_name: str, remove_keys: set[str]) -> str:
-    """Remove selected options from a FRML-name flag and rebuild <...>."""
+    """Remove selected options from a FRML-name flag and rebuild <...>.
+
+    Kept for compatibility with older helper code. Makemodel now preserves
+    estimation options such as ``estimator``/``est`` and ``smpl`` in emitted
+    FRML names, so normal model construction no longer calls this helper.
+    """
     remove_keys = {k.upper() for k in remove_keys}
     kept = []
     for part in _split_frml_options(frml_name):
@@ -1178,7 +1196,7 @@ def _caller_estimator_namespace() -> dict:
     """Return caller locals/globals so notebook names can be used in <estimator=name>.
 
     This is intentionally best-effort. Explicit ``estimator_classes`` passed to
-    Mexplode still takes precedence over anything found in the caller scope.
+    Makemodel still takes precedence over anything found in the caller scope.
     """
     import inspect
 
@@ -1585,7 +1603,7 @@ def _estimator_coefficients_for_markdown(estimator_obj) -> dict:
 
 
 def _estimation_record_to_markdown(record: dict) -> str:
-    """Create a compact Markdown report block for one Mexplode estimation."""
+    """Create a compact Markdown report block for one Makemodel estimation."""
     est = record.get("estimator_object")
     estimator_name = record.get("estimator") or type(est).__name__
     requested_smpl = record.get("smpl", "")
@@ -1650,8 +1668,8 @@ def _estimation_record_to_markdown(record: dict) -> str:
 
 
 def _line_has_estimator_tag(line: str) -> bool:
-    """True when a source line appears to contain a ModelFlow estimator flag."""
-    return bool(re.search(r"<[^>]*\bestimator\b[^>]*>", line, flags=re.IGNORECASE))
+    """True when a source line appears to contain an estimator/est flag."""
+    return bool(re.search(r"<[^>]*\b(?:estimator|est)\b[^>]*>", line, flags=re.IGNORECASE))
 
 
 def _markdown_with_estimation_blocks(original_text: str, estimation_records: list[dict]) -> str:
@@ -1687,7 +1705,7 @@ def _markdown_with_estimation_blocks(original_text: str, estimation_records: lis
 
 @dataclass
 class BaseExplode:
-    """Common parent for Mexplode and Lexplode."""
+    """Common parent for Makemodel and Lexplode."""
     original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
     normal_frml           : str       = field(default="",init=False,         metadata={"description": "Output normalized expressions"})
     markdown_model        :  str       = field(default="",init=False,         metadata={"description": "As markdown"})
@@ -1719,7 +1737,7 @@ class BaseExplode:
          display_mixed_markdown(rendered_md)
 
 @dataclass
-class Mexplode(BaseExplode):
+class Makemodel(BaseExplode):
     # original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
     # normal_frml           : str       = field(default="",        metadata={"description": "Output normalized expressions"})
     
@@ -1741,7 +1759,7 @@ class Mexplode(BaseExplode):
     type_input            : str       = field(default= 'markdown'     ,metadata={"description": "Originaal as type modelflow or markdown"})
 
     # Optional estimation. An equation is estimated only if its FRML-name
-    # contains <estimator=...> or <estimator>. If <estimator> has no value,
+    # contains <estimator=...>/<est=...> or <estimator>/<est>. If the flag has no value,
     # the global estimator below is used. Untagged equations remain identities.
     input_df              : Optional[Any] = field(default=None, metadata={"description": "DataFrame used when tagged equations are estimated"})
     estimator             : Optional[Any] = field(default=None, metadata={"description": "Default estimator for tagged equations: method name or callable factory"})
@@ -1751,14 +1769,14 @@ class Mexplode(BaseExplode):
     estimator_namespace   : Optional[dict] = field(default=None, metadata={"description": "Optional namespace for resolving <estimator=name>; defaults to caller locals/globals"})
     estimation_records    : List[Any]     = field(init=False, metadata={"description": "Information about equations estimated during construction"})
     normal_input_expressions : List[str]  = field(init=False, metadata={"description": "Expressions sent to modelnormalize, after optional estimation"})
-    normal_output_frmlnames  : List[str]  = field(init=False, metadata={"description": "FRML names emitted after removing estimation-only flags"})
+    normal_output_frmlnames  : List[str]  = field(init=False, metadata={"description": "FRML names emitted; estimation flags are preserved"})
     
     def __post_init__(self):      
         '''prepares a model from a model template. 
         
         Returns a expanded model which is ready to solve.
 
-        If an expanded equation has <estimator=...> (or <estimator> plus a
+        If an expanded equation has <estimator=...>/<est=...> (or <estimator>/<est> plus a
         global self.estimator), the estimator is run here and the estimated
         coefficients are baked into the expression before modelnormalize sees it.
         Untagged equations are treated exactly as before.
@@ -1766,7 +1784,7 @@ class Mexplode(BaseExplode):
 
         # Allow notebook-local factories such as:
         #     ls = Estimate_nls.with_defaults(...)
-        #     Mexplode('><estimator=ls> ...')
+        #     Makemodel('><estimator=ls> ...') or Makemodel('><est=ls> ...')
         # Explicit estimator_classes still wins over caller-scope names.
         self.estimator_classes = _merge_estimator_namespaces(
             explicit=self.estimator_classes,
@@ -1807,7 +1825,7 @@ class Mexplode(BaseExplode):
             for parts in self.expanded_frml_split
         )
         if has_estimated_equations and self.input_df is None and self.estimator is None:
-            # String estimators such as <estimator=nls_lmfit> need input_df
+            # String estimators such as <estimator=nls_lmfit> or <est=nls_lmfit> need input_df
             # here. A callable/factory estimator may already have input_df
             # captured through Estimate_nls.with_defaults(...), so that case
             # is allowed when self.estimator is supplied.
@@ -1823,7 +1841,7 @@ class Mexplode(BaseExplode):
                 for flag in explicit_estimators
             ):
                 raise ModelSpecificationError(
-                    "input_df is required when any equation has an <estimator=...> flag, "
+                    "input_df is required when any equation has an <estimator=...> or <est=...> flag, "
                     "unless you pass a callable/factory estimator that already carries input_df"
                 )
   
@@ -1835,9 +1853,7 @@ class Mexplode(BaseExplode):
                 equation_index=equation_index,
             )
             self.normal_input_expressions.append(expression_for_normal)
-            self.normal_output_frmlnames.append(
-                _strip_frml_options(parts.frmlname, {'ESTIMATOR', 'SMPL'})
-            )
+            self.normal_output_frmlnames.append(parts.frmlname)
 
             self.normal.append((
                 parts,
@@ -1905,7 +1921,7 @@ class Mexplode(BaseExplode):
         self.estimation_records.append({
             'equation_index': equation_index,
             'frmlname': parts.frmlname,
-            'output_frmlname': _strip_frml_options(parts.frmlname, {'ESTIMATOR', 'SMPL'}),
+            'output_frmlname': parts.frmlname,
             'estimator': _estimator_display_name(estimator_name),
             'smpl': smpl,
             'original_expression': parts.expression,
@@ -1917,20 +1933,20 @@ class Mexplode(BaseExplode):
     def estimation_report(
         self,
         path: str = "html",
-        filename: str = "mexplode_estimation_report.html",
+        filename: str = "makemodel_estimation_report.html",
         plot_format: str = "svg",
-        title: str = "Mexplode Estimation Summary",
+        title: str = "Makemodel Estimation Summary",
         open_file: bool = False,
         report_all: bool = False,
     ) -> None:
-        """Export an HTML report for estimations embedded in this Mexplode.
+        """Export an HTML report for estimations embedded in this Makemodel.
 
         The report reuses :func:`modelestimator_new.export_estimation_reports_to_html`.
         By default, only equations tagged with ``<estimator=...>`` are included.
         With ``report_all=True``, unestimated identity equations are included as
         minimal panels alongside the full estimation reports.
         """
-        return export_mexplode_estimation_reports_to_html(
+        return export_makemodel_estimation_reports_to_html(
             self,
             path=path,
             filename=filename,
@@ -1944,7 +1960,7 @@ class Mexplode(BaseExplode):
     def markdown_with_estimation(self) -> str:
         """Original Markdown input with compact estimation tables inserted.
 
-        Each source equation line containing an ``<estimator=...>`` flag gets
+        Each source equation line containing an ``<estimator=...>`` or ``<est=...>`` flag gets
         a Markdown summary table and coefficient table inserted immediately
         after it. The underlying model equations are not changed; this is only
         a documentation/reporting string.
@@ -2046,10 +2062,10 @@ class Mexplode(BaseExplode):
      raise AttributeError(f"'{type(self).__name__}' object has no attribute '{attr}'") 
  
     def __add__ (self, other):
-        if isinstance(other, Mexplode):
-            return Lexplode(mexplodes=[self, other])
+        if isinstance(other, Makemodel):
+            return Lexplode(makemodels=[self, other])
         elif isinstance(other, Lexplode):
-            return Lexplode(mexplodes= [self] + other.mexplodes)
+            return Lexplode(makemodels= [self] + other.makemodels)
         else:
             return NotImplemented
 
@@ -2057,10 +2073,10 @@ class Mexplode(BaseExplode):
         # handle reversed order
         if other == 0:
             return self
-        if isinstance(other, Mexplode):
-            return Lexplode(mexplodes=[other, self])
+        if isinstance(other, Makemodel):
+            return Lexplode(makemodels=[other, self])
         elif isinstance(other, Lexplode):
-            return Lexplode(mexplodes=other.mexplodes + [self])
+            return Lexplode(makemodels=other.makemodels + [self])
         else:
             return NotImplemented
 
@@ -2097,52 +2113,52 @@ class Mexplode(BaseExplode):
 # -*- coding: utf-8 -*-
 """
 Extension to modelconstruct.py
-Adds Lexplode dataclass and addition support for Mexplode and Lexplode.
+Adds Lexplode dataclass and addition support for Makemodel and Lexplode.
 """
 
 
 
 @dataclass
 class Lexplode(BaseExplode):
-    """Container for multiple Mexplode instances.
+    """Container for multiple Makemodel instances.
 
     Enables combination of several model explosions using + operations.
     """
 
-    mexplodes: List['Mexplode'] = field(default_factory=list)
+    makemodels: List['Makemodel'] = field(default_factory=list)
     
     
     # def __post_init__(self):      
         
-    #     self.normal_frml = '\n'.join(m.normal_frml.strip() for m in self.mexplodes)
+    #     self.normal_frml = '\n'.join(m.normal_frml.strip() for m in self.makemodels)
 
     @cached_property
     def normal_frml(self) -> str:
         """Compute and cache concatenated normal_frml lazily on first access."""
-        return "\n".join(m.normal_frml.strip() for m in self.mexplodes)
+        return "\n".join(m.normal_frml.strip() for m in self.makemodels)
         
         
     def __add__(self, other):
-        if isinstance(other, Mexplode):
-            return Lexplode(mexplodes=self.mexplodes + [other])
+        if isinstance(other, Makemodel):
+            return Lexplode(makemodels=self.makemodels + [other])
         elif isinstance(other, Lexplode):
-            return Lexplode(mexplodes=self.mexplodes + other.mexplodes)
+            return Lexplode(makemodels=self.makemodels + other.makemodels)
         else:
             return NotImplemented
 
     def __radd__(self, other):
         if other == 0:
             return self
-        if isinstance(other, Mexplode):
-            return Lexplode(mexplodes=[other] + self.mexplodes)
+        if isinstance(other, Makemodel):
+            return Lexplode(makemodels=[other] + self.makemodels)
         elif isinstance(other, Lexplode):
-            return Lexplode(mexplodes=other.mexplodes + self.mexplodes)
+            return Lexplode(makemodels=other.makemodels + self.makemodels)
         else:
             return NotImplemented
 
 
     def __repr__(self):
-        return f"Lexplode(mexplodes={self.mexplodes!r})"
+        return f"Lexplode(makemodels={self.makemodels!r})"
 
     def estimation_report(
         self,
@@ -2153,8 +2169,8 @@ class Lexplode(BaseExplode):
         open_file: bool = False,
         report_all: bool = False,
     ) -> None:
-        """Export an HTML report for estimations embedded in all member Mexplodes."""
-        return export_mexplode_estimation_reports_to_html(
+        """Export an HTML report for estimations embedded in all member Makemodels."""
+        return export_makemodel_estimation_reports_to_html(
             self,
             path=path,
             filename=filename,
@@ -2166,10 +2182,10 @@ class Lexplode(BaseExplode):
 
     @property
     def markdown_with_estimation(self) -> str:
-        """Concatenate member Mexplode markdown-with-estimation strings."""
+        """Concatenate member Makemodel markdown-with-estimation strings."""
         return "\n\n".join(
             mex.markdown_with_estimation
-            for mex in self.mexplodes
+            for mex in self.makemodels
         )
 
     @property
@@ -2182,17 +2198,17 @@ class Lexplode(BaseExplode):
 
 
 
-def _iter_mexplode_report_sources(obj):
-    """Yield Mexplode instances from a Mexplode or Lexplode report source."""
-    if isinstance(obj, Mexplode):
+def _iter_makemodel_report_sources(obj):
+    """Yield Makemodel instances from a Makemodel or Lexplode report source."""
+    if isinstance(obj, Makemodel):
         yield obj
         return
     if isinstance(obj, Lexplode):
-        for mex in obj.mexplodes:
-            yield from _iter_mexplode_report_sources(mex)
+        for mex in obj.makemodels:
+            yield from _iter_makemodel_report_sources(mex)
         return
     raise TypeError(
-        "Expected a Mexplode or Lexplode instance, "
+        "Expected a Makemodel or Lexplode instance, "
         f"got {type(obj).__name__}."
     )
 
@@ -2211,8 +2227,8 @@ def _is_estimator_backend_instance(eq) -> bool:
     return isinstance(eq, EstimatorBackend)
 
 
-def mexplode_report_equations(mexplode_obj, *, report_all: bool = False) -> list:
-    """Return reportable equation objects from a Mexplode/Lexplode.
+def makemodel_report_equations(makemodel_obj, *, report_all: bool = False) -> list:
+    """Return reportable equation objects from a Makemodel/Lexplode.
 
     Estimated equations are identified by ``isinstance(eq, EstimatorBackend)``.
     When ``report_all=True``, unestimated equations are wrapped as lightweight
@@ -2222,7 +2238,7 @@ def mexplode_report_equations(mexplode_obj, *, report_all: bool = False) -> list
     from modelestimator_new import Eq
 
     equations = []
-    for mex in _iter_mexplode_report_sources(mexplode_obj):
+    for mex in _iter_makemodel_report_sources(makemodel_obj):
         records = list(getattr(mex, "estimation_records", []))
         records_by_index = {
             rec.get("equation_index"): rec
@@ -2250,11 +2266,11 @@ def mexplode_report_equations(mexplode_obj, *, report_all: bool = False) -> list
                 )
                 equations.append(Eq(
                     org_eq=expression,
-                    frml_name=_strip_frml_options(parts.frmlname, {"ESTIMATOR", "SMPL"}),
+                    frml_name=parts.frmlname,
                 ))
             continue
 
-        # Backwards compatibility for Mexplode objects created before
+        # Backwards compatibility for Makemodel objects created before
         # equation_index was added: report EstimatorBackend instances, but
         # exact interleaving with identities is not available.
         equations.extend(
@@ -2266,39 +2282,39 @@ def mexplode_report_equations(mexplode_obj, *, report_all: bool = False) -> list
     return equations
 
 
-def export_mexplode_estimation_reports_to_html(
-    mexplode_obj,
+def export_makemodel_estimation_reports_to_html(
+    makemodel_obj,
     path: str = "html",
-    filename: str = "mexplode_estimation_report.html",
+    filename: str = "makemodel_estimation_report.html",
     plot_format: str = "svg",
-    title: str = "Mexplode Estimation Summary",
+    title: str = "Makemodel Estimation Summary",
     open_file: bool = False,
     report_all: bool = False,
 ) -> None:
-    """Export an HTML report for the estimated equations in a Mexplode.
+    """Export an HTML report for the estimated equations in a Makemodel.
 
     Parameters mirror :func:`modelestimator_new.export_estimation_reports_to_html`.
-    ``mexplode_obj`` may be either a single :class:`Mexplode` or a
+    ``makemodel_obj`` may be either a single :class:`Makemodel` or a
     :class:`Lexplode` combining several of them.
     """
     from modelestimator_new import export_estimation_reports_to_html
 
-    equations = mexplode_report_equations(
-        mexplode_obj,
+    equations = makemodel_report_equations(
+        makemodel_obj,
         report_all=report_all,
     )
 
     if not equations:
         print(
-            "[Mexplode.estimation_report] No estimated equations found. "
-            "Add <estimator=...> to one or more equations before requesting "
+            "[Makemodel.estimation_report] No estimated equations found. "
+            "Add <estimator=...> or <est=...> to one or more equations before requesting "
             "an estimation report."
         )
         return
 
     if not report_all:
         identity_count = 0
-        for mex in _iter_mexplode_report_sources(mexplode_obj):
+        for mex in _iter_makemodel_report_sources(makemodel_obj):
             n_expanded = len(getattr(mex, "expanded_frml_split", []))
             n_estimated = sum(
                 1
@@ -2308,7 +2324,7 @@ def export_mexplode_estimation_reports_to_html(
             identity_count += max(0, n_expanded - n_estimated)
         if identity_count:
             print(
-                f"[Mexplode.estimation_report] Including {len(equations)} "
+                f"[Makemodel.estimation_report] Including {len(equations)} "
                 f"estimated equation(s); skipping {identity_count} identity "
                 "equation(s). Pass report_all=True to include identities too."
             )
@@ -2324,11 +2340,22 @@ def export_mexplode_estimation_reports_to_html(
     )
 
 
+
+# -----------------------------------------------------------------------------
+# Backwards compatibility aliases
+# -----------------------------------------------------------------------------
+# ``Makemodel`` is the new public name.  These aliases keep older notebooks
+# importing/constructing ``Mexplode`` or calling the old helper names working
+# while code is migrated.
+Mexplode = Makemodel
+mexplode_report_equations = makemodel_report_equations
+export_mexplode_estimation_reports_to_html = export_makemodel_estimation_reports_to_html
+
 if __name__ == '__main__' :
 #%%
     pass
     if 0: 
-        res3 = Mexplode('''
+        res3 = Makemodel('''
         <endo=f,stoc> a = gamma+ f+O       
         <endo=f> a = gamma+ f+O       
         <endo=x,stoc,endo_lhs> a+x = gamma+ f+O       
@@ -2357,10 +2384,10 @@ if __name__ == '__main__' :
         '''.upper() 
         # xx = 'doabel  <HEST,sum=abe>  LOSS__{BANKS}__{SECTORs} =HOLDING__{BANKS}__{SECTORs} * PD__{BANKS}__{SECTORs} $'.upper() 
         
-        # res = Mexplode(tlists+xx)
+        # res = Makemodel(tlists+xx)
         # print(res)
     # breakpoint()     
-        res2 = Mexplode('''
+        res2 = Makemodel('''
                  LIST BANKS = BANKS    : IB      SOREN  MARIE /
                              COUNTRY : DENMARK SWEDEN DENMARK  /
                              SELECTED : 1 1 0 
@@ -2380,9 +2407,9 @@ if __name__ == '__main__' :
         print(res2+res3)
         
     if 0: 
-        test1= Mexplode('a=1')
-        test2= Mexplode('b=2')
-        test3= Mexplode('c=3')
+        test1= Makemodel('a=1')
+        test2= Makemodel('b=2')
+        test3= Makemodel('c=3')
         print(test1+(test2+test3))
         print(test1)
 
