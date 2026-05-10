@@ -494,8 +494,9 @@ def findlists_in_latex(input):
         for l in temp1
     ]
     # debug_var(temp0,temp1,temp2)
-    result =  '\n'.join(temp2) + '\n'
-    return result 
+    if not temp2:
+        return ""
+    return "\n".join(temp2) + "\n"     
 
 
 
@@ -1448,15 +1449,6 @@ def _get_estimator_class(estimator_name, estimator_classes: Optional[dict] = Non
         ) from exc
 
 
-def _maybe_run_estimator_fit(estimator_obj):
-    """Call the first standard fit/estimate/run method available, if any."""
-    for method_name in ('fit', 'estimate', 'run'):
-        method = getattr(estimator_obj, method_name, None)
-        if callable(method):
-            return method()
-    return None
-
-
 def _clean_estimated_expression(candidate: str) -> str:
     """Turn either an expression or a one-FRML string into a bare expression."""
     text = str(candidate).strip()
@@ -1720,13 +1712,12 @@ def _estimate_and_bake_expression(
 
     estimator_obj = _instantiate_estimator(estimator_constructor, expression, kwargs)
     estimator_obj = _require_estimator_backend_instance(estimator_obj, estimator_name)
-    fit_result = _maybe_run_estimator_fit(estimator_obj)
 
-    baked = _extract_expression_from_estimator(estimator_obj, fit_result)
+    baked = _extract_expression_from_estimator(estimator_obj)
     if baked:
         return baked, estimator_obj
 
-    params = _extract_params_from_estimator(estimator_obj, fit_result)
+    params = _extract_params_from_estimator(estimator_obj)
     baked = _bake_params_into_expression(expression, params)
     return baked, estimator_obj
 
@@ -2019,6 +2010,8 @@ class Makemodel(BaseExplode):
 # def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True, =False,make_fitted=False,eviews=''):
         self.normal = []
         for equation_index, parts in enumerate(self.expanded_frml_split):
+            if kw_frml_name(parts.frmlname, 'DROP'):
+                continue
             expression_for_normal = self._expression_after_optional_estimation(
                 parts,
                 equation_index=equation_index,
@@ -2134,8 +2127,8 @@ class Makemodel(BaseExplode):
         filename: str = "makemodel_estimation_report.html",
         plot_format: str = "svg",
         title: str = "Makemodel Estimation Summary",
-        open_file: bool = False,
-        report_all: bool = False,
+        open_file: bool = True,
+        report_all: bool = True ,
     ) -> None:
         """Export an HTML report for estimations embedded in this Makemodel.
 
@@ -2364,8 +2357,8 @@ class Lexplode(BaseExplode):
         filename: str = "lexplode_estimation_report.html",
         plot_format: str = "svg",
         title: str = "Lexplode Estimation Summary",
-        open_file: bool = False,
-        report_all: bool = False,
+        open_file: bool = True,
+        report_all: bool = True,
     ) -> None:
         """Export an HTML report for estimations embedded in all member Makemodels."""
         return export_makemodel_estimation_reports_to_html(

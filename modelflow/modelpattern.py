@@ -390,7 +390,7 @@ def kw_frml_name(frml_name0, kw,default=None):
     if '<' in frml_name:
         j = frml_name.find('<')  # where is the <
         for s in frml_name[j + 1:-1].split(','):
-            keyvalue = s.split('=')
+            keyvalue = s.split('=',1)
             if keyvalue[0].upper().strip() == kw.upper():
                 if len(keyvalue) == 2:
                     out = keyvalue[1].strip() 

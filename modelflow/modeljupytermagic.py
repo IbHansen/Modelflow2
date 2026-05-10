@@ -19,6 +19,7 @@ from IPython.core.magic import register_line_magic, register_cell_magic
 from subprocess import run 
 import re 
 import ast
+import shlex
 
 
 from model_latex import latextotxt
@@ -32,27 +33,41 @@ from modelreport import LatexRepo
 
 def get_options(line,defaultname = 'test'):
     '''
-    Retrives options from the first line
+    Retrives options from the first line.
 
+    The line is tokenized with :mod:`shlex` (POSIX mode), so values that
+    contain whitespace or shell-special characters can be passed by quoting
+    them. Examples::
+
+        %%Makemymodel npl smpl="(2012, 2019)"
+        %%Makemymodel npl caption="My model"
+
+    Unquoted whitespace still separates tokens, exactly as before, so
+    existing usage like ``smpl=(2012,2019)`` (no inner space) keeps working.
+    A value may itself contain ``=`` — only the first ``=`` is treated as
+    the key/value separator.
 
     Args:
-        line (TYPE): DESCRIPTION.
-        defaultname (TYPE, optional): DESCRIPTION. Defaults to 'test'.
+        line (str): the magic line (everything after the magic name).
+        defaultname (str, optional): fallback name when the line is empty.
 
     Returns:
-        name (string): name .
-        opt (dict): options.
-
+        name (str): the model/object name (first token).
+        opt (dict): parsed options. Bare flags map to ``True``;
+            ``key=0`` and ``key=False`` map to ``False``.
     '''
     if line: 
-        arglistfull = line.split()
+        arglistfull = shlex.split(line, posix=True)
         name= arglistfull[0]
         arglist=arglistfull[1:] if len(arglistfull)>= 1 else []
     else:
         name = defaultname
         arglist=[]
 
-    opt = {o.split('=')[0] : o.split('=')[1] if len(o.split('='))==2 else True for o in arglist}
+    opt = {}
+    for o in arglist:
+        parts = o.split('=', 1)
+        opt[parts[0]] = parts[1] if len(parts) == 2 else True
     opt = {o : False if ( v== '0' or v=='False')  else v for o,v in opt.items()}
     
     return name,opt           
@@ -438,8 +453,10 @@ try:
         replacements = _resolve_option(options, 'replacements', user_ns)
         funks        = _resolve_option(options, 'funks',        user_ns, default=[]) or []
         input_df     = _resolve_option(options, 'input_df',     user_ns)
-        estimator    = _resolve_option(options, 'estimator',    user_ns)
-        # smpl can be a tuple/list literal like (2010, 2019) or a name in
+        estimator = _resolve_option(options, "estimator", user_ns, default=None)
+        
+        if estimator is None:
+            estimator = _resolve_option(options, "est", user_ns, default=None)        # smpl can be a tuple/list literal like (2010, 2019) or a name in
         # user_ns; pass it through to Makemodel which already knows how to
         # parse strings, tuples, slices, etc. via _parse_smpl.
         smpl         = _resolve_option(options, 'smpl',         user_ns)
@@ -532,11 +549,21 @@ try:
         # ------------------------------------------------------------
         # Rendering
         # ------------------------------------------------------------
-        if options.get('render', True):
+                
+                
+        if options.get('render_est', True):
             if options.get('render_list', True):
-                display_model(model_text, spec=spec)
+                display_model(emodel.markdown_with_estimation, spec=spec)
             else:
-                display_model(model_text_no_list, spec=spec)
+                display_model(emodel.markdown_with_estimation_no_list, spec=spec)
+        else:
+            if options.get('render', True):
+                if options.get('render_list', True):
+                    display_model(model_text, spec=spec)
+                else:
+                    display_model(model_text_no_list, spec=spec)
+
+
                 
         if options.get('show', False):
             emodel.show
@@ -576,37 +603,16 @@ try:
         _ =  _mdmodel_impl(line, cell)
 
 
-    # -----------------------------------------------------------------
-    # Line magic
-    # -----------------------------------------------------------------
-    @register_line_magic
-    def mdmodel(line):
-        """
-        %mdmodel <name> [options...]
 
+    @register_line_magic
+    def Makemymodel(line):
+        """
+        %Makemymodel <name> [options...]
+    
         Rebuild / re-render an existing Markdown-based model
         without adding new content.
         """
-        _ =  _mdmodel_impl(line, cell=None)
-
-
-    @register_cell_magic
-    def Mexplodemodel(line, cell):
-        _ =  _mdmodel_impl(line, cell)
-
-
-    # -----------------------------------------------------------------
-    # Line magic
-    # -----------------------------------------------------------------
-    @register_line_magic
-    def Mexplodemodel(line):
-        """
-        %mdmodel <name> [options...]
-
-        Rebuild / re-render an existing Markdown-based model
-        without adding new content.
-        """
-        _ =  _mdmodel_impl(line, cell=None)
+        _ = _mdmodel_impl(line, cell=None)
 
 
 except:
@@ -805,6 +811,3 @@ def markdown_titles_to_latex(text: str) -> str:
     outtext = re.sub(r"^## (.+)$", r"\\subsection{\1}", outtext, flags=re.MULTILINE)
     outtext = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", outtext, flags=re.MULTILINE)
     return outtext
-
-
-
