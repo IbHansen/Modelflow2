@@ -1257,6 +1257,66 @@ def _estimator_display_name(estimator_spec) -> str:
     return type(estimator_spec).__name__
 
 
+def _estimator_factory_defaults(estimator_callable) -> dict:
+    """Return defaults attached by modelestimator_new.with_defaults(...).
+
+    Makemodel needs the factory defaults before instantiating the estimator so
+    equation-local ``smpl=...`` can be parsed against the same dataframe index
+    that the estimator will use.  The important point is that this does **not**
+    call the factory: constructing an EstimatorBackend runs the estimation in
+    ``__post_init__``.
+
+    New modelestimator_new factories expose:
+
+        factory._estimator_defaults = {"input_df": input_df, **default_kwargs}
+        factory._estimator_class = cls
+
+    A small non-calling fallback for ``functools.partial`` and simple callable
+    objects is kept for user-defined factories.
+    """
+    defaults = getattr(estimator_callable, "_estimator_defaults", None)
+    if isinstance(defaults, dict):
+        return defaults
+
+    # functools.partial or similar callables.
+    keywords = getattr(estimator_callable, "keywords", None)
+    if isinstance(keywords, dict):
+        return dict(keywords)
+
+    # Callable objects may expose defaults explicitly.
+    defaults = getattr(estimator_callable, "defaults", None)
+    if isinstance(defaults, dict):
+        return defaults
+    defaults = getattr(estimator_callable, "_defaults", None)
+    if isinstance(defaults, dict):
+        return defaults
+
+    return {}
+
+
+def _input_df_from_estimator_factory(estimator_callable):
+    """Return the input_df captured by an estimator factory, if exposed."""
+    return _estimator_factory_defaults(estimator_callable).get("input_df")
+
+
+def _infer_input_df_from_estimator_spec(estimator_spec, estimator_classes: Optional[dict] = None):
+    """Infer the dataframe carried by an estimator class/factory, if possible.
+
+    This is only used to parse equation-local samples.  It lets
+
+        ls = Estimate_nls.with_defaults(input_df=npl, smpl=(2011, 2019))
+        <estimator=ls,smpl=2013 2018> ...
+
+    convert ``2013`` and ``2018`` using ``npl.index`` even when Makemodel itself
+    was not constructed with ``input_df=npl``.  The factory is not called during
+    this discovery step, so no dummy estimation is run.
+    """
+    try:
+        constructor = _get_estimator_class(estimator_spec, estimator_classes)
+    except Exception:
+        return None
+    return _input_df_from_estimator_factory(constructor)
+
 def _caller_estimator_namespace() -> dict:
     """Return caller locals/globals so notebook names can be used in <estimator=name>.
 
@@ -1973,8 +2033,25 @@ class Makemodel(BaseExplode):
             )
 
         local_smpl = _frml_option_value(parts.frmlname, 'SMPL', default=None)
-        smpl = _parse_smpl(local_smpl if local_smpl is not None else self.smpl, df=self.input_df)
-        debug_var(smpl,local_smpl)
+
+        # Equation-local smpl must override the estimator factory default.
+        # If Makemodel.input_df is None because the dataframe is captured in a
+        # local factory such as ``ls = Estimate_nls.with_defaults(input_df=npl)``,
+        # read the factory's _estimator_defaults metadata before parsing
+        # ``smpl=2013 2018``.  This avoids constructing a dummy estimator,
+        # which would run a real fit in EstimatorBackend.__post_init__.
+        df_for_smpl = self.input_df
+        if df_for_smpl is None:
+            df_for_smpl = _infer_input_df_from_estimator_spec(
+                estimator_name,
+                self.estimator_classes,
+            )
+
+        smpl = _parse_smpl(
+            local_smpl if local_smpl is not None else self.smpl,
+            df=df_for_smpl,
+        )
+
         baked_expression, estimator_obj = _estimate_and_bake_expression(
             parts.expression,
             estimator_name=estimator_name,

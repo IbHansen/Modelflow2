@@ -1117,6 +1117,16 @@ class EstimatorBackend(Eq_parent, ABC):
             )
             return cls(**params)
 
+        # Metadata for callers such as Makemodel.  Reading these attributes
+        # lets Makemodel resolve equation-local samples against the factory's
+        # captured dataframe without constructing a dummy estimator, which
+        # would run a real fit in EstimatorBackend.__post_init__.
+        factory._estimator_defaults = {
+            "input_df": input_df,
+            **default_kwargs,
+        }
+        factory._estimator_class = cls
+
         return factory
 
 
@@ -1538,6 +1548,16 @@ class Estimate_nls:
                 params["org_eq"].upper().replace("@ABS", "ABS")
             )
             return cls(**params)
+
+        # Metadata for callers such as Makemodel.  Reading these attributes
+        # lets Makemodel resolve equation-local samples against the factory's
+        # captured dataframe without constructing a dummy estimator, which
+        # would run a real fit in EstimatorBackend.__post_init__.
+        factory._estimator_defaults = {
+            "input_df": input_df,
+            **default_kwargs,
+        }
+        factory._estimator_class = cls
 
         return factory
 
