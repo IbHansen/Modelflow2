@@ -58,6 +58,36 @@ def get_options(line,defaultname = 'test'):
     return name,opt           
 
 
+def _resolve_option(options, opt_name, user_ns, default=None):
+    """Resolve a magic-line option that may be a literal or a name in user_ns.
+
+    Tries ``ast.literal_eval`` first so options like ``replacements=[('a','b')]``
+    work directly on the line. Falls back to looking up the raw string in the
+    notebook namespace, so users can pass a Python object by name:
+
+        df = pd.read_csv(...)
+        %%Makemymodel mymodel input_df=df
+
+    Returns ``default`` if the option is missing, unparseable, and not a name
+    in ``user_ns``. A warning is printed in the bad-name case so silent typos
+    don't go unnoticed.
+    """
+    if opt_name not in options:
+        return default
+    raw = options[opt_name]
+    # Bare flags (e.g. ``segment`` with no =value) come through as True;
+    # handle them before ast.literal_eval which would reject them.
+    if raw is True or raw is False:
+        return raw
+    try:
+        return ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        if raw in user_ns:
+            return user_ns[raw]
+        print(f"⚠️ Warning: {opt_name}={raw!r} not found in namespace and not a literal.")
+        return default
+
+
 try:
 
     from IPython.core.magic import register_cell_magic, register_line_magic
@@ -401,32 +431,19 @@ try:
         spec = options.get('spec', 'markdown')
 
         # ------------------------------------------------------------
-        # Handle replacements argument
+        # Resolve options that can be literals or names in the user namespace.
+        # ``_resolve_option`` handles ast.literal_eval first, then user_ns
+        # lookup, and prints a warning on bad names instead of failing silently.
         # ------------------------------------------------------------
-        replacements = None
-        if 'replacements' in options:
-            repl_arg = options['replacements']
-            try:
-                replacements = ast.literal_eval(repl_arg)
-            except (ValueError, SyntaxError):
-                if repl_arg in user_ns:
-                    replacements = user_ns[repl_arg]
-                else:
-                    print(f"⚠️ Warning: replacements '{repl_arg}' not found or invalid.")
-                    replacements = None
+        replacements = _resolve_option(options, 'replacements', user_ns)
+        funks        = _resolve_option(options, 'funks',        user_ns, default=[]) or []
+        input_df     = _resolve_option(options, 'input_df',     user_ns)
+        estimator    = _resolve_option(options, 'estimator',    user_ns)
+        # smpl can be a tuple/list literal like (2010, 2019) or a name in
+        # user_ns; pass it through to Makemodel which already knows how to
+        # parse strings, tuples, slices, etc. via _parse_smpl.
+        smpl         = _resolve_option(options, 'smpl',         user_ns)
 
-        funks=[]
-        if 'funks' in options:
-             funks_arg = options['funks']
-             try:
-                 funks = ast.literal_eval(funks_arg)
-             except (ValueError, SyntaxError):
-                 if funks_arg in user_ns:
-                     funks = user_ns[funks_arg]
-                 else:
-                     print(f"⚠️ Warning: funks '{funks_arg}' not found or invalid.")
-                     funks = []
-        
 
         # ------------------------------------------------------------
         # Handle segmented models
@@ -492,8 +509,22 @@ try:
         # ------------------------------------------------------------
         # Create Makemodel model
         # ------------------------------------------------------------
-        emodel = Makemodel(model_text, replacements=replacements,                          
-                          estimator_namespace=user_ns,funks=funks)
+        # Only forward estimation kwargs when the user actually supplied them
+        # on the magic line; that keeps the no-estimation path identical to
+        # the previous behavior.
+        makemodel_kwargs = dict(
+            replacements=replacements,
+            estimator_namespace=user_ns,
+            funks=funks,
+        )
+        if input_df is not None:
+            makemodel_kwargs['input_df'] = input_df
+        if estimator is not None:
+            makemodel_kwargs['estimator'] = estimator
+        if smpl is not None:
+            makemodel_kwargs['smpl'] = smpl
+
+        emodel = Makemodel(model_text, **makemodel_kwargs)
 
      
         user_ns[exploded_name] = emodel

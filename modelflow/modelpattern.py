@@ -265,14 +265,37 @@ def list_extract(equations, silent=True, add_auto_sublists=True):
                     )
 
             if add_auto_sublists:
-                this_dict[first_sublist_name + '_END'] = ['0'] * (list_len - 1) + ['1']
-                this_dict[first_sublist_name + '_NOEND'] = ['1'] * (list_len - 1) + ['0']
-                this_dict[first_sublist_name + '_START'] = ['1'] + ['0'] * (list_len - 1)
-                this_dict[first_sublist_name + '_NOSTART'] = ['0'] + ['1'] * (list_len - 1)
+                # Only inject auto-sublists that don't collide with explicitly
+                # user-defined sublist names. A user list like
+                #   LIST AGES = AGES : AGE_0 * AGE_5 / AGES_END : 1 0 0 0 0 0
+                # already has its own AGES_END sublist; silently overwriting it
+                # would be a footgun. We warn (when not silent) and keep the
+                # user's value.
+                auto_sublists = [
+                    (first_sublist_name + '_END',     ['0'] * (list_len - 1) + ['1']),
+                    (first_sublist_name + '_NOEND',   ['1'] * (list_len - 1) + ['0']),
+                    (first_sublist_name + '_START',   ['1'] + ['0'] * (list_len - 1)),
+                    (first_sublist_name + '_NOSTART', ['0'] + ['1'] * (list_len - 1)),
+                ]
                 if list_len >= 3:
-                    this_dict[first_sublist_name + '_MIDDLE'] = ['0'] + ['1'] * (list_len - 2) + ['0']
-                this_dict[first_sublist_name + '_BEFORE'] = ['0'] + first_sublist[:-1]
-                this_dict[first_sublist_name + '_AFTER'] = first_sublist[1:] + ['0']
+                    auto_sublists.append(
+                        (first_sublist_name + '_MIDDLE', ['0'] + ['1'] * (list_len - 2) + ['0'])
+                    )
+                auto_sublists.extend([
+                    (first_sublist_name + '_BEFORE', ['0'] + first_sublist[:-1]),
+                    (first_sublist_name + '_AFTER',  first_sublist[1:] + ['0']),
+                ])
+
+                for sub_name, sub_values in auto_sublists:
+                    if sub_name in this_dict:
+                        if not silent:
+                            print(
+                                f'Warning: auto-sublist {sub_name!r} in list '
+                                f'{list_name!r} would overwrite a user-defined '
+                                f'sublist; keeping user value.'
+                            )
+                        continue
+                    this_dict[sub_name] = sub_values
 
             liste_dict[list_name] = this_dict
 

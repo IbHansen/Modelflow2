@@ -1177,7 +1177,14 @@ def _parse_smpl(smpl, df=None):
         return None
 
     def _slice_on_df(start, end, df_):
-        """Return (first_label, last_label) selected by df_.index.slice_locs."""
+        """Return (first_label, last_label) selected by df_.index.slice_locs.
+
+        Warns when the requested upper bound is past the last index label and
+        the sample is silently truncated. ``slice_locs`` accepts an end
+        beyond the index without complaining, so without this check users
+        can ask for ``smpl=2010 2025`` against data that ends in 2020 and
+        not notice the sample stopped early.
+        """
         if df_ is None:
             return (start, end)
 
@@ -1202,6 +1209,25 @@ def _parse_smpl(smpl, df=None):
                     raise IndexError(
                         f"sample {start!r} {end!r} selects no rows"
                     )
+                # Warn when the user asked for an end that the index did not
+                # actually contain. Compare against the original requested
+                # end (e), not the resolved per[-1].
+                try:
+                    if e is not None and per[-1] != e:
+                        # If the index has any label strictly less than
+                        # per[-1] but greater than or equal to e, that means
+                        # e was *between* labels and we rounded down — fine.
+                        # The problematic case is e being beyond idx[-1].
+                        if e > idx[-1]:
+                            print(
+                                f"⚠️  Sample upper bound {e!r} is past the "
+                                f"end of the index ({idx[-1]!r}); using "
+                                f"{per[-1]!r} instead."
+                            )
+                except Exception:
+                    # Comparison may fail across mixed index types; just skip
+                    # the warning rather than raising.
+                    pass
                 return (per[0], per[-1])
             except Exception as exc:
                 last_error = exc
@@ -1442,11 +1468,22 @@ def _clean_estimated_expression(candidate: str) -> str:
 
 
 def _extract_expression_from_estimator(estimator_obj, fit_result=None) -> Optional[str]:
-    """Try common attribute/method names for an already-baked equation expression."""
-    # modelestimator_new.EstimatorBackend already exposes the baked equation
-    # as org_eq_unlinked. Prefer it over generic FRML-ish attributes, because
-    # normal_frml may contain a full normalized ModelFlow statement rather
-    # than the bare estimated equation expression.
+    """Try common attribute/method names for an already-baked equation expression.
+
+    Custom backends MUST expose the baked equation through one of:
+        - ``org_eq_unlinked``  (preferred; this is what EstimatorBackend uses)
+        - ``estimated_expression`` / ``estimated_eq``
+        - ``baked_expression`` / ``baked_eq``
+        - ``frml_expression``
+        - ``to_expression()`` / ``to_equation()`` / ``to_frml()`` methods
+
+    ``normal_frml`` and ``frml`` were intentionally removed from this list:
+    they typically contain a fully normalized ModelFlow statement (with
+    ``_A`` add-factor suffixes, dummy LHS rewrites, etc.). Baking such a
+    statement back into the Makemodel pipeline would cause double
+    normalization. Backends that only expose ``normal_frml`` should fall
+    through to coefficient-substitution via ``_bake_params_into_expression``.
+    """
     expression_names = (
         'org_eq_unlinked',
         'estimated_expression',
@@ -1454,8 +1491,6 @@ def _extract_expression_from_estimator(estimator_obj, fit_result=None) -> Option
         'baked_expression',
         'baked_eq',
         'frml_expression',
-        'normal_frml',
-        'frml',
     )
     method_names = (
         'to_expression',
@@ -1907,15 +1942,6 @@ class Makemodel(BaseExplode):
         Untagged equations are treated exactly as before.
         '''
 
-        # Allow notebook-local factories such as:
-        #     ls = Estimate_nls.with_defaults(...)
-        #     Makemodel('><estimator=ls> ...') or Makemodel('><est=ls> ...')
-        # Explicit estimator_classes still wins over caller-scope names.
-        self.estimator_classes = _merge_estimator_namespaces(
-            explicit=self.estimator_classes,
-            namespace=self.estimator_namespace or _caller_estimator_namespace(),
-        )
-        
         if   self.type_input == 'markdown': 
             extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
             self.markdown_model = (mfmod_list_to_codeblock(self.original_statements))
@@ -1945,20 +1971,40 @@ class Makemodel(BaseExplode):
         self.normal_input_expressions = []
         self.normal_output_frmlnames = []
 
-        has_estimated_equations = any(
-            _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None) is not None
+        # Cache the estimator flag per equation so we evaluate kw_frml_name
+        # exactly once per equation instead of three times.
+        estimator_flags_per_equation = [
+            _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None)
             for parts in self.expanded_frml_split
+        ]
+        has_estimated_equations = any(flag is not None for flag in estimator_flags_per_equation)
+
+        # Resolve the estimator namespace lazily: only walk frames when we
+        # actually need to look up estimator names AND the caller did not
+        # already supply a namespace. Walking f_globals/f_locals on every
+        # Makemodel(...) call is expensive when no estimation is involved
+        # (the magic always passes user_ns explicitly, so the walk would be
+        # pure overhead in that path).
+        if has_estimated_equations and self.estimator_namespace is None and not self.estimator_classes:
+            namespace_for_resolution = _caller_estimator_namespace()
+        else:
+            namespace_for_resolution = self.estimator_namespace or {}
+
+        # Allow notebook-local factories such as:
+        #     ls = Estimate_nls.with_defaults(...)
+        #     Makemodel('><estimator=ls> ...') or Makemodel('><est=ls> ...')
+        # Explicit estimator_classes still wins over caller-scope names.
+        self.estimator_classes = _merge_estimator_namespaces(
+            explicit=self.estimator_classes,
+            namespace=namespace_for_resolution,
         )
+
         if has_estimated_equations and self.input_df is None and self.estimator is None:
             # String estimators such as <estimator=nls_lmfit> or <est=nls_lmfit> need input_df
             # here. A callable/factory estimator may already have input_df
             # captured through Estimate_nls.with_defaults(...), so that case
             # is allowed when self.estimator is supplied.
-            explicit_estimators = [
-                _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None)
-                for parts in self.expanded_frml_split
-                if _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None) is not None
-            ]
+            explicit_estimators = [flag for flag in estimator_flags_per_equation if flag is not None]
             if not any(
                 isinstance(flag, str)
                 and self.estimator_classes
@@ -1976,6 +2022,7 @@ class Makemodel(BaseExplode):
             expression_for_normal = self._expression_after_optional_estimation(
                 parts,
                 equation_index=equation_index,
+                estimator_flag=estimator_flags_per_equation[equation_index],
             )
             self.normal_input_expressions.append(expression_for_normal)
             self.normal_output_frmlnames.append(parts.frmlname)
@@ -2017,9 +2064,18 @@ class Makemodel(BaseExplode):
         self.list_specification = self.get_lists()
         return 
 
-    def _expression_after_optional_estimation(self, parts, *, equation_index: Optional[int] = None) -> str:
-        """Return parts.expression, or an estimated/baked version when tagged."""
-        estimator_flag = _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None)
+    def _expression_after_optional_estimation(self, parts, *, equation_index: Optional[int] = None,
+                                              estimator_flag: Any = ...) -> str:
+        """Return parts.expression, or an estimated/baked version when tagged.
+
+        ``estimator_flag`` is the cached value from ``__post_init__``'s single
+        pass over ``expanded_frml_split``. It may be passed as ``...`` (the
+        default sentinel) for backward compatibility, in which case the flag
+        is resolved here. Direct callers from the new code path should always
+        pass the cached value to avoid redundant ``kw_frml_name`` work.
+        """
+        if estimator_flag is ...:
+            estimator_flag = _frml_option_value(parts.frmlname, 'ESTIMATOR', default=None)
         if estimator_flag is None:
             return parts.expression
 
