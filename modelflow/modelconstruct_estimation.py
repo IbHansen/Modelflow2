@@ -494,9 +494,8 @@ def findlists_in_latex(input):
         for l in temp1
     ]
     # debug_var(temp0,temp1,temp2)
-    if not temp2:
-        return ""
-    return "\n".join(temp2) + "\n"     
+    result =  '\n'.join(temp2) + '\n'
+    return result 
 
 
 
@@ -1449,6 +1448,15 @@ def _get_estimator_class(estimator_name, estimator_classes: Optional[dict] = Non
         ) from exc
 
 
+def _maybe_run_estimator_fit(estimator_obj):
+    """Call the first standard fit/estimate/run method available, if any."""
+    for method_name in ('fit', 'estimate', 'run'):
+        method = getattr(estimator_obj, method_name, None)
+        if callable(method):
+            return method()
+    return None
+
+
 def _clean_estimated_expression(candidate: str) -> str:
     """Turn either an expression or a one-FRML string into a bare expression."""
     text = str(candidate).strip()
@@ -1712,12 +1720,13 @@ def _estimate_and_bake_expression(
 
     estimator_obj = _instantiate_estimator(estimator_constructor, expression, kwargs)
     estimator_obj = _require_estimator_backend_instance(estimator_obj, estimator_name)
+    fit_result = _maybe_run_estimator_fit(estimator_obj)
 
-    baked = _extract_expression_from_estimator(estimator_obj)
+    baked = _extract_expression_from_estimator(estimator_obj, fit_result)
     if baked:
         return baked, estimator_obj
 
-    params = _extract_params_from_estimator(estimator_obj)
+    params = _extract_params_from_estimator(estimator_obj, fit_result)
     baked = _bake_params_into_expression(expression, params)
     return baked, estimator_obj
 
@@ -1856,7 +1865,7 @@ def _markdown_with_estimation_blocks(original_text: str, estimation_records: lis
 
 @dataclass
 class BaseExplode:
-    """Common parent for Makemodel and Lexplode."""
+    """Common parent for Makemodel and Listmodels."""
     original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
     normal_frml           : str       = field(default="",init=False,         metadata={"description": "Output normalized expressions"})
     markdown_model        :  str       = field(default="",init=False,         metadata={"description": "As markdown"})
@@ -1908,7 +1917,7 @@ class Makemodel(BaseExplode):
     list_specification    : str       = field(init=False,        metadata={"description": "All list specifications in string "})
     modellist             : str       = field(init=False,        metadata={"description": "The lists defined in string as a dictionary"})
     type_input            : str       = field(default= 'markdown'     ,metadata={"description": "Originaal as type modelflow or markdown"})
-
+    markdown_with_estimation : str       = field(init=False,        metadata={"description": "Markdown including output from estimation"})
     # Optional estimation. An equation is estimated only if its FRML-name
     # contains <estimator=...>/<est=...> or <estimator>/<est>. If the flag has no value,
     # the global estimator below is used. Untagged equations remain identities.
@@ -2010,13 +2019,14 @@ class Makemodel(BaseExplode):
 # def normal(ind_o,the_endo='',add_add_factor=True,do_preprocess = True,add_suffix = '_A',endo_lhs = True, =False,make_fitted=False,eviews=''):
         self.normal = []
         for equation_index, parts in enumerate(self.expanded_frml_split):
-            if kw_frml_name(parts.frmlname, 'DROP'):
-                continue
             expression_for_normal = self._expression_after_optional_estimation(
                 parts,
                 equation_index=equation_index,
                 estimator_flag=estimator_flags_per_equation[equation_index],
             )
+            if kw_frml_name(parts.frmlname, 'DROP'):
+                continue
+
             self.normal_input_expressions.append(expression_for_normal)
             self.normal_output_frmlnames.append(parts.frmlname)
 
@@ -2127,8 +2137,8 @@ class Makemodel(BaseExplode):
         filename: str = "makemodel_estimation_report.html",
         plot_format: str = "svg",
         title: str = "Makemodel Estimation Summary",
-        open_file: bool = True,
-        report_all: bool = True ,
+        open_file: bool = False,
+        report_all: bool = False,
     ) -> None:
         """Export an HTML report for estimations embedded in this Makemodel.
 
@@ -2254,9 +2264,9 @@ class Makemodel(BaseExplode):
  
     def __add__ (self, other):
         if isinstance(other, Makemodel):
-            return Lexplode(makemodels=[self, other])
-        elif isinstance(other, Lexplode):
-            return Lexplode(makemodels= [self] + other.makemodels)
+            return Listmodels(makemodels=[self, other])
+        elif isinstance(other, Listmodels):
+            return Listmodels(makemodels= [self] + other.makemodels)
         else:
             return NotImplemented
 
@@ -2265,9 +2275,9 @@ class Makemodel(BaseExplode):
         if other == 0:
             return self
         if isinstance(other, Makemodel):
-            return Lexplode(makemodels=[other, self])
-        elif isinstance(other, Lexplode):
-            return Lexplode(makemodels=other.makemodels + [self])
+            return Listmodels(makemodels=[other, self])
+        elif isinstance(other, Listmodels):
+            return Listmodels(makemodels=other.makemodels + [self])
         else:
             return NotImplemented
 
@@ -2304,19 +2314,29 @@ class Makemodel(BaseExplode):
 # -*- coding: utf-8 -*-
 """
 Extension to modelconstruct.py
-Adds Lexplode dataclass and addition support for Makemodel and Lexplode.
+Adds Listmodels dataclass and addition support for Makemodel and Listmodels.
 """
 
 
 
 @dataclass
-class Lexplode(BaseExplode):
+class Listmodels(BaseExplode):
     """Container for multiple Makemodel instances.
 
-    Enables combination of several model explosions using + operations.
+    Enables combination of several Makemodel objects using + operations.
     """
 
     makemodels: List['Makemodel'] = field(default_factory=list)
+
+    @property
+    def models(self) -> List['Makemodel']:
+        """Alias for member Makemodel instances.
+
+        The dataclass field remains ``makemodels`` for backwards
+        compatibility with older notebooks and with the old ``Lexplode``
+        constructor keyword.
+        """
+        return self.makemodels
     
     
     # def __post_init__(self):      
@@ -2331,9 +2351,9 @@ class Lexplode(BaseExplode):
         
     def __add__(self, other):
         if isinstance(other, Makemodel):
-            return Lexplode(makemodels=self.makemodels + [other])
-        elif isinstance(other, Lexplode):
-            return Lexplode(makemodels=self.makemodels + other.makemodels)
+            return Listmodels(makemodels=self.makemodels + [other])
+        elif isinstance(other, Listmodels):
+            return Listmodels(makemodels=self.makemodels + other.makemodels)
         else:
             return NotImplemented
 
@@ -2341,24 +2361,24 @@ class Lexplode(BaseExplode):
         if other == 0:
             return self
         if isinstance(other, Makemodel):
-            return Lexplode(makemodels=[other] + self.makemodels)
-        elif isinstance(other, Lexplode):
-            return Lexplode(makemodels=other.makemodels + self.makemodels)
+            return Listmodels(makemodels=[other] + self.makemodels)
+        elif isinstance(other, Listmodels):
+            return Listmodels(makemodels=other.makemodels + self.makemodels)
         else:
             return NotImplemented
 
 
     def __repr__(self):
-        return f"Lexplode(makemodels={self.makemodels!r})"
+        return f"Listmodels(makemodels={self.makemodels!r})"
 
     def estimation_report(
         self,
         path: str = "html",
-        filename: str = "lexplode_estimation_report.html",
+        filename: str = "listmodels_estimation_report.html",
         plot_format: str = "svg",
-        title: str = "Lexplode Estimation Summary",
-        open_file: bool = True,
-        report_all: bool = True,
+        title: str = "Listmodels Estimation Summary",
+        open_file: bool = False,
+        report_all: bool = False,
     ) -> None:
         """Export an HTML report for estimations embedded in all member Makemodels."""
         return export_makemodel_estimation_reports_to_html(
@@ -2390,16 +2410,16 @@ class Lexplode(BaseExplode):
 
 
 def _iter_makemodel_report_sources(obj):
-    """Yield Makemodel instances from a Makemodel or Lexplode report source."""
+    """Yield Makemodel instances from a Makemodel or Listmodels report source."""
     if isinstance(obj, Makemodel):
         yield obj
         return
-    if isinstance(obj, Lexplode):
+    if isinstance(obj, Listmodels):
         for mex in obj.makemodels:
             yield from _iter_makemodel_report_sources(mex)
         return
     raise TypeError(
-        "Expected a Makemodel or Lexplode instance, "
+        "Expected a Makemodel or Listmodels instance, "
         f"got {type(obj).__name__}."
     )
 
@@ -2419,7 +2439,7 @@ def _is_estimator_backend_instance(eq) -> bool:
 
 
 def makemodel_report_equations(makemodel_obj, *, report_all: bool = False) -> list:
-    """Return reportable equation objects from a Makemodel/Lexplode.
+    """Return reportable equation objects from a Makemodel/Listmodels.
 
     Estimated equations are identified by ``isinstance(eq, EstimatorBackend)``.
     When ``report_all=True``, unestimated equations are wrapped as lightweight
@@ -2486,7 +2506,7 @@ def export_makemodel_estimation_reports_to_html(
 
     Parameters mirror :func:`modelestimator_new.export_estimation_reports_to_html`.
     ``makemodel_obj`` may be either a single :class:`Makemodel` or a
-    :class:`Lexplode` combining several of them.
+    :class:`Listmodels` combining several of them.
     """
     from modelestimator_new import export_estimation_reports_to_html
 
@@ -2539,6 +2559,7 @@ def export_makemodel_estimation_reports_to_html(
 # importing/constructing ``Mexplode`` or calling the old helper names working
 # while code is migrated.
 Mexplode = Makemodel
+Lexplode = Listmodels
 mexplode_report_equations = makemodel_report_equations
 export_mexplode_estimation_reports_to_html = export_makemodel_estimation_reports_to_html
 
