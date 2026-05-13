@@ -2286,6 +2286,58 @@ class Makemodel(BaseExplode):
         """Alias for :attr:`markdown_with_estimation`."""
         return self.markdown_with_estimation
 
+    @property
+    def add_model(self):
+        """A ModelFlow model containing only the add-factor calculations."""
+        from modelclass import model
+        return model(self.normal_calc_add.replace("<CALC_ADD_FACTOR>", "<INIT_ADD>"))
+
+    def init_addfactors(
+        self,
+        df,
+        start: Union[str, int] = "",
+        end: Union[str, int] = "",
+        show: bool = False,
+        check: bool = False,
+        silent: bool = True,
+        multiplier: float = 1.0,
+    ):
+        """Compute add factors and apply them so the model reproduces ``df``.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Historical data to align with.
+        start, end : str | int, optional
+            Alignment window (defaults to the full range).
+        show : bool, default False
+            If True, print the calculated add factors.
+        check : bool, default False
+            Re-simulate with aligned data and print the residual.
+        silent : bool, default True
+            Silence ModelFlow runtime output.
+        multiplier : float, default 1.0
+            Scale factor applied to the residual check printout.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A copy of ``df`` with add-factor columns filled in.
+        """
+        am = self.add_model
+        aligned = am(df, start=start, end=end, silent=silent)
+        if show:
+            print("\n\nAdd factors to align historic values and model results")
+            print(am["*_A"].df)
+        if check:
+            full = self.mmodel
+            _ = full(aligned, start=start, end=end, silent=silent)
+            print("\n\nDifference between historic values and model results")
+            if multiplier != 1.0:
+                print(f"Multiplied by {multiplier}")
+            full.basedf = df
+            display(full["#ENDO"].dif.df * multiplier)
+        return aligned
 
     def get_lists (self) -> str:
         """
@@ -2405,8 +2457,69 @@ class Listmodels(BaseExplode):
     def normal_frml(self) -> str:
         """Compute and cache concatenated normal_frml lazily on first access."""
         return "\n".join(m.normal_frml.strip() for m in self.makemodels)
-        
-        
+
+    @property
+    def normal_calc_add(self) -> str:
+        """Concatenated add-factor calculation equations from all member Makemodels."""
+        return "\n".join(
+            m.normal_calc_add.strip()
+            for m in self.makemodels
+            if m.normal_calc_add.strip()
+        )
+
+    @property
+    def add_model(self):
+        """A ModelFlow model containing only the add-factor calculations."""
+        from modelclass import model
+        return model(self.normal_calc_add.replace("<CALC_ADD_FACTOR>", "<INIT_ADD>"))
+
+    def init_addfactors(
+        self,
+        df,
+        start: Union[str, int] = "",
+        end: Union[str, int] = "",
+        show: bool = False,
+        check: bool = False,
+        silent: bool = True,
+        multiplier: float = 1.0,
+    ):
+        """Compute add factors and apply them so the combined model reproduces ``df``.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Historical data to align with.
+        start, end : str | int, optional
+            Alignment window (defaults to the full range).
+        show : bool, default False
+            If True, print the calculated add factors.
+        check : bool, default False
+            Re-simulate with aligned data and print the residual.
+        silent : bool, default True
+            Silence ModelFlow runtime output.
+        multiplier : float, default 1.0
+            Scale factor applied to the residual check printout.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A copy of ``df`` with add-factor columns filled in.
+        """
+        am = self.add_model
+        aligned = am(df, start=start, end=end, silent=silent)
+        if show:
+            print("\n\nAdd factors to align historic values and model results")
+            print(am["*_A"].df)
+        if check:
+            full = self.mmodel
+            _ = full(aligned, start=start, end=end, silent=silent)
+            print("\n\nDifference between historic values and model results")
+            if multiplier != 1.0:
+                print(f"Multiplied by {multiplier}")
+            full.basedf = df
+            display(full["#ENDO"].dif.df * multiplier)
+        return aligned
+
     def __add__(self, other):
         if isinstance(other, Makemodel):
             return Listmodels(makemodels=self.makemodels + [other])
