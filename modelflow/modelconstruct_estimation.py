@@ -11,6 +11,8 @@ from dataclasses import dataclass, field, fields
 from typing import List, Optional, Any ,  Union
 import re
 from IPython.display import display, Math, Latex, Markdown , Image, SVG, display_svg,IFrame
+import inspect
+import functools
 
 
 from pprint import pformat
@@ -1895,6 +1897,115 @@ class BaseExplode:
 
          rendered_md = render_markdown_model(self.markdown_model)
          display_mixed_markdown(rendered_md)
+    @property    
+    def render_est(self):
+    #    display(Markdown(self.markdown_model))
+
+         rendered_md = render_markdown_model(self.markdown_model_with_estimation)
+         display_mixed_markdown(rendered_md)
+
+
+    def _field_is_showable(self, f) -> bool:
+        """Dataclass fields are showable unless metadata says otherwise."""
+        return f.metadata.get("showable", True) is not False
+    
+    
+    def _explicit_show_properties(self):
+        """Return explicit @property/@cached_property names starting with 'show'."""
+    
+        result = []
+    
+        for name, obj in inspect.getmembers_static(type(self)):
+            if not name.startswith("show"):
+                continue
+    
+            if isinstance(obj, property):
+                desc_lines = (obj.__doc__ or "").strip().splitlines()
+                desc = desc_lines[0] if desc_lines else ""
+                result.append((name, desc))
+    
+            elif isinstance(obj, functools.cached_property):
+                desc_lines = (getattr(obj.func, "__doc__", "") or "").strip().splitlines()
+                desc = desc_lines[0] if desc_lines else ""
+                result.append((name, desc))
+    
+        return result
+    
+    
+    def __getattr__(self, attr):
+        if attr.startswith("show"):
+            prop = attr[4:].lower()
+            field_defs = fields(self)
+            field_by_name = {f.name: f for f in field_defs}
+    
+            if prop in field_by_name and self._field_is_showable(field_by_name[prop]):
+                value = getattr(self, prop)
+    
+                if isinstance(value, list) and all(isinstance(v, nz.Normalized_frml) for v in value):
+                    print(f"\n--- {prop.upper()} ({len(value)} items) ---")
+                    for i, frml in enumerate(value, 1):
+                        print(f"\n[{i}]")
+                        print(frml)
+                else:
+                    print(f"{prop.capitalize()}: \n{value}")
+    
+                return None
+    
+            import inspect
+    
+            varname = self.__class__.__name__.lower()
+            frame = inspect.currentframe()
+            try:
+                caller = frame.f_back if frame else None
+                if caller:
+                    varname = next(
+                        (k for k, v in caller.f_locals.items() if v is self),
+                        varname,
+                    )
+            finally:
+                del frame
+                try:
+                    del caller
+                except NameError:
+                    pass
+    
+            showable_fields = [
+                f for f in field_defs
+                if self._field_is_showable(f)
+            ]
+    
+            field_items = [
+                (
+                    f"show{f.name}",
+                    f.metadata.get("description", "")
+                )
+                for f in showable_fields
+            ]
+    
+            property_items = self._explicit_show_properties()
+    
+            items_by_name = {}
+    
+            for name, desc in field_items:
+                items_by_name[name] = desc
+    
+            for name, desc in property_items:
+                items_by_name[name] = desc
+    
+            show_items = sorted(items_by_name.items())
+    
+            left_parts = [f"{varname}.{name}" for name, _ in show_items]
+            maxlen = max((len(lp) for lp in left_parts), default=0)
+    
+            options = "\n".join(
+                f"{lp.ljust(maxlen)}  # {desc}" if desc else lp
+                for lp, (_, desc) in zip(left_parts, show_items)
+            )
+    
+            print(f"No such property '{prop}'. Try one of:\n{options}")
+            return None
+    
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{attr}'")
 
 @dataclass
 class Makemodel(BaseExplode):
@@ -1917,7 +2028,6 @@ class Makemodel(BaseExplode):
     list_specification    : str       = field(init=False,        metadata={"description": "All list specifications in string "})
     modellist             : str       = field(init=False,        metadata={"description": "The lists defined in string as a dictionary"})
     type_input            : str       = field(default= 'markdown'     ,metadata={"description": "Originaal as type modelflow or markdown"})
-    markdown_with_estimation : str       = field(init=False,        metadata={"description": "Markdown including output from estimation"})
     # Optional estimation. An equation is estimated only if its FRML-name
     # contains <estimator=...>/<est=...> or <estimator>/<est>. If the flag has no value,
     # the global estimator below is used. Untagged equations remain identities.
@@ -2214,53 +2324,6 @@ class Makemodel(BaseExplode):
             
         return LatexRepo(fr'{pre} {self.original_statements}   }}').pdf(**kwargs) 
 
-    def __getattr__(self, attr):
-     if attr.startswith("show"):
-         prop = attr[4:].lower()
-         field_defs = fields(self)
-         fieldnames = [f.name for f in field_defs]
-
-         if prop in fieldnames:
-             value = getattr(self, prop)
-             if isinstance(value, list) and all(isinstance(v, nz.Normalized_frml) for v in value):
-                print(f"\n--- {prop.upper()} ({len(value)} items) ---")
-                for i, frml in enumerate(value, 1):
-                    print(f"\n[{i}]")
-                    print(frml)  # uses Normalized_frml.__str__
-             else:
-
-                 print(f"{prop.capitalize()}: \n{value}")
-         else:
-            import inspect
-            # --- guess varname only if property not found ---
-            varname = self.__class__.__name__.lower()
-            frame = inspect.currentframe()
-            try:
-                caller = frame.f_back if frame else None
-                if caller:
-                    varname = next((k for k, v in caller.f_locals.items() if v is self), varname)
-            finally:
-                del frame
-                try:
-                    del caller
-                except NameError:
-                    pass
-            # -------------------------------------------------
-
-
-            left_parts = [f"{varname}.show{f.name}" for f in field_defs]
-            maxlen = max(len(lp) for lp in left_parts)
-            options = "\n".join(
-                f"{lp.ljust(maxlen)}  # {f.metadata.get('description')}"
-                if f.metadata.get("description")
-                else lp
-                for lp, f in zip(left_parts, field_defs)
-            )
-
-            print(f"No such property '{prop}'. Try one of:\n{options}")
-         return None
-
-     raise AttributeError(f"'{type(self).__name__}' object has no attribute '{attr}'") 
  
     def __add__ (self, other):
         if isinstance(other, Makemodel):
@@ -2311,11 +2374,6 @@ class Makemodel(BaseExplode):
                 lines.append(f"{k:<{w}} : {rendered}")
         return f"{self.__class__.__name__}(\n  " + "\n  ".join(lines) + "\n)"
 
-# -*- coding: utf-8 -*-
-"""
-Extension to modelconstruct.py
-Adds Listmodels dataclass and addition support for Makemodel and Listmodels.
-"""
 
 
 
