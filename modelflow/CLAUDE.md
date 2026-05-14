@@ -18,6 +18,10 @@ Key dependencies: `pandas`, `numpy`, `networkx`, `numba`, `sympy`, `statsmodels`
 
 There is no test suite or lint configuration in this repo. Development typically happens in Jupyter notebooks.
 
+## Workflow
+
+The user manages commits and branches via **GitHub Desktop** — do not run `git` commands unless explicitly asked.
+
 ## Module Architecture
 
 The `model` class (assembled in `modelclass.py`) is the central object. It is built from many mixin classes and imports from almost all other modules. The data flow for typical use is:

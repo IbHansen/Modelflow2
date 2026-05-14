@@ -2325,13 +2325,13 @@ class Makemodel(BaseExplode):
             A copy of ``df`` with add-factor columns filled in.
         """
         am = self.add_model
-        aligned = am(df, start=start, end=end, silent=silent)
+        aligned = am(df, start, end, silent=silent)
         if show:
             print("\n\nAdd factors to align historic values and model results")
             print(am["*_A"].df)
         if check:
             full = self.mmodel
-            _ = full(aligned, start=start, end=end, silent=silent)
+            _ = full(aligned, start, end, silent=silent)
             print("\n\nDifference between historic values and model results")
             if multiplier != 1.0:
                 print(f"Multiplied by {multiplier}")
@@ -2506,13 +2506,13 @@ class Listmodels(BaseExplode):
             A copy of ``df`` with add-factor columns filled in.
         """
         am = self.add_model
-        aligned = am(df, start=start, end=end, silent=silent)
+        aligned = am(df, start, end, silent=silent)
         if show:
             print("\n\nAdd factors to align historic values and model results")
             print(am["*_A"].df)
         if check:
             full = self.mmodel
-            _ = full(aligned, start=start, end=end, silent=silent)
+            _ = full(aligned, start, end, silent=silent)
             print("\n\nDifference between historic values and model results")
             if multiplier != 1.0:
                 print(f"Multiplied by {multiplier}")
