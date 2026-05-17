@@ -1872,7 +1872,7 @@ class BaseExplode:
     normal_frml           : str       = field(default="",init=False,         metadata={"description": "Output normalized expressions"})
     markdown_model        :  str       = field(default="",init=False,         metadata={"description": "As markdown"})
     funks                 : List[Any] = field(default_factory=list, metadata={"description": "List of user specified functions to be used in model"})
-    var_description: dict = field(default_factory=dict, metadata={"Varliable descriptions"})
+    var_description: dict = field(default_factory=dict, metadata={"description": "Variable descriptions"})
     
 
     @property
