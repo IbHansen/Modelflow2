@@ -1705,6 +1705,7 @@ def _estimate_and_bake_expression(
     estimator_name,
     input_df=None,
     smpl=None,
+    caption: Optional[str] = None,
     estimator_kwargs: Optional[dict] = None,
     estimator_classes: Optional[dict] = None,
 ):
@@ -1719,6 +1720,8 @@ def _estimate_and_bake_expression(
         kwargs['input_df'] = input_df
     if smpl is not None and 'smpl' not in kwargs:
         kwargs['smpl'] = smpl
+    if caption is not None and 'caption' not in kwargs:
+        kwargs['caption'] = caption
 
     estimator_obj = _instantiate_estimator(estimator_constructor, expression, kwargs)
     estimator_obj = _require_estimator_backend_instance(estimator_obj, estimator_name)
@@ -2210,6 +2213,7 @@ class Makemodel(BaseExplode):
             )
 
         local_smpl = _frml_option_value(parts.frmlname, 'SMPL', default=None)
+        local_caption = _frml_option_value(parts.frmlname, 'CAPTION', default=None)
 
         # Equation-local smpl must override the estimator factory default.
         # If Makemodel.input_df is None because the dataframe is captured in a
@@ -2234,6 +2238,7 @@ class Makemodel(BaseExplode):
             estimator_name=estimator_name,
             input_df=self.input_df,
             smpl=smpl,
+            caption=local_caption,
             estimator_kwargs=self.estimator_kwargs,
             estimator_classes=self.estimator_classes,
         )

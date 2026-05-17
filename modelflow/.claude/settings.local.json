@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(\\(Get-Content \"C:\\\\modelflow2\\\\modelflow\\\\modelestimator_new.py\" | Measure-Object -Line\\).Lines)"
+    ]
+  }
+}
