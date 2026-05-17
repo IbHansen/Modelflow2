@@ -355,6 +355,7 @@ class EquationParse:
     ecm: bool = True
     const: bool = True
     est_param: str = "C"
+    param_names: Optional[List[str]] = None
     function_vars: List[str] = field(default_factory=lambda: ["LOG", "DLOG"])
 
     mfcalc_code: List[str] = field(init=False)
@@ -363,7 +364,10 @@ class EquationParse:
     endo_var: str = ""
 
     def __post_init__(self) -> None:
-        self.param_regex = rf"{re.escape(self.est_param)}__(\d+)"
+        _prefixes = [self.est_param] + [n.upper() for n in (self.param_names or [])]
+        self.param_regex = (
+            r"(?:" + "|".join(re.escape(p) for p in _prefixes) + r")__(\d+)"
+        )
         (self.mfcalc_code,
          self.lhs_raw,
          self.lhs_ast,
@@ -741,6 +745,8 @@ class Eq_parent:
     smpl: Tuple[int, int] = (2002, 2018)
     input_df: Optional[pd.DataFrame] = None
     est_param: str = "C"
+    param_names: Optional[List[str]] = field(default=None,
+        metadata={"description": "Named parameter prefixes: 'lambda' allows LAMBDA(1), LAMBDA(2) etc."})
 
     caption: str = "Estimation of "
     var_description: dict = field(default_factory=dict)
@@ -755,6 +761,12 @@ class Eq_parent:
     def __post_init__(self) -> None:
         # 1) Normalize parameter tokens and clean up the equation string.
         eq = replace_c_params(self.org_eq.upper(), est_param=self.est_param)
+        for _pname in (self.param_names or []):
+            eq = re.sub(
+                rf'\b{re.escape(_pname.upper())}\((-?\d+)\)',
+                rf'{_pname.upper()}__\1',
+                eq,
+            )
         eq = eq.replace("@ABS(", "ABS(")
         if self.var_description:
             self.omodel = DummyOModel(
@@ -808,14 +820,17 @@ class Eq_parent:
 
     @cached_property
     def c_params(self) -> List[str]:
-        """Sorted parameter placeholders for the active prefix.
+        """Sorted parameter placeholders for the active prefix and named param prefixes.
 
-        E.g. ``['C__1', 'C__2', 'C__10']`` (sorted numerically, not lexically).
+        E.g. ``['ALPHA__1', 'BETA__1', 'C__1', 'C__2', 'LAMBDA__1']`` (sorted by prefix, then numerically).
         """
-        prefix = f"{self.est_param}__"
+        prefixes = tuple(
+            [f'{self.est_param}__'] +
+            [f'{n.upper()}__' for n in (self.param_names or [])]
+        )
         return sorted(
-            [v for v in self.varname_all if v.startswith(prefix)],
-            key=lambda x: int(x.split(prefix)[1]),
+            [v for v in self.varname_all if v.startswith(prefixes)],
+            key=lambda x: (x.rsplit('__', 1)[0], int(x.rsplit('__', 1)[1])),
         )
 
     @cached_property
@@ -1022,6 +1037,15 @@ class EstimatorBackend(Eq_parent, ABC):
             )
             if m2:
                 mapped[f"{self.est_param}__{m2.group(1)}"] = v
+                continue
+            for _pname in (self.param_names or []):
+                _up = _pname.upper()
+                m3 = re.search(
+                    rf"\b{re.escape(_up)}__([0-9]+)\b", k, flags=re.IGNORECASE
+                )
+                if m3:
+                    mapped[f"{_up}__{m3.group(1)}"] = v
+                    break
         return mapped
 
     # ---- A/F and residuals (computed once, cached) -------------------------
@@ -1219,6 +1243,7 @@ class Estimate_ols(EstimatorBackend):
             org_eq_clean=self.org_eq_clean,
             ecm=self.ecm,
             est_param=self.est_param,
+            param_names=self.param_names,
         )
         self.mfcalc_code = parser.mfcalc_code
 
