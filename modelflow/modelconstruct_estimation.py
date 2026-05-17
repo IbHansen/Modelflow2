@@ -1872,7 +1872,7 @@ class BaseExplode:
     normal_frml           : str       = field(default="",init=False,         metadata={"description": "Output normalized expressions"})
     markdown_model        :  str       = field(default="",init=False,         metadata={"description": "As markdown"})
     funks                 : List[Any] = field(default_factory=list, metadata={"description": "List of user specified functions to be used in model"})
-    
+    var_description: dict = field(default_factory=dict, metadata={"Varliable descriptions"})
     
 
     @property
@@ -1886,7 +1886,7 @@ class BaseExplode:
     @cached_property
     def mmodel(self): 
         from modelclass import model 
-        return  model(self.normal_frml,funks=self.funks)
+        return  model(self.normal_frml,funks=self.funks,var_description=self.var_description)
     
     def __str__(self):
         return self.normal_frml.strip()
@@ -2170,12 +2170,20 @@ class Makemodel(BaseExplode):
                           for parts, normal in self.normal if len(normal.calc_add_factor)
                           ])
         
-        self.normal_frml = '\n'.join( [self.normal_main,self.normal_fit,self.normal_calc_add]) 
-        
+        self.normal_frml = '\n'.join( [self.normal_main,self.normal_fit,self.normal_calc_add])
+
+        # Merge var_description from estimated equations; user-supplied takes precedence.
+        estimated_var_desc = {}
+        for record in self.estimation_records:
+            obj = record.get('estimator_object')
+            if obj is not None and hasattr(obj, 'var_description'):
+                estimated_var_desc |= obj.var_description
+        self.var_description = estimated_var_desc | self.var_description
+
         check_syntax_model(self.normal_frml)
-      
+
         self.list_specification = self.get_lists()
-        return 
+        return
 
     def _expression_after_optional_estimation(self, parts, *, equation_index: Optional[int] = None,
                                               estimator_flag: Any = ...) -> str:
@@ -2285,6 +2293,39 @@ class Makemodel(BaseExplode):
     def markdown_model_with_estimation(self) -> str:
         """Alias for :attr:`markdown_with_estimation`."""
         return self.markdown_with_estimation
+
+    @property
+    def clean_frml(self) -> str:
+        """Normalized equations with add-factors, exogenization, and fitted-value flags stripped."""
+        parts_list = []
+        for frmlname, expr, (parts, _) in zip(
+            self.normal_output_frmlnames,
+            self.normal_input_expressions,
+            self.normal,
+        ):
+            clean_norm = nz.normal(
+                expr,
+                add_add_factor=False,
+                make_fixable=False,
+                make_fitted=False,
+                the_endo=kw_frml_name(parts.frmlname, 'ENDO'),
+                endo_lhs=False if 'FALSE' == kw_frml_name(parts.frmlname, 'ENDO_LHS', default='1') else True,
+                implicit=kw_frml_name(parts.frmlname, 'IMPLICIT'),
+            )
+            clean_name = _strip_frml_options(frmlname, {'ADD', 'ADD_SUFFIX', 'EXO', 'FIT', 'STOC'})
+            parts_list.append(f'FRML {clean_name} {clean_norm.normalized} $')
+        return '\n'.join(parts_list)
+
+    @property
+    def clean_model(self):
+        """A ModelFlow model with only the core equations (no fitted, add-factor, or exogenization equations)."""
+        from modelclass import model
+        return model(self.clean_frml, funks=self.funks, var_description=self.var_description)
+
+    @property
+    def clean_model_draw(self):
+        """Draw the dependency graph of the clean model."""
+        self.clean_model.drawmodel()
 
     @property
     def add_model(self):
@@ -2459,6 +2500,15 @@ class Listmodels(BaseExplode):
         return "\n".join(m.normal_frml.strip() for m in self.makemodels)
 
     @property
+    def normal_main(self) -> str:
+        """Concatenated core equations from all member Makemodels (no fitted or add-factor equations)."""
+        return "\n".join(
+            m.normal_main.strip()
+            for m in self.makemodels
+            if m.normal_main.strip()
+        )
+
+    @property
     def normal_calc_add(self) -> str:
         """Concatenated add-factor calculation equations from all member Makemodels."""
         return "\n".join(
@@ -2466,6 +2516,30 @@ class Listmodels(BaseExplode):
             for m in self.makemodels
             if m.normal_calc_add.strip()
         )
+
+    @property
+    def clean_frml(self) -> str:
+        """Concatenated clean equations from all member Makemodels (no add-factors or exogenization)."""
+        return "\n".join(
+            m.clean_frml.strip()
+            for m in self.makemodels
+            if m.clean_frml.strip()
+        )
+
+    @property
+    def clean_model(self):
+        """A ModelFlow model with only the core equations (no fitted, add-factor, or exogenization equations)."""
+        from modelclass import model
+        combined_var_desc = {}
+        for m in self.makemodels:
+            combined_var_desc |= m.var_description
+        combined_funks = [f for m in self.makemodels for f in m.funks]
+        return model(self.clean_frml, funks=combined_funks, var_description=combined_var_desc)
+
+    @property
+    def clean_model_draw(self):
+        """Draw the dependency graph of the clean model."""
+        self.clean_model.drawmodel()
 
     @property
     def add_model(self):
