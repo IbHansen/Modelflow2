@@ -250,11 +250,12 @@ def _parse_constraints(text: str) -> Dict[str, Dict[str, Any]]:
 
     Recognized forms::
 
-        NAME=[lo, hi]          bounds       -> {'min': lo, 'max': hi}
-        NAME > x  | NAME >= x  lower bound  -> {'min': x}
-        NAME < x  | NAME <= x  upper bound  -> {'max': x}
-        NAME := <expr>         algebraic    -> {'expr': '<expr>'}
-        NAME = <value>         fixed value  -> {'value': v, 'vary': False}
+        NAME=[lo, hi]          bounds        -> {'min': lo, 'max': hi}
+        NAME > x  | NAME >= x  lower bound   -> {'min': x}
+        NAME < x  | NAME <= x  upper bound   -> {'max': x}
+        NAME := <expr>         algebraic     -> {'expr': '<expr>'}
+        NAME = <value>         fixed value   -> {'value': v, 'vary': False}
+        NAME ~ <value>         initial value -> {'value': v, 'vary': True}
 
     Raises ``ValueError`` for any line that does not match one of the above.
     """
@@ -293,6 +294,16 @@ def _parse_constraints(text: str) -> Dict[str, Dict[str, Any]]:
             out.setdefault(name, {})[key] = float(m.group(3))
             continue
 
+        # Initial value (free to change): NAME ~ value
+        # Explicit vary=True so a later ``~`` can override an earlier ``=``.
+        m = re.match(rf'^(\w+)\s*~\s*({num})$', line)
+        if m:
+            name = m.group(1).upper()
+            out.setdefault(name, {}).update(
+                {'value': float(m.group(2)), 'vary': True}
+            )
+            continue
+
         # Fixed value: NAME = value
         m = re.match(rf'^(\w+)\s*=\s*({num})$', line)
         if m:
@@ -305,7 +316,7 @@ def _parse_constraints(text: str) -> Dict[str, Dict[str, Any]]:
         raise ValueError(
             f"Cannot parse constraint {line!r}. Expected one of: "
             "NAME=[lo,hi], NAME>x, NAME>=x, NAME<x, NAME<=x, "
-            "NAME=value, NAME:=expr."
+            "NAME=value, NAME~value, NAME:=expr."
         )
 
     return out
@@ -1525,7 +1536,7 @@ class Estimate_nls_lmfit(EstimatorBackend):
     written directly in the equation string, separated from the equation
     by ``ST.`` and from each other by ``;``::
 
-        Y = C(1) + C(2)*X + ALFA*Z ST. C(1)=[0,1]; C(2)>0; ALFA:=C(1)+C(2)
+        Y = C(1) + C(2)*X + ALFA*Z ST. C(1)~0.5; C(2)>0; ALFA:=C(1)+C(2)
 
     Recognized forms:
 
@@ -1533,6 +1544,7 @@ class Estimate_nls_lmfit(EstimatorBackend):
     - ``NAME > x`` / ``NAME >= x`` — lower bound
     - ``NAME < x`` / ``NAME <= x`` — upper bound
     - ``NAME = value`` — fixed value (``vary=False``)
+    - ``NAME ~ value`` — initial value (free to change)
     - ``NAME := expr`` — algebraic relation (``expr``)
     """
     default_params: dict = field(default_factory=dict)
