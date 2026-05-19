@@ -762,9 +762,17 @@ class Eq_parent:
         # 1) Normalize parameter tokens and clean up the equation string.
         eq = replace_c_params(self.org_eq.upper(), est_param=self.est_param)
         for _pname in (self.param_names or []):
+            _up = _pname.upper()
+            # Convert NAME(n) -> NAME__n (explicit indexing)
             eq = re.sub(
-                rf'\b{re.escape(_pname.upper())}\((-?\d+)\)',
-                rf'{_pname.upper()}__\1',
+                rf'\b{re.escape(_up)}\((-?\d+)\)',
+                rf'{_up}__\1',
+                eq,
+            )
+            # Convert bare NAME -> NAME__1 (shorthand for first parameter)
+            eq = re.sub(
+                rf'\b{re.escape(_up)}\b(?!\()',
+                rf'{_up}__1',
                 eq,
             )
         eq = eq.replace("@ABS(", "ABS(")
@@ -889,7 +897,7 @@ class Eq(Eq_parent):
     def __post_init__(self) -> None:
         super().__post_init__()
         # Identity equations have no estimated coefficients to substitute.
-        self.org_eq_unlinked = self.org_eq_clean
+        self.org_eq_baked = self.org_eq_clean
 
 
 # =============================================================================
@@ -903,7 +911,7 @@ class EstimatorBackend(Eq_parent, ABC):
     Subclasses implement two methods (:meth:`_fit` and
     :meth:`_render_summary_html`) and may override one optional hook
     (:meth:`_validate_equation`). Everything else — equation parsing, sample
-    handling, A/F and residuals computation, ``org_eq_unlinked`` substitution,
+    handling, A/F and residuals computation, ``org_eq_baked`` substitution,
     HTML report assembly, ``EqContainer`` integration — is inherited.
 
     Required overrides
@@ -934,7 +942,7 @@ class EstimatorBackend(Eq_parent, ABC):
         Backend-native fitted-result object.
     coef_estimate_dict : dict[str, float]
         Estimated coefficients keyed by ``{est_param}__n``.
-    org_eq_unlinked : str
+    org_eq_baked : str
         Equation with the estimated values substituted in place.
     mfresult : LSResult
         Reporting wrapper.
@@ -948,7 +956,7 @@ class EstimatorBackend(Eq_parent, ABC):
     # Late-initialized attributes (set during __post_init__).
     regression_model: Any = field(init=False, default=None)
     coef_estimate_dict: Dict[str, float] = field(init=False, default_factory=dict)
-    org_eq_unlinked: str = field(init=False, default="")
+    org_eq_baked: str = field(init=False, default="")
     mfresult: Any = field(init=False, default=None)
     coef_ser: pd.Series = field(init=False, default=None)
 
@@ -1003,8 +1011,8 @@ class EstimatorBackend(Eq_parent, ABC):
         # 6) Populate eq_var_df with estimates so af_df / residuals_df work.
         for p in self.c_params:
             self.eq_var_df[p] = self.coef_estimate_dict[p]
-        # 7) Build the unlinked (numeric) equation string.
-        self.org_eq_unlinked = expand_equation_with_coefficients(
+        # 7) Build the baked (numeric) equation string.
+        self.org_eq_baked = expand_equation_with_coefficients(
             self.org_eq_clean,
             coefficients=self.coef_estimate_dict,
             decimals=10,
@@ -1172,7 +1180,7 @@ class Estimate_ols(EstimatorBackend):
     ``Y = C(1) + C(2) * X``. The parser emits ``C__1 = 1.0`` as a
     regressor column, statsmodels estimates it, and the value flows
     through every downstream artifact (``coef_estimate_dict``,
-    ``org_eq_unlinked``, the FRML emitted by :class:`EqContainer`, the
+    ``org_eq_baked``, the FRML emitted by :class:`EqContainer`, the
     HTML report). To fit a regression through the origin, simply omit
     ``C(1)``.
 
@@ -1620,7 +1628,7 @@ class LSResult:
         self.caption = self.olsmodel.caption
         self.endo_var = self.olsmodel.endo_var
         self.estimator = self.olsmodel.__class__.__name__
-        self.normal = nz.normal(self.olsmodel.org_eq_unlinked)
+        self.normal = nz.normal(self.olsmodel.org_eq_baked)
 
     def get_html_report(self, plot_format: str = "svg") -> str:
         """Build the full HTML report.
@@ -1656,7 +1664,7 @@ class LSResult:
         # ((0.5), ...) used in the expanded form.
         wrap = lambda eq: _add_linebreaks_before_long_params(eq, param=est_param)
         original = wrap(self.olsmodel.org_eq)
-        expanded = wrap(self.olsmodel.org_eq_unlinked)
+        expanded = wrap(self.olsmodel.org_eq_baked)
         normalized = wrap(self.normal.normalized)
         start, end = self.olsmodel.estimation_smpl
         endo = self.olsmodel.endo_var
@@ -1752,7 +1760,7 @@ class EqContainer:
     def clean_normal(self) -> str:
         """Normalized equations (no add-factors), one per line."""
         return "\n".join(
-            nz.normal(eq.org_eq_unlinked, add_add_factor=False).normalized
+            nz.normal(eq.org_eq_baked, add_add_factor=False).normalized
             for eq in self.equations
         )
 
@@ -1776,7 +1784,7 @@ class EqContainer:
         parts = []
         for eq in self.equations:
             normed = nz.normal(
-                eq.org_eq_unlinked,
+                eq.org_eq_baked,
                 add_add_factor=eq.add_add_factor,
                 make_fixable=eq.make_fixable,
                 make_fitted=eq.make_fitted,
@@ -1811,7 +1819,7 @@ class EqContainer:
             if not eq.add_add_factor:
                 continue
             calc = nz.normal(
-                eq.org_eq_unlinked,
+                eq.org_eq_baked,
                 add_add_factor=eq.add_add_factor,
                 make_fixable=eq.make_fixable,
                 make_fitted=eq.make_fitted,

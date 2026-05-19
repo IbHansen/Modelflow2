@@ -1470,43 +1470,24 @@ def _clean_estimated_expression(candidate: str) -> str:
 
 
 def _extract_expression_from_estimator(estimator_obj, fit_result=None) -> Optional[str]:
-    """Try common attribute/method names for an already-baked equation expression.
+    """Extract the baked equation from an estimator backend.
 
-    Custom backends MUST expose the baked equation through one of:
-        - ``org_eq_unlinked``  (preferred; this is what EstimatorBackend uses)
-        - ``estimated_expression`` / ``estimated_eq``
-        - ``baked_expression`` / ``baked_eq``
-        - ``frml_expression``
-        - ``to_expression()`` / ``to_equation()`` / ``to_frml()`` methods
+    EstimatorBackend and its subclasses always produce ``org_eq_baked``,
+    which contains the equation with estimated coefficients substituted.
 
-    ``normal_frml`` and ``frml`` were intentionally removed from this list:
-    they typically contain a fully normalized ModelFlow statement (with
-    ``_A`` add-factor suffixes, dummy LHS rewrites, etc.). Baking such a
-    statement back into the Makemodel pipeline would cause double
-    normalization. Backends that only expose ``normal_frml`` should fall
-    through to coefficient-substitution via ``_bake_params_into_expression``.
+    For custom backends that lack ``org_eq_baked``, falls back to method
+    calls (``to_expression()``, ``to_equation()``, ``to_frml()``).
     """
-    expression_names = (
-        'org_eq_unlinked',
-        'estimated_expression',
-        'estimated_eq',
-        'baked_expression',
-        'baked_eq',
-        'frml_expression',
-    )
-    method_names = (
-        'to_expression',
-        'to_equation',
-        'to_frml',
-    )
+    # Try the primary source: EstimatorBackend.org_eq_baked
+    baked = getattr(estimator_obj, 'org_eq_baked', None)
+    if isinstance(baked, str) and baked.strip():
+        return _clean_estimated_expression(baked)
 
+    # Fallback for custom backends: try method calls
+    method_names = ('to_expression', 'to_equation', 'to_frml')
     for obj in (fit_result, estimator_obj):
         if obj is None:
             continue
-        for name in expression_names:
-            value = getattr(obj, name, None)
-            if isinstance(value, str) and value.strip():
-                return _clean_estimated_expression(value)
         for name in method_names:
             method = getattr(obj, name, None)
             if callable(method):
@@ -1592,61 +1573,6 @@ def _extract_params_from_estimator(estimator_obj, fit_result=None) -> dict:
     return params
 
 
-def _format_param_value(value) -> str:
-    try:
-        value = float(value)
-        rendered = format(value, '.16g')
-    except Exception:
-        rendered = str(value)
-    return f'({rendered})' if rendered.startswith('-') else rendered
-
-
-def _coef_patterns(name: str) -> list[str]:
-    """Build regexes for C__1, C_1 and C(1)-style coefficient names."""
-    raw = str(name).strip()
-    upper = raw.upper()
-    patterns = [r'(?<![A-Z0-9_])' + re.escape(raw) + r'(?![A-Z0-9_])']
-
-    number = None
-    m = re.fullmatch(r'C\s*\(\s*(\d+)\s*\)', upper)
-    if m:
-        number = m.group(1)
-    m = re.fullmatch(r'C__?(\d+)', upper)
-    if m:
-        number = m.group(1)
-    if number:
-        patterns.extend([
-            rf'(?<![A-Z0-9_])C\s*\(\s*{number}\s*\)',
-            rf'(?<![A-Z0-9_])C__{number}(?![A-Z0-9_])',
-            rf'(?<![A-Z0-9_])C_{number}(?![A-Z0-9_])',
-        ])
-    return patterns
-
-
-def _bake_params_into_expression(expression: str, params: dict) -> str:
-    """Replace estimated coefficient symbols by numeric values in an expression."""
-    if not params:
-        raise ModelSpecificationError(
-            "The estimator did not expose coefficients through a known params attribute."
-        )
-
-    out = expression
-    changed = False
-    for name, value in sorted(params.items(), key=lambda item: len(item[0]), reverse=True):
-        replacement = _format_param_value(value)
-        for pattern in _coef_patterns(name):
-            new_out = re.sub(pattern, replacement, out, flags=re.IGNORECASE)
-            changed = changed or (new_out != out)
-            out = new_out
-
-    if not changed:
-        raise ModelSpecificationError(
-            "The estimator produced coefficients, but none matched symbols in the equation: "
-            f"{expression!r}. Coefficient names were: {sorted(params)}"
-        )
-    return out
-
-
 def _instantiate_estimator(estimator_constructor, expression: str, kwargs: dict):
     """Instantiate a class or local factory with the equation.
 
@@ -1728,11 +1654,12 @@ def _estimate_and_bake_expression(
     fit_result = _maybe_run_estimator_fit(estimator_obj)
 
     baked = _extract_expression_from_estimator(estimator_obj, fit_result)
-    if baked:
-        return baked, estimator_obj
-
-    params = _extract_params_from_estimator(estimator_obj, fit_result)
-    baked = _bake_params_into_expression(expression, params)
+    if not baked:
+        raise ModelSpecificationError(
+            f"Estimator {estimator_obj.__class__.__name__} must expose the baked "
+            f"(coefficient-substituted) equation through 'org_eq_baked' attribute "
+            f"or 'to_expression()/to_equation()/to_frml()' method."
+        )
     return baked, estimator_obj
 
 
@@ -1778,7 +1705,7 @@ def _estimation_record_to_markdown(record: dict) -> str:
         effective_smpl = getattr(est, "_effective_smpl", "")
 
     original = record.get("original_expression") or getattr(est, "org_eq", "")
-    baked = record.get("baked_expression") or getattr(est, "org_eq_unlinked", "")
+    baked = record.get("baked_expression") or getattr(est, "org_eq_baked", "")
 
     summary_rows = [
         ("Estimator", estimator_name),
