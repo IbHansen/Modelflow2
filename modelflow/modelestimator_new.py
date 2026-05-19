@@ -88,7 +88,7 @@ from dataclasses import dataclass, field
 from functools import cached_property, reduce
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Set, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -200,6 +200,126 @@ def expand_equation_with_coefficients(
             rf"\b{re.escape(key)}\b", formatted, equation_text
         )
     return equation_text
+
+
+# =============================================================================
+# Constraint parsing — ST. clause and per-parameter dicts
+# =============================================================================
+
+_ST_CLAUSE_RE = re.compile(r'\s+ST\.\s+', flags=re.IGNORECASE)
+
+
+def _split_st_clause(equation: str) -> Tuple[str, str]:
+    """Split ``LHS = RHS ST. constraints`` into ``(equation, constraint_text)``.
+
+    Returns ``(equation, '')`` if no ``ST.`` clause is present. Matching is
+    case-insensitive and requires whitespace on both sides so ``ST.`` does
+    not collide with variable names.
+    """
+    parts = _ST_CLAUSE_RE.split(equation, maxsplit=1)
+    if len(parts) == 1:
+        return equation, ''
+    return parts[0], parts[1]
+
+
+def _normalize_param_tokens(
+    text: str,
+    est_param: str,
+    param_names: Optional[List[str]],
+) -> str:
+    """Apply ``replace_c_params`` and ``param_names`` substitution.
+
+    Shared between the equation body and the ``ST.`` clause so both end up
+    with the same ``{prefix}__n`` form.
+    """
+    if not text:
+        return text
+    out = replace_c_params(text, est_param=est_param)
+    for _pname in (param_names or []):
+        _up = _pname.upper()
+        out = re.sub(rf'\b{re.escape(_up)}\((-?\d+)\)', rf'{_up}__\1', out)
+        out = re.sub(rf'\b{re.escape(_up)}\b(?!\()', rf'{_up}__1', out)
+    return out
+
+
+def _parse_constraints(text: str) -> Dict[str, Dict[str, Any]]:
+    """Parse a semicolon-separated constraint string into a per-parameter dict.
+
+    Names are assumed already normalized to ``{prefix}__n`` form (callers
+    should run :func:`_normalize_param_tokens` first).
+
+    Recognized forms::
+
+        NAME=[lo, hi]          bounds       -> {'min': lo, 'max': hi}
+        NAME > x  | NAME >= x  lower bound  -> {'min': x}
+        NAME < x  | NAME <= x  upper bound  -> {'max': x}
+        NAME := <expr>         algebraic    -> {'expr': '<expr>'}
+        NAME = <value>         fixed value  -> {'value': v, 'vary': False}
+
+    Raises ``ValueError`` for any line that does not match one of the above.
+    """
+    out: Dict[str, Dict[str, Any]] = {}
+    if not text or not text.strip():
+        return out
+
+    num = r'-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?'
+
+    for raw in text.split(';'):
+        line = raw.strip().rstrip('$').strip()
+        if not line:
+            continue
+
+        # `:=` must be checked before plain `=`
+        m = re.match(r'^(\w+)\s*:=\s*(.+)$', line)
+        if m:
+            name = m.group(1).upper()
+            out.setdefault(name, {})['expr'] = m.group(2).strip()
+            continue
+
+        # Bounds: NAME = [lo, hi]
+        m = re.match(rf'^(\w+)\s*=\s*\[\s*({num})\s*,\s*({num})\s*\]$', line)
+        if m:
+            name = m.group(1).upper()
+            out.setdefault(name, {}).update(
+                {'min': float(m.group(2)), 'max': float(m.group(3))}
+            )
+            continue
+
+        # Inequalities: >=, <=, >, < (order matters: longest first)
+        m = re.match(rf'^(\w+)\s*(>=|<=|>|<)\s*({num})$', line)
+        if m:
+            name = m.group(1).upper()
+            key = 'min' if m.group(2) in ('>', '>=') else 'max'
+            out.setdefault(name, {})[key] = float(m.group(3))
+            continue
+
+        # Fixed value: NAME = value
+        m = re.match(rf'^(\w+)\s*=\s*({num})$', line)
+        if m:
+            name = m.group(1).upper()
+            out.setdefault(name, {}).update(
+                {'value': float(m.group(2)), 'vary': False}
+            )
+            continue
+
+        raise ValueError(
+            f"Cannot parse constraint {line!r}. Expected one of: "
+            "NAME=[lo,hi], NAME>x, NAME>=x, NAME<x, NAME<=x, "
+            "NAME=value, NAME:=expr."
+        )
+
+    return out
+
+
+def _merge_constraint_dicts(
+    primary: Dict[str, Dict[str, Any]],
+    secondary: Dict[str, Dict[str, Any]],
+) -> Dict[str, Dict[str, Any]]:
+    """Per-key merge: ``primary`` wins on key collisions inside each param."""
+    out: Dict[str, Dict[str, Any]] = {}
+    for name in set(secondary) | set(primary):
+        out[name] = {**secondary.get(name, {}), **primary.get(name, {})}
+    return out
 
 
 def process_string_eq(eqs: str) -> List["Eq"]:
@@ -752,6 +872,16 @@ class Eq_parent:
     var_description: dict = field(default_factory=dict)
     omodel: DummyOModel = field(default_factory=dummy_omodel)
     coef_dict: Dict[str, Union[int, float]] = field(default_factory=dict)
+    constraints: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict,
+        metadata={
+            "description": (
+                "Per-parameter lmfit-style kwargs: "
+                "{'C__1': {'min': 0, 'max': 1}, 'C__4': {'expr': 'C__1 + C__2'}}. "
+                "Also populated by parsing an inline ``ST.`` clause in org_eq."
+            )
+        },
+    )
     frml_name: str = ""
     add_add_factor: bool = False
     make_fixable: bool = False
@@ -759,23 +889,25 @@ class Eq_parent:
     ecm: bool = True
 
     def __post_init__(self) -> None:
-        # 1) Normalize parameter tokens and clean up the equation string.
-        eq = replace_c_params(self.org_eq.upper(), est_param=self.est_param)
-        for _pname in (self.param_names or []):
-            _up = _pname.upper()
-            # Convert NAME(n) -> NAME__n (explicit indexing)
-            eq = re.sub(
-                rf'\b{re.escape(_up)}\((-?\d+)\)',
-                rf'{_up}__\1',
-                eq,
-            )
-            # Convert bare NAME -> NAME__1 (shorthand for first parameter)
-            eq = re.sub(
-                rf'\b{re.escape(_up)}\b(?!\()',
-                rf'{_up}__1',
-                eq,
-            )
+        # 1) Uppercase and split off any inline ``ST.`` constraint clause.
+        raw = self.org_eq.upper()
+        eq_body, constraint_text = _split_st_clause(raw)
+
+        # 2) Normalize parameter tokens in both equation body AND constraints
+        #    so names align downstream (e.g. ``C(1)`` -> ``C__1``).
+        eq = _normalize_param_tokens(eq_body, self.est_param, self.param_names)
+        constraint_text = _normalize_param_tokens(
+            constraint_text, self.est_param, self.param_names
+        )
+
         eq = eq.replace("@ABS(", "ABS(")
+
+        # 3) Merge inline ST. constraints with any explicitly supplied dict.
+        #    Explicit ``constraints=`` kwargs win on key collisions.
+        if constraint_text:
+            inline = _parse_constraints(constraint_text)
+            self.constraints = _merge_constraint_dicts(self.constraints, inline)
+
         if self.var_description:
             self.omodel = DummyOModel(
                 var_description=model.defsub(self.var_description)
@@ -785,7 +917,7 @@ class Eq_parent:
             self.org_eq, self.coef_dict
         )
 
-        # 2) Build the mfcalc helper equations and identify the endo var.
+        # 4) Build the mfcalc helper equations and identify the endo var.
         lhs_expression, rhs_expression = self.org_eq_clean.split("=", 1)
         self.lhs_actual_eq = nz.normal(
             f"actual = {lhs_expression}", add_add_factor=False
@@ -799,7 +931,7 @@ class Eq_parent:
         ).normalized
         self.endo_var = nz.endovar(lhs_expression)
 
-        # 3) Build a working dataframe with only the referenced variables.
+        # 5) Build a working dataframe with only the referenced variables.
         #    Subclasses that need a custom dataframe layout (e.g. mfcalc-built
         #    regressors for OLS) handle that themselves.
         if self.input_df is not None:
@@ -953,6 +1085,9 @@ class EstimatorBackend(Eq_parent, ABC):
     fit_kws: dict = field(default_factory=dict)
     method: str = ""
 
+    # Class-level capability flags. Subclasses opt in by overriding.
+    _supports_constraints: ClassVar[bool] = False
+
     # Late-initialized attributes (set during __post_init__).
     regression_model: Any = field(init=False, default=None)
     coef_estimate_dict: Dict[str, float] = field(init=False, default_factory=dict)
@@ -978,6 +1113,32 @@ class EstimatorBackend(Eq_parent, ABC):
         """
         return None
 
+    def _validate_constraints(self) -> None:
+        """Reject constraint specifications when the backend cannot use them.
+
+        Subclasses opt in by setting ``_supports_constraints = True``. The
+        default raises ``ValueError`` if any constraint is supplied (whether
+        from an inline ``ST.`` clause or via a ``constraints=`` kwarg).
+
+        Also verifies that every constrained name is a known parameter
+        (present in ``self.c_params``) — catches typos like ``ST. C(7)=...``
+        when the equation only uses ``C(1)..C(3)``.
+        """
+        if self.constraints and not self._supports_constraints:
+            raise ValueError(
+                f"{type(self).__name__} does not support constraints. "
+                f"Constraints specified: {sorted(self.constraints)}. "
+                "Use Estimate_nls_lmfit, or remove the ST. clause / "
+                "constraints= kwarg."
+            )
+        if self.constraints:
+            unknown = sorted(set(self.constraints) - set(self.c_params))
+            if unknown:
+                raise ValueError(
+                    f"{type(self).__name__}: constraints reference unknown "
+                    f"parameters {unknown}. Known parameters: {self.c_params}."
+                )
+
     def _prepare_estimation_df(self) -> None:
         """Backend-specific data preparation, run before :meth:`_fit`.
 
@@ -995,11 +1156,13 @@ class EstimatorBackend(Eq_parent, ABC):
     def __post_init__(self) -> None:
         # 1) Parse the equation, build helper equations, build eq_var_df.
         super().__post_init__()
-        # 2) Backend-specific validation.
+        # 2) Reject constraints the backend can't apply; verify names are known.
+        self._validate_constraints()
+        # 3) Backend-specific validation.
         self._validate_equation()
-        # 3) Backend-specific data prep (e.g. OLS materializes regressors).
+        # 4) Backend-specific data prep (e.g. OLS materializes regressors).
         self._prepare_estimation_df()
-        # 4) Run the backend.
+        # 5) Run the backend.
         self.regression_model, self.coef_estimate_dict = self._fit()
         # 5) Verify the backend covered every parameter.
         missing = [p for p in self.c_params if p not in self.coef_estimate_dict]
@@ -1342,6 +1505,10 @@ class Estimate_nls_lmfit(EstimatorBackend):
         Per-parameter initialization for lmfit, e.g.
         ``{'C__2': {'value': -0.1, 'min': -1.0, 'max': 0.0}}``. Parameters
         without an entry default to ``value=0.1``.
+    constraints : dict, optional
+        Per-parameter lmfit kwargs (``min``, ``max``, ``vary``, ``expr``).
+        Wins over ``default_params`` on key collisions. Also populated by
+        parsing an inline ``ST.`` clause in ``org_eq`` — see notes.
     method : str, default "least_squares"
         The lmfit minimizer method (passed to :func:`lmfit.minimize`).
     fit_kws : dict, optional
@@ -1353,6 +1520,20 @@ class Estimate_nls_lmfit(EstimatorBackend):
     lives in :math:`(-1, 0)`. Pass an explicit initial value via
     ``default_params`` (``{'C__2': {'value': -0.1, 'min': -1.0, 'max': 0.0}}``)
     to help the solver.
+
+    **Inline constraints via ``ST.`` clause.** Constraints can also be
+    written directly in the equation string, separated from the equation
+    by ``ST.`` and from each other by ``;``::
+
+        Y = C(1) + C(2)*X + ALFA*Z ST. C(1)=[0,1]; C(2)>0; ALFA:=C(1)+C(2)
+
+    Recognized forms:
+
+    - ``NAME=[lo, hi]`` — bounds (``min``/``max``)
+    - ``NAME > x`` / ``NAME >= x`` — lower bound
+    - ``NAME < x`` / ``NAME <= x`` — upper bound
+    - ``NAME = value`` — fixed value (``vary=False``)
+    - ``NAME := expr`` — algebraic relation (``expr``)
     """
     default_params: dict = field(default_factory=dict)
     method: str = "least_squares"
@@ -1360,15 +1541,34 @@ class Estimate_nls_lmfit(EstimatorBackend):
     add_add_factor: bool = True
     make_fixable: bool = True
 
+    # Constraints (bounds / fixed values / algebraic expressions) are
+    # supported through lmfit's Parameter kwargs (min, max, vary, expr).
+    _supports_constraints: ClassVar[bool] = True
+
     # Stored for inspection by callers.
     lmfit_params: Optional[Parameters] = field(init=False, default=None)
 
     # ---- contract ----------------------------------------------------------
 
     def _fit(self) -> Tuple[Any, Dict[str, float]]:
+        # Merge per-parameter kwargs from (priority order, last wins):
+        #   1. default_params (initial values / bounds from caller)
+        #   2. constraints    (parsed from inline ST. clause or kwarg)
+        # Parameters with an ``expr`` are derived — add them last so any
+        # referenced free parameters already exist in the Parameters set.
         params = Parameters()
+        derived: List[str] = []
         for name in self.c_params:
             kwargs = dict(self.default_params.get(name, {}))
+            kwargs.update(self.constraints.get(name, {}))
+            if 'expr' in kwargs:
+                derived.append(name)
+                continue
+            kwargs.setdefault("value", 0.1)
+            params.add(name=name, **kwargs)
+        for name in derived:
+            kwargs = dict(self.default_params.get(name, {}))
+            kwargs.update(self.constraints.get(name, {}))
             kwargs.setdefault("value", 0.1)
             params.add(name=name, **kwargs)
         self.lmfit_params = params

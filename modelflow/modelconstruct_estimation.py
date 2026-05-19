@@ -2141,6 +2141,7 @@ class Makemodel(BaseExplode):
 
         local_smpl = _frml_option_value(parts.frmlname, 'SMPL', default=None)
         local_caption = _frml_option_value(parts.frmlname, 'CAPTION', default=None)
+        local_constraints = _frml_option_value(parts.frmlname, 'CONSTRAINTS', default=None)
 
         # Equation-local smpl must override the estimator factory default.
         # If Makemodel.input_df is None because the dataframe is captured in a
@@ -2160,8 +2161,17 @@ class Makemodel(BaseExplode):
             df=df_for_smpl,
         )
 
+        # FRML-attribute constraints are appended as a synthetic ST. clause so
+        # the estimator's single parsing path handles both inline and attribute
+        # forms uniformly.
+        expression_to_estimate = parts.expression
+        if local_constraints:
+            expression_to_estimate = (
+                f"{expression_to_estimate.rstrip(' $')} ST. {local_constraints}"
+            )
+
         baked_expression, estimator_obj = _estimate_and_bake_expression(
-            parts.expression,
+            expression_to_estimate,
             estimator_name=estimator_name,
             input_df=self.input_df,
             smpl=smpl,
