@@ -33,7 +33,16 @@ mm.draw                # visualize the dependency graph
 mm.estimation_report() # write makemodel_estimation_report.html
 ```
 
-## The markdown equation format
+## Equation input formats
+
+`Makemodel` accepts two input formats — pick whichever is more natural for the situation. Both can be mixed inside the same text.
+
+| Format | When to use |
+|---|---|
+| **`>` markdown** | Fast authoring, Jupyter cells, code-style notation |
+| **LaTeX** | Equations meant to be rendered in a paper or report; complex algebra; clear typographic separation |
+
+### Format 1 — Markdown (`>` lines)
 
 `Makemodel` reads markdown text where:
 
@@ -46,7 +55,7 @@ mm.estimation_report() # write makemodel_estimation_report.html
 
 Tags written inside `< ... >` attach metadata to the equation. `<estimator=...>` triggers estimation; `<ident>` declares an identity; others (`<smpl>`, `<caption>`, `<constraints>`, `<endo>`, `<stoc>`, etc.) modify behavior.
 
-### Continuation example
+#### Continuation example
 
 ```text
 A long equation broken over several lines:
@@ -60,6 +69,94 @@ is equivalent to
 
 ```text
 > <estimator=ls> DLOG(Y) = C(1) + C(2)*DLOG(X) + C(3)*DLOG(Z) + C(4)*(LOG(Y(-1)) - LOG(X(-1)))
+```
+
+### Format 2 — LaTeX (`\begin{equation}` blocks)
+
+Equations can also be written as standard LaTeX `equation` environments. Two rules:
+
+- **Every equation must have a `\label{eq:...}`.** Equations without a label are skipped by the parser — this is deliberate so you can put display-only math in the document.
+- **Tags use the LaTeX comment marker.** Write `% @<tag>` on its own line inside the block, instead of the `<tag>` form used in `>` markdown.
+
+```latex
+\begin{equation}
+\label{eq:consumption}
+% @<estimator=ls>
+\log(C_t) = C(1) + C(2) \cdot \log(Y_t) + C(3) \cdot R_t
+\end{equation}
+```
+
+The parser translates the LaTeX body to ModelFlow notation through `latex_to_doable`. The most useful conversions:
+
+| LaTeX | Becomes | Notes |
+|---|---|---|
+| `_t` | (stripped) | Current period — the `t` index drops out |
+| `_{t-1}` | `(-1)` | Lag operator |
+| `_{t+1}` | `(+1)` | Lead operator |
+| `^{x}` | `__{x}` | Templating dimension (drives `doable` expansion) |
+| `^{x,y}` | `__{x}__{y}` | Multi-dimensional templating (up to 4 dims supported) |
+| `\Delta X_t` | `diff(X)` | First difference |
+| `\sum_{X}(expr)` | `sum(X, expr)` | Sum across a LIST named `X` |
+| `\sum_{X=k}(expr)` | `sum(X k=1, expr)` | Sum starting at sublist position 1 |
+| `\max_{X}(expr)` / `\min_{X}(expr)` | `lmax(X, expr)` / `lmin(X, expr)` | List min/max |
+| `\frac{a}{b}` | `(a)/(b)` | Fractions are flattened |
+| `\sqrt{x}` | `sqrt(x)` | |
+| `x^y` | `x**y` | Power (only when not used as a dim) |
+| `\Phi(z)` / `\Phi^{-1}(z)` | `NORM.CDF(z)` / `NORM.PDF(z)` | Normal CDF / inverse |
+| `\rho`, `\alpha`, `\beta`, `\tau`, `\sigma`, `\exp` | `rho`, `alpha`, `beta`, … | Common Greek letters |
+| `\times`, `\cdot` | `*` | Multiplication |
+| `\forall [agegroup=working]` | `[agegroup=working]` | Sublist filter (BLL `doable [...]`) |
+| `\text{[banks=selected]}` | `[banks=selected]` | Same — alternative LaTeX wrapping |
+| `\left`, `\right`, `\;`, `\,`, `\big`, `\nonumber` | (stripped) | Whitespace/sizing markup |
+| `\begin{aligned}` … `\end{aligned}`, `\begin{split}` … `\end{split}` | (stripped) | Multi-line environments are flattened |
+
+If the body still contains a `\` after translation, `Makemodel` raises `ModelSpecificationError` telling you which fragment didn't translate. Add a regex or fix the LaTeX accordingly.
+
+#### LIST definitions inside LaTeX
+
+LISTs can be written in inline math (`$ ... $`) so they render correctly in the document:
+
+```latex
+$List \; agegroup = \{16, 17, 18, 19, 20, 99, 100\}$
+
+\begin{equation}
+\label{eq:population_dynamics}
+\forall [agegroup=middle] \; Population^{agegroup}_t =
+    Population^{agegroup-1}_{t-1} - Dead^{agegroup-1}_{t-1}
+\end{equation}
+```
+
+The parser harvests every `$List ... $` block in the text before processing equations, regardless of where they appear.
+
+#### LaTeX with `<estimator=...>`
+
+The `% @<...>` tag accepts the same content as the `>`-markdown tag form, so estimation works identically:
+
+```latex
+\begin{equation}
+\label{eq:phillips}
+% @<estimator=nls_lmfit, constraints='C(2)>0'>
+\Delta \log(P_t) = C(1) + C(2) \cdot UR_t + C(3) \cdot \Delta \log(P_{t-1})
+\end{equation}
+```
+
+#### Mixing formats
+
+You can mix both formats in one `Makemodel` call. A typical use is LaTeX for the main estimated equation (so it renders nicely in a paper) and `>` markdown for accounting identities:
+
+```latex
+The behavioral equation:
+
+\begin{equation}
+\label{eq:consumption}
+% @<estimator=ls>
+\log(C_t) = C(1) + C(2) \log(Y_t)
+\end{equation}
+
+Identity definitions:
+
+> S = Y - C
+> I = S - DEF
 ```
 
 ## Tags reference
@@ -84,6 +181,8 @@ Multiple tags can appear in one `< ... >` block, separated by commas:
 ```text
 > <estimator=ls, smpl=2010 2018, constraints='C(2)>0'> DLOG(Y) = C(1) + C(2)*DLOG(X)
 ```
+
+In a LaTeX equation, tags use the comment-marker form `% @<...>` on its own line inside the block — see the LaTeX section above.
 
 ## Templating
 
@@ -405,6 +504,46 @@ mm = Makemodel("""
 # Three estimated equations: LOSS_NFC, LOSS_SME, LOSS_HH
 ```
 
+### LaTeX-authored model
+
+```python
+mm = Makemodel(r"""
+A small Phillips-curve model.
+
+$List \; lags = \{1, 2, 3, 4\}$
+
+\begin{equation}
+\label{eq:phillips}
+% @<estimator=nls_lmfit>
+\Delta \log(P_t) = C(1) + C(2) \cdot UR_t + C(3) \cdot \Delta \log(P_{t-1})
+\end{equation}
+
+\begin{equation}
+\label{eq:unemployment}
+% @<ident>
+UR_t = 100 \cdot (1 - E_t / L_t)
+\end{equation}
+""", input_df=df)
+```
+
+### Same equation, two notations
+
+These two `Makemodel` calls produce identical models:
+
+```python
+mm_md = Makemodel("""
+> <estimator=ls> LOG(C) = C(1) + C(2)*LOG(Y) + C(3)*LOG(C(-1))
+""", input_df=df, estimator=ls)
+
+mm_tex = Makemodel(r"""
+\begin{equation}
+\label{eq:consumption}
+% @<estimator=ls>
+\log(C_t) = C(1) + C(2) \log(Y_t) + C(3) \log(C_{t-1})
+\end{equation}
+""", input_df=df, estimator=ls)
+```
+
 ## Common pitfalls
 
 - **`<estimator=ls>` not found** — make sure `ls` is in the caller's scope, or pass `estimator_classes={'ls': ls}` / `estimator_namespace=locals()`.
@@ -414,6 +553,9 @@ mm = Makemodel("""
 - **Estimator can't take constraints** — OLS and EViews backends raise on any `ST.` clause or `<constraints=...>` tag. Switch to `Estimate_nls_lmfit`.
 - **Estimation sample shrinks unexpectedly** — OLS drops NaN/inf rows from lags and `LOG()` transforms; the actual sample is reported in `estimator_obj.estimation_smpl`.
 - **`mm.mmodel` is cached** — re-running estimation requires constructing a new `Makemodel`. The cached model property doesn't refresh automatically.
+- **LaTeX equation skipped silently** — every equation environment needs `\label{eq:...}`. Equations without a label are treated as display-only and dropped by the parser. Add a label even if you don't reference it elsewhere.
+- **`ModelSpecificationError: Some LaTeX has survived`** — a LaTeX construct didn't translate (typically a Greek letter or operator not in the conversion table). Either rewrite that part in plain notation, or extend the translation tables in `latex_to_doable` (in `modelconstruct_estimation.py`).
+- **Raw strings for LaTeX** — pass LaTeX-containing model text as `r"""..."""` so backslashes survive intact: `\Delta` would otherwise be interpreted by Python.
 
 ## Related modules and skills
 
