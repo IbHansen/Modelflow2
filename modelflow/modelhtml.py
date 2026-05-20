@@ -36,6 +36,31 @@ def _mmr_has_estimator_tag(line: str) -> bool:
     return bool(re.search(r'<[^>]*\b(?:estimator|est)\b[^>]*>', line, flags=re.IGNORECASE))
 
 
+_BLL_IDENT = re.compile(r'\b([A-Z][A-Z0-9_]*)\b')
+
+
+def _mmr_annotate_bll(text: str, var_desc: dict) -> str:
+    """HTML-escape BLL text, wrapping known variable names in tooltip <abbr>."""
+    if not var_desc:
+        return _mmr_html.escape(text)
+    esc = _mmr_html.escape
+    parts = []
+    last = 0
+    for m in _BLL_IDENT.finditer(text):
+        name = m.group(1)
+        parts.append(esc(text[last:m.start()]))
+        desc = var_desc.get(name, '')
+        if desc:
+            parts.append(
+                f'<abbr class="mmr-var" title="{esc(desc)}">{esc(name)}</abbr>'
+            )
+        else:
+            parts.append(esc(name))
+        last = m.end()
+    parts.append(esc(text[last:]))
+    return ''.join(parts)
+
+
 def _mmr_est_panel(rec: dict, idx: int, plot_format: str) -> str:
     """Return a collapsible HTML panel for one estimation record."""
     esc = _mmr_html.escape
@@ -77,6 +102,7 @@ def _mmr_md_to_html(
     est_records: list,
     plot_format: str = "svg",
     report_all: bool = False,
+    var_desc: dict = None,
 ) -> tuple:
     """Convert markdown to HTML, inserting collapsible estimation panels.
 
@@ -165,7 +191,7 @@ def _mmr_md_to_html(
             if not in_bll:
                 end_all()
                 out.append('<pre class="mmr-bll"><code>'); in_bll = True
-            out.append(esc(content))
+            out.append(_mmr_annotate_bll(content, var_desc))
             continue
 
         # BLL equation >
@@ -175,7 +201,7 @@ def _mmr_md_to_html(
             if not in_bll:
                 end_all()
                 out.append('<pre class="mmr-bll"><code>'); in_bll = True
-            out.append(esc(content))
+            out.append(_mmr_annotate_bll(content, var_desc))
             if has_est and rec_i < len(est_records):
                 ebll()
                 out.append(_mmr_est_panel(est_records[rec_i], panel_i, plot_format))
@@ -284,6 +310,18 @@ pre {
 }
 pre code { background: none; padding: 0; font-size: .875rem; }
 pre.mmr-bll { background: #f0f5fb; border-left: 3px solid #2563eb; border-radius: 0 5px 5px 0; }
+abbr.mmr-var {
+  text-decoration: none; border-bottom: 1px dotted #2563eb;
+  cursor: help; position: relative;
+}
+abbr.mmr-var:hover::after {
+  content: attr(title);
+  position: absolute; left: 0; top: 1.4em;
+  background: #1a1a1a; color: #fff;
+  padding: .2rem .5rem; border-radius: 4px;
+  font-size: .78rem; white-space: nowrap; z-index: 20;
+  pointer-events: none;
+}
 ul, ol { padding-left: 1.5rem; margin: .65rem 0; }
 li { margin: .25rem 0; }
 .mmr-toolbar { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1.25rem 0 1.5rem; }
@@ -502,8 +540,9 @@ class MakeModelReport:
                     f'{_mmr_html.escape(sub_name)}</h2>'
                 )
 
+            var_desc = getattr(mex, 'var_description', None) or {}
             body_html, toc_entries = _mmr_md_to_html(
-                md_text, est_recs, self.plot_format, self.report_all
+                md_text, est_recs, self.plot_format, self.report_all, var_desc
             )
             all_toc.extend(toc_entries)
             all_parts.append(body_html)

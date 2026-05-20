@@ -2217,6 +2217,33 @@ class Makemodel(BaseExplode):
             report_all=report_all,
         )
 
+    def report(
+        self,
+        title: str = "",
+        plot_format: str = "svg",
+        report_all: bool = False,
+    ) -> "MakeModelReport":
+        """Return a :class:`~modelhtml.MakeModelReport` for this model.
+
+        The report renders the full model documentation (prose + equations)
+        with a collapsible TOC and inline collapsible estimation panels.
+
+        Parameters
+        ----------
+        title : str, optional
+            Report title. Defaults to ``modelname`` or ``"Model Report"``.
+        plot_format : {"svg", "png"}, default ``"svg"``
+            Embedded plot format.
+        report_all : bool, default ``False``
+            Include identity equations as minimal panels.
+
+        Examples
+        --------
+        >>> mm.report().save()               # → html/model-report_report.html
+        >>> mm.report(title="My Model").save(open_file=True)
+        """
+        return MakeModelReport(self, title=title, plot_format=plot_format, report_all=report_all)
+
     @property
     def markdown_with_estimation(self) -> str:
         """Original Markdown input with compact estimation tables inserted.
@@ -2577,6 +2604,18 @@ class Listmodels(BaseExplode):
             open_file=open_file,
             report_all=report_all,
         )
+
+    def report(
+        self,
+        title: str = "",
+        plot_format: str = "svg",
+        report_all: bool = False,
+    ) -> "MakeModelReport":
+        """Return a :class:`~modelhtml.MakeModelReport` for this combined model.
+
+        See :meth:`Makemodel.report` for parameter details.
+        """
+        return MakeModelReport(self, title=title, plot_format=plot_format, report_all=report_all)
 
     @property
     def markdown_with_estimation(self) -> str:
