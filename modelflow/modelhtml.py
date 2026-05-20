@@ -36,7 +36,7 @@ def _mmr_has_estimator_tag(line: str) -> bool:
     return bool(re.search(r'<[^>]*\b(?:estimator|est)\b[^>]*>', line, flags=re.IGNORECASE))
 
 
-_BLL_IDENT = re.compile(r'\b([A-Z][A-Z0-9_]*)\b')
+_BLL_IDENT = re.compile(r'\b([A-Za-z][A-Za-z0-9_]*)\b')
 
 
 def _mmr_annotate_bll(text: str, var_desc: dict) -> str:
@@ -49,7 +49,7 @@ def _mmr_annotate_bll(text: str, var_desc: dict) -> str:
     for m in _BLL_IDENT.finditer(text):
         name = m.group(1)
         parts.append(esc(text[last:m.start()]))
-        desc = var_desc.get(name, '')
+        desc = var_desc.get(name.upper(), '') or var_desc.get(name, '')
         if desc:
             parts.append(
                 f'<abbr class="mmr-var" title="{esc(desc)}">{esc(name)}</abbr>'
