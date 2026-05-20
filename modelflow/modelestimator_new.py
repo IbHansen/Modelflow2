@@ -2433,7 +2433,12 @@ def export_estimation_reports_to_html(
     print(f"✔ Report saved to {full_path}")
 
     if open_file:
-        webbrowser.open(f"file://{full_path.resolve()}")
+        try:
+            import google.colab  # noqa: F401
+            from IPython.display import HTML, display
+            display(HTML(full_path.read_text(encoding="utf-8")))
+        except ImportError:
+            webbrowser.open(f"file://{full_path.resolve()}")
 
 
 def _is_identity_only(eq: Any) -> bool:

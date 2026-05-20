@@ -2739,6 +2739,10 @@ def export_makemodel_estimation_reports_to_html(
 
 
 
+# MakeModelReport lives in modelhtml.py; re-exported here for convenience.
+from modelhtml import MakeModelReport
+
+
 # -----------------------------------------------------------------------------
 # Backwards compatibility aliases
 # -----------------------------------------------------------------------------
