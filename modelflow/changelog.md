@@ -278,3 +278,4 @@ Version 2.71 uploaded
 widescreen and scroll on off prepared for notebook version 7 
 modelconstruct now incorporates syntaf for the whole model 
 modelmf created as_df_method decorator for construction dataframe methods (very smart but not used yet)Version 2.72 uploaded 
+Version 2.72 uploaded 

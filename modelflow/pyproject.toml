@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]   # >=77 for the SPDX license expression below
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "modelflowib"                       # PyPI distribution name
+version = "2.72"                           # OVERWRITTEN at build time from MF_VERSION
+                                            # (set_pyproject_version.py / make_pip.py -v)
+description = "A tool to solve and manage dynamic economic and financial models"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"                            # SPDX expression (setuptools>=77)
+license-files = ["license.md"]
+authors = [{ name = "Ib Hansen", email = "Ib.Hansen.Iv@gmail.com" }]
+keywords = ["economics", "dynamic models", "BLL", "numba", "modelling"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+# PyPI dependencies (pip names). Carried over from the previous make_pip.py.
+dependencies = [
+    "pandas",
+    "matplotlib",
+    "seaborn",
+    "sympy",
+    "numpy",
+    "networkx",
+    "tqdm",
+    "scipy",
+    "numexpr",
+    "bottleneck",
+    "XlsxWriter",
+    "pyarrow",
+    "tabulate",
+    "openpyxl",
+    "xarray",
+    "cvxopt",
+    "numba",
+    "dash",
+    "dash-bootstrap-components",
+    "dash-interactive-graphviz",
+    "lmfit",
+    "jupyter",
+    "ipywidgets",
+    "ipydatagrid",
+]
+
+[project.optional-dependencies]
+shiny = ["shiny", "shinywidgets"]
+
+[project.urls]
+Homepage   = "https://github.com/IbHansen/ModelFlow2"
+Repository = "https://github.com/IbHansen/ModelFlow2"
+
+# --- flat layout: ship loose TOP-LEVEL modules so `from modelclass import model` works ---
+# This list is the single source of truth for BOTH the PyPI wheel (make_pip.py reads it)
+# and the conda build (pip install . consumes it). Experiments & scripts are excluded.
+[tool.setuptools]
+py-modules = [
+    # core (11)
+    "modelclass", "modelpattern", "modelmanipulation", "modelnormalize",
+    "modelhelp", "modelBLfunk", "modeluserfunk", "model_financial_stability",
+    "modelmf", "model_parquet_mixin", "model_cvx",
+    # solve (3)
+    "modelnewton", "modelinvert", "modeldiff",
+    # analysis (2)
+    "modeldekom", "modelnet",
+    # onboard (8)
+    "modelgrabwf2", "modelgrab", "modelmacrograb", "modelgrabgdx",
+    "model_dynare", "model_Excel", "model_latex", "model_latex_class",
+    # construct (2)
+    "modelconstruct", "modelconstruct_estimation",
+    # estimate (2)
+    "modelestimation", "modelestimator_new",
+    # report (3)
+    "modelreport", "modelhtml", "modeldisplay",
+    # viz (8)
+    "modelvis", "modeljupyter", "modeljupytermagic", "modelwidget",
+    "modelwidget_input", "modeldash", "modeldashboot", "modeldashsidebar",
+]
