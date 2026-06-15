@@ -22,3 +22,22 @@ dist/
 experiments/
 
 **/build
+
+# Backup / temp / Office lock files
+*.bak
+*.orig
+~$*
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS cruft
+.DS_Store
+Thumbs.db
