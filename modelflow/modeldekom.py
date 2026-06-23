@@ -186,13 +186,13 @@ def GetAllImpact(impact,sumaryvar):
 
 def GetSumImpact(impact,pat='PD__*'):
     """Gets the accumulated differences attributet to each impact group """ 
-    a = impact.loc[ilist(impact,pat),:].T.groupby(level=[0]).sum().T   
+    a = impact.loc[ilist(impact,pat),:].T.groupby(level=0).sum().T
     return a 
 
 def GetLastImpact(impact,pat='RCET1__*'):
     """Gets the last differences attributet to each impact group """ 
     # assert 1==2
-    a = impact.loc[ilist(impact,pat),:].T.groupby(level=[0]).last().T   
+    a = impact.loc[ilist(impact,pat),:].T.groupby(level=0).last().T
     return a
  
 def GetAllImpact(impact,pat='RCET1__*'):
@@ -386,7 +386,7 @@ class totdif():
             years_fmt = mdates.DateFormatter('%Y')
             
             selected =   GetAllImpact(self.res[use],pat) 
-            grouped = selected.stack().groupby(level=[0])
+            grouped = selected.stack().groupby(level=0)
             fig, axis = plt.subplots(nrows=len(grouped),ncols=1,figsize=(10,5*len(grouped)),constrained_layout=False)
             width = 0.5  # the width of the barsser
             ntitle = f'Decomposition, {use}' if title == '' else title
@@ -447,7 +447,7 @@ class totdif():
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', FutureWarning)
             
-                grouped = selected.stack().groupby(level=[0])
+                grouped = selected.stack().groupby(level=0)
             fig, axis = plt.subplots(nrows=len(grouped),ncols=1,figsize=(10,5*len(grouped)),constrained_layout=False)
             width = 0.5  # the width of the barsser
             ntitle = f'Decomposition, {use}' if title == '' else title

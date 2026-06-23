@@ -281,3 +281,4 @@ modelmf created as_df_method decorator for construction dataframe methods (very 
 Version 2.72 uploaded 
 Make plotting in objext space
 in report use new test to test for non numeric dataframe 
+fix pandas 3 error in groupby dekomp 
