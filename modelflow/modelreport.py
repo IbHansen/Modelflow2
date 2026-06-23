@@ -65,6 +65,7 @@ import re
 from matplotlib import dates
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
+from matplotlib.figure import Figure
 import numpy as np
 
 from dataclasses import dataclass, field, fields, asdict
@@ -1335,10 +1336,11 @@ class DisplayKeepFigDef(DisplayDef):
 
     # Function implementation...
 
-         plt.close('all')
-         plt.ioff() 
-
-            
+         # Figures are built with the object-oriented matplotlib API (Figure())
+         # so they are NOT registered in pyplot's global figure manager. This
+         # prevents the %matplotlib inline backend from auto-rendering them at
+         # end-of-cell (which caused a spurious, stale duplicate plot in
+         # addition to this object's own rendering).
          dfsres = self.dfs
          
          
@@ -1354,7 +1356,7 @@ class DisplayKeepFigDef(DisplayDef):
              figsize =  (xcol*options.size[0],xrow*options.size[1])
              
              # print(f'{size=}  {figsize=}')
-             fig = plt.figure(figsize=figsize)
+             fig = Figure(figsize=figsize)
              #gs = gridspec.GridSpec(xrow + 1, xcol, figure=fig)  # One additional row for the legend
              
              if options.legend and all_by_var: 
@@ -1386,7 +1388,11 @@ class DisplayKeepFigDef(DisplayDef):
                  keys = format_list_with_numbers([dr['key'] for dr in dfsres ])
              ... 
              # figs_and_ax  = {f'{self.name}_{i}' :  plt.subplots(figsize=options.size) for i,v  in enumerate(dfsres)}
-             figs_and_ax  = {v  :  plt.subplots(figsize=options.size) for v in  keys}
+             def _new_fig_ax():
+                 f = Figure(figsize=options.size)
+                 a = f.subplots()
+                 return f, a
+             figs_and_ax  = {v  :  _new_fig_ax() for v in  keys}
              figs = {v : fig for v,(fig,ax)   in figs_and_ax.items() } 
              axes = [    ax  for fig,ax    in figs_and_ax.values() ] 
          
@@ -1460,12 +1466,10 @@ class DisplayKeepFigDef(DisplayDef):
          
          if showfig:
              ...
-             for f in figs.values(): 
+             for f in figs.values():
                  display(f)
-                 plt.close(f)
-         plt.ion() 
 
-         
+
          return figs
     
     @property 

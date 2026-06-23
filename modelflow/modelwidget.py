@@ -457,6 +457,19 @@ def fig_to_image(figs,format='svg'):
     figs.savefig(f,format=format)
     f.seek(0)
     image= f.read()
+    if format == 'svg':
+        # Make the SVG responsive: matplotlib emits the figure's native size
+        # (e.g. width="1440pt" for a wide ncol>1 figure), which overflows the
+        # notebook output area so only the left column shows. Drop the fixed
+        # pt width/height and let the viewBox drive the aspect ratio so the
+        # full figure scales to the container width.
+        import re
+        def _responsive(m):
+            tag = re.sub(r'\s(?:width|height)="[^"]*pt"', '', m.group(0))
+            if 'style=' not in tag:
+                tag = tag[:-1] + ' style="width:100%;height:auto;">'
+            return tag
+        image = re.sub(r'<svg\b[^>]*>', _responsive, image, count=1)
     return image
   
 @dataclass

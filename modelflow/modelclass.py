@@ -49,6 +49,7 @@ from collections import defaultdict, namedtuple
 from itertools import groupby, chain, zip_longest,accumulate
 import re
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 import sys
 import networkx as nx
 import fnmatch
@@ -4778,10 +4779,10 @@ class Display_Mixin():
             .set_sticky(axis='index')\
             .set_table_attributes('class="table"')
             
-            if any(df.dtypes == 'object'):
-                result = result
-            else:
+            if all(is_numeric_dtype(dt) for dt in df.dtypes):
                 result = result.format('{:,.'+xdec+'f}'+xpct)
+            else:
+                result = result
 
             if use_tooltip:
                 try:
@@ -4843,10 +4844,14 @@ class Display_Mixin():
             
             result = df.style.set_table_styles(styles)
 
-            if any(df.dtypes == 'object'):
-                result = result
-            else:
+            # Only apply the numeric format when every column is numeric.
+            # NB: pandas >=3.0 stores strings as the 'str' dtype (not 'object'),
+            # so a "not object" test wrongly treats pre-formatted string tables
+            # (df_str) as numeric and crashes formatting them. Test for numeric.
+            if all(is_numeric_dtype(dt) for dt in df.dtypes):
                 result = result.format('{:,.'+xdec+'f}'+xpct+' ')
+            else:
+                result = result
 
             if use_tooltip:
                 try:
