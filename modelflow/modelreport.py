@@ -912,7 +912,7 @@ class DisplayVarTableDef(DisplayDef):
             dec = self.lines[-1].dec 
             thisdf = self.df.loc[self.timeslice,:] if self.timeslice else self.df 
             # df_char = pd.DataFrame(' ', index=self.thisdf.index, columns=self.thisdf.columns)
-            df_char = thisdf.applymap(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+            df_char = thisdf.map(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
         else:
             df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
     

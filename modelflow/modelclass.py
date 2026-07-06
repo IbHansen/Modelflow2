@@ -1406,11 +1406,17 @@ class Org_model_Mixin():
 
     def __getattr__(self, name):
         '''To execute the . operator
-        
-       
-        
+
+
+
         '''
-        
+        # Guard against infinite recursion: __getattr__ is only called when normal
+        # lookup fails. Dunder/internal names and a not-yet-initialised (or empty)
+        # model lack 'allvar_set'; reading it via self.allvar_set would re-enter
+        # __getattr__ endlessly, so resolve it from __dict__ directly.
+        if name.startswith('__') and name.endswith('__'):
+            raise AttributeError(name)
+
         if name.startswith('model_var_'):
             wishfor= name[len('model_var_'):]
             return(self.var_with_frmlname(wishfor))
@@ -1419,10 +1425,11 @@ class Org_model_Mixin():
             return(self.frml_with_frmlname(wishfor))
 
 
-        else: 
-            if name.upper()  in self.allvar_set: 
+        else:
+            allvar_set = self.__dict__.get('allvar_set')
+            if allvar_set is not None and name.upper() in allvar_set:
                 return mv.varvis(model=self, var=name.upper())
-            else: 
+            else:
                 raise AttributeError(f'The specification:"{name}" did not match a method, property or variable name')
 
     def __dir__(self):

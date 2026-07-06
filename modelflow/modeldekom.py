@@ -200,6 +200,13 @@ def GetAllImpact(impact,pat='RCET1__*'):
     a = impact.loc[ilist(impact,pat),:] 
     return a 
 
+def _as_title(desc):
+    """Coerce a description (which may be a list/tuple) into a plain string,
+    so it can be passed as a matplotlib/pandas plot title."""
+    if isinstance(desc, (list, tuple)):
+        return ' '.join(str(d) for d in desc)
+    return desc
+
 def GetOneImpact(impact,pat='RCET1__*',per=''):
     """Gets differences attributet to each impact group in period:per """ 
     a = impact.loc[ilist(impact,pat),idx[:,per]] 
@@ -398,7 +405,7 @@ class totdif():
                 else:
                     tempdf=cutout(dfatt.T,threshold).T.resample(resample).mean()
 #                pdb.set_trace()
-                tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=_as_title(self.desdic.get(name,name)))
                 ax.set_ylabel(name,fontsize='x-large')
 #                ax.set_xticklabels(tempdf.index.tolist(), rotation = 45,fontsize='x-large')
 ##                ax.xaxis.set_minor_locator(plt.NullLocator())
@@ -467,12 +474,12 @@ class totdif():
                         warnings.simplefilter("ignore", category=UserWarning)
                         if selfstack:
                             df_neg, df_pos =tempdf.clip(upper=0), tempdf.clip(lower=0)    
-                            df_pos.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                            df_pos.plot(ax=ax,kind=kind,stacked=stacked,title=_as_title(self.desdic.get(name,name)))
                             ax.set_prop_cycle(None)
-                            df_neg.plot(ax=ax,legend=False,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                            df_neg.plot(ax=ax,legend=False,kind=kind,stacked=stacked,title=_as_title(self.desdic.get(name,name)))
                             ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
                         else:
-                            tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=self.desdic.get(name,name))
+                            tempdf.plot(ax=ax,kind=kind,stacked=stacked,title=_as_title(self.desdic.get(name,name)))
                             if len(tempdf.index) < 9:
                                 ax.set_xticks(range(len(tempdf.index)))
                                 ax.set_xticklabels(tempdf.index, rotation=0)

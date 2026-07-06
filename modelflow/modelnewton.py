@@ -264,28 +264,25 @@ class newton_diff():
                     print('* Problem sympify ',lhs,'=',rhs[0:-1],'\n')
                 for rhv in endocur:
                     try:
-                        # breakpoint()
                         if not self.forcenum:
-                            # ud=str(kat.diff(sympify(rhv,md._clash)))
                             try:
                                 ud=str(kat.diff(sympify(pastestring(rhv, post,funks=self.mmodel.funks,onlylags=True ),clash)))
-                                # debug_var(v,rhv,ud)
                                 ud = stripstring(ud,post,self.mmodel.funks)
                                 ud = re.sub(pt.namepat+r'(?:(\()([0-9]*)(\)))',r'\g<1>\g<2>+\g<3>\g<4>',ud) 
                             except:
                                 ud = numdif(self.mmodel,v,rhv,silent=self.silent)
-                                # debug_var(v,rhv,ud)
 
-                            if self.forcenum or 'DERIVATIVE(' in ud.upper() :
-                                if  'DERIVATIVE(' in ud.upper() :
-                                    ...
-                                   # debug_var(v,rhv,lhs,rhs,ud)
+                            if 'DERIVATIVE(' in ud.upper() :
+                                # sympy could not differentiate symbolically -> fall back to numeric
                                 ud = numdif(self.mmodel,v,rhv,silent=self.silent)
                                 if not self.silent and 0: print('numdif of {rhv}')
+                        else:
+                            # forcenum: differentiate numerically
+                            ud = numdif(self.mmodel,v,rhv,silent=self.silent)
                         diffendocur[v.upper()][rhv.upper()]=ud
         
-                    except:
-                        print('we have a serious problem deriving:',lhs,'|',rhv,'\n',lhs,'=',rhs)
+                    except Exception as e:
+                        print(e,'\nwe have a serious problem deriving:',lhs,'|',rhv,'\n',lhs,'=',rhs)
                         # breakpoint()
 
                     i+=1
@@ -358,7 +355,7 @@ class newton_diff():
         
         if show:
             sdec = str(dec)
-            display( HTML(stacked_df.applymap(lambda x:f'{x:,.{sdec}f}' if x != 0.0 else '        ').to_html()))
+            display( HTML(stacked_df.map(lambda x:f'{x:,.{sdec}f}' if x != 0.0 else '        ').to_html()))
         return stacked_df
                 
     def show_diff_latex(self,pat='*',show_expression=True,show_values=True,maxper=5):
