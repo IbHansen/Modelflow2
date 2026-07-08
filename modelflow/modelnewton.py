@@ -635,9 +635,10 @@ class newton_diff():
            diag_mask = sp.sparse.diags((~is_residual_eq).astype(float))
            temp = self.get_diff_mat_1per(df=df,periode=periode)
            self.jacsparsedic  = { p: jac - diag_mask for p,jac in temp.items()  }
-        else: 
-            self.jacsparsedic = self.get_diff_mat_1per(df=df,periode=periode)
-            
+        else:
+            temp = self.get_diff_mat_1per(df=df,periode=periode)
+            self.jacsparsedic = temp
+
         self.jacorgdfdic = {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar) for p,jac in temp.items()}
         self.jacdfdic = {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar) for p,jac in self.jacsparsedic.items()}
     

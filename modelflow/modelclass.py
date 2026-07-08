@@ -105,6 +105,7 @@ import modelvis as mv
 import modelpattern as pt
 from modelnet import draw_adjacency_matrix
 from modelnewton import newton_diff
+from modelsolver_ng import Solver_ng_Mixin
 import modeljupyter as mj
 from modelhelp import cutout, update_var
 from modelnormalize import normal
@@ -9357,7 +9358,7 @@ class Report_Mixin:
              
 from model_parquet_mixin import Parquet_Mixin
 
-class model(Parquet_Mixin, Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
+class model(Parquet_Mixin, Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Solver_ng_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
             Fix_Mixin,Stability_Mixin,Report_Mixin):
     '''This is the main model definition'''
@@ -9654,3 +9655,62 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         print(f'Number of variables in "minimum" feedback set: {len(fb_nodes)}')
         print(f'Number of variables in "DAG" graph           : {len(dag_nodes)}')
         # mtest,bk = model.modelload(r'ibstestnozip')
+
+#%%  test next-generation (ng) solvers against the legacy solvers
+    if 1:
+        ngmodel = model(smallmodel)
+        ngdf = pd.DataFrame(
+            {'X': [0.2, 0.2, 0.2], 'C': [2.0, 3., 5.], 'R': [2., 1., 0.4],
+             'PPP': [0.4, 0., 0.4]})
+
+        # Gauss-Seidel:  legacy .sim  vs  new .sim_ng
+        old_sim = ngmodel.sim(ngdf, silent=1)
+        new_sim = ngmodel.sim_ng(ngdf, silent=1)
+        d_sim = float((old_sim - new_sim).abs().max().max())
+        print(f'sim                  vs sim_ng          max abs diff: {d_sim:.3e}')
+
+        # implicit per-period Newton: legacy .newton_un_normalized vs new .newton_ng
+        old_newton = ngmodel.newton_un_normalized(ngdf, silent=1)
+        new_newton = ngmodel.newton_ng(ngdf, silent=1)
+        d_newton = float((old_newton - new_newton).abs().max().max())
+        print(f'newton_un_normalized vs newton_ng       max abs diff: {d_newton:.3e}')
+
+        # implicit stacked Newton: legacy .newtonstack_un_normalized vs new .newtonstack_ng
+        old_stack = ngmodel.newtonstack_un_normalized(ngdf, silent=1)
+        new_stack = ngmodel.newtonstack_ng(ngdf, silent=1)
+        d_stack = float((old_stack - new_stack).abs().max().max())
+        print(f'newtonstack_un_norm  vs newtonstack_ng  max abs diff: {d_stack:.3e}')
+
+        # 1-D stuffed Gauss-Seidel: legacy .sim1d vs new .sim1d_ng
+        old_sim1d = ngmodel.sim1d(ngdf, silent=1)
+        new_sim1d = ngmodel.sim1d_ng(ngdf, silent=1)
+        d_sim1d = float((old_sim1d - new_sim1d).abs().max().max())
+        print(f'sim1d                vs sim1d_ng        max abs diff: {d_sim1d:.3e}')
+
+        # mixed stacked Newton: legacy .newtonstack_implicit vs new .newtonstack_implicit_ng
+        old_impl = ngmodel.newtonstack_implicit(ngdf, silent=1)
+        new_impl = ngmodel.newtonstack_implicit_ng(ngdf, silent=1)
+        d_impl = float((old_impl - new_impl).abs().max().max())
+        print(f'newtonstack_implicit vs ..._implicit_ng max abs diff: {d_impl:.3e}')
+
+        # single-pass DAG evaluator: legacy .xgenr vs new .xgenr_ng.  (This toy
+        # model is actually simultaneous, so xgenr's single sweep is not a real
+        # solution -- but both implementations must produce the SAME sweep.)
+        old_xgenr = ngmodel.xgenr(ngdf, silent=1)
+        new_xgenr = ngmodel.xgenr_ng(ngdf, silent=1)
+        d_xgenr = float((old_xgenr - new_xgenr).abs().max().max())
+        print(f'xgenr                vs xgenr_ng        max abs diff: {d_xgenr:.3e}')
+
+        # NB: no cross-family (sim_ng vs newton_ng) check here -- this toy model
+        # is singular for D3 (D3 = ... + D3 cancels, zero on the Jacobian
+        # diagonal), so Gauss-Seidel and Newton legitimately disagree on it.
+
+        # dispatcher form
+        disp = ngmodel.solve_ng(ngdf, solver='newton', silent=1)
+        d_disp = float((disp - new_newton).abs().max().max())
+        print(f'solve_ng(newton) matches newton_ng : {d_disp < 1e-12}')
+
+        assert (d_sim < 1e-6 and d_newton < 1e-6 and d_stack < 1e-6
+                and d_sim1d < 1e-6 and d_impl < 1e-6 and d_xgenr < 1e-6), \
+            'ng solver diverges from legacy'
+        print('ng solver test: OK')
