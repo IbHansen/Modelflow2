@@ -6473,6 +6473,8 @@ class Solver_Mixin():
 
         solver : str, optional
             Specifies the solver to be used. The default solver is chosen based on the model's properties.
+            A next-generation (modelsolver_ng) solver can be selected by passing its
+            ``<name>_ng`` name, e.g. ``solver='newton_ng'`` or ``solver='sim_ng'``.
 
         silent : bool, optional
             If True, the solver runs silently without printing output to the console. Default is True.
@@ -6550,7 +6552,7 @@ class Solver_Mixin():
         solver = newkwargs.get('solver', solverguess)
         silent = newkwargs.get('silent', True)
         self.model_solver = getattr(self, solver)
-        
+
         # print(f'solver:{solver},solverkwargs:{newkwargs}')
         # breakpoint()
         outdf = self.model_solver(*args, **newkwargs)
@@ -9710,7 +9712,16 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         d_disp = float((disp - new_newton).abs().max().max())
         print(f'solve_ng(newton) matches newton_ng : {d_disp < 1e-12}')
 
+        # __call__ can select an ng solver via its '<name>_ng' name, with the
+        # unchanged getattr(self, solver) dispatch. The surrounding __call__
+        # behaviour is identical, so solver='sim' and solver='sim_ng' must match.
+        call_classic = ngmodel(ngdf, solver='sim', silent=1, reset_options=True)
+        call_ng = ngmodel(ngdf, solver='sim_ng', silent=1, reset_options=True)
+        d_call = float((call_classic - call_ng).abs().max().max())
+        print(f"__call__(solver='sim') vs (solver='sim_ng') max abs diff: {d_call:.3e}")
+
         assert (d_sim < 1e-6 and d_newton < 1e-6 and d_stack < 1e-6
-                and d_sim1d < 1e-6 and d_impl < 1e-6 and d_xgenr < 1e-6), \
+                and d_sim1d < 1e-6 and d_impl < 1e-6 and d_xgenr < 1e-6
+                and d_call < 1e-6), \
             'ng solver diverges from legacy'
         print('ng solver test: OK')
