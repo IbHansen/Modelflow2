@@ -33,6 +33,15 @@ Ported solvers
     * :class:`Sim1dSolver`             (``sim1d``)    -- Gauss-Seidel on a stuffed
       one-period 1-D array (compile-time offsets, better data locality).
     * :class:`NewtonSolver`            (``newton``)  -- unified per-period Newton.
+    * :class:`NewtonFbminSolver`       (``newton_fbmin``) -- per-period Newton
+      on the *minimal feedback vertex set* (``m.fblist``); the DAG part of the
+      core (``m.daglist``) is evaluated by exact topological sweeps.  Default
+      ``jacobian='fd'``: a dense finite-difference reduced Jacobian (captures
+      the coupling through the DAG chain), LU-factorized once and reused under
+      control of the ``nonlin`` option.  ``jacobian='direct'``: the standard
+      ``newton_diff`` on the fb equations only, with the inner fb solve
+      iterated to convergence (nonlinear block Gauss-Seidel).  ``ljit``
+      compiles the sweeps like the other solvers (own transpile file).
     * :class:`NewtonStackSolver`       (``newtonstack`` / ``newtonstack_implicit``)
       -- unified stacked Newton.
 
@@ -87,6 +96,7 @@ import sys  # noqa: F401  -- referenced by exec'd solver code (sys.exc_info)
 
 import numpy as np
 import pandas as pd
+from scipy.linalg import lu_factor, lu_solve
 from tqdm import tqdm
 
 import modelpattern as pt
@@ -141,12 +151,21 @@ def _gaussline_1d(m, vx, nodamp=False):
     return "".join(out)
 
 
-def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=False):
+def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=False,
+           parts=None):
     """Source of ``make_los`` returning (prolog, core, epilog) for the 2-D solver.
 
     ``type='gauss'`` produces an in-place Gauss-Seidel update; ``type='res'``
     writes the residual to ``outvalues`` (used by the Newton solvers).
     Replacement for ``model.outsolve2dcunk``.
+
+    ``parts`` optionally overrides the generated functions: a list of
+    ``(funcname, order, nodamp, kind)`` tuples -- one generated function per
+    entry, ``kind`` is ``'gauss'`` (in-place on ``values``) or ``'res'`` (LHS
+    written to ``outvalues``) -- and ``make_los`` returns them in that order.
+    Default is the classic prolog/core/epilog split with the global ``type``.
+    Used by the ``fbmin`` flavour: the DAG sweep is gauss lines, only the
+    feedback equations are res lines.
     """
     short, long, longer = 4 * " ", 8 * " ", 12 * " "
     columnsnr = m.get_columnsnr(databank)
@@ -253,7 +272,6 @@ def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=Fal
         fib2.append(long + "return  \n")
         return fib + fib2, newoverhead + len(fib2), neweqs
 
-    linemake = make_resline2 if type == "res" else make_gaussline2
     fib1 = ["def make_los(funks=[],errorfunk=None):\n"]
     fib1.append(short + "import time\n")
     fib1.append(short + "import tqdm\n")
@@ -263,29 +281,25 @@ def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=Fal
     fib1.extend(short + f.__name__ + " = funks[" + str(i) + "]\n"
                 for i, f in enumerate(m.funks))
 
-    if m.use_preorder:
-        procontent, prooverhead, proeqs = makechunkedfunk(
-            "prolog", m.preorder, linemake, overhead=len(fib1), oldeqs=0,
-            debug=thisdebug, nodamp=True, ljit=ljit, chunk=chunk)
-        content, conoverhead, coneqs = makechunkedfunk(
-            "core", m.coreorder, linemake, overhead=prooverhead, oldeqs=proeqs,
-            debug=thisdebug, ljit=ljit, chunk=chunk)
-        epilog, epioverhead, epieqs = makechunkedfunk(
-            "epilog", m.epiorder, linemake, overhead=conoverhead, oldeqs=coneqs,
-            debug=thisdebug, nodamp=True, ljit=ljit, chunk=chunk)
-    else:
-        procontent, prooverhead, proeqs = makechunkedfunk(
-            "prolog", [], linemake, overhead=len(fib1), oldeqs=0,
-            ljit=ljit, debug=thisdebug, chunk=chunk)
-        content, conoverhead, coneqs = makechunkedfunk(
-            "core", m.solveorder, linemake, overhead=prooverhead, oldeqs=proeqs,
-            ljit=ljit, debug=thisdebug, chunk=chunk)
-        epilog, epioverhead, epieqs = makechunkedfunk(
-            "epilog", [], linemake, overhead=conoverhead, oldeqs=coneqs,
-            ljit=ljit, debug=thisdebug, chunk=chunk)
+    if parts is None:
+        if m.use_preorder:
+            parts = [("prolog", m.preorder, True, type), ("core", m.coreorder, False, type),
+                     ("epilog", m.epiorder, True, type)]
+        else:
+            parts = [("prolog", [], False, type), ("core", m.solveorder, False, type),
+                     ("epilog", [], False, type)]
 
-    fib2 = [short + "return prolog,core,epilog\n"]
-    return "".join(chain(fib1, procontent, content, epilog, fib2))
+    body = []
+    overhead, eqs = len(fib1), 0
+    for name, order, nodamp, kind in parts:
+        linemake = make_resline2 if kind == "res" else make_gaussline2
+        content, overhead, eqs = makechunkedfunk(
+            name, order, linemake, overhead=overhead, oldeqs=eqs,
+            debug=thisdebug, nodamp=nodamp, ljit=ljit, chunk=chunk)
+        body.extend(content)
+
+    fib2 = [short + "return " + ",".join(name for name, *_ in parts) + "\n"]
+    return "".join(chain(fib1, body, fib2))
 
 
 def gen_1d(m, debug=0, chunk=None, ljit=False, cache="False"):
@@ -623,6 +637,8 @@ class SolverBase:
         'res'       residual, 2-D; core writes the    (gen_2d,          (pro,core,epi)
         /'newton'   residual to ``outvalues``          type='res')
         'xgenr'     single-pass DAG sweep            (gen_dag)          solve_dag
+        'fbmin'     core split into gauss DAG sweep   (gen_2d,          (pro,dag,fb,epi)
+                    + res-style feedback equations     parts=...)
         ==========  ==================================================  =========
 
         The equation-to-source translation is done by the module-level ``gen_2d`` /
@@ -636,6 +652,12 @@ class SolverBase:
             return self._makelos_dag(
                 databank, transpile_reset=transpile_reset,
                 newdata=newdata, silent=silent)
+
+        if solvename == "fbmin":
+            return self._makelos_fbmin(
+                databank, ljit=ljit, stringjit=stringjit, chunk=chunk,
+                transpile_reset=transpile_reset, newdata=newdata,
+                silent=silent, debug=kwargs.get("debug", 1))
 
         jitname = f"{m.name}_{solvename}_jit"
         nojitname = f"{m.name}_{solvename}_nojit"
@@ -670,27 +692,14 @@ class SolverBase:
                     pro_jit, core_jit, epi_jit = globals()["make_los"](
                         m.funks, m.errfunk)
                 else:
-                    # import a (cached) compiled jit module; assumes the dataframe
-                    # is in the same order as when it was written.
-                    if transpile_reset or not hasattr(m, f"pro_{jitname}"):
-                        jitfilename = f"modelsource/{jitname}_jitsolver.py".replace(" ", "_")
-                        jitfile = Path(jitfilename)
-                        jitfile.parent.mkdir(parents=True, exist_ok=True)
-                        initfile = jitfile.parent / "__init__.py"
-                        if not initfile.exists():
-                            with open(initfile, "wt") as i:
-                                i.write("#")
-                        if transpile_reset or not jitfile.is_file():
-                            solvetext0 = solveout()
-                            solvetext = "\n".join(
-                                [l[4:] for l in solvetext0.split("\n")[1:-2]])
-                            solvetext = solvetext.replace("cache=False", "cache=True")
-                            with open(jitfile, "wt") as f:
-                                f.write(solvetext)
-                            importlib.invalidate_caches()
-                        m1 = importlib.import_module(
-                            "." + jitfile.stem, jitfile.parent.name)
-                        pro_jit, core_jit, epi_jit = m1.prolog, m1.core, m1.epilog
+                    # transpiled-file path: the file is rewritten (and the
+                    # module reloaded, numba recompiling) whenever the freshly
+                    # generated source no longer matches the file on disk --
+                    # i.e. on any model-equation, solve-order or databank
+                    # column-layout change.
+                    pro_jit, core_jit, epi_jit = self._import_transpiled(
+                        jitname, solveout, ("prolog", "core", "epilog"),
+                        transpile_reset)
                 setattr(m, f"pro_{jitname}", pro_jit)
                 setattr(m, f"core_{jitname}", core_jit)
                 setattr(m, f"epi_{jitname}", epi_jit)
@@ -710,6 +719,43 @@ class SolverBase:
             return (getattr(m, f"pro_{nojitname}"), getattr(m, f"core_{nojitname}"),
                     getattr(m, f"epi_{nojitname}"))
 
+    def _import_transpiled(self, jitname, solveout, partnames, transpile_reset):
+        """Write/refresh the transpiled jit source file and import its functions.
+
+        The source is always regenerated (cheap string building) and compared
+        with the file on disk: model-equation, solve-order or databank
+        column-layout changes alter the generated text, so a stale file is
+        rewritten, the module (re)loaded and numba recompiles -- its on-disk
+        cache keys on the file content, an unchanged file reuses the compiled
+        code.  ``transpile_reset`` forces the rewrite.  Returns the module
+        attributes named in *partnames* as a tuple.
+        """
+        jitfile = Path(f"modelsource/{jitname}_jitsolver.py".replace(" ", "_"))
+        jitfile.parent.mkdir(parents=True, exist_ok=True)
+        initfile = jitfile.parent / "__init__.py"
+        if not initfile.exists():
+            with open(initfile, "wt") as i:
+                i.write("#")
+        solvetext0 = solveout()
+        solvetext = "\n".join([l[4:] for l in solvetext0.split("\n")[1:-2]])
+        solvetext = solvetext.replace("cache=False", "cache=True")
+        try:
+            current = (jitfile.read_text(encoding="utf-8")
+                       if jitfile.is_file() else None)
+        except UnicodeDecodeError:
+            current = None
+        stale = transpile_reset or current != solvetext
+        if stale:
+            jitfile.write_text(solvetext, encoding="utf-8")
+            importlib.invalidate_caches()
+        modname = f"{jitfile.parent.name}.{jitfile.stem}"
+        if modname in sys.modules:
+            m1 = (importlib.reload(sys.modules[modname]) if stale
+                  else sys.modules[modname])
+        else:
+            m1 = importlib.import_module("." + jitfile.stem, jitfile.parent.name)
+        return tuple(getattr(m1, name) for name in partnames)
+
     def _makelos_dag(self, databank, *, transpile_reset=False, newdata=False,
                      silent=True):
         """Compile + cache the single-pass DAG evaluator (``outeval``)."""
@@ -722,6 +768,53 @@ class SolverBase:
             m.make_los_text = make_los_text
             exec(make_los_text, globals())  # creates make_los (returns a single func)
             setattr(m, attr, globals()["make_los"](m.funks, m.errfunk))
+        return getattr(m, attr)
+
+    #: the fbmin evaluator quadruple, in generation / return order
+    FBMIN_PARTNAMES = ("prolog", "dag", "fb", "epilog")
+
+    def _makelos_fbmin(self, databank, *, ljit=0, stringjit=False, chunk=30,
+                       transpile_reset=False, newdata=False, silent=True,
+                       debug=1):
+        """Compile + cache the ``fbmin`` evaluator quadruple (pro, dag, fb, epi).
+
+        ``prolog`` / ``dag`` / ``epilog`` are gauss lines (in-place topological
+        sweeps on ``values``, nodamp); only ``fb`` is res-style (``F(z)`` written
+        to ``outvalues`` so the feedback values ``z`` are untouched).  ``dag``
+        covers ``m.daglist`` (the simultaneous core with the feedback vertices
+        removed, in topological order), ``fb`` covers ``m.fblist`` (the minimal
+        feedback vertex set).
+
+        With ``ljit`` the four functions are numba-compiled like the other ng
+        solvers: exec'ed directly when ``stringjit``, otherwise transpiled to a
+        solver-specific cached source file
+        ``modelsource/<model>_fbmin_jit_jitsolver.py`` (its own name, so it
+        never collides with the ``sim`` / ``res`` transpile files) and imported.
+        """
+        m = self.m
+        attr = f"ng_fbmin_{m.name}_{'jit' if ljit else 'nojit'}".replace(" ", "_")
+        if newdata or transpile_reset or not hasattr(m, attr):
+            if not silent:
+                print(f"makelos_ng compiles the fbmin evaluators for {m.name}"
+                      + (" (jit)" if ljit else ""))
+            parts = [("prolog", m.preorder, True, "gauss"),
+                     ("dag", m.daglist, True, "gauss"),
+                     ("fb", m.fblist, True, "res"),
+                     ("epilog", m.epiorder, True, "gauss")]
+            solveout = partial(gen_2d, m, databank, debug=debug, chunk=chunk,
+                               ljit=ljit, parts=parts)
+            if ljit and not stringjit:
+                # transpiled-file path: rewritten + reloaded (numba recompiles)
+                # whenever the generated source differs from the file on disk
+                funcs = self._import_transpiled(
+                    f"{m.name}_fbmin_jit", solveout, self.FBMIN_PARTNAMES,
+                    transpile_reset)
+            else:
+                make_los_text = solveout()
+                m.make_los_text = make_los_text
+                exec(make_los_text, globals())  # creates make_los (returns 4 funcs)
+                funcs = globals()["make_los"](m.funks, m.errfunk)
+            setattr(m, attr, funcs)
         return getattr(m, attr)
 
     def build_evaluator(self, ctx):
@@ -1162,6 +1255,392 @@ class NewtonSolver(SolverBase):
         return lines
 
 
+class NewtonFbminSolver(SolverBase):
+    """Per-period Newton on the *minimal feedback vertex set* (``newton_fbmin``).
+
+    Exploits the decomposition computed by ``model.superblock()``: the
+    simultaneous core minus the feedback vertices ``m.fblist`` is a DAG,
+    ``m.daglist`` in topological order (built whenever ``coreorder`` is accessed;
+    ``use_fbmin=True`` additionally makes ``coreorder = daglist + fblist``).
+
+    Nested per-period scheme -- only the feedback variables ``z`` are iterated:
+
+        outer (``max_iterations``, one full DAG evaluation each):
+            1. ``dag`` sweep in place -- all DAG core variables given current ``z``
+            2. inner Newton (``inner_max_iterations``) on the *feedback
+               sub-model*: the fb equations with the DAG variables held fixed.
+               Each step evaluates only the fb equations (``fb`` -> outvalues),
+               forms the residual ``F(z)-z`` (``G(z)`` on ``___RES`` rows),
+               solves the small ``n_fb x n_fb`` system and updates ``z`` --
+               repeated until the fb sub-model has converged.
+            3. outer convergence: ``z`` stable across the (sweep + inner solve).
+
+    The reduced Jacobian is selected with the ``jacobian`` option:
+
+    ``jacobian='fd'`` (default): dense finite differences of the *reduced*
+    residual -- each feedback unknown is perturbed in turn and the DAG sweep +
+    fb evaluation redone, so the coupling that runs through the DAG chain *is*
+    captured.  A build costs ``n_fb + 1`` DAG sweeps and is LU-factorized once
+    (``scipy.linalg.lu_factor``); the factorization is reused across
+    iterations, periods and solve calls, refreshed every ``nonlin`` outer
+    iterations (default ``n_fb``: a rebuild costs ``n_fb + 1`` sweeps and an
+    outer iteration costs one, so the break-even refresh interval is of the
+    order of the feedback set size) and rebuilt on ``newton_reset``.  Each
+    outer iteration is one
+    true Newton step on the reduced system (the inner loop is length 1 --
+    iterating it with the DAG fixed would be inconsistent with a
+    chain-inclusive Jacobian).
+
+    ``jacobian='direct'``: the standard ``newton_diff`` mechanism restricted to
+    the feedback equations (``endovar=m.fblist``, ``onlyendocur=True``) --
+    effectively a sub-model of only the feedback equations.  Only *direct*
+    fb->fb dependencies enter this Jacobian (it is exact for the fb sub-model
+    with the DAG fixed); the chain through the DAG is handled by iterating the
+    inner loop to convergence, making the outer alternation a nonlinear block
+    Gauss-Seidel.  If there are no direct fb->fb dependencies at all the
+    Jacobian degenerates to ``-I`` and the inner update is a plain fixed-point
+    step (a warning is printed).
+
+    In both modes the cost driver is the DAG sweep, one per outer iteration;
+    the inner Newton steps touch only the ``n_fb`` feedback equations.
+
+    Handles normalized and residual (``___RES``) equations with the same
+    ``is_residual_eq`` mask as :class:`NewtonSolver`.  ``ljit=True`` numba-
+    compiles the sweeps and the fb evaluation exactly like the other ng
+    solvers (``stringjit`` to exec instead of transpiling to the cached
+    solver-specific file ``modelsource/<model>_fbmin_jit_jitsolver.py``);
+    the Newton linear algebra itself stays plain Python -- it is a tiny dense
+    system and not worth compiling.
+    """
+
+    solvename = "fbmin"
+    needs_outvalues = True
+    DEFAULT_JACOBIAN = "fd"
+
+    def conv_order(self, ctx):
+        """Convergence order: the unknowns of the feedback system (fb endo names)."""
+        m = ctx.model
+        return list(getattr(m, "ng_fbmin_unknowns", None)
+                    or getattr(m, "fblist", []))
+
+    def build_evaluator(self, ctx):
+        """Compile the fbmin quadruple: prolog, DAG sweep and epilog as gauss
+        lines (in-place on ``values``), the feedback equations as res lines
+        (``F(z)`` -> ``outvalues``)."""
+        m, opts = ctx.model, ctx.opts
+        _ = m.coreorder          # force superblock() -> m.fblist / m.daglist
+        ctx.pro, ctx.solve, ctx.solve_res, ctx.epi = self.makelos(
+            "fbmin",
+            ctx.databank,
+            ljit=opts.get("ljit", False),
+            stringjit=opts.get("stringjit", False),
+            transpile_reset=opts.get("transpile_reset", False),
+            chunk=opts.get("chunk", 30),
+            newdata=ctx.newdata,
+            silent=opts.get("silent", self.DEFAULT_SILENT),
+        )
+        m.genrcolumns = ctx.databank.columns.copy()
+        m.genrindex = ctx.databank.index.copy()
+
+    def prepare(self, ctx):
+        """Build (and cache) the reduced Jacobian solver for the feedback system.
+
+        ``jacobian='fd'`` (default): dense finite differences of the reduced
+        residual (perturb one fb unknown, redo the DAG sweep + fb evaluation),
+        which captures the coupling through the DAG chain; ``n_fb + 1`` DAG
+        sweeps per build, LU-factorized once, refreshed via ``nonlin`` /
+        rebuilt on ``newton_reset``.
+
+        ``jacobian='direct'``: the standard ``newton_diff`` mechanism
+        restricted to the feedback equations -- only *direct* fb->fb
+        dependencies enter the Jacobian.
+        """
+        m, databank = ctx.model, ctx.databank
+        opt = lambda n, d: self._opt(ctx, n, d)
+        silent = opt("silent", self.DEFAULT_SILENT)
+
+        if not getattr(m, "fblist", None):
+            # core is a DAG (or empty): nothing to Newton-iterate, pure sweeps
+            ctx.solver = None
+            ctx.newton_col = ctx.newton_col_endo = ctx.newton_col_residual = []
+            ctx.is_residual_eq = np.zeros(0, dtype=bool)
+            return
+
+        # equations, unknowns (declared endo, ___RES stripped -- the same
+        # convention as newton_diff) and the residual-row mask
+        endovar = list(m.fblist)
+        declared0 = [pt.kw_frml_name(m.allvar[v]["frmlname"], "ENDO", v)
+                     for v in endovar]
+        m.ng_fbmin_eqs = endovar
+        m.ng_fbmin_unknowns = [v[:-6] if v.endswith("___RES") else v
+                               for v in declared0]
+        m.ng_is_residual_eq_fbmin = np.array(
+            [v.endswith("___RES") for v in endovar], dtype=bool)
+
+        ctx.is_residual_eq = m.ng_is_residual_eq_fbmin
+        gl = databank.columns.get_loc
+        ctx.newton_col = [gl(c) for c in endovar]                    # equations
+        ctx.newton_col_endo = [gl(c) for c in m.ng_fbmin_unknowns]   # unknowns
+        ctx.newton_col_residual = [gl(c) for c in endovar
+                                   if c.endswith("___RES")]
+
+        first_per = (ctx.sol_periode[0] if len(ctx.sol_periode)
+                     else m.current_per[0])
+
+        if opt("jacobian", self.DEFAULT_JACOBIAN) == "fd":
+            m.ng_fbmin_degenerate = False
+            if (not hasattr(m, "ng_newton_solver_fbmin_fd_first")
+                    or opt("newton_reset", False)):
+                row = databank.index.get_loc(first_per)
+                m.ng_newton_solver_fbmin_fd_first = \
+                    self._fd_jacobian_solver(ctx, row)
+            ctx.solver = m.ng_newton_solver_fbmin_fd_first
+            return
+
+        if not hasattr(m, "ng_newton_diff_fbmin") or opt("newton_reset", False):
+            m.ng_newton_diff_fbmin = newton_diff(
+                m, forcenum=opt("forcenum", False), df=databank, endovar=endovar,
+                ljit=opt("lnjit", False), nchunk=opt("chunk", 30),
+                onlyendocur=True, silent=silent)
+            # no direct fb->fb derivatives at all -> the diff model is an empty
+            # model that cannot even be evaluated (don't touch it); the Jacobian
+            # is exactly -I and each inner update is a plain fixed-point step
+            m.ng_fbmin_degenerate = not any(
+                m.ng_newton_diff_fbmin.diffendocur.values())
+            if m.ng_fbmin_degenerate:
+                m.ng_newton_solver_fbmin_first = lambda residual: -residual
+                print(f"newton_fbmin: no direct derivatives between the "
+                      f"{len(endovar)} feedback variables -- the direct "
+                      "Jacobian is -I, the inner solve is fixed-point iteration "
+                      "(consider jacobian='fd')")
+            else:
+                solvedic = m.ng_newton_diff_fbmin.get_solve1per(
+                    df=databank, periode=[first_per],
+                    is_residual_eq=m.ng_is_residual_eq_fbmin)
+                m.ng_newton_solver_fbmin_first = (
+                    solvedic[first_per] if first_per in solvedic
+                    else (lambda residual: -residual))
+
+        ctx.solver = m.ng_newton_solver_fbmin_first
+
+    def _fd_jacobian_solver(self, ctx, row):
+        """Dense finite-difference Jacobian of the reduced feedback system.
+
+        Perturbs each feedback unknown in turn and redoes the DAG sweep + fb
+        evaluation, so the derivative includes the coupling that runs through
+        the DAG variables (which the direct Jacobian cannot see).  Costs
+        ``n_fb + 1`` DAG sweeps; the state at *row* is left at the unperturbed
+        base point.  Returns ``solver(residual) -> update`` with the same
+        calling convention as ``newton_diff.get_solve1per``.
+        """
+        values, outvalues = ctx.values, ctx.outvalues
+        cols_eq = ctx.newton_col
+        cols_unknown = ctx.newton_col_endo
+        resmask = ctx.is_residual_eq
+        n = len(cols_unknown)
+
+        def reduced_residual():
+            ctx.solve(values, values, row, 1.0)          # DAG sweep, in place
+            ctx.solve_res(values, outvalues, row, 1.0)   # fb equations
+            r = outvalues[row, cols_eq].copy()
+            r[~resmask] = (outvalues[row, cols_unknown][~resmask]
+                           - values[row, cols_unknown][~resmask])
+            return r
+
+        base = values[row, cols_unknown].copy()
+        r0 = reduced_residual()
+        jac = np.empty((n, n))
+        for j, col in enumerate(cols_unknown):
+            delta = 1e-6 * max(abs(base[j]), 1.0)
+            values[row, col] = base[j] + delta
+            jac[:, j] = (reduced_residual() - r0) / delta
+            values[row, cols_unknown] = base
+        ctx.solve(values, values, row, 1.0)   # restore the DAG at the base point
+        lu = lu_factor(jac)
+        return lambda residual: lu_solve(lu, residual)
+
+    def iterate(self, ctx):
+        """Per-period nested solve: prolog sweep, then outer iterations that
+        alternate one exact DAG sweep with an inner Newton solve *to
+        convergence* of the feedback sub-model (fb equations, DAG variables
+        fixed -- the direct Jacobian is exact for that sub-problem), until the
+        fb variables are stable across outer iterations.  Ends with a final DAG
+        sweep consistent with the converged fb values and the epilog."""
+        m = ctx.model
+        values, outvalues = ctx.values, ctx.outvalues
+        opt = lambda n, d: self._opt(ctx, n, d)
+
+        silent = opt("silent", self.DEFAULT_SILENT)
+        alfa = opt("alfa", 1.0)
+        init = opt("init", False)
+        first_test = opt("first_test", 1)
+        max_iterations = opt("max_iterations", 50)               # outer (DAG sweeps)
+        jac_mode = opt("jacobian", self.DEFAULT_JACOBIAN)
+        # with the chain-inclusive fd Jacobian each outer iteration is one true
+        # Newton step on the reduced system; iterating the inner loop further
+        # (DAG fixed) would be inconsistent with that Jacobian
+        inner_max_iterations = (1 if jac_mode == "fd"
+                                else opt("inner_max_iterations", 20))
+        absconv = opt("absconv", 0.01)
+        relconv = opt("relconv", DEFAULT_relconv)
+        # fd default: refresh about every n_fb outer iterations -- a rebuild
+        # costs n_fb+1 DAG sweeps and an outer iteration costs one, so the
+        # break-even refresh interval is of the order of the feedback set size
+        nonlin = opt("nonlin", (max(len(ctx.newton_col), 2)
+                                if jac_mode == "fd" else False))
+        timeit = opt("timeit", False)
+        newtonalfa = opt("newtonalfa", 1.0)
+        newtonnodamp = opt("newtonnodamp", 0)
+        ldumpvar = opt("ldumpvar", False)
+        keep_residual = opt("keep_residual", False)
+
+        newton_col = ctx.newton_col                # equations (with ___RES)
+        newton_col_unknown = ctx.newton_col_endo   # unknowns (declared endo)
+        newton_col_residual = ctx.newton_col_residual
+        resmask = ctx.is_residual_eq
+        eqnames = (getattr(m, "ng_fbmin_eqs", [])
+                   if ctx.solver is not None else [])
+        ctx.dag_sweeps = 0
+
+        for m.periode in ctx.sol_periode:
+            row = ctx.databank.index.get_loc(m.periode)
+            if init and row > 0:
+                for c in ctx.endoplace:
+                    values[row, c] = values[row - 1, c]
+            if ldumpvar:
+                ctx.dumplist.append(
+                    [0, m.periode, 0]
+                    + [values[row, p] for p in ctx.dumpplac])
+
+            # recursive prolog: gauss lines, in-place on values
+            ctx.pro(values, values, row, alfa)
+
+            iteration = 0
+            converged = ctx.solver is None
+            newton_conv = 0.0
+            outer_res = 0.0
+            residual = None
+            if ctx.solver is not None:
+                for iteration in range(max_iterations):
+                    with m.timer(f"fbmin per:{m.periode} outer:{iteration}", timeit):
+                        # DAG core given current fb values: gauss lines, in place
+                        ctx.solve(values, values, row, alfa)
+                        ctx.dag_sweeps += 1
+                        z_outer_before = values[row, newton_col_unknown].copy()
+
+                        if (iteration != 0 and nonlin and not (iteration % nonlin)
+                                and not getattr(m, "ng_fbmin_degenerate", False)):
+                            with m.timer("Updating Jacobian", timeit):
+                                if not silent:
+                                    print(f"Updating Jacobian, outer iteration {iteration}")
+                                if jac_mode == "fd":
+                                    # rebuilt at the current point (n_fb + 1 DAG
+                                    # sweeps, state left restored)
+                                    ctx.solver = self._fd_jacobian_solver(ctx, row)
+                                else:
+                                    df_now = pd.DataFrame(
+                                        values, index=ctx.databank.index,
+                                        columns=ctx.databank.columns)
+                                    # keep the current solver if the period has no
+                                    # direct fb->fb derivative entries (empty dict)
+                                    ctx.solver = m.ng_newton_diff_fbmin.get_solve1per(
+                                        df=df_now, periode=[m.periode],
+                                        is_residual_eq=resmask).get(m.periode, ctx.solver)
+
+                        # inner Newton on the fb sub-model, DAG variables fixed;
+                        # only the n_fb feedback equations are evaluated per step
+                        for it_inner in range(inner_max_iterations):
+                            # feedback equations F(z) -> outvalues (z untouched)
+                            ctx.solve_res(values, outvalues, row, alfa)
+
+                            eq_after = outvalues[row, newton_col]
+                            y_old = values[row, newton_col_unknown]
+                            y_implied = outvalues[row, newton_col_unknown]
+                            # residual: G(y) on residual rows, F(y)-y on normalized
+                            residual = eq_after.copy()
+                            residual[~resmask] = (y_implied[~resmask]
+                                                  - y_old[~resmask])
+                            newton_conv = np.max(np.abs(residual))
+                            if it_inner == 0:
+                                # the residual the new DAG sweep created -- the
+                                # meaningful outer progress measure (later inner
+                                # residuals are post-solve and near zero)
+                                outer_res = newton_conv
+
+                            update = ctx.solver(residual)
+                            if not np.all(np.isfinite(update)):
+                                raise ValueError(
+                                    f"Non-finite Newton update at {m.periode}, "
+                                    f"outer {iteration}, inner {it_inner}")
+
+                            base_damp = (min(1.0, newtonalfa)
+                                         if iteration <= newtonnodamp else 1.0)
+                            values[row, newton_col_unknown] = \
+                                y_old - base_damp * update
+                            # keep the ___RES equation values in sync
+                            values[row, newton_col_residual] = \
+                                outvalues[row, newton_col_residual]
+                            ctx.ittotal += 1
+
+                            inner_conv, _ = self._relconv(
+                                y_old, values[row, newton_col_unknown],
+                                absconv, relconv)
+                            if inner_conv:
+                                break
+
+                        if not silent:
+                            print(f"Outer {iteration:>2} | {m.periode} | "
+                                  f"inner Newton steps {it_inner + 1:>3} | "
+                                  f"max residual {outer_res:>25,.6f}")
+                        if ldumpvar:
+                            ctx.dumplist.append(
+                                [0, m.periode, iteration + 1]
+                                + [values[row, p] for p in ctx.dumpplac])
+
+                        # outer convergence: fb variables stable across one
+                        # (DAG sweep + inner Newton solve) alternation
+                        if iteration >= first_test:
+                            converged, _ = self._relconv(
+                                z_outer_before, values[row, newton_col_unknown],
+                                absconv, relconv)
+                            if converged:
+                                break
+
+            # final DAG sweep so the DAG variables match the converged fb values
+            ctx.solve(values, values, row, alfa)
+            ctx.dag_sweeps += 1
+            # recursive epilog: gauss lines, in-place on values
+            ctx.epi(values, values, row, alfa)
+
+            # record the equation residual at the last iteration (opt-in)
+            if keep_residual and residual is not None:
+                self._record_residual(ctx, m.periode, eqnames, residual)
+
+            ctx.iteration = iteration
+            ctx.convergence = converged
+            if not silent:
+                if not converged:
+                    print(f"{m.periode} not converged in {iteration + 1} outer "
+                          f"iterations (last outer res~{outer_res:,.6g})")
+                else:
+                    print(f"{m.periode} solved in {iteration + 1} outer "
+                          f"iterations (last outer res~{outer_res:,.6g})")
+
+    def stats_lines(self, ctx):
+        """Reduced-Newton statistics: size of the feedback system vs the core,
+        and the DAG-sweep / inner-Newton-step split (the sweeps are the cost)."""
+        m = ctx.model
+        lines = [
+            f'Setup time (seconds)                 :{m.setuptime:>15,.2f}',
+            f'Feedback (Newton) variables          :{len(getattr(m, "fblist", [])):>15,}',
+            f'DAG core variables                   :{len(getattr(m, "daglist", [])):>15,}',
+            f'DAG sweeps (outer iterations)        :{getattr(ctx, "dag_sweeps", 0):>15,}',
+            f'Inner Newton steps (fb eqs only)     :{ctx.ittotal:>15,}',
+            f'Simulation time (seconds)            :{m.simtime:>15,.2f}',
+        ]
+        return lines
+
+
 class NewtonStackSolver(SolverBase):
     """Unified stacked-time Newton (port of ``newtonstack_implicit``).
 
@@ -1542,6 +2021,7 @@ class Solver_ng_Mixin:
         "sim": GaussSeidelSolver,
         "sim1d": Sim1dSolver,
         "newton": NewtonSolver,
+        "newton_fbmin": NewtonFbminSolver,
         "newtonstack": NewtonStackSolver,
         "newtonstack_implicit": NewtonStackImplicitSolver,
     }
@@ -1581,6 +2061,13 @@ class Solver_ng_Mixin:
         if databank is None:
             databank = self.basedf
         return NewtonSolver(self)(databank, *args, **kwargs)
+
+    def newton_fbmin_ng(self, databank=None, *args, **kwargs):
+        """Solve with reduced Newton on the minimal feedback set (defaults to
+        ``self.basedf``)."""
+        if databank is None:
+            databank = self.basedf
+        return NewtonFbminSolver(self)(databank, *args, **kwargs)
 
     def newtonstack_ng(self, databank=None, *args, **kwargs):
         """Solve with next-generation stacked Newton (defaults to ``self.basedf``)."""

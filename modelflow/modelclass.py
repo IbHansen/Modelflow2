@@ -9751,7 +9751,7 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         # solver) and 'xgenr' (a single topological sweep -- only valid for a DAG,
         # not this simultaneous model).
         # ('newtonstack_implicit' is an alias of 'newtonstack' -- same solver.)
-        ng_experiment = ['sim', 'sim1d', 'newton', 'newtonstack']
+        ng_experiment = ['sim', 'sim1d', 'newton', 'newtonstack','newton_fbmin']
 
         # The Newton-family solvers refresh the Jacobian periodically (nonlin) for
         # this nonlinear model; Gauss-Seidel needs no options. Any converged solver
@@ -9760,6 +9760,7 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         solver_opts = {
             'sim': {}, 'sim1d': {},
             'newton': newton_opts, 'newtonstack': newton_opts,
+            'newton_fbmin': newton_opts,
         }
 
         endo = sorted(mpak.endogene)
@@ -9772,7 +9773,7 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         for sname in ng_experiment:
             try:
                 r = mpak(alternative, 2020, 2100, solver=f'{sname}_ng',
-                         silent=1, reset_options=True,ljit=True, 
+                         silent=1, reset_options=True,ljit=False, 
                          keep=f'Carbon tax 30 [{sname}_ng]',
                          **solver_opts[sname])
             except Exception as e:
@@ -9804,8 +9805,14 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
             f'Gauss-Seidel ng solver differs from default solve: {gs_problems}'
 #%%
     with mpak.timer('load') :
-        mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=False,ljit=True,solver='sim1d')
+        mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True,ljit=False,solver='sim1d')
     with mpak.timer('update'):     
         alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
-    with mpak.timer('solve'):     
-       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='sim1d',nonlin=23) # simulates the model 
+    with mpak.timer('newton_ng'):     
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',nonlin=5,max_iterations=100,ljit=False) # simulates the model 
+    with mpak.timer('newton_ng jit'):     
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',max_iterations=100,ljit=False) # simulates the model 
+    with mpak.timer('sim'):     
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='sim_ng',nonlin=23,ljit=False) # simulates the model 
+    with mpak.timer('sim jit'):     
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='sim_ng',nonlin=23,ljit=True) # simulates the model 
