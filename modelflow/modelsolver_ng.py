@@ -2143,6 +2143,18 @@ class NewtonStackFbminSolver(SolverBase):
             ctx.solver = lambda residual: -residual
             return
 
+        if jac_mode == "fd" and len(fb) > 50:
+            # printed even when silent: a build is len(fb)+1 full-span sweeps in
+            # interpreted python -- minutes of silence easily mistaken for a jit
+            # compile.  __call__ options are sticky, so jacobian='fd' typically
+            # leaks in from an earlier newton_fbmin call.
+            print(f"newtonstack_fbmin: jacobian='fd' with {len(fb)} stacked "
+                  f"feedback unknowns costs {len(fb) + 1} full-span sweeps per "
+                  "Jacobian build (and again at every nonlin refresh). If this "
+                  "was inherited from an earlier newton_fbmin call (options are "
+                  "sticky across runs), pass jacobian='stack' or "
+                  "reset_options=True.")
+
         solver_stale = (struct_stale or opt("newton_reset", False)
                         or not hasattr(m, "ng_stackfbmin_solver")
                         or getattr(m, "ng_stackfbmin_jacmode", None) != jac_mode)

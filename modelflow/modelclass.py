@@ -9745,13 +9745,14 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
 #%%  experiment: solve the PAK carbon-tax scenario with each ng solver and
 #     check every solver reaches the same solution as the default solve.
     if 1:
+        mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True,ljit=False)
         # The reference is the default solve computed above:
         #   result = mpak(alternative, 2020, 2100, keep='Carbon tax nominal 30')
         # Excluded: 'res' (an internal residual-codegen flavour, not a stand-alone
         # solver) and 'xgenr' (a single topological sweep -- only valid for a DAG,
         # not this simultaneous model).
         # ('newtonstack_implicit' is an alias of 'newtonstack' -- same solver.)
-        ng_experiment = ['sim', 'sim1d', 'newton', 'newtonstack','newton_fbmin']
+        ng_experiment = ['sim', 'sim1d', 'newton', 'newtonstack','newton_fbmin','newtonstack_fbmin']
 
         # The Newton-family solvers refresh the Jacobian periodically (nonlin) for
         # this nonlinear model; Gauss-Seidel needs no options. Any converged solver
@@ -9808,11 +9809,18 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True,ljit=False,solver='sim1d')
     with mpak.timer('update'):     
         alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
+#%%
     with mpak.timer('newton_ng'):     
-       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',nonlin=5,max_iterations=100,ljit=False,jacobian='gauss') # simulates the model 
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',nonlin=5,max_iterations=100,ljit=False,jacobian='fd') # simulates the model 
     with mpak.timer('newton_ng jit'):     
-       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',max_iterations=100,ljit=True,jacobian='gauss') # simulates the model 
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',max_iterations=100,ljit=True,jacobian='fd') # simulates the model 
     with mpak.timer('sim'):     
        result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='sim_ng',nonlin=23,ljit=False) # simulates the model 
     with mpak.timer('sim jit'):     
        result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='sim_ng',nonlin=23,ljit=True) # simulates the model 
+#%%
+    with mpak.timer('newtonstack_fbmin_ng'):
+       # reset_options: __call__ options are sticky, so jacobian='fd' from the
+       # newton_fbmin cells above would otherwise leak in (a fd build here is
+       # n_fb_stacked+1 full-span sweeps -- minutes of silence)
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newtonstack_fbmin_ng',nonlin=5,max_iterations=100,ljit=False,reset_options=True) # simulates the model
