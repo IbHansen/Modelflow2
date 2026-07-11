@@ -9809,9 +9809,9 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
     with mpak.timer('update'):     
         alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
     with mpak.timer('newton_ng'):     
-       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',nonlin=5,max_iterations=100,ljit=False) # simulates the model 
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',nonlin=5,max_iterations=100,ljit=False,jacobian='gauss') # simulates the model 
     with mpak.timer('newton_ng jit'):     
-       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',max_iterations=100,ljit=False) # simulates the model 
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',max_iterations=100,ljit=True,jacobian='gauss') # simulates the model 
     with mpak.timer('sim'):     
        result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='sim_ng',nonlin=23,ljit=False) # simulates the model 
     with mpak.timer('sim jit'):     

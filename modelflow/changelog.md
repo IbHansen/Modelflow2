@@ -282,3 +282,6 @@ Version 2.72 uploaded
 Make plotting in objext space
 in report use new test to test for non numeric dataframe 
 fix pandas 3 error in groupby dekomp 
+next generation solvers including a new fbmin based solver
+newton_fbmin_ng jacobian='gauss' for use where n_fbmin is large.
+newtonstack_fbmin_ng new stacked fbmin solver: stacked dependency graph built from the stacked jacobian structure (networkx SCC condensation + minimal feedback set per block), topological sweeps across periods (handles leads, forced fb for ___RES and self-referencing equations), newton only on the stacked feedback unknowns. jacobian='stack' (schur complement of stacked jacobian, default) / 'fd' / 'gauss'. 

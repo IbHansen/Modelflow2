@@ -40,10 +40,27 @@ Ported solvers
       the coupling through the DAG chain), LU-factorized once and reused under
       control of the ``nonlin`` option.  ``jacobian='direct'``: the standard
       ``newton_diff`` on the fb equations only, with the inner fb solve
-      iterated to convergence (nonlinear block Gauss-Seidel).  ``ljit``
+      iterated to convergence (nonlinear block Gauss-Seidel).
+      ``jacobian='gauss'``: no Jacobian -- a damped fixed-point (Gauss) step
+      ``z <- z + newtonalfa*(F(z)-z)`` per DAG sweep, the robustness fallback
+      for large or ill-conditioned feedback sets.  ``ljit``
       compiles the sweeps like the other solvers (own transpile file).
     * :class:`NewtonStackSolver`       (``newtonstack`` / ``newtonstack_implicit``)
       -- unified stacked Newton.
+    * :class:`NewtonStackFbminSolver`  (``newtonstack_fbmin``) -- stacked Newton
+      reduced to the minimal feedback vertex set of the *stacked*
+      (period x variable) dependency graph.  The graph is not available on the
+      model; it is constructed from the structure of the stacked Jacobian
+      (``newton_diff.get_diff_melted``: node ``t*nvar+s``, edge
+      ``(t+lag, pvar) -> (t, var)``) and decomposed with networkx (SCC
+      condensation in topological order, ``model.get_minimal_feedback_set``
+      per simultaneous block).  Non-feedback equations are solved exactly by
+      topological sweeps that may run *across* periods -- so models with
+      leads are covered -- and Newton iterates only the stacked feedback
+      unknowns.  ``jacobian='stack'`` (default): Schur complement of the
+      stacked Jacobian, the exact stacked Newton step on the reduced system;
+      ``'fd'``: dense finite differences of the reduced residual (``n_fb + 1``
+      stacked sweeps per build); ``'gauss'``: damped fixed point, no Jacobian.
 
 The Newton solvers are ported from the *unified* legacy methods ``newton_implicit``
 / ``newtonstack_implicit``.  Each equation may be normalized (``y = F(y,x)``) or a
@@ -94,9 +111,12 @@ import importlib
 import time
 import sys  # noqa: F401  -- referenced by exec'd solver code (sys.exc_info)
 
+import networkx as nx
 import numpy as np
 import pandas as pd
+import scipy.sparse as sps
 from scipy.linalg import lu_factor, lu_solve
+from scipy.sparse.linalg import splu
 from tqdm import tqdm
 
 import modelpattern as pt
@@ -440,6 +460,56 @@ def gen_dag(m, databank):
     return "".join(chain(fib1, content, fib2))
 
 
+def gen_eqdict(m, databank):
+    """Source of ``make_los`` returning ``eqdict``: {endo name: eq function}.
+
+    One tiny res-style function per equation, ``eq(values,outvalues,row,alfa)``:
+    the LHS is written to ``outvalues``, the RHS is read from ``values``.
+    Called with ``outvalues is values`` it is an in-place (gauss, nodamp)
+    assignment -- one step of a topological sweep; called with a scratch
+    buffer it evaluates the equation without touching the state.  Used by the
+    stacked fbmin solver, whose sweep order interleaves periods so the block
+    evaluators (fixed variable order per row) cannot be used.  Plain Python
+    only: the sweep dispatches through the dict, which numba cannot help with.
+    """
+    short, long = 4 * " ", 8 * " "
+    columnsnr = m.get_columnsnr(databank)
+
+    def make_resline2(vx):
+        """Translate one equation ``vx`` to a residual line (LHS -> outvalues)."""
+        termer = m.allvar[vx]["terms"]
+        assigpos = m.allvar[vx]["assigpos"]
+        out = []
+        for i, t in enumerate(termer[:-1]):
+            if t.op:
+                out.append(t.op.lower())
+            if t.number:
+                out.append(t.number)
+            elif t.var:
+                if i < assigpos:
+                    out.append("outvalues[row" + t.lag + "," + str(columnsnr[t.var]) + "]")
+                else:
+                    out.append("values[row" + t.lag + "," + str(columnsnr[t.var]) + "]")
+        return "".join(out) + "\n"
+
+    fib1 = ["def make_los(funks=[],errorfunk=None):\n"]
+    fib1.append(short + "from modeluserfunk import " + (", ".join(pt.userfunk)).lower() + "\n")
+    fib1.append(short + "from modelBLfunk import " + (", ".join(pt.BLfunk)).lower() + "\n")
+    fib1.extend(short + f.__name__ + " = funks[" + str(i) + "]\n"
+                for i, f in enumerate(m.funks))
+
+    body, entries = [], []
+    for i, v in enumerate(sorted(m.endogene)):
+        body.append(short + f"def eq_{i}(values,outvalues,row,alfa=1.0):\n")
+        body.append(long + ("pass  # " + v + "\n" if m.allvar[v]["dropfrml"]
+                            else make_resline2(v)))
+        entries.append(short + f"    {v!r}: eq_{i},\n")
+
+    fib2 = [short + "eqdict = {\n"] + entries + [short + "}\n",
+            short + "return eqdict\n"]
+    return "".join(chain(fib1, body, fib2))
+
+
 @dataclass
 class SolveContext:
     """Everything the shared setup produces and the core loop / teardown needs."""
@@ -639,6 +709,8 @@ class SolverBase:
         'xgenr'     single-pass DAG sweep            (gen_dag)          solve_dag
         'fbmin'     core split into gauss DAG sweep   (gen_2d,          (pro,dag,fb,epi)
                     + res-style feedback equations     parts=...)
+        'stackeq'   dict of per-equation res-style    (gen_eqdict)      {var: eq}
+                    functions (stacked fbmin sweep)
         ==========  ==================================================  =========
 
         The equation-to-source translation is done by the module-level ``gen_2d`` /
@@ -658,6 +730,11 @@ class SolverBase:
                 databank, ljit=ljit, stringjit=stringjit, chunk=chunk,
                 transpile_reset=transpile_reset, newdata=newdata,
                 silent=silent, debug=kwargs.get("debug", 1))
+
+        if solvename == "stackeq":
+            return self._makelos_stackeq(
+                databank, transpile_reset=transpile_reset,
+                newdata=newdata, silent=silent)
 
         jitname = f"{m.name}_{solvename}_jit"
         nojitname = f"{m.name}_{solvename}_nojit"
@@ -815,6 +892,25 @@ class SolverBase:
                 exec(make_los_text, globals())  # creates make_los (returns 4 funcs)
                 funcs = globals()["make_los"](m.funks, m.errfunk)
             setattr(m, attr, funcs)
+        return getattr(m, attr)
+
+    def _makelos_stackeq(self, databank, *, transpile_reset=False, newdata=False,
+                         silent=True):
+        """Compile + cache the per-equation evaluator dict (``gen_eqdict``).
+
+        Plain Python only: the stacked fbmin sweep dispatches through a dict
+        of tiny per-equation functions, which numba cannot accelerate.
+        """
+        m = self.m
+        attr = f"ng_stackeq_{m.name}".replace(" ", "_")
+        if newdata or transpile_reset or not hasattr(m, attr):
+            if not silent:
+                print(f"makelos_ng compiles the per-equation (stackeq) "
+                      f"evaluators for {m.name}")
+            make_los_text = gen_eqdict(m, databank)
+            m.make_los_text = make_los_text
+            exec(make_los_text, globals())  # creates make_los (returns a dict)
+            setattr(m, attr, globals()["make_los"](m.funks, m.errfunk))
         return getattr(m, attr)
 
     def build_evaluator(self, ctx):
@@ -1301,7 +1397,22 @@ class NewtonFbminSolver(SolverBase):
     Jacobian degenerates to ``-I`` and the inner update is a plain fixed-point
     step (a warning is printed).
 
-    In both modes the cost driver is the DAG sweep, one per outer iteration;
+    ``jacobian='gauss'``: no Jacobian is built at all -- each outer iteration
+    is one damped fixed-point (Gauss) step ``z <- z + newtonalfa*(F(z) - z)``
+    on the feedback variables after the DAG sweep.  This computes the same
+    iterates as ``sim`` (whose ``coreorder`` is ``daglist + fblist`` under
+    ``use_fbmin``) and converges at the same linear rate, so it is *not* a
+    speedup: it is the robustness fallback when the fd Jacobian is too
+    expensive (large feedback sets -- a build costs ``n_fb + 1`` DAG sweeps
+    plus a dense LU) or ill-conditioned.  What it adds over ``sim``: damping
+    and the convergence test touch only the ``n_fb`` feedback variables (in
+    ``sim`` a global ``alfa`` also damps DAG variables that are exact given
+    ``z``), and the fbmin diagnostics (outer residual on the loop, DAG-sweep
+    counts) are available.  ``newtonalfa`` is applied every outer iteration
+    (``newtonnodamp`` is ignored); ``nonlin`` and ``newton_reset`` are
+    irrelevant.
+
+    In all modes the cost driver is the DAG sweep, one per outer iteration;
     the inner Newton steps touch only the ``n_fb`` feedback equations.
 
     Handles normalized and residual (``___RES``) equations with the same
@@ -1354,10 +1465,19 @@ class NewtonFbminSolver(SolverBase):
         ``jacobian='direct'``: the standard ``newton_diff`` mechanism
         restricted to the feedback equations -- only *direct* fb->fb
         dependencies enter the Jacobian.
+
+        ``jacobian='gauss'``: no Jacobian at all -- the update is the damped
+        fixed-point (Gauss) step ``z <- z + newtonalfa*(F(z) - z)``, so there
+        is nothing to build or cache.
         """
         m, databank = ctx.model, ctx.databank
         opt = lambda n, d: self._opt(ctx, n, d)
         silent = opt("silent", self.DEFAULT_SILENT)
+        jac_mode = opt("jacobian", self.DEFAULT_JACOBIAN)
+        if jac_mode not in ("fd", "direct", "gauss"):
+            raise ValueError(
+                f"newton_fbmin: unknown jacobian option {jac_mode!r} "
+                "(expected 'fd', 'direct' or 'gauss')")
 
         if not getattr(m, "fblist", None):
             # core is a DAG (or empty): nothing to Newton-iterate, pure sweeps
@@ -1384,10 +1504,18 @@ class NewtonFbminSolver(SolverBase):
         ctx.newton_col_residual = [gl(c) for c in endovar
                                    if c.endswith("___RES")]
 
+        if jac_mode == "gauss":
+            # damped fixed point on the feedback variables: update = residual.
+            # The degenerate flag makes ``iterate`` skip the ``nonlin``
+            # Jacobian refresh -- there is no Jacobian to refresh.
+            m.ng_fbmin_degenerate = True
+            ctx.solver = lambda residual: -residual
+            return
+
         first_per = (ctx.sol_periode[0] if len(ctx.sol_periode)
                      else m.current_per[0])
 
-        if opt("jacobian", self.DEFAULT_JACOBIAN) == "fd":
+        if jac_mode == "fd":
             m.ng_fbmin_degenerate = False
             if (not hasattr(m, "ng_newton_solver_fbmin_fd_first")
                     or opt("newton_reset", False)):
@@ -1421,6 +1549,11 @@ class NewtonFbminSolver(SolverBase):
                     solvedic[first_per] if first_per in solvedic
                     else (lambda residual: -residual))
 
+        # refresh the flag outside the cached build: an intervening
+        # ``jacobian='gauss'`` call leaves it True while the cached diff
+        # model / solver are still valid
+        m.ng_fbmin_degenerate = not any(
+            m.ng_newton_diff_fbmin.diffendocur.values())
         ctx.solver = m.ng_newton_solver_fbmin_first
 
     def _fd_jacobian_solver(self, ctx, row):
@@ -1464,8 +1597,11 @@ class NewtonFbminSolver(SolverBase):
         alternate one exact DAG sweep with an inner Newton solve *to
         convergence* of the feedback sub-model (fb equations, DAG variables
         fixed -- the direct Jacobian is exact for that sub-problem), until the
-        fb variables are stable across outer iterations.  Ends with a final DAG
-        sweep consistent with the converged fb values and the epilog."""
+        fb variables are stable across outer iterations.  With
+        ``jacobian='fd'`` or ``'gauss'`` the inner solve is a single step (a
+        true reduced-Newton step resp. a damped fixed-point step).  Ends with
+        a final DAG sweep consistent with the converged fb values and the
+        epilog."""
         m = ctx.model
         values, outvalues = ctx.values, ctx.outvalues
         opt = lambda n, d: self._opt(ctx, n, d)
@@ -1476,10 +1612,12 @@ class NewtonFbminSolver(SolverBase):
         first_test = opt("first_test", 1)
         max_iterations = opt("max_iterations", 50)               # outer (DAG sweeps)
         jac_mode = opt("jacobian", self.DEFAULT_JACOBIAN)
-        # with the chain-inclusive fd Jacobian each outer iteration is one true
-        # Newton step on the reduced system; iterating the inner loop further
-        # (DAG fixed) would be inconsistent with that Jacobian
-        inner_max_iterations = (1 if jac_mode == "fd"
+        # fd: each outer iteration is one true Newton step on the reduced
+        # system -- iterating the inner loop further (DAG fixed) would be
+        # inconsistent with the chain-inclusive Jacobian.  gauss: one damped
+        # fixed-point step -- iterating further would converge to the
+        # *undamped* fb fixed point and neutralize ``newtonalfa``
+        inner_max_iterations = (1 if jac_mode in ("fd", "gauss")
                                 else opt("inner_max_iterations", 20))
         absconv = opt("absconv", 0.01)
         relconv = opt("relconv", DEFAULT_relconv)
@@ -1573,8 +1711,12 @@ class NewtonFbminSolver(SolverBase):
                                     f"Non-finite Newton update at {m.periode}, "
                                     f"outer {iteration}, inner {it_inner}")
 
+                            # gauss: the damping *is* the method, applied every
+                            # iteration; newton: damp only the first
+                            # ``newtonnodamp`` outer iterations
                             base_damp = (min(1.0, newtonalfa)
-                                         if iteration <= newtonnodamp else 1.0)
+                                         if jac_mode == "gauss"
+                                         or iteration <= newtonnodamp else 1.0)
                             values[row, newton_col_unknown] = \
                                 y_old - base_damp * update
                             # keep the ___RES equation values in sync
@@ -1821,6 +1963,491 @@ class NewtonStackSolver(SolverBase):
 NewtonStackImplicitSolver = NewtonStackSolver
 
 
+class NewtonStackFbminSolver(SolverBase):
+    """Stacked Newton on the minimal feedback vertex set of the *stacked*
+    dependency graph (``newtonstack_fbmin``).
+
+    The per-period fbmin solver reduces one period's Newton system to the
+    feedback vertices of the current-period graph.  This solver does the same
+    for the whole simulation span at once: the unknowns are all
+    (period, variable) pairs, so it also covers models with *leads*, where
+    the simultaneity runs across periods and no per-period decomposition
+    exists.
+
+    **The stacked graph.**  It is not available on the model; it is
+    constructed from the same melted derivative structure that builds the
+    stacked Jacobian (``newton_diff.get_diff_melted``): node ``t*nvar + s``
+    is variable ``s`` (order = ``newton_diff.endovar``) at period ``t``, and
+    every structural derivative ``d eq(var,t) / d pvar(t+lag)`` becomes the
+    edge ``(t+lag, pvar) -> (t, var)`` -- the same index arithmetic as
+    ``get_diff_mat_tot``.  Lagged and leaded endogenous references therefore
+    need no special handling: ``x(-1)`` seen from period ``t`` *is* the node
+    ``(t-1, x)`` -- that identification is exactly what couples the periods
+    -- and references falling before the first or after the last period are
+    predetermined initial / terminal conditions (data, not unknowns), dropped
+    by the same ``0 <= t+lag <= T-1`` filter the stacked Jacobian uses.
+
+    **Decomposition** (superblock of the stacked graph): equations in
+    residual form (``___RES``) are forced into the feedback set -- a
+    topological sweep assigns the residual variable, never the declared
+    unknown, so only Newton can move it.  The rest is condensed into strongly
+    connected components in topological order; singleton components are DAG
+    nodes (a self-looping singleton -- an equation with its own current value
+    on the RHS -- goes to the feedback set, a single sweep would not solve
+    it exactly), and every larger component is split by
+    ``model.get_minimal_feedback_set`` into feedback vertices and an internal
+    topological order.  The result: the stacked feedback nodes ``z`` and a
+    global topological order over everything else -- the *stacked DAG sweep*.
+    A model with only lags decomposes period by period (the sweep replays
+    per-period fbmin over the whole span jointly); a model that is recursive
+    except through leads gets an *empty* feedback set and is solved exactly
+    by the single stacked sweep -- which no per-period solver can do forward.
+
+    **Outer iteration** (all modes): one stacked DAG sweep (every
+    non-feedback equation exact, in topological order across periods), then
+    one Newton / fixed-point step on the stacked feedback unknowns:
+
+    ``jacobian='stack'`` (default): the reduced Jacobian is the **Schur
+    complement** of the full stacked Jacobian -- with the stacked matrix
+    ``A`` permuted to DAG (``d``) and feedback (``f``) nodes,
+    ``S = A_ff - A_fd A_dd^-1 A_df``.  Because the sweep zeroes the DAG
+    residuals exactly, ``S^-1 r_f`` *is* the full stacked Newton step
+    restricted to the feedback unknowns: same convergence as ``newtonstack``,
+    but the factorization is a dense ``n_fb x n_fb`` LU plus a sparse solve
+    with the acyclic ``A_dd`` (every diagonal ``-1``) instead of a sparse LU
+    of the whole ``n*T`` system -- and the DAG part is updated *nonlinearly*
+    by the sweep.  Built via ``newton_diff.get_diff_mat_tot`` (same ``-I``
+    handling as ``get_solvestacked``), cached across calls, refreshed by
+    ``nonlin`` / rebuilt on ``newton_reset``.
+
+    ``jacobian='fd'``: dense finite differences of the reduced residual --
+    each stacked feedback unknown perturbed in turn and the full stacked
+    sweep redone.  Exact for the reduced system but ``n_fb + 1`` stacked
+    sweeps per build; only sensible for small feedback sets.
+
+    ``jacobian='gauss'``: no Jacobian -- a damped fixed-point step
+    ``z <- z + newtonalfa*(F(z)-z)`` after each sweep, the robustness
+    fallback.
+
+    The sweep needs single equations evaluated at single periods in an order
+    that interleaves periods, which the block evaluators (fixed per-row
+    variable order) cannot do; a dict of per-equation functions is generated
+    instead (``makelos('stackeq')``).  Plain Python only -- dict dispatch
+    would defeat numba, so ``ljit`` is ignored here.
+
+    Handles normalized and residual (``___RES``) equations with the same
+    residual convention as the other Newton solvers.  Diagnostics:
+    ``m.ng_stackfbmin_fb`` -- the feedback set as (period, variable) pairs;
+    with ``keep_residual=True`` the feedback residual at the last iteration
+    is stored as ``m.ng_stackfbmin_residual``, a Series indexed by
+    (period, variable) -- the per-period ``model.ng_residual`` frame is not
+    used because the feedback variables may differ between periods.
+    """
+
+    solvename = "stackeq"
+    needs_outvalues = True
+    DEFAULT_JACOBIAN = "stack"
+
+    def conv_order(self, ctx):
+        """Convergence/dump order: declared (base) endogenous names of the
+        stacked Jacobian object."""
+        return ctx.model.ng_newton_diff_stack.declared_endo_list
+
+    def build_evaluator(self, ctx):
+        """Compile the per-equation evaluator dict (``eqdict``): one res-style
+        function per equation, callable at any row -- in place for the sweep,
+        into ``outvalues`` for the feedback residual."""
+        m, opts = ctx.model, ctx.opts
+        ctx.eqdict = self.makelos(
+            "stackeq", ctx.databank,
+            transpile_reset=opts.get("transpile_reset", False),
+            newdata=ctx.newdata,
+            silent=opts.get("silent", self.DEFAULT_SILENT))
+        m.genrcolumns = ctx.databank.columns.copy()
+        m.genrindex = ctx.databank.index.copy()
+
+    def prepare(self, ctx):
+        """Build (and cache) the stacked graph decomposition and the reduced
+        Jacobian solver; set up the flat node -> (row, column) index arrays
+        used by ``iterate``.  The decomposition is cached on the model and
+        rebuilt on ``newton_reset`` or when the solve span changes (it is
+        structural -- data changes do not invalidate it)."""
+        m, databank = ctx.model, ctx.databank
+        opt = lambda n, d: self._opt(ctx, n, d)
+        silent = opt("silent", self.DEFAULT_SILENT)
+        timeit = opt("timeit", False)
+        jac_mode = opt("jacobian", self.DEFAULT_JACOBIAN)
+        if jac_mode not in ("stack", "fd", "gauss"):
+            raise ValueError(
+                f"newtonstack_fbmin: unknown jacobian option {jac_mode!r} "
+                "(expected 'stack', 'fd' or 'gauss')")
+
+        # same differentiation object as the plain stacked solver (shared cache)
+        if not hasattr(m, "ng_newton_diff_stack"):
+            m.ng_newton_diff_stack = newton_diff(
+                m, forcenum=opt("forcenum", True), df=databank,
+                ljit=opt("nljit", 0), nchunk=opt("nchunk", None),
+                timeit=timeit, silent=silent)
+        diff = m.ng_newton_diff_stack
+        diff.timeit = timeit
+        per = ctx.sol_periode
+
+        struct_stale = (opt("newton_reset", False)
+                        or not hasattr(m, "ng_stackfbmin_struct")
+                        or m.ng_stackfbmin_struct["first"] != per[0]
+                        or m.ng_stackfbmin_struct["last"] != per[-1]
+                        or m.ng_stackfbmin_struct["n_per"] != len(per))
+        if struct_stale:
+            if not silent:
+                print("Building the stacked dependency graph and its "
+                      "minimal feedback set")
+            m.ng_stackfbmin_struct = self._build_structure(ctx, diff)
+        struct = m.ng_stackfbmin_struct
+        nvar = struct["nvar"]
+        fb, dag = struct["fb_nodes"], struct["dag_nodes"]
+
+        # flat index arrays: node t*nvar+s -> databank row of period t and the
+        # columns of equation s / its declared unknown (recomputed every call,
+        # cheap and robust to databank column-layout changes)
+        self.stackrows = np.array([databank.index.get_loc(p) for p in per])
+        gl = databank.columns.get_loc
+        eqcols = np.array([gl(c) for c in diff.endovar])
+        ucols = np.array([gl(c) for c in diff.declared_endo_list])
+        isres = np.array([v.endswith("___RES") for v in diff.endovar],
+                         dtype=bool)
+
+        fb_t, fb_s = fb // nvar, fb % nvar
+        self.fb_rows = self.stackrows[fb_t]
+        self.fb_eqcol = eqcols[fb_s]
+        self.fb_ucol = ucols[fb_s]
+        self.fb_resmask = isres[fb_s]
+        eqd = ctx.eqdict
+        self.fb_pairs = [(eqd[diff.endovar[s]], r)
+                         for s, r in zip(fb_s, self.fb_rows)]
+        dag_t, dag_s = dag // nvar, dag % nvar
+        self.dag_pairs = [(eqd[diff.endovar[s]], r)
+                          for s, r in zip(dag_s, self.stackrows[dag_t])]
+        ctx.is_residual_eq = self.fb_resmask
+        # the feedback set, readable: (period, unknown name)
+        m.ng_stackfbmin_fb = [(per[t], diff.declared_endo_list[s])
+                              for t, s in zip(fb_t, fb_s)]
+
+        if not len(fb):
+            # the stacked graph is acyclic: one topological sweep solves it
+            ctx.solver = None
+            return
+
+        if jac_mode == "gauss":
+            # damped fixed point on the stacked feedback variables: nothing
+            # to build or cache, update = residual
+            ctx.solver = lambda residual: -residual
+            return
+
+        solver_stale = (struct_stale or opt("newton_reset", False)
+                        or not hasattr(m, "ng_stackfbmin_solver")
+                        or getattr(m, "ng_stackfbmin_jacmode", None) != jac_mode)
+        if solver_stale:
+            if not silent:
+                print(f"Creating new stacked fbmin Newton solver "
+                      f"(jacobian={jac_mode!r})")
+            ctx.diffcount += 1
+            if jac_mode == "stack":
+                m.ng_stackfbmin_solver = self._stack_schur_solver(ctx, databank)
+            else:
+                m.ng_stackfbmin_solver = self._fd_jacobian_solver(ctx)
+            m.ng_stackfbmin_jacmode = jac_mode
+        ctx.solver = m.ng_stackfbmin_solver
+
+    def _build_structure(self, ctx, diff):
+        """Stacked dependency graph -> feedback nodes + global topological order.
+
+        Node ``t*nvar + s`` is variable ``s`` (order = ``diff.endovar``) at
+        period ``t``; each structural derivative gives the edge
+        ``(t+lag, pvar) -> (t, var)`` -- the same index arithmetic as
+        ``get_diff_mat_tot``, so out-of-span lags/leads (initial / terminal
+        conditions) drop out.  ``___RES`` nodes are forced into the feedback
+        set; the rest is condensed into SCCs in topological order, and each
+        simultaneous block is split by ``model.get_minimal_feedback_set``.
+        The dag order concatenates the blocks' internal orders in condensation
+        order, which is a valid topological order of the graph minus the
+        feedback vertices.
+        """
+        m = ctx.model
+        timeit = self._opt(ctx, "timeit", False)
+        per = ctx.sol_periode
+
+        with m.timer("build stacked dependency graph", timeit):
+            dmelt = diff.get_diff_melted(periode=per, df=ctx.databank)
+            nvar, maxnumber = diff.nvar, diff.maxnumber
+            keep = ((dmelt.number + dmelt.lag >= 0)
+                    & (dmelt.number + dmelt.lag <= maxnumber))
+            dm = dmelt[keep]
+            eqnode = (dm["number"] * nvar + dm["var"]).to_numpy(dtype=int)
+            depnode = ((dm["number"] + dm["lag"]) * nvar
+                       + dm["pvar"]).to_numpy(dtype=int)
+            size = nvar * (maxnumber + 1)
+            graph = nx.DiGraph()
+            graph.add_nodes_from(range(size))
+            graph.add_edges_from(zip(depnode.tolist(), eqnode.tolist()))
+
+        # residual (___RES) equations: a sweep assigns the residual variable,
+        # never the declared unknown -- only Newton can move it, so every
+        # (period, ___RES) node is a feedback vertex by construction
+        isres = np.array([v.endswith("___RES") for v in diff.endovar],
+                         dtype=bool)
+        res_nodes = [n for n in range(size) if isres[n % nvar]]
+        graph.remove_nodes_from(res_nodes)
+
+        fb, order = list(res_nodes), []
+        with m.timer("stacked superblock and minimal feedback set", timeit):
+            cond = nx.condensation(graph)
+            for c in nx.topological_sort(cond):
+                members = cond.nodes[c]["members"]
+                if len(members) == 1:
+                    n = next(iter(members))
+                    if graph.has_edge(n, n):  # own current value on the RHS
+                        fb.append(n)
+                    else:
+                        order.append(n)
+                else:
+                    sub = graph.subgraph(members).copy()
+                    sfb, sorder = m.get_minimal_feedback_set(sub)
+                    fb.extend(sfb)
+                    order.extend(sorder)
+
+        return {"first": per[0], "last": per[-1], "n_per": len(per),
+                "nvar": nvar,
+                "fb_nodes": np.array(sorted(fb), dtype=int),
+                "dag_nodes": np.array(order, dtype=int)}
+
+    def _dag_sweep(self, ctx):
+        """One stacked topological sweep: every non-feedback equation assigned
+        in place (``outvalues is values``), in an order valid across periods."""
+        values = ctx.values
+        for func, row in self.dag_pairs:
+            func(values, values, row)
+
+    def _fb_residual(self, ctx):
+        """Evaluate the feedback equations into ``outvalues`` (state untouched)
+        and assemble the reduced residual: ``G(y)`` on ``___RES`` rows,
+        ``F(y)-y`` on normalized rows."""
+        values, outvalues = ctx.values, ctx.outvalues
+        for func, row in self.fb_pairs:
+            func(values, outvalues, row)
+        resmask = self.fb_resmask
+        residual = outvalues[self.fb_rows, self.fb_eqcol].copy()
+        residual[~resmask] = (outvalues[self.fb_rows, self.fb_ucol][~resmask]
+                              - values[self.fb_rows, self.fb_ucol][~resmask])
+        return residual
+
+    def _stack_schur_solver(self, ctx, df):
+        """Reduced Newton solver = Schur complement of the stacked Jacobian.
+
+        The stacked matrix ``A`` (same ``-I`` handling as ``get_solvestacked``)
+        is permuted to DAG (d) / feedback (f) nodes and
+        ``S = A_ff - A_fd A_dd^-1 A_df`` is formed with a sparse LU of the
+        acyclic ``A_dd`` (feedback-column blocks bound the dense workspace),
+        then dense LU-factorized.  Because the sweep zeroes the DAG residuals,
+        ``S^-1 r_f`` is the full stacked Newton step on the feedback unknowns.
+        """
+        m = ctx.model
+        diff = m.ng_newton_diff_stack
+        struct = m.ng_stackfbmin_struct
+        fb, dag = struct["fb_nodes"], struct["dag_nodes"]
+
+        stacked = diff.get_diff_mat_tot(df=df)
+        if not m.normalized:
+            # normalized rows in a mixed system still need their -I term
+            isres = np.array([v.endswith("___RES") for v in diff.endovar],
+                             dtype=bool)
+            isres_stacked = np.tile(isres, struct["n_per"])
+            stacked = stacked - sps.diags((~isres_stacked).astype(float))
+        stacked = stacked.tocsr()
+
+        jred = stacked[fb][:, fb].toarray()
+        if len(dag):
+            a_dd = stacked[dag][:, dag].tocsc()
+            a_df = stacked[dag][:, fb].tocsc()
+            a_fd = stacked[fb][:, dag].tocsr()
+            lu_dd = splu(a_dd)
+            # solve A_dd X = A_df in column blocks; S = A_ff - A_fd X
+            chunk = max(1, 20_000_000 // max(len(dag), 1))
+            for start in range(0, len(fb), chunk):
+                cols = slice(start, min(start + chunk, len(fb)))
+                x = lu_dd.solve(a_df[:, cols].toarray())
+                jred[:, cols] -= a_fd @ x
+        lu = lu_factor(jred)
+        return lambda residual: lu_solve(lu, residual)
+
+    def _fd_jacobian_solver(self, ctx):
+        """Dense finite-difference Jacobian of the reduced stacked system:
+        perturb each stacked feedback unknown in turn and redo the full
+        stacked sweep + feedback evaluation (``n_fb + 1`` sweeps per build).
+        The state is left re-swept at the base point.  Same calling
+        convention as the other reduced solvers."""
+        values = ctx.values
+        rows, ucols = self.fb_rows, self.fb_ucol
+        n = len(rows)
+
+        def reduced_residual():
+            self._dag_sweep(ctx)
+            return self._fb_residual(ctx)
+
+        base = values[rows, ucols].copy()
+        r0 = reduced_residual()
+        jac = np.empty((n, n))
+        for j in range(n):
+            delta = 1e-6 * max(abs(base[j]), 1.0)
+            values[rows[j], ucols[j]] = base[j] + delta
+            jac[:, j] = (reduced_residual() - r0) / delta
+            values[rows, ucols] = base
+        self._dag_sweep(ctx)          # restore the DAG at the base point
+        lu = lu_factor(jac)
+        return lambda residual: lu_solve(lu, residual)
+
+    def iterate(self, ctx):
+        """Outer loop: one stacked DAG sweep (all non-feedback equations exact,
+        across periods) then one reduced Newton / fixed-point step on the
+        stacked feedback unknowns; relative-change stop on the feedback
+        unknowns.  An empty feedback set (acyclic stacked graph) is solved
+        exactly by the single sweep."""
+        m = ctx.model
+        values = ctx.values
+        opt = lambda n, d: self._opt(ctx, n, d)
+
+        silent = opt("silent", self.DEFAULT_SILENT)
+        first_test = opt("first_test", 1)
+        max_iterations = opt("max_iterations", 20)
+        jac_mode = opt("jacobian", self.DEFAULT_JACOBIAN)
+        absconv = opt("absconv", 0.01)
+        relconv = opt("relconv", DEFAULT_relconv)
+        # fd default: refresh about every n_fb outer iterations (a rebuild
+        # costs n_fb+1 sweeps, an outer iteration one); stack default: reuse
+        # the factorization like newtonstack does
+        nonlin = opt("nonlin", (max(len(self.fb_rows), 2)
+                                if jac_mode == "fd" else False))
+        timeit = opt("timeit", False)
+        newtonalfa = opt("newtonalfa", 1.0)
+        newtonnodamp = opt("newtonnodamp", 0)
+        ldumpvar = opt("ldumpvar", False)
+        keep_residual = opt("keep_residual", False)
+
+        rows, ucols, eqcols = self.fb_rows, self.fb_ucol, self.fb_eqcol
+        resmask = self.fb_resmask
+        ctx.dag_sweeps = 0
+
+        if ctx.solver is None:
+            # acyclic stacked graph: every equation exact in one sweep
+            with m.timer("stacked DAG sweep", timeit):
+                self._dag_sweep(ctx)
+            ctx.dag_sweeps += 1
+            ctx.ittotal += 1
+            ctx.convergence = True
+            if not silent:
+                print("The stacked graph is acyclic -- solved by one "
+                      "topological sweep across the periods")
+            return
+
+        residual = None
+        iteration = 0
+        converged = False
+        newton_conv = np.inf
+        for iteration in range(max_iterations):
+            with m.timer(f"\nstackfbmin it:{iteration}", timeit):
+                with m.timer("stacked DAG sweep", timeit):
+                    self._dag_sweep(ctx)
+                ctx.dag_sweeps += 1
+
+                residual = self._fb_residual(ctx)
+                newton_conv = np.max(np.abs(residual))
+                if not silent:
+                    print(f"Iteration {iteration:>2} | max feedback residual "
+                          f"{newton_conv:>25,.6f}")
+
+                if (iteration != 0 and nonlin and not (iteration % nonlin)
+                        and jac_mode != "gauss"):
+                    with m.timer("Updating solver", timeit):
+                        if not silent:
+                            print(f"Updating solver, iteration {iteration}")
+                        if jac_mode == "stack":
+                            df_now = pd.DataFrame(
+                                values, index=ctx.databank.index,
+                                columns=ctx.databank.columns)
+                            ctx.solver = self._stack_schur_solver(ctx, df_now)
+                        else:
+                            ctx.solver = self._fd_jacobian_solver(ctx)
+                        m.ng_stackfbmin_solver = ctx.solver
+                        ctx.diffcount += 1
+
+                update = ctx.solver(residual)
+                if not np.all(np.isfinite(update)):
+                    raise ValueError(
+                        f"Non-finite Newton update at iteration {iteration}")
+
+                y_old = values[rows, ucols]
+                # gauss: the damping *is* the method, applied every iteration;
+                # newton: damp only the first ``newtonnodamp`` iterations
+                base_damp = (min(1.0, newtonalfa)
+                             if jac_mode == "gauss" or iteration <= newtonnodamp
+                             else 1.0)
+                values[rows, ucols] = y_old - base_damp * update
+                # keep the ___RES equation values in sync
+                values[rows[resmask], eqcols[resmask]] = \
+                    ctx.outvalues[rows[resmask], eqcols[resmask]]
+                ctx.ittotal += 1
+
+                if ldumpvar:
+                    for periode, row in zip(ctx.sol_periode, self.stackrows):
+                        ctx.dumplist.append(
+                            [0, periode, int(iteration + 1)]
+                            + [values[row, p] for p in ctx.dumpplac])
+
+                # same relative-change convergence test as every ng solver
+                if iteration >= first_test:
+                    converged, _ = self._relconv(
+                        y_old, values[rows, ucols], absconv, relconv)
+                    if converged:
+                        break
+
+        # final sweep: DAG variables consistent with the converged feedback z
+        with m.timer("final stacked DAG sweep", timeit):
+            self._dag_sweep(ctx)
+        ctx.dag_sweeps += 1
+
+        ctx.iteration = iteration
+        ctx.convergence = converged
+
+        # the feedback residual at the last iteration (opt-in); a Series over
+        # (period, variable) -- the fb variables may differ between periods
+        if keep_residual and residual is not None:
+            m.ng_stackfbmin_residual = pd.Series(
+                residual,
+                index=pd.MultiIndex.from_tuples(
+                    m.ng_stackfbmin_fb, names=["per", "var"]))
+
+        if not silent:
+            if converged:
+                print(f"Solved in {iteration + 1} outer iterations "
+                      f"(last max res~{newton_conv:,.6g})")
+            else:
+                print(f"Not converged in {iteration + 1} outer iterations "
+                      f"(last max res~{newton_conv:,.6g})")
+
+    def stats_lines(self, ctx):
+        """Stacked fbmin statistics: size of the stacked feedback set vs the
+        stacked DAG, and the sweep / Newton-step / solver-build counts."""
+        m = ctx.model
+        return [
+            f'Setup time (seconds)                 :{m.setuptime:>15,.2f}',
+            f'Stacked feedback (Newton) unknowns   :{len(self.fb_rows):>15,}',
+            f'Stacked DAG nodes                    :{len(self.dag_pairs):>15,}',
+            f'Stacked DAG sweeps                   :{getattr(ctx, "dag_sweeps", 0):>15,}',
+            f'Newton steps on the feedback system  :{ctx.ittotal:>15,}',
+            f'Number of solver builds              :{ctx.diffcount:>15,}',
+            f'Simulation time (seconds)            :{m.simtime:>15,.2f}',
+        ]
+
+
 class Sim1dSolver(SolverBase):
     """Gauss-Seidel on a stuffed one-period 1-D array (port of ``sim1d``).
 
@@ -2024,6 +2651,7 @@ class Solver_ng_Mixin:
         "newton_fbmin": NewtonFbminSolver,
         "newtonstack": NewtonStackSolver,
         "newtonstack_implicit": NewtonStackImplicitSolver,
+        "newtonstack_fbmin": NewtonStackFbminSolver,
     }
 
     def solve_ng(self, databank=None, *args, solver="sim", **kwargs):
@@ -2064,7 +2692,9 @@ class Solver_ng_Mixin:
 
     def newton_fbmin_ng(self, databank=None, *args, **kwargs):
         """Solve with reduced Newton on the minimal feedback set (defaults to
-        ``self.basedf``)."""
+        ``self.basedf``).  ``jacobian='fd'`` (default) / ``'direct'`` /
+        ``'gauss'`` selects the reduced-system update -- see
+        :class:`NewtonFbminSolver`."""
         if databank is None:
             databank = self.basedf
         return NewtonFbminSolver(self)(databank, *args, **kwargs)
@@ -2080,3 +2710,13 @@ class Solver_ng_Mixin:
         if databank is None:
             databank = self.basedf
         return NewtonStackImplicitSolver(self)(databank, *args, **kwargs)
+
+    def newtonstack_fbmin_ng(self, databank=None, *args, **kwargs):
+        """Solve with stacked Newton reduced to the minimal feedback vertex set
+        of the stacked (period x variable) dependency graph (defaults to
+        ``self.basedf``).  ``jacobian='stack'`` (default: Schur complement of
+        the stacked Jacobian) / ``'fd'`` / ``'gauss'`` selects the reduced
+        update -- see :class:`NewtonStackFbminSolver`."""
+        if databank is None:
+            databank = self.basedf
+        return NewtonStackFbminSolver(self)(databank, *args, **kwargs)
