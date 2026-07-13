@@ -1193,9 +1193,23 @@ class NewtonSolver(SolverBase):
         opt = lambda n, d: self._opt(ctx, n, d)
         silent = opt("silent", self.DEFAULT_SILENT)
 
-        if not hasattr(m, "ng_newton_diff_implicit") or opt("newton_reset", False):
-            endovar = (m.coreorder if getattr(m, "coreorder", None) and len(m.coreorder)
-                       else m.solveorder)
+        # per-period pro/core/epi split (``split=1``) -- see _prepare_split_1per
+        split = bool(opt("split", False))
+        self.pro_funcs, self.epi_funcs, self.core_funcs = [], [], []
+        self.core_sweep = []
+        if split:
+            self._prepare_split_1per(ctx)
+
+        diff_key = tuple(m.ng_newton_split_struct["core"]) if split else "std"
+        if (not hasattr(m, "ng_newton_diff_implicit")
+                or opt("newton_reset", False)
+                or getattr(m, "ng_newton_diff_implicit_key", None) != diff_key):
+            if split:
+                endovar = m.ng_newton_split_struct["core"]
+            else:
+                endovar = (m.coreorder if getattr(m, "coreorder", None) and len(m.coreorder)
+                           else m.solveorder)
+            m.ng_newton_diff_implicit_key = diff_key
             # unknowns (columns): base names with any ___RES suffix stripped
             m.ng_is_residual_eq = np.array(
                 [v.endswith("___RES") for v in endovar], dtype=bool)
@@ -1208,13 +1222,20 @@ class NewtonSolver(SolverBase):
             # 'umfpack': one symbolic analysis reused across all periods and
             # nonlin refreshes (pays off when nonlinear models refactorize often)
             m.ng_newton_diff_implicit.factorizer = opt("factorizer", None)
-            first_per = (ctx.sol_periode[0] if len(ctx.sol_periode)
-                         else m.current_per[0])
-            m.ng_newton_solver_implicit_first = m.ng_newton_diff_implicit.get_solve1per(
-                df=databank, periode=[first_per],
-                is_residual_eq=m.ng_is_residual_eq)[first_per]
+            m.ng_newton_solver_implicit_dic = None    # solvers are stale too
 
-        ctx.solver = m.ng_newton_solver_implicit_first
+        # one Jacobian per period, like the legacy newton: on trending models
+        # (FRB/US nominal levels roughly double over 16 years) a single
+        # first-period factorization degrades from quadratic to slow linear
+        # convergence and eventually diverges late in the span
+        if (getattr(m, "ng_newton_solver_implicit_dic", None) is None
+                or any(p not in m.ng_newton_solver_implicit_dic
+                       for p in ctx.sol_periode)):
+            m.ng_newton_solver_implicit_dic = m.ng_newton_diff_implicit.get_solve1per(
+                df=databank, periode=ctx.sol_periode,
+                is_residual_eq=m.ng_is_residual_eq)
+
+        ctx.solverdic = m.ng_newton_solver_implicit_dic
         ctx.is_residual_eq = m.ng_is_residual_eq
         gl = databank.columns.get_loc
         ctx.newton_col = [gl(c) for c in m.ng_newton_diff_implicit.endovar]         # eqs
@@ -1222,6 +1243,104 @@ class NewtonSolver(SolverBase):
                                for c in m.ng_newton_diff_implicit.declared_endo_list]  # unknowns
         ctx.newton_col_residual = [gl(c) for c in m.ng_newton_diff_implicit.endovar
                                    if c.endswith("___RES")]
+
+    def _prepare_split_1per(self, ctx):
+        """Per-period pro/core/epi split (option ``split=1``).
+
+        Same idea as the stacked split of :class:`NewtonStackSolver`, on the
+        *current-period* dependency graph (lags are predetermined here, so
+        only lag-0 dependencies matter and no mixed lag/lead case exists).
+        Newton (and the per-period LU) runs on the variables in
+        current-period cycles plus every ``___RES`` equation -- the declared
+        unknown of an implicit equation is moved only by Newton, and a
+        dependency on it maps to its residual equation, which the model-level
+        ``coreorder`` decomposition cannot see.  Prolog variables are swept
+        before, epilog (reporting) variables after, each period's Newton.
+        Mostly useful for ``straight=True`` and implicit/hybrid models, where
+        ``coreorder`` is unavailable or blind to the implicit coupling.
+        """
+        m, databank = ctx.model, ctx.databank
+        opt = lambda n, d: self._opt(ctx, n, d)
+        silent = opt("silent", self.DEFAULT_SILENT)
+
+        # purely structural (current-period graph only -- not even span
+        # dependent); rebuilt only when absent
+        if not hasattr(m, "ng_newton_split_struct"):
+            if (m.normalized and getattr(m, "coreorder", None)
+                    and len(m.coreorder)):
+                # use the model's own superblock decomposition -- the same
+                # split `sim` runs on, proven, and built from the model's
+                # term-level graph.  The graph-based classification below is
+                # the fallback for models where superblock is unavailable
+                # (straight=True) or blind to the coupling through an
+                # implicit equation's declared unknown (ENDO=).
+                m.ng_newton_split_struct = {
+                    "core": list(m.coreorder),
+                    "pro": list(m.preorder),
+                    "epi": list(m.epiorder)}
+        if not hasattr(m, "ng_newton_split_struct"):
+            # fallback classification: current-period edges scanned DIRECTLY
+            # from the equation terms (the same source superblock builds its
+            # graph from -- deliberately not via modeldiff/derivatives), plus
+            # the ENDO= identification: a dependency on an implicit
+            # equation's declared unknown X is an edge from the equation
+            # X___RES, which is what Newton moves X with
+            endo = m.endogene
+            eqname = lambda x: x + "___RES" if x + "___RES" in endo else x
+            endovar = sorted(endo)
+            cg = nx.DiGraph()
+            cg.add_nodes_from(endovar)
+            for v in endovar:
+                av = m.allvar[v]
+                for t in av["terms"][av["assigpos"]:-1]:
+                    if (t.var and t.lag == ""
+                            and (t.var in endo or t.var + "___RES" in endo)):
+                        cg.add_edge(eqname(t.var), v)
+
+            core = {v for v in endovar if v.endswith("___RES")}
+            for scc in nx.strongly_connected_components(cg):
+                if len(scc) > 1:
+                    core |= scc
+            core |= {v for v in cg if cg.has_edge(v, v)}   # own current value
+
+            desc = (set().union(*(nx.descendants(cg, v) for v in core))
+                    if core else set())
+            epi = [v for v in endovar if v not in core and v in desc]
+            pro = [v for v in endovar if v not in core and v not in desc]
+            m.ng_newton_split_struct = {
+                "core": [v for v in endovar if v in core],
+                "pro": list(nx.topological_sort(cg.subgraph(pro))),
+                "epi": list(nx.topological_sort(cg.subgraph(epi)))}
+            if not silent:
+                s = m.ng_newton_split_struct
+                print(f"Per-period split: {len(s['core']):,} core / "
+                      f"{len(s['pro']):,} prolog / "
+                      f"{len(s['epi']):,} epilog variables")
+
+        struct = m.ng_newton_split_struct
+        # per-equation evaluators for the sweeps (cached on the model by makelos)
+        eqdict = self.makelos(
+            "stackeq", databank, newdata=ctx.newdata,
+            transpile_reset=opt("transpile_reset", False), silent=silent)
+        self.pro_funcs = [eqdict[v] for v in struct["pro"]]
+        self.epi_funcs = [eqdict[v] for v in struct["epi"]]
+        # the Newton residual is evaluated with the core equations only:
+        # evaluating prolog/epilog equations at intermediate Newton states is
+        # useless (their residuals are never read) and dangerous -- a
+        # reporting equation like 400*(LOG(x)-LOG(x(-1))) explodes when a
+        # core variable transiently passes through negative territory
+        self.core_funcs = [eqdict[v] for v in struct["core"]]
+        # core in *solve order*: used for damped Gauss-Seidel sweeps (warm-up
+        # and rescue) -- sequenced, damped in-place updates walk a far start
+        # into Newton's basin the same way `sim` survives it.  Each entry:
+        # (eq function, eq column, is ___RES, declared-unknown column) -- an
+        # implicit equation cannot be assigned by a sweep, its unknown is
+        # moved by a damped scalar secant step instead (Gauss-Seidel-Newton)
+        coreset = set(struct["core"])
+        gl = databank.columns.get_loc
+        self.core_sweep = [(eqdict[v], gl(v), v.endswith("___RES"),
+                            gl(v[:-6]) if v.endswith("___RES") else -1)
+                           for v in m.solveorder if v in coreset]
 
     def iterate(self, ctx):
         """Per-period Newton on the core (relative-change stop), with recursive
@@ -1246,15 +1365,42 @@ class NewtonSolver(SolverBase):
         ldumpvar = opt("ldumpvar", False)
         keep_residual = opt("keep_residual", False)
 
+        presweep = opt("presweep", 5)      # damped Gauss warm-up (split mode)
+
         newton_col = ctx.newton_col                # equations (with ___RES)
         newton_col_unknown = ctx.newton_col_endo   # unknowns (declared endo)
         newton_col_residual = ctx.newton_col_residual
         resmask = ctx.is_residual_eq
         eqnames = m.ng_newton_diff_implicit.endovar
 
+        def damped_sweeps(row, n):
+            """Damped in-place Gauss-Seidel sweeps over the core in solve
+            order -- the update rule that makes `sim` robust on far starts.
+            Normalized equations: v <- v + alfa*(F(.)-v).  Implicit (___RES)
+            equations cannot be assigned by a sweep: their declared unknown
+            takes a damped scalar secant step on the residual instead
+            (nonlinear Gauss-Seidel-Newton), so implicit unknowns walk too."""
+            for _ in range(n):
+                for f, c, is_res, ucol in self.core_sweep:
+                    if is_res:
+                        f(values, outvalues, row)
+                        g0 = outvalues[row, c]
+                        x0 = values[row, ucol]
+                        delta = 1e-5 * max(abs(x0), 1.0)
+                        values[row, ucol] = x0 + delta
+                        f(values, outvalues, row)
+                        slope = (outvalues[row, c] - g0) / delta
+                        values[row, ucol] = (x0 - alfa * g0 / slope
+                                             if abs(slope) > 1e-12 else x0)
+                    else:
+                        old = values[row, c]
+                        f(values, values, row)
+                        values[row, c] = old + alfa * (values[row, c] - old)
+
         # No Fair-Taylor outer loop: Newton solves each period directly.
         for m.periode in ctx.sol_periode:
             row = ctx.databank.index.get_loc(m.periode)
+            solver = ctx.solverdic[m.periode]      # this period's factorization
             if init and row > 0:
                 for c in ctx.endoplace:
                     values[row, c] = values[row - 1, c]
@@ -1266,26 +1412,156 @@ class NewtonSolver(SolverBase):
             # recursive prolog: one Gauss-Seidel sweep written back to `values`
             # (out == values), so the core is solved against correct predetermined
             # values and the recursive block is actually solved (unlike bare
-            # newton_implicit, which leaves it at its input).
-            ctx.pro(values, values, row, alfa)
+            # newton_implicit, which leaves it at its input).  In split mode
+            # the graph-based prolog (a superset of the model's) is swept
+            # instead, in its own topological order.
+            if self.pro_funcs:
+                for func in self.pro_funcs:
+                    func(values, values, row)
+            else:
+                ctx.pro(values, values, row, alfa)
+
+            # damped Gauss-Seidel warm-up sweeps over the core (split mode):
+            # late in a shocked span the input databank is a very distant
+            # start, where Newton's full steps leave the basin -- a few
+            # damped sequenced sweeps (what makes `sim` robust here) close
+            # most of the distance for nearly free.  presweep=0 disables.
+            if self.core_sweep and presweep:
+                damped_sweeps(row, presweep)
 
             newton_conv = np.inf
             residual = None
             converged = False
+            last_y = last_step = None      # previous Newton step, for backoff
+            tried_sweep = tried_init = False   # iteration-0 fallbacks used
+            prev_conv = np.inf             # divergence-triggered refresh
+            last_refresh = -10
             for iteration in range(max_iterations):
                 with m.timer(f"sim per:{m.periode} it:{iteration}", timeit):
-                    # evaluate the model at current y -> outvalues
-                    ctx.pro(values, outvalues, row, alfa)
-                    ctx.solve(values, outvalues, row, alfa)
-                    ctx.epi(values, outvalues, row, alfa)
+                    # evaluate the model at current y -> outvalues.  In split
+                    # mode only the core equations are evaluated: prolog/epilog
+                    # residuals are never read, and evaluating them at
+                    # intermediate Newton states can raise (LOG of a transient
+                    # negative core value in a reporting equation).
+                    # The previous Newton step is treated as a *trial*: if the
+                    # evaluation raises (LOG/SQRT domain error) OR the max
+                    # residual increased, the step is halved and re-evaluated
+                    # -- a backtracking line search that accepts the largest
+                    # damping with an improving, feasible residual.
+                    backtracks = 0
+                    rescued = False
+                    for backoff in range(9):
+                        try:
+                            if self.core_funcs:
+                                for func in self.core_funcs:
+                                    func(values, outvalues, row)
+                            else:
+                                ctx.pro(values, outvalues, row, alfa)
+                                ctx.solve(values, outvalues, row, alfa)
+                                ctx.epi(values, outvalues, row, alfa)
+                        except Exception:
+                            if backoff >= 8:
+                                raise
+                            if backoff == 7:
+                                # halvings exhausted while still infeasible:
+                                # last resort -- back to the last feasible
+                                # point and Gauss-rescue from there, then one
+                                # final evaluation attempt
+                                if not (self.core_sweep
+                                        and last_y is not None):
+                                    raise
+                                values[row, newton_col_unknown] = last_y
+                                damped_sweeps(row, 10)
+                                last_y = last_step = None
+                                prev_conv = np.inf
+                                rescued = True
+                                if not silent:
+                                    print(f"{m.periode}: Gauss rescue after "
+                                          "infeasible Newton steps")
+                                continue
+                            if last_step is None:
+                                # iteration 0: nothing to back off from -- the
+                                # start state itself is infeasible (the split
+                                # prolog sweep already reflects the shock, the
+                                # core is still at input values).
+                                if self.core_sweep and not tried_sweep:
+                                    # one damped Gauss-Seidel sweep over the
+                                    # core in solve order: upstream variables
+                                    # move first, which is how sim survives
+                                    # the same state (the Jacobi-style
+                                    # residual evaluation does not)
+                                    tried_sweep = True
+                                    damped_sweeps(row, 1)
+                                    if not silent:
+                                        print(f"{m.periode}: start values "
+                                              "infeasible, Gauss sweep over "
+                                              "the core")
+                                elif row > 0 and not tried_init:
+                                    # restart the core from the previous
+                                    # period's solution (converged, feasible;
+                                    # the Newton answer does not depend on
+                                    # the start point)
+                                    tried_init = True
+                                    values[row, newton_col_unknown] = \
+                                        values[row - 1, newton_col_unknown]
+                                    if not silent:
+                                        print(f"{m.periode}: restarting the "
+                                              "core from the previous period")
+                                else:
+                                    raise
+                            else:
+                                last_step = 0.5 * last_step
+                                values[row, newton_col_unknown] = last_y - last_step
+                                if not silent:
+                                    print(f"{m.periode}: evaluation failed at the "
+                                          "Newton iterate, halving the step")
+                            continue
 
-                    eq_after = outvalues[row, newton_col]
-                    y_old = values[row, newton_col_unknown]
-                    y_implied = outvalues[row, newton_col_unknown]
-                    # residual: G(y) on residual rows, F(y)-y on normalized rows
-                    residual = eq_after.copy()
-                    residual[~resmask] = y_implied[~resmask] - y_old[~resmask]
-                    newton_conv = np.max(np.abs(residual))
+                        eq_after = outvalues[row, newton_col]
+                        y_old = values[row, newton_col_unknown]
+                        y_implied = outvalues[row, newton_col_unknown]
+                        # residual: G(y) on residual rows, F(y)-y on normalized rows
+                        residual = eq_after.copy()
+                        residual[~resmask] = y_implied[~resmask] - y_old[~resmask]
+                        newton_conv = np.max(np.abs(residual))
+
+                        if (last_step is not None and backoff < 7
+                                and newton_conv > prev_conv):
+                            # the previous step made the residual worse:
+                            # backtrack (halve it) and re-evaluate
+                            backtracks += 1
+                            last_step = 0.5 * last_step
+                            values[row, newton_col_unknown] = last_y - last_step
+                            if not silent:
+                                print(f"{m.periode}: residual increased, "
+                                      "backtracking the Newton step")
+                            continue
+                        break
+
+                    # Gauss rescue: no improving damped Newton step exists
+                    # from here (stale Jacobian and/or outside the basin) --
+                    # walk with damped sequenced sweeps instead, then force a
+                    # Jacobian refresh at the new state
+                    force_refresh = rescued
+                    if (self.core_sweep and last_step is not None
+                            and newton_conv > prev_conv):
+                        with m.timer("Gauss rescue", timeit):
+                            damped_sweeps(row, 10)
+                            for func in self.core_funcs:
+                                func(values, outvalues, row)
+                            eq_after = outvalues[row, newton_col]
+                            y_old = values[row, newton_col_unknown]
+                            y_implied = outvalues[row, newton_col_unknown]
+                            residual = eq_after.copy()
+                            residual[~resmask] = (y_implied[~resmask]
+                                                  - y_old[~resmask])
+                            newton_conv = np.max(np.abs(residual))
+                        if not silent:
+                            print(f"{m.periode}: Gauss rescue, max residual "
+                                  f"{newton_conv:,.6f}")
+                        last_y = last_step = None
+                        prev_conv = np.inf
+                        force_refresh = True
 
                     if not silent:
                         print(f"Iteration {iteration:>2} | {m.periode} | "
@@ -1295,18 +1571,36 @@ class NewtonSolver(SolverBase):
                             [0, m.periode, iteration + 1]
                             + [values[row, p] for p in ctx.dumpplac])
 
-                    if iteration != 0 and nonlin and not (iteration % nonlin):
+                    # scheduled nonlin refresh -- and an *unscheduled* one as
+                    # soon as the residual increases: far from the input
+                    # databank (a compounding shock late in the span) the
+                    # period Jacobian built at the input values stops being a
+                    # descent direction, and refreshing at the current state
+                    # restores quadratic convergence immediately instead of
+                    # letting the step-halving thrash until the state is ruined
+                    refresh = (nonlin
+                               and (force_refresh
+                                    or (iteration != 0
+                                        and (not (iteration % nonlin)
+                                             or (newton_conv > prev_conv
+                                                 and iteration > last_refresh + 1)
+                                             or (backtracks >= 2
+                                                 and iteration > last_refresh)))))
+                    if refresh:
                         with m.timer("Updating Jacobian", timeit):
                             if not silent:
                                 print(f"Updating Jacobian, iteration {iteration}")
                             df_now = pd.DataFrame(
                                 values, index=ctx.databank.index,
                                 columns=ctx.databank.columns)
-                            ctx.solver = m.ng_newton_diff_implicit.get_solve1per(
+                            solver = m.ng_newton_diff_implicit.get_solve1per(
                                 df=df_now, periode=[m.periode],
                                 is_residual_eq=resmask)[m.periode]
+                            ctx.solverdic[m.periode] = solver
+                            last_refresh = iteration
+                    prev_conv = newton_conv
 
-                    update = ctx.solver(residual)
+                    update = solver(residual)
                     if not np.all(np.isfinite(update)):
                         raise ValueError(
                             f"Non-finite Newton update at {m.periode}, "
@@ -1314,7 +1608,9 @@ class NewtonSolver(SolverBase):
 
                     base_damp = (min(1.0, newtonalfa)
                                  if iteration <= newtonnodamp else 1.0)
-                    values[row, newton_col_unknown] = y_old - base_damp * update
+                    last_y = values[row, newton_col_unknown].copy()
+                    last_step = base_damp * update
+                    values[row, newton_col_unknown] = last_y - last_step
                     # keep the ___RES equation values in sync
                     values[row, newton_col_residual] = \
                         outvalues[row, newton_col_residual]
@@ -1328,8 +1624,13 @@ class NewtonSolver(SolverBase):
                             break
 
             # recursive epilog: one Gauss-Seidel sweep written back to `values`
-            # (out == values), now that the core is solved.
-            ctx.epi(values, values, row, alfa)
+            # (out == values), now that the core is solved.  Split mode sweeps
+            # the graph-based epilog instead.
+            if self.epi_funcs:
+                for func in self.epi_funcs:
+                    func(values, values, row)
+            else:
+                ctx.epi(values, values, row, alfa)
 
             # record the equation residual F(y)-y at the last iteration (opt-in)
             if keep_residual:
@@ -1821,7 +2122,7 @@ class NewtonStackSolver(SolverBase):
         # stacked pro/core/epi split (``split=1``): Newton only on the core,
         # prolog/epilog solved exactly by stacked sweeps -- see _prepare_split
         split = bool(opt("split", False))
-        self.pro_pairs, self.epi_pairs = [], []
+        self.pro_pairs, self.epi_pairs, self.core_pairs = [], [], []
         if split:
             self._prepare_split(ctx)
 
@@ -1933,6 +2234,12 @@ class NewtonStackSolver(SolverBase):
         rowof = [databank.index.get_loc(p) for p in per]
         self.pro_pairs = [(eqdict[v], rowof[t]) for v, t in struct["pro_nodes"]]
         self.epi_pairs = [(eqdict[v], rowof[t]) for v, t in struct["epi_nodes"]]
+        # the Newton residual is evaluated with the core equations only:
+        # prolog/epilog residuals are never read, and evaluating them at
+        # intermediate Newton states can raise (LOG of a transient negative
+        # core value in a reporting equation)
+        self.core_pairs = [(eqdict[v], r) for r in rowof
+                           for v in struct["core"]]
 
     def _build_split(self, ctx):
         """Compute the pro/core/epi variable sets on the collapsed dependency
@@ -1969,6 +2276,21 @@ class NewtonStackSolver(SolverBase):
                 core |= scc
         core |= {v for v in cg if cg.has_edge(v, v)}   # own current value
 
+        # a variable depending on both its own lag AND its own lead forms a
+        # true stacked cycle ((t,x) -> (t+a,x) via the lag, back via the
+        # lead) that the collapsed graph cannot see, since self-edges with
+        # lag != 0 are exempted above.  This promotion makes the split exact:
+        # outside the core the collapsed graph is a DAG plus self-edges, a
+        # stacked cycle projects to a closed walk there, and a closed walk in
+        # a DAG cannot leave a node -- so mixed-sign self-dependence is the
+        # only stacked cycle the collapsed test can miss.
+        selflags = {}
+        for a, b, l in cedges:
+            if a == b:
+                selflags.setdefault(a, set()).add(l)
+        core |= {v for v, lags in selflags.items()
+                 if min(lags) < 0 and max(lags) > 0}
+
         desc = (set().union(*(nx.descendants(cg, v) for v in core))
                 if core else set())
         epi_vars = [v for v in fulldiff.endovar if v not in core and v in desc]
@@ -1977,7 +2299,8 @@ class NewtonStackSolver(SolverBase):
 
         def node_order(vars_):
             """Stacked topological order of (var, t) nodes over *vars_* --
-            acyclic by construction (any collapsed cycle went to the core)."""
+            acyclic by construction (any collapsed cycle and any mixed-sign
+            self-dependence went to the core)."""
             vset = set(vars_)
             g = nx.DiGraph()
             g.add_nodes_from((v, t) for v in vars_ for t in range(T))
@@ -1985,7 +2308,16 @@ class NewtonStackSolver(SolverBase):
                              for a, b, l in cedges
                              if a in vset and b in vset
                              for t in range(T) if 0 <= t + l < T)
-            return list(nx.topological_sort(g))
+            try:
+                return list(nx.topological_sort(g))
+            except nx.NetworkXUnfeasible:
+                # should be impossible -- the classification above is exact.
+                # If it ever fires the split logic has a hole: fall back to
+                # split=0 and please report the model structure.
+                raise RuntimeError(
+                    "newtonstack_ng split=1: the pro/epi node graph contains "
+                    "a cycle the classification missed -- run with split=0 "
+                    "and report this model structure") from None
 
         return {"first": ctx.sol_periode[0], "last": ctx.sol_periode[-1],
                 "n_per": T,
@@ -2027,15 +2359,39 @@ class NewtonStackSolver(SolverBase):
                     func(values, values, row)
 
         residual = None
+        last_base = last_step = None       # previous Newton step, for backoff
         for iteration in range(max_iterations):
             with m.timer(f"\nNewton it:{iteration}", timeit):
                 before = values[rowidx, colidx_endo]
                 with m.timer("calculate new solution", timeit):
-                    for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
-                        ctx.pro(values, outvalues, row, alfa)
-                        ctx.solve(values, outvalues, row, alfa)
-                        ctx.epi(values, outvalues, row, alfa)
-                        ctx.ittotal += 1
+                    # split mode: evaluate only the core equations -- see
+                    # _prepare_split (prolog/epilog residuals never read,
+                    # and reporting equations can raise at Newton iterates).
+                    # If the evaluation raises (LOG/SQRT domain error at an
+                    # infeasible iterate), halve the previous Newton step and
+                    # re-evaluate.
+                    for backoff in range(8):
+                        try:
+                            if self.core_pairs:
+                                for func, row in self.core_pairs:
+                                    func(values, outvalues, row)
+                                ctx.ittotal += len(ctx.stackrows)
+                            else:
+                                for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
+                                    ctx.pro(values, outvalues, row, alfa)
+                                    ctx.solve(values, outvalues, row, alfa)
+                                    ctx.epi(values, outvalues, row, alfa)
+                                    ctx.ittotal += 1
+                            break
+                        except Exception:
+                            if last_step is None or backoff == 7:
+                                raise
+                            last_step = 0.5 * last_step
+                            values[rowidx, colidx_endo] = last_base - last_step
+                            before = values[rowidx, colidx_endo]
+                            if not silent:
+                                print("Evaluation failed at the stacked Newton "
+                                      "iterate, halving the step")
                 with m.timer("extract new solution", timeit):
                     eq_after = outvalues[rowidx, colidx]        # calculated equations
                     y_implied = outvalues[rowidx, colidx_endo]  # calculated unknowns
@@ -2062,6 +2418,7 @@ class NewtonStackSolver(SolverBase):
                 with m.timer("Update solution", timeit):
                     update = ctx.solver(residual)
                     damp = newtonalfa if iteration <= newtonnodamp else 1.0
+                last_base, last_step = before, damp * update
                 values[rowidx, colidx_endo] = before - damp * update
 
                 if ldumpvar:
@@ -2953,7 +3310,14 @@ class Solver_ng_Mixin:
         return Sim1dSolver(self)(databank, *args, **kwargs)
 
     def newton_ng(self, databank=None, *args, **kwargs):
-        """Solve with next-generation per-period Newton (defaults to ``self.basedf``)."""
+        """Solve with next-generation per-period Newton (defaults to ``self.basedf``).
+
+        ``split=1``: graph-based pro/core/epi split of the current-period
+        graph -- Newton only on variables in current-period cycles (plus all
+        ``___RES`` equations); prolog swept before and epilog after each
+        period.  Useful for ``straight=True`` and implicit/hybrid models,
+        where ``coreorder`` is unavailable or blind to the coupling through
+        an implicit equation's declared unknown."""
         if databank is None:
             databank = self.basedf
         return NewtonSolver(self)(databank, *args, **kwargs)
