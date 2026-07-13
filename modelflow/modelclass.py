@@ -6653,7 +6653,9 @@ class Solver_Mixin():
                     # breakpoint()
                    # if we import from a cache, we assume that the dataframe is in the same order
                     if transpile_reset or not hasattr(self, f'pro_{jitname}'):
-                        jitfilename= f'modelsource/{jitname}_jitsolver.py'.replace(' ','_')
+                        # sanitize: the model name can contain characters that
+                        # are illegal in a module name / file path (e.g. 'FRB/US')
+                        jitfilename= f"modelsource/{re.sub(r'[^0-9a-zA-Z_]', '_', jitname)}_jitsolver.py"
                         jitfile = Path(jitfilename)
                         jitfile.parent.mkdir(parents=True, exist_ok=True)
                         if not silent:
@@ -9761,7 +9763,7 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         solver_opts = {
             'sim': {}, 'sim1d': {},
             'newton': newton_opts, 'newtonstack': newton_opts,
-            'newton_fbmin': newton_opts,
+            'newton_fbmin': newton_opts,  'newtonstack_fbmin': newton_opts
         }
 
         endo = sorted(mpak.endogene)
@@ -9811,7 +9813,7 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
 #%%
     with mpak.timer('newton_ng'):     
-       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',nonlin=5,max_iterations=100,ljit=False,jacobian='fd') # simulates the model 
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=0,solver='newton_ng',nonlin=20,max_iterations=100,ljit=True,jacobian='fd') # simulates the model 
     with mpak.timer('newton_ng jit'):     
        result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',max_iterations=100,ljit=True,jacobian='fd') # simulates the model 
     with mpak.timer('sim'):     

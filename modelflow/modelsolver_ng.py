@@ -108,6 +108,7 @@ from functools import partial
 from itertools import chain, zip_longest
 from pathlib import Path
 import importlib
+import re
 import time
 import sys  # noqa: F401  -- referenced by exec'd solver code (sys.exc_info)
 
@@ -807,7 +808,11 @@ class SolverBase:
         code.  ``transpile_reset`` forces the rewrite.  Returns the module
         attributes named in *partnames* as a tuple.
         """
-        jitfile = Path(f"modelsource/{jitname}_jitsolver.py".replace(" ", "_"))
+        # the model name can contain characters that are illegal in a module
+        # name / file path (e.g. 'FRB/US ...' -- '/' would create a spurious
+        # subdirectory and break the package-relative import below)
+        safename = re.sub(r"\W", "_", jitname)
+        jitfile = Path(f"modelsource/{safename}_jitsolver.py")
         jitfile.parent.mkdir(parents=True, exist_ok=True)
         initfile = jitfile.parent / "__init__.py"
         if not initfile.exists():
@@ -1197,7 +1202,12 @@ class NewtonSolver(SolverBase):
             m.ng_newton_diff_implicit = newton_diff(
                 m, forcenum=opt("forcenum", False), df=databank, endovar=endovar,
                 ljit=opt("lnjit", False), nchunk=opt("chunk", 30),
-                onlyendocur=True, silent=silent)
+                ng=opt("diff_ng", 0), onlyendocur=True, silent=silent)
+            # per-period LU ordering; None keeps scipy's default (COLAMD)
+            m.ng_newton_diff_implicit.permc_spec = opt("permc_spec", None)
+            # 'umfpack': one symbolic analysis reused across all periods and
+            # nonlin refreshes (pays off when nonlinear models refactorize often)
+            m.ng_newton_diff_implicit.factorizer = opt("factorizer", None)
             first_per = (ctx.sol_periode[0] if len(ctx.sol_periode)
                          else m.current_per[0])
             m.ng_newton_solver_implicit_first = m.ng_newton_diff_implicit.get_solve1per(
@@ -1529,7 +1539,7 @@ class NewtonFbminSolver(SolverBase):
             m.ng_newton_diff_fbmin = newton_diff(
                 m, forcenum=opt("forcenum", False), df=databank, endovar=endovar,
                 ljit=opt("lnjit", False), nchunk=opt("chunk", 30),
-                onlyendocur=True, silent=silent)
+                ng=opt("diff_ng", 0), onlyendocur=True, silent=silent)
             # no direct fb->fb derivatives at all -> the diff model is an empty
             # model that cannot even be evaluated (don't touch it); the Jacobian
             # is exactly -I and each inner update is a plain fixed-point step
@@ -1808,11 +1818,30 @@ class NewtonStackSolver(SolverBase):
         silent = opt("silent", self.DEFAULT_SILENT)
         timeit = opt("timeit", False)
 
-        if not hasattr(m, "ng_newton_diff_stack"):
+        # stacked pro/core/epi split (``split=1``): Newton only on the core,
+        # prolog/epilog solved exactly by stacked sweeps -- see _prepare_split
+        split = bool(opt("split", False))
+        self.pro_pairs, self.epi_pairs = [], []
+        if split:
+            self._prepare_split(ctx)
+
+        # the cached diff object is shared with newtonstack_fbmin_ng, so it is
+        # tagged with what it was built for ('full' or the core equation list);
+        # a mismatch rebuilds it and drops everything derived from it
+        diff_key = tuple(m.ng_stack_split_struct["core"]) if split else "full"
+        if (not hasattr(m, "ng_newton_diff_stack")
+                or getattr(m, "ng_newton_diff_stack_key", None) != diff_key):
             m.ng_newton_diff_stack = newton_diff(
                 m, forcenum=opt("forcenum", True), df=databank,
-                ljit=opt("nljit", 0), nchunk=opt("nchunk", None),
-                timeit=timeit, silent=silent)
+                endovar=(m.ng_stack_split_struct["core"] if split else None),
+                ljit=opt("nljit", 0),
+                nchunk=opt("nchunk", opt("chunk", 30) if opt("nljit", 0) else None),
+                ng=opt("diff_ng", 0), timeit=timeit, silent=silent)
+            m.ng_newton_diff_stack_key = diff_key
+            for attr in ("ng_stacksolver", "ng_getstacksolver",
+                         "ng_old_stack_periode"):
+                if hasattr(m, attr):
+                    delattr(m, attr)
 
         # mask: which equation rows are residual (…___RES) form
         is_residual_eq = np.array(
@@ -1820,20 +1849,30 @@ class NewtonStackSolver(SolverBase):
             dtype=bool)
         ctx.is_residual_eq_stacked = np.tile(is_residual_eq, len(ctx.sol_periode))
 
+        m.ng_newton_diff_stack.timeit = timeit
+        # ordering of the stacked LU; get_solvestacked defaults to 'NATURAL'
+        # (band-preserving) when unset
+        m.ng_newton_diff_stack.permc_spec = opt("permc_spec", None)
+        m.ng_newton_diff_stack.factorizer = opt("factorizer", None)
+        m.ng_stackbuildtime = 0.0
         if not hasattr(m, "ng_stacksolver"):
             if not silent:
                 print("Calculating new derivatives and create new stacked Newton solver")
             m.ng_getstacksolver = m.ng_newton_diff_stack.get_solvestacked
             ctx.diffcount += 1
+            buildstart = time.time()
             m.ng_stacksolver = m.ng_getstacksolver(
                 databank, ctx.is_residual_eq_stacked)
+            m.ng_stackbuildtime = time.time() - buildstart
             m.ng_old_stack_periode = ctx.sol_periode.copy()
         elif opt("newton_reset", False) or not all(
                 m.ng_old_stack_periode[[0, -1]] == ctx.sol_periode[[0, -1]]):
             print("Creating new stacked Newton solver")
             ctx.diffcount += 1
+            buildstart = time.time()
             m.ng_stacksolver = m.ng_getstacksolver(
                 databank, ctx.is_residual_eq_stacked)
+            m.ng_stackbuildtime = time.time() - buildstart
             m.ng_old_stack_periode = ctx.sol_periode.copy()
 
         ctx.solver = m.ng_stacksolver
@@ -1841,7 +1880,6 @@ class NewtonStackSolver(SolverBase):
                           for c in m.ng_newton_diff_stack.endovar]
         ctx.newton_col_endo = [databank.columns.get_loc(c)
                                for c in m.ng_newton_diff_stack.declared_endo_list]
-        m.ng_newton_diff_stack.timeit = timeit
 
         ctx.stackrows = [databank.index.get_loc(p) for p in ctx.sol_periode]
         ctx.stackrowindex = np.array(
@@ -1850,6 +1888,111 @@ class NewtonStackSolver(SolverBase):
             [ctx.newton_col for r in ctx.stackrows]).flatten()          # equations
         ctx.stackcolindex_endo = np.array(
             [ctx.newton_col_endo for r in ctx.stackrows]).flatten()     # unknowns
+
+    def _prepare_split(self, ctx):
+        """Stacked pro/core/epi split (option ``split=1``).
+
+        The per-period prolog/core/epilog decomposition lifted to the stacked
+        graph: *core* variables take part in some cycle of the collapsed
+        (variable-level) dependency graph -- or are ``___RES`` equations --
+        and become the only stacked Newton unknowns; *prolog* variables never
+        depend on the core at any lag or lead and are solved exactly by one
+        stacked topological sweep before Newton; *epilog* (reporting)
+        variables -- the rest, which never feed back into the core -- are
+        swept once after convergence.  Conservative at the collapsed level: a
+        cycle whose lags sum to a nonzero value is not a true stacked cycle,
+        but its members still go to the core -- the split can only be too
+        small, never wrong.
+        """
+        m, databank = ctx.model, ctx.databank
+        opt = lambda n, d: self._opt(ctx, n, d)
+        silent = opt("silent", self.DEFAULT_SILENT)
+        per = ctx.sol_periode
+
+        # purely structural: depends on the equations and the solve span, not
+        # on data -- deliberately NOT invalidated by newton_reset (that only
+        # refreshes the Jacobian values via the solver rebuild)
+        struct_stale = (not hasattr(m, "ng_stack_split_struct")
+                        or m.ng_stack_split_struct["first"] != per[0]
+                        or m.ng_stack_split_struct["last"] != per[-1]
+                        or m.ng_stack_split_struct["n_per"] != len(per))
+        if struct_stale:
+            if not silent:
+                print("Building the stacked pro/core/epi split")
+            m.ng_stack_split_struct = self._build_split(ctx)
+        struct = m.ng_stack_split_struct
+        if not silent and struct_stale:
+            print(f"Stacked split: {len(struct['core']):,} core / "
+                  f"{len(struct['pro']):,} prolog / "
+                  f"{len(struct['epi']):,} epilog variables")
+
+        # per-equation evaluators for the sweeps (cached on the model by makelos)
+        eqdict = self.makelos(
+            "stackeq", databank, newdata=ctx.newdata,
+            transpile_reset=opt("transpile_reset", False), silent=silent)
+        rowof = [databank.index.get_loc(p) for p in per]
+        self.pro_pairs = [(eqdict[v], rowof[t]) for v, t in struct["pro_nodes"]]
+        self.epi_pairs = [(eqdict[v], rowof[t]) for v, t in struct["epi_nodes"]]
+
+    def _build_split(self, ctx):
+        """Compute the pro/core/epi variable sets on the collapsed dependency
+        graph and the stacked topological orders (variable name, period index)
+        of the pro and epi nodes.  Only the structural differentiation of the
+        full model is used -- the derivatives are never evaluated."""
+        m, databank = ctx.model, ctx.databank
+        T = len(ctx.sol_periode)
+
+        fulldiff = newton_diff(m, forcenum=True, df=databank, silent=True)
+
+        def varlag(s):
+            if "(" in s:
+                name, lag = s.split("(", 1)
+                return name, int(lag[:-1])
+            return s, 0
+
+        endo = m.endogene
+        eqname = lambda x: x + "___RES" if x + "___RES" in endo else x
+        # (dependency equation, equation, lag): eq depends on dep's unknown at lag
+        cedges = {(eqname(varlag(rhs)[0]), v, varlag(rhs)[1])
+                  for v, deps in fulldiff.diffendocur.items() for rhs in deps}
+
+        # collapsed variable-level graph; a self-edge with lag != 0 is a
+        # recursive chain across periods, not simultaneity -- leave it out so
+        # cumulating reporting variables stay sweepable
+        cg = nx.DiGraph()
+        cg.add_nodes_from(fulldiff.endovar)
+        cg.add_edges_from((a, b) for a, b, l in cedges if a != b or l == 0)
+
+        core = {v for v in fulldiff.endovar if v.endswith("___RES")}
+        for scc in nx.strongly_connected_components(cg):
+            if len(scc) > 1:
+                core |= scc
+        core |= {v for v in cg if cg.has_edge(v, v)}   # own current value
+
+        desc = (set().union(*(nx.descendants(cg, v) for v in core))
+                if core else set())
+        epi_vars = [v for v in fulldiff.endovar if v not in core and v in desc]
+        pro_vars = [v for v in fulldiff.endovar
+                    if v not in core and v not in desc]
+
+        def node_order(vars_):
+            """Stacked topological order of (var, t) nodes over *vars_* --
+            acyclic by construction (any collapsed cycle went to the core)."""
+            vset = set(vars_)
+            g = nx.DiGraph()
+            g.add_nodes_from((v, t) for v in vars_ for t in range(T))
+            g.add_edges_from(((a, t + l), (b, t))
+                             for a, b, l in cedges
+                             if a in vset and b in vset
+                             for t in range(T) if 0 <= t + l < T)
+            return list(nx.topological_sort(g))
+
+        return {"first": ctx.sol_periode[0], "last": ctx.sol_periode[-1],
+                "n_per": T,
+                "core": [v for v in fulldiff.endovar if v in core],
+                "pro": pro_vars, "epi": epi_vars,
+                "pro_nodes": node_order(pro_vars),
+                "epi_nodes": node_order(epi_vars)}
 
     def iterate(self, ctx):
         """Stacked Newton over the whole span (relative-change stop). The equation
@@ -1875,6 +2018,13 @@ class NewtonStackSolver(SolverBase):
         colidx = ctx.stackcolindex
         colidx_endo = ctx.stackcolindex_endo
         resmask = ctx.is_residual_eq_stacked
+
+        # split mode: prolog variables never depend on the core -- one exact
+        # stacked sweep fixes them for the whole solve
+        if self.pro_pairs:
+            with m.timer("prolog sweep (stacked)", timeit):
+                for func, row in self.pro_pairs:
+                    func(values, values, row)
 
         residual = None
         for iteration in range(max_iterations):
@@ -1927,6 +2077,13 @@ class NewtonStackSolver(SolverBase):
                     break
         ctx.iteration = iteration
 
+        # split mode: epilog (reporting) variables never feed back into the
+        # core -- one exact stacked sweep after convergence
+        if self.epi_pairs:
+            with m.timer("epilog sweep (stacked)", timeit):
+                for func, row in self.epi_pairs:
+                    func(values, values, row)
+
         # record the equation residual F(y)-y per period at the last iteration (opt-in)
         if keep_residual and residual is not None:
             n_endovar = len(ctx.newton_col)
@@ -1953,6 +2110,7 @@ class NewtonStackSolver(SolverBase):
             f'Setup time (seconds)                       :{m.setuptime:>15,.4f}',
             f'Total model evaluations                    :{ctx.ittotal:>15,}',
             f'Number of solver update                    :{ctx.diffcount:>15,}',
+            f'Jacobian build time (seconds)              :{getattr(m, "ng_stackbuildtime", 0.0):>15,.4f}',
             f'Simulation time (seconds)                  :{m.simtime:>15,.4f}',
             f'Floating point operations in model         : {numberfloats:>15,}',
             f'Floating point operations in jacobi model  : {diff_numberfloats:>15,}',
@@ -2047,6 +2205,10 @@ class NewtonStackFbminSolver(SolverBase):
     solvename = "stackeq"
     needs_outvalues = True
     DEFAULT_JACOBIAN = "stack"
+    #: SCCs larger than this use the collapsed variable-level feedback set
+    #: instead of the cycle-by-cycle FVS heuristic (which is O(n_fb * edges)
+    #: and effectively hangs on the giant SCC of a forward-looking model)
+    LARGE_SCC_COLLAPSE = 1000
 
     def conv_order(self, ctx):
         """Convergence/dump order: declared (base) endogenous names of the
@@ -2082,12 +2244,24 @@ class NewtonStackFbminSolver(SolverBase):
                 f"newtonstack_fbmin: unknown jacobian option {jac_mode!r} "
                 "(expected 'stack', 'fd' or 'gauss')")
 
-        # same differentiation object as the plain stacked solver (shared cache)
-        if not hasattr(m, "ng_newton_diff_stack"):
+        # same differentiation object as the plain stacked solver (shared
+        # cache) -- but this solver needs the FULL model: a core-restricted
+        # diff left behind by newtonstack_ng(split=1) would silently poison
+        # the stacked graph and the Schur complement, so the cache is keyed
+        if (not hasattr(m, "ng_newton_diff_stack")
+                or getattr(m, "ng_newton_diff_stack_key", None) != "full"):
             m.ng_newton_diff_stack = newton_diff(
                 m, forcenum=opt("forcenum", True), df=databank,
-                ljit=opt("nljit", 0), nchunk=opt("nchunk", None),
-                timeit=timeit, silent=silent)
+                ljit=opt("nljit", 0),
+                nchunk=opt("nchunk", opt("chunk", 30) if opt("nljit", 0) else None),
+                ng=opt("diff_ng", 0), timeit=timeit, silent=silent)
+            m.ng_newton_diff_stack_key = "full"
+            # everything derived from a differently-restricted diff is stale
+            for attr in ("ng_stackfbmin_struct", "ng_stackfbmin_solver",
+                         "ng_stacksolver", "ng_getstacksolver",
+                         "ng_old_stack_periode"):
+                if hasattr(m, attr):
+                    delattr(m, attr)
         diff = m.ng_newton_diff_stack
         diff.timeit = timeit
         per = ctx.sol_periode
@@ -2102,6 +2276,10 @@ class NewtonStackFbminSolver(SolverBase):
                 print("Building the stacked dependency graph and its "
                       "minimal feedback set")
             m.ng_stackfbmin_struct = self._build_structure(ctx, diff)
+            if not silent:
+                s = m.ng_stackfbmin_struct
+                print(f"Stacked decomposition: {len(s['fb_nodes']):,} feedback "
+                      f"unknowns + {len(s['dag_nodes']):,} sweep nodes")
         struct = m.ng_stackfbmin_struct
         nvar = struct["nvar"]
         fb, dag = struct["fb_nodes"], struct["dag_nodes"]
@@ -2186,6 +2364,7 @@ class NewtonStackFbminSolver(SolverBase):
         """
         m = ctx.model
         timeit = self._opt(ctx, "timeit", False)
+        silent = self._opt(ctx, "silent", self.DEFAULT_SILENT)
         per = ctx.sol_periode
 
         with m.timer("build stacked dependency graph", timeit):
@@ -2223,7 +2402,32 @@ class NewtonStackFbminSolver(SolverBase):
                         order.append(n)
                 else:
                     sub = graph.subgraph(members).copy()
-                    sfb, sorder = m.get_minimal_feedback_set(sub)
+                    if len(members) > self.LARGE_SCC_COLLAPSE:
+                        # Giant SCC -- typical for forward-looking models,
+                        # where the simultaneity spans most (period, variable)
+                        # nodes.  The cycle-by-cycle FVS heuristic is
+                        # O(n_fb * edges) there and effectively hangs.
+                        # Instead find a feedback *variable* set S on the
+                        # collapsed variable-level graph (nvar nodes): any
+                        # stacked cycle projects to a closed walk of the
+                        # collapsed graph, so removing (t, S) for all t breaks
+                        # every stacked cycle.  Slightly conservative (a
+                        # collapsed cycle whose lags sum != 0 is not a stacked
+                        # cycle) -- the feedback set can only be too big,
+                        # never wrong.
+                        if not silent:
+                            print(f"Stacked SCC with {len(members):,} nodes: "
+                                  "using the collapsed variable-level "
+                                  "feedback set")
+                        cg = nx.DiGraph()
+                        cg.add_edges_from(
+                            (u % nvar, v % nvar) for u, v in sub.edges())
+                        sfb_vars = set(m.get_minimal_feedback_set(cg)[0])
+                        sfb = [n for n in members if n % nvar in sfb_vars]
+                        sub.remove_nodes_from(sfb)
+                        sorder = list(nx.topological_sort(sub))
+                    else:
+                        sfb, sorder = m.get_minimal_feedback_set(sub)
                     fb.extend(sfb)
                     order.extend(sorder)
 
@@ -2643,6 +2847,50 @@ class XgenrSolver(SolverBase):
         return []  # xgenr reports nothing
 
 
+class ResSolver(SolverBase):
+    """One-pass residual evaluation (port of ``res``).
+
+    Every equation is evaluated once per period against the *input* values --
+    no iteration, no convergence test -- and lagged/leaded endogenous
+    variables are read from the input databank, not from previously computed
+    periods.  Used by ``newton_diff`` (option ``ng``) to evaluate the
+    derivatives model; the jit path goes through ``_import_transpiled`` and
+    therefore refreshes a stale transpiled file automatically.
+    """
+
+    solvename = "res"
+    needs_outvalues = True
+
+    def _setup_conv(self, ctx):
+        """No-op: a single evaluation pass has no convergence test."""
+        pass
+
+    def iterate(self, ctx):
+        """Evaluate pro/solve/epi once per period into ``outvalues``; the
+        computed rows are copied back to ``ctx.values`` only after all periods
+        are done, so every period is evaluated against the unchanged input."""
+        m = ctx.model
+        alfa = self._opt(ctx, "alfa", 1.0)
+        np.copyto(ctx.outvalues, ctx.values)
+        rows = [ctx.databank.index.get_loc(p) for p in ctx.sol_periode]
+        for row in rows:
+            m.periode = ctx.databank.index[row]
+            ctx.pro(ctx.values, ctx.outvalues, row, alfa)
+            ctx.solve(ctx.values, ctx.outvalues, row, alfa)
+            ctx.epi(ctx.values, ctx.outvalues, row, alfa)
+            ctx.ittotal += 1
+        ctx.values[rows, :] = ctx.outvalues[rows, :]
+
+    def stats_lines(self, ctx):
+        m = ctx.model
+        numberfloats = m.calculate_freq[-1][1] * ctx.ittotal
+        return [
+            f"Setup time (seconds)                 :{m.setuptime:>15,.2f}",
+            f"Floating point operations            :{numberfloats:>15,}",
+            f"Simulation time (seconds)            :{m.simtime:>15,.2f}",
+        ]
+
+
 # ====================================================================== #
 #  The mixin wired into ``model``                                        #
 # ====================================================================== #
@@ -2657,6 +2905,7 @@ class Solver_ng_Mixin:
 
     NG_SOLVERS = {
         "xgenr": XgenrSolver,
+        "res": ResSolver,
         "sim": GaussSeidelSolver,
         "sim1d": Sim1dSolver,
         "newton": NewtonSolver,
@@ -2683,6 +2932,13 @@ class Solver_ng_Mixin:
         if databank is None:
             databank = self.basedf
         return XgenrSolver(self)(databank, *args, **kwargs)
+
+    def res_ng(self, databank=None, *args, **kwargs):
+        """Evaluate every equation once per period against the input data --
+        the ng port of ``res`` (defaults to ``self.basedf``)."""
+        if databank is None:
+            databank = self.basedf
+        return ResSolver(self)(databank, *args, **kwargs)
 
     def sim_ng(self, databank=None, *args, **kwargs):
         """Solve with next-generation Gauss-Seidel (defaults to ``self.basedf``)."""
@@ -2712,7 +2968,13 @@ class Solver_ng_Mixin:
         return NewtonFbminSolver(self)(databank, *args, **kwargs)
 
     def newtonstack_ng(self, databank=None, *args, **kwargs):
-        """Solve with next-generation stacked Newton (defaults to ``self.basedf``)."""
+        """Solve with next-generation stacked Newton (defaults to ``self.basedf``).
+
+        ``split=1``: pro/core/epi decomposition at the stacked level -- Newton
+        (and the stacked LU) only on the variables involved in collapsed-graph
+        cycles; upstream (prolog) variables swept exactly once before, pure
+        reporting (epilog) variables once after convergence.  Analogous to the
+        per-period prolog/core/epilog split of the one-period solvers."""
         if databank is None:
             databank = self.basedf
         return NewtonStackSolver(self)(databank, *args, **kwargs)
