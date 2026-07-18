@@ -1,0 +1,5 @@
+{
+  "packageManager": "python",
+  "packageName": "mf_workbench",
+  "uninstallInstructions": "Use pip or conda to uninstall the mf_workbench package"
+}
