@@ -32,7 +32,10 @@ Ported solvers
     * :class:`GaussSeidelSolver`       (``sim``)     -- damped Gauss-Seidel.
     * :class:`Sim1dSolver`             (``sim1d``)    -- Gauss-Seidel on a stuffed
       one-period 1-D array (compile-time offsets, better data locality).
-    * :class:`NewtonSolver`            (``newton``)  -- unified per-period Newton.
+    * :class:`NewtonSolver`            (``newton``)  -- simple per-period Newton
+      on the whole model (one system, absolute-residual convergence).
+    * :class:`NewtonSolverOld`         (``newton_old``) -- the former newton_ng
+      (pro/core/epi split, backtracking, Gauss rescues), kept for comparison.
     * :class:`NewtonFbminSolver`       (``newton_fbmin``) -- per-period Newton
       on the *minimal feedback vertex set* (``m.fblist``); the DAG part of the
       core (``m.daglist``) is evaluated by exact topological sweeps.  Default
@@ -1158,8 +1161,14 @@ class GaussSeidelSolver(SolverBase):
         return lines
 
 
-class NewtonSolver(SolverBase):
-    """Unified per-period Newton (``newton_implicit`` residual/Jacobian + recursive
+class NewtonSolverOld(SolverBase):
+    """The former ``newton_ng`` (kept as ``newton_ng_old`` / ``solver='newton_old'``).
+
+    Accumulated a lot of machinery (pro/core/epi split, per-equation sweep
+    evaluators, backtracking line search, Gauss rescues, stall handling) --
+    superseded by the simple whole-model :class:`NewtonSolver` below.
+
+    Unified per-period Newton (``newton_implicit`` residual/Jacobian + recursive
     block handling from legacy ``newton``).
 
     Handles a mixed system of normalized (``y = F(y,x)``) and residual
@@ -1169,7 +1178,9 @@ class NewtonSolver(SolverBase):
     so normalized rows carry the ``-I`` term.  This is why it converges on a
     normalized model where the un-normalized variant would not.
 
-    Newton solves only the simultaneous **core** (``endovar = coreorder``).  The
+    Newton solves only the simultaneous **core** (``endovar = coreorder`` on a
+    normalized model; the full ``solveorder`` otherwise, since superblock cannot
+    see the coupling through an implicit equation's declared unknown).  The
     recursive prolog/epilog blocks are solved by a Gauss-Seidel sweep written back
     to ``values`` (``pro`` before the loop, ``epi`` after) -- exactly as legacy
     ``newton`` does -- so the full solution is produced, not just the core.
@@ -1185,29 +1196,46 @@ class NewtonSolver(SolverBase):
     def prepare(self, ctx):
         """Build (and cache) the per-period Jacobian solver and column indices.
 
-        The differentiation object is built once (or on ``newton_reset``); the
-        first-period factorization is reused across periods unless ``nonlin``
-        triggers a refresh in ``iterate``.
+        The differentiation object is built once (or on ``newton_reset``).
+        Only the first period's Jacobian is factorized here; it is carried
+        forward across periods, and all refreshing is decided by ``nonlin``
+        in ``iterate`` (``nonlin=N``: scheduled every N iterations plus the
+        divergence-triggered refreshes; ``nonlin=-N``: additionally a fresh
+        Jacobian before every period).
         """
         m, databank = ctx.model, ctx.databank
         opt = lambda n, d: self._opt(ctx, n, d)
         silent = opt("silent", self.DEFAULT_SILENT)
 
-        # per-period pro/core/epi split (``split=1``) -- see _prepare_split_1per
+        # per-period pro/core/epi split (``split=1``) -- see _prepare_split_1per.
+        # The split requires the model's own superblock decomposition: for
+        # implicit/hybrid models ``coreorder`` is blind to the coupling through
+        # an implicit equation's declared unknown (ENDO=), and a fully
+        # recursive model has no core -- force split=0 and solve the full
+        # system, which handles those cases correctly and keeps this path simple.
         split = bool(opt("split", False))
+        if split and not (m.normalized and len(m.coreorder)):
+            if not silent:
+                print("newton_ng: split=1 needs a normalized model with a "
+                      "simultaneous core -- solving with split=0")
+            split = False
         self.pro_funcs, self.epi_funcs, self.core_funcs = [], [], []
         self.core_sweep = []
         if split:
             self._prepare_split_1per(ctx)
 
-        diff_key = tuple(m.ng_newton_split_struct["core"]) if split else "std"
+        diff_key = tuple(m.coreorder) if split else "std"
         if (not hasattr(m, "ng_newton_diff_implicit")
                 or opt("newton_reset", False)
                 or getattr(m, "ng_newton_diff_implicit_key", None) != diff_key):
             if split:
-                endovar = m.ng_newton_split_struct["core"]
+                endovar = list(m.coreorder)
             else:
-                endovar = (m.coreorder if getattr(m, "coreorder", None) and len(m.coreorder)
+                # coreorder only for normalized models: superblock cannot see
+                # a dependency on an implicit equation's declared unknown, so
+                # on a hybrid model the ___RES equations land in the epilog
+                # and their unknowns would never be moved by Newton
+                endovar = (m.coreorder if m.normalized and len(m.coreorder)
                            else m.solveorder)
             m.ng_newton_diff_implicit_key = diff_key
             # unknowns (columns): base names with any ___RES suffix stripped
@@ -1217,23 +1245,37 @@ class NewtonSolver(SolverBase):
                 m, forcenum=opt("forcenum", False), df=databank, endovar=endovar,
                 ljit=opt("lnjit", False), nchunk=opt("chunk", 30),
                 ng=opt("diff_ng", 0), onlyendocur=True, silent=silent)
-            # per-period LU ordering; None keeps scipy's default (COLAMD)
-            m.ng_newton_diff_implicit.permc_spec = opt("permc_spec", None)
-            # 'umfpack': one symbolic analysis reused across all periods and
-            # nonlin refreshes (pays off when nonlinear models refactorize often)
-            m.ng_newton_diff_implicit.factorizer = opt("factorizer", None)
             m.ng_newton_solver_implicit_dic = None    # solvers are stale too
 
-        # one Jacobian per period, like the legacy newton: on trending models
-        # (FRB/US nominal levels roughly double over 16 years) a single
-        # first-period factorization degrades from quadratic to slow linear
-        # convergence and eventually diverges late in the span
-        if (getattr(m, "ng_newton_solver_implicit_dic", None) is None
-                or any(p not in m.ng_newton_solver_implicit_dic
-                       for p in ctx.sol_periode)):
-            m.ng_newton_solver_implicit_dic = m.ng_newton_diff_implicit.get_solve1per(
-                df=databank, periode=ctx.sol_periode,
-                is_residual_eq=m.ng_is_residual_eq)
+        # per-period LU ordering (None keeps scipy's default, COLAMD) and
+        # factorization engine ('umfpack': one symbolic analysis reused across
+        # all periods and nonlin refreshes).  They only affect the
+        # factorizations, not the diff object, so they are applied on every
+        # call -- and the cached factorizations are dropped when they change,
+        # otherwise a later call with a new permc_spec/factorizer would
+        # silently reuse solvers built with the old ones.
+        factor_key = (opt("permc_spec", None), opt("factorizer", None))
+        (m.ng_newton_diff_implicit.permc_spec,
+         m.ng_newton_diff_implicit.factorizer) = factor_key
+        if getattr(m, "ng_newton_factor_key", None) != factor_key:
+            m.ng_newton_factor_key = factor_key
+            m.ng_newton_solver_implicit_dic = None
+
+        # one Jacobian, evaluated and factorized at the first period of the
+        # span -- refreshing is ``nonlin``'s job alone: scheduled and
+        # divergence-triggered refreshes in ``iterate`` replace the dict entry
+        # for the period being solved, and ``nonlin=-N`` refreshes before
+        # every period.  (Building the whole span up front -- one
+        # factorization per period -- guarded against trending-model
+        # degradation, e.g. FRB/US nominal levels doubling over 16 years, but
+        # the refresh machinery now repairs exactly the periods that need it.)
+        if getattr(m, "ng_newton_solver_implicit_dic", None) is None:
+            m.ng_newton_solver_implicit_dic = {}
+        if ctx.sol_periode[0] not in m.ng_newton_solver_implicit_dic:
+            m.ng_newton_solver_implicit_dic.update(
+                m.ng_newton_diff_implicit.get_solve1per(
+                    df=databank, periode=[ctx.sol_periode[0]],
+                    is_residual_eq=m.ng_is_residual_eq))
 
         ctx.solverdic = m.ng_newton_solver_implicit_dic
         ctx.is_residual_eq = m.ng_is_residual_eq
@@ -1247,99 +1289,41 @@ class NewtonSolver(SolverBase):
     def _prepare_split_1per(self, ctx):
         """Per-period pro/core/epi split (option ``split=1``).
 
-        Same idea as the stacked split of :class:`NewtonStackSolver`, on the
-        *current-period* dependency graph (lags are predetermined here, so
-        only lag-0 dependencies matter and no mixed lag/lead case exists).
-        Newton (and the per-period LU) runs on the variables in
-        current-period cycles plus every ``___RES`` equation -- the declared
-        unknown of an implicit equation is moved only by Newton, and a
-        dependency on it maps to its residual equation, which the model-level
-        ``coreorder`` decomposition cannot see.  Prolog variables are swept
-        before, epilog (reporting) variables after, each period's Newton.
-        Mostly useful for ``straight=True`` and implicit/hybrid models, where
-        ``coreorder`` is unavailable or blind to the implicit coupling.
+        Newton (and the per-period LU) runs only on the model's simultaneous
+        core; prolog variables are swept before, epilog (reporting) variables
+        after, each period's Newton.  The split is the model's own superblock
+        decomposition (``coreorder`` / ``preorder`` / ``epiorder``) -- the
+        same split ``sim`` runs on.  ``prepare`` guarantees the model is
+        normalized with a non-empty core before calling this (``split=0`` is
+        forced otherwise), so no ``___RES`` equation ever enters the split.
         """
         m, databank = ctx.model, ctx.databank
         opt = lambda n, d: self._opt(ctx, n, d)
         silent = opt("silent", self.DEFAULT_SILENT)
 
-        # purely structural (current-period graph only -- not even span
-        # dependent); rebuilt only when absent
-        if not hasattr(m, "ng_newton_split_struct"):
-            if (m.normalized and getattr(m, "coreorder", None)
-                    and len(m.coreorder)):
-                # use the model's own superblock decomposition -- the same
-                # split `sim` runs on, proven, and built from the model's
-                # term-level graph.  The graph-based classification below is
-                # the fallback for models where superblock is unavailable
-                # (straight=True) or blind to the coupling through an
-                # implicit equation's declared unknown (ENDO=).
-                m.ng_newton_split_struct = {
-                    "core": list(m.coreorder),
-                    "pro": list(m.preorder),
-                    "epi": list(m.epiorder)}
-        if not hasattr(m, "ng_newton_split_struct"):
-            # fallback classification: current-period edges scanned DIRECTLY
-            # from the equation terms (the same source superblock builds its
-            # graph from -- deliberately not via modeldiff/derivatives), plus
-            # the ENDO= identification: a dependency on an implicit
-            # equation's declared unknown X is an edge from the equation
-            # X___RES, which is what Newton moves X with
-            endo = m.endogene
-            eqname = lambda x: x + "___RES" if x + "___RES" in endo else x
-            endovar = sorted(endo)
-            cg = nx.DiGraph()
-            cg.add_nodes_from(endovar)
-            for v in endovar:
-                av = m.allvar[v]
-                for t in av["terms"][av["assigpos"]:-1]:
-                    if (t.var and t.lag == ""
-                            and (t.var in endo or t.var + "___RES" in endo)):
-                        cg.add_edge(eqname(t.var), v)
+        if not silent:
+            print(f"Per-period split: {len(m.coreorder):,} core / "
+                  f"{len(m.preorder):,} prolog / "
+                  f"{len(m.epiorder):,} epilog variables")
 
-            core = {v for v in endovar if v.endswith("___RES")}
-            for scc in nx.strongly_connected_components(cg):
-                if len(scc) > 1:
-                    core |= scc
-            core |= {v for v in cg if cg.has_edge(v, v)}   # own current value
-
-            desc = (set().union(*(nx.descendants(cg, v) for v in core))
-                    if core else set())
-            epi = [v for v in endovar if v not in core and v in desc]
-            pro = [v for v in endovar if v not in core and v not in desc]
-            m.ng_newton_split_struct = {
-                "core": [v for v in endovar if v in core],
-                "pro": list(nx.topological_sort(cg.subgraph(pro))),
-                "epi": list(nx.topological_sort(cg.subgraph(epi)))}
-            if not silent:
-                s = m.ng_newton_split_struct
-                print(f"Per-period split: {len(s['core']):,} core / "
-                      f"{len(s['pro']):,} prolog / "
-                      f"{len(s['epi']):,} epilog variables")
-
-        struct = m.ng_newton_split_struct
         # per-equation evaluators for the sweeps (cached on the model by makelos)
         eqdict = self.makelos(
             "stackeq", databank, newdata=ctx.newdata,
             transpile_reset=opt("transpile_reset", False), silent=silent)
-        self.pro_funcs = [eqdict[v] for v in struct["pro"]]
-        self.epi_funcs = [eqdict[v] for v in struct["epi"]]
+        self.pro_funcs = [eqdict[v] for v in m.preorder]
+        self.epi_funcs = [eqdict[v] for v in m.epiorder]
         # the Newton residual is evaluated with the core equations only:
         # evaluating prolog/epilog equations at intermediate Newton states is
         # useless (their residuals are never read) and dangerous -- a
         # reporting equation like 400*(LOG(x)-LOG(x(-1))) explodes when a
         # core variable transiently passes through negative territory
-        self.core_funcs = [eqdict[v] for v in struct["core"]]
+        self.core_funcs = [eqdict[v] for v in m.coreorder]
         # core in *solve order*: used for damped Gauss-Seidel sweeps (warm-up
         # and rescue) -- sequenced, damped in-place updates walk a far start
-        # into Newton's basin the same way `sim` survives it.  Each entry:
-        # (eq function, eq column, is ___RES, declared-unknown column) -- an
-        # implicit equation cannot be assigned by a sweep, its unknown is
-        # moved by a damped scalar secant step instead (Gauss-Seidel-Newton)
-        coreset = set(struct["core"])
+        # into Newton's basin the same way `sim` survives it
+        coreset = set(m.coreorder)
         gl = databank.columns.get_loc
-        self.core_sweep = [(eqdict[v], gl(v), v.endswith("___RES"),
-                            gl(v[:-6]) if v.endswith("___RES") else -1)
+        self.core_sweep = [(eqdict[v], gl(v))
                            for v in m.solveorder if v in coreset]
 
     def iterate(self, ctx):
@@ -1358,7 +1342,18 @@ class NewtonSolver(SolverBase):
         max_iterations = opt("max_iterations", 20)
         absconv = opt("absconv", 0.01)
         relconv = opt("relconv", DEFAULT_relconv)
+        # residual tolerance (max |residual|), like legacy newton's
+        # newton_absconv: converged requires the equations to actually hold,
+        # not just the steps to be small
+        newton_absconv = opt("newton_absconv", 0.001)
         nonlin = opt("nonlin", False)
+        # nonlin decides ALL Jacobian refreshing (prepare only factorizes the
+        # first period).  nonlin=N: carry the factorization forward, refresh
+        # every N iterations plus the divergence-triggered refreshes.
+        # nonlin=-N: additionally refresh before every period (at the swept /
+        # warmed-up state), then every N iterations within it.
+        per_refresh = bool(nonlin) and nonlin < 0
+        nonlin = abs(int(nonlin)) if nonlin else nonlin
         timeit = opt("timeit", False)
         newtonalfa = opt("newtonalfa", 1.0)
         newtonnodamp = opt("newtonnodamp", 0)
@@ -1375,32 +1370,23 @@ class NewtonSolver(SolverBase):
 
         def damped_sweeps(row, n):
             """Damped in-place Gauss-Seidel sweeps over the core in solve
-            order -- the update rule that makes `sim` robust on far starts.
-            Normalized equations: v <- v + alfa*(F(.)-v).  Implicit (___RES)
-            equations cannot be assigned by a sweep: their declared unknown
-            takes a damped scalar secant step on the residual instead
-            (nonlinear Gauss-Seidel-Newton), so implicit unknowns walk too."""
+            order -- the update rule that makes `sim` robust on far starts:
+            v <- v + alfa*(F(.)-v).  Split mode is normalized-only, so every
+            core equation can be assigned by a sweep."""
             for _ in range(n):
-                for f, c, is_res, ucol in self.core_sweep:
-                    if is_res:
-                        f(values, outvalues, row)
-                        g0 = outvalues[row, c]
-                        x0 = values[row, ucol]
-                        delta = 1e-5 * max(abs(x0), 1.0)
-                        values[row, ucol] = x0 + delta
-                        f(values, outvalues, row)
-                        slope = (outvalues[row, c] - g0) / delta
-                        values[row, ucol] = (x0 - alfa * g0 / slope
-                                             if abs(slope) > 1e-12 else x0)
-                    else:
-                        old = values[row, c]
-                        f(values, values, row)
-                        values[row, c] = old + alfa * (values[row, c] - old)
+                for f, c in self.core_sweep:
+                    old = values[row, c]
+                    f(values, values, row)
+                    values[row, c] = old + alfa * (values[row, c] - old)
 
         # No Fair-Taylor outer loop: Newton solves each period directly.
+        solver = None
         for m.periode in ctx.sol_periode:
             row = ctx.databank.index.get_loc(m.periode)
-            solver = ctx.solverdic[m.periode]      # this period's factorization
+            # this period's own (previously refreshed) factorization if one
+            # exists, else the most recent one carried forward -- prepare
+            # guarantees the first period of the span is in the dict
+            solver = ctx.solverdic.get(m.periode, solver)
             if init and row > 0:
                 for c in ctx.endoplace:
                     values[row, c] = values[row - 1, c]
@@ -1413,8 +1399,7 @@ class NewtonSolver(SolverBase):
             # (out == values), so the core is solved against correct predetermined
             # values and the recursive block is actually solved (unlike bare
             # newton_implicit, which leaves it at its input).  In split mode
-            # the graph-based prolog (a superset of the model's) is swept
-            # instead, in its own topological order.
+            # the prolog is swept with the per-equation functions instead.
             if self.pro_funcs:
                 for func in self.pro_funcs:
                     func(values, values, row)
@@ -1429,6 +1414,20 @@ class NewtonSolver(SolverBase):
             if self.core_sweep and presweep:
                 damped_sweeps(row, presweep)
 
+            # nonlin=-N: a fresh Jacobian for every period, evaluated at the
+            # current state (prolog swept, warm-up applied) -- tighter than
+            # the old whole-span build in prepare, which evaluated every
+            # period's Jacobian at the input databank values
+            if per_refresh:
+                with m.timer(f"Updating Jacobian {m.periode}", timeit):
+                    df_now = pd.DataFrame(
+                        values, index=ctx.databank.index,
+                        columns=ctx.databank.columns)
+                    solver = m.ng_newton_diff_implicit.get_solve1per(
+                        df=df_now, periode=[m.periode],
+                        is_residual_eq=resmask)[m.periode]
+                    ctx.solverdic[m.periode] = solver
+
             newton_conv = np.inf
             residual = None
             converged = False
@@ -1436,6 +1435,7 @@ class NewtonSolver(SolverBase):
             tried_sweep = tried_init = False   # iteration-0 fallbacks used
             prev_conv = np.inf             # divergence-triggered refresh
             last_refresh = -10
+            stalls = 0                     # consecutive reverted iterations
             for iteration in range(max_iterations):
                 with m.timer(f"sim per:{m.periode} it:{iteration}", timeit):
                     # evaluate the model at current y -> outvalues.  In split
@@ -1450,6 +1450,7 @@ class NewtonSolver(SolverBase):
                     # damping with an improving, feasible residual.
                     backtracks = 0
                     rescued = False
+                    reverted = False
                     for backoff in range(9):
                         try:
                             if self.core_funcs:
@@ -1525,26 +1526,43 @@ class NewtonSolver(SolverBase):
                         residual[~resmask] = y_implied[~resmask] - y_old[~resmask]
                         newton_conv = np.max(np.abs(residual))
 
-                        if (last_step is not None and backoff < 7
+                        if (last_step is not None and backoff < 8
                                 and newton_conv > prev_conv):
-                            # the previous step made the residual worse:
-                            # backtrack (halve it) and re-evaluate
-                            backtracks += 1
-                            last_step = 0.5 * last_step
-                            values[row, newton_col_unknown] = last_y - last_step
+                            if backoff < 7:
+                                # the previous step made the residual worse:
+                                # backtrack (halve it) and re-evaluate
+                                backtracks += 1
+                                last_step = 0.5 * last_step
+                                values[row, newton_col_unknown] = last_y - last_step
+                                if not silent:
+                                    print(f"{m.periode}: residual increased, "
+                                          "backtracking the Newton step")
+                                continue
+                            # seven halvings and still worse: no improving
+                            # step exists along this direction -- return to
+                            # the best known point instead of accepting a
+                            # worse one.  The backtracks count then triggers
+                            # a Jacobian refresh (when nonlin allows) and the
+                            # stall counter below stops the period when even
+                            # a refreshed Jacobian yields no improving step.
+                            reverted = True
+                            values[row, newton_col_unknown] = last_y
                             if not silent:
-                                print(f"{m.periode}: residual increased, "
-                                      "backtracking the Newton step")
+                                print(f"{m.periode}: no improving step found, "
+                                      "back to the best point")
                             continue
                         break
 
                     # Gauss rescue: no improving damped Newton step exists
                     # from here (stale Jacobian and/or outside the basin) --
                     # walk with damped sequenced sweeps instead, then force a
-                    # Jacobian refresh at the new state
+                    # Jacobian refresh at the new state.  In split mode a
+                    # revert lands here (walking from the best point); the
+                    # rescue then supersedes the stall accounting below.
                     force_refresh = rescued
                     if (self.core_sweep and last_step is not None
-                            and newton_conv > prev_conv):
+                            and (newton_conv > prev_conv or reverted)):
+                        reverted = False
                         with m.timer("Gauss rescue", timeit):
                             damped_sweeps(row, 10)
                             for func in self.core_funcs:
@@ -1570,6 +1588,24 @@ class NewtonSolver(SolverBase):
                         ctx.dumplist.append(
                             [0, m.periode, iteration + 1]
                             + [values[row, p] for p in ctx.dumpplac])
+
+                    # stalled: no improving step even after backtracking to
+                    # 1/128 of the Newton step.  One stall is answered with a
+                    # Jacobian refresh (below, when nonlin allows); a second
+                    # consecutive stall -- or any stall without nonlin --
+                    # means no progress is possible: stop the period honestly
+                    # (converged stays False) instead of grinding to
+                    # max_iterations at the same point.
+                    if reverted:
+                        stalls += 1
+                        if (not nonlin) or stalls >= 2:
+                            if not silent:
+                                print(f"{m.periode}: Newton stalled at max "
+                                      f"residual {newton_conv:,.6f} -- "
+                                      "giving up on this period")
+                            break
+                    else:
+                        stalls = 0
 
                     # scheduled nonlin refresh -- and an *unscheduled* one as
                     # soon as the residual increases: far from the input
@@ -1616,16 +1652,21 @@ class NewtonSolver(SolverBase):
                         outvalues[row, newton_col_residual]
                     ctx.ittotal += 1
 
-                    # same relative-change convergence test as the Gauss solvers
+                    # same relative-change convergence test as the Gauss
+                    # solvers -- AND the equations must actually hold.  The
+                    # step test alone cannot see unknowns below ``absconv``
+                    # (e.g. saturated 0/1 policy switches at ~1e-4): their
+                    # stuck residuals would be silently declared converged.
                     y_new = values[row, newton_col_unknown]
                     if iteration >= first_test:
                         converged, _ = self._relconv(y_old, y_new, absconv, relconv)
+                        converged = converged and newton_conv <= newton_absconv
                         if converged:
                             break
 
             # recursive epilog: one Gauss-Seidel sweep written back to `values`
             # (out == values), now that the core is solved.  Split mode sweeps
-            # the graph-based epilog instead.
+            # the epilog with the per-equation functions instead.
             if self.epi_funcs:
                 for func in self.epi_funcs:
                     func(values, values, row)
@@ -1660,6 +1701,226 @@ class NewtonSolver(SolverBase):
             lines.append(
                 f'Floating point operations per second : {numberfloats/m.simtime:>15,.1f}')
         return lines
+
+
+class NewtonSolver(SolverBase):
+    """Simple per-period Newton on the WHOLE model (based on legacy
+    ``newton_implicit``).
+
+    The model is treated as one system: the unknowns are every endogenous
+    variable (``endovar = solveorder``), no prolog/core/epilog decomposition
+    and no ``split`` option.  This makes normalized (``y = F(y,x)``),
+    implicit (``y___RES = G(y,x)``) and hybrid models one and the same case:
+    the residual is ``F(y)-y`` on normalized rows and ``G(y)`` on residual
+    rows, and the update is ``y <- y - J^{-1}residual``.
+
+    One Jacobian is factorized at the first period of the span and carried
+    forward; ``nonlin`` decides all refreshing (``nonlin=N``: refresh every
+    N iterations within a period; ``nonlin=-N``: additionally a fresh
+    Jacobian before every period).
+
+    Convergence is on the RESIDUAL, per equation row:
+
+    * ``___RES`` rows (implicit equations): absolute, ``|G(y)| <=
+      newton_absconv`` (default 0.001, like legacy newton) -- an implicit
+      residual has no natural variable scale.
+    * normalized rows: relative to the variable's size, ``|F(y)-y| <=
+      relconv * max(|y|, absconv)`` -- the classic ``relconv`` /
+      ``absconv`` (scale floor) semantics of the Gauss solvers, applied to
+      the residual instead of the iteration-to-iteration change.
+
+    A relative-change test on the unknowns is deliberately NOT used: it is
+    blind to unknowns with values below ``absconv`` (saturated 0/1 policy
+    switches at ~1e-4), whose violated equations it silently declared
+    converged on all-implicit models.  Here every equation is tested; a
+    small-valued unknown gets a tight absolute bound, never a pass.
+    """
+
+    solvename = "res"          # residual 2-D evaluator
+    needs_outvalues = True
+
+    def conv_order(self, ctx):
+        """Convergence/dump order: the equation list of the Jacobian object."""
+        return ctx.model.ng_newton_diff.endovar
+
+    def prepare(self, ctx):
+        """Build (and cache) the differentiation object and the first-period
+        factorization; set the column indices used by ``iterate``."""
+        m, databank = ctx.model, ctx.databank
+        opt = lambda n, d: self._opt(ctx, n, d)
+        silent = opt("silent", self.DEFAULT_SILENT)
+
+        if not hasattr(m, "ng_newton_diff") or opt("newton_reset", False):
+            m.ng_newton_diff = newton_diff(
+                m, forcenum=opt("forcenum", False), df=databank,
+                endovar=list(m.solveorder), ljit=opt("lnjit", False),
+                nchunk=opt("chunk", 30), ng=opt("diff_ng", 0),
+                onlyendocur=True, silent=silent)
+            m.ng_newton_is_residual = np.array(
+                [v.endswith("___RES") for v in m.solveorder], dtype=bool)
+            m.ng_newton_solverdic = None       # factorizations are stale too
+
+        # LU ordering / factorization engine: applied every call; cached
+        # factorizations are dropped when they change
+        factor_key = (opt("permc_spec", None), opt("factorizer", None))
+        (m.ng_newton_diff.permc_spec,
+         m.ng_newton_diff.factorizer) = factor_key
+        if getattr(m, "ng_newton_factorkey", None) != factor_key:
+            m.ng_newton_factorkey = factor_key
+            m.ng_newton_solverdic = None
+
+        # one Jacobian at the first period of the span; refreshed periods get
+        # their own dict entries in iterate (kept across calls)
+        if getattr(m, "ng_newton_solverdic", None) is None:
+            m.ng_newton_solverdic = {}
+        if ctx.sol_periode[0] not in m.ng_newton_solverdic:
+            m.ng_newton_solverdic.update(
+                m.ng_newton_diff.get_solve1per(
+                    df=databank, periode=[ctx.sol_periode[0]],
+                    is_residual_eq=m.ng_newton_is_residual))
+
+        ctx.solverdic = m.ng_newton_solverdic
+        ctx.is_residual_eq = m.ng_newton_is_residual
+        gl = databank.columns.get_loc
+        ctx.newton_col = [gl(c) for c in m.ng_newton_diff.endovar]          # eqs
+        ctx.newton_col_endo = [gl(c)
+                               for c in m.ng_newton_diff.declared_endo_list]  # unknowns
+        ctx.newton_col_residual = [gl(c) for c in m.ng_newton_diff.endovar
+                                   if c.endswith("___RES")]
+
+    def iterate(self, ctx):
+        """Per-period Newton on the full model, stopping on the absolute
+        residual.  Evaluation errors (LOG/SQRT domain) propagate -- there is
+        no backtracking or rescue machinery in this solver."""
+        m = ctx.model
+        values, outvalues = ctx.values, ctx.outvalues
+        opt = lambda n, d: self._opt(ctx, n, d)
+
+        silent = opt("silent", self.DEFAULT_SILENT)
+        alfa = opt("alfa", 1.0)
+        init = opt("init", False)
+        max_iterations = opt("max_iterations", 20)
+        # convergence tolerances, applied per equation row -- see the test in
+        # the iteration loop
+        newton_absconv = opt("newton_absconv", 0.001)
+        absconv = opt("absconv", 0.01)
+        relconv = opt("relconv", DEFAULT_relconv)
+        nonlin = opt("nonlin", False)
+        # nonlin decides all Jacobian refreshing; nonlin=-N also refreshes
+        # before every period
+        per_refresh = bool(nonlin) and nonlin < 0
+        nonlin = abs(int(nonlin)) if nonlin else nonlin
+        timeit = opt("timeit", False)
+        newtonalfa = opt("newtonalfa", 1.0)
+        newtonnodamp = opt("newtonnodamp", 0)
+        ldumpvar = opt("ldumpvar", False)
+        keep_residual = opt("keep_residual", False)
+
+        newton_col = ctx.newton_col
+        newton_col_unknown = ctx.newton_col_endo
+        newton_col_residual = ctx.newton_col_residual
+        resmask = ctx.is_residual_eq
+        eqnames = m.ng_newton_diff.endovar
+
+        def refresh_solver():
+            """Fresh Jacobian for the current period at the current state."""
+            df_now = pd.DataFrame(values, index=ctx.databank.index,
+                                  columns=ctx.databank.columns)
+            new = m.ng_newton_diff.get_solve1per(
+                df=df_now, periode=[m.periode],
+                is_residual_eq=resmask)[m.periode]
+            ctx.solverdic[m.periode] = new
+            return new
+
+        solver = None
+        for m.periode in ctx.sol_periode:
+            row = ctx.databank.index.get_loc(m.periode)
+            # this period's own (previously refreshed) factorization if one
+            # exists, else the most recent one carried forward -- prepare
+            # guarantees the first period of the span
+            solver = ctx.solverdic.get(m.periode, solver)
+            if init and row > 0:
+                for c in ctx.endoplace:
+                    values[row, c] = values[row - 1, c]
+            if ldumpvar:
+                ctx.dumplist.append(
+                    [0, m.periode, 0]
+                    + [values[row, p] for p in ctx.dumpplac])
+            if per_refresh:
+                with m.timer(f"Jacobian for {m.periode}", timeit):
+                    solver = refresh_solver()
+
+            converged = False
+            residual = None
+            iteration = -1
+            newton_conv = np.inf
+            for iteration in range(max_iterations):
+                with m.timer(f"sim per:{m.periode} it:{iteration}", timeit):
+                    # evaluate the whole model at the current state
+                    ctx.pro(values, outvalues, row, alfa)
+                    ctx.solve(values, outvalues, row, alfa)
+                    ctx.epi(values, outvalues, row, alfa)
+
+                    # residual: G(y) on residual rows, F(y)-y on normalized rows
+                    eq_after = outvalues[row, newton_col]
+                    y_old = values[row, newton_col_unknown]
+                    y_implied = outvalues[row, newton_col_unknown]
+                    residual = eq_after.copy()
+                    residual[~resmask] = y_implied[~resmask] - y_old[~resmask]
+                    newton_conv = np.max(np.abs(residual))
+
+                    if not silent:
+                        print(f"Iteration {iteration:>2} | {m.periode} | "
+                              f"max residual {newton_conv:>25,.6f}")
+                    if ldumpvar:
+                        ctx.dumplist.append(
+                            [0, m.periode, iteration + 1]
+                            + [values[row, p] for p in ctx.dumpplac])
+
+                    # residual convergence, per equation row, tested BEFORE
+                    # taking another step:
+                    #   ___RES rows   -- absolute: |G(y)| <= newton_absconv
+                    #     (an implicit residual has no natural variable scale)
+                    #   normalized rows -- relative to the variable's size:
+                    #     |F(y)-y| <= relconv * max(|y|, absconv)
+                    #     (absconv is the same scale floor as in the Gauss
+                    #     solvers; every equation is tested -- a small-valued
+                    #     unknown gets a tight absolute bound, never a pass)
+                    tol = np.where(
+                        resmask, newton_absconv,
+                        relconv * np.maximum(np.abs(y_old), absconv))
+                    if np.all(np.abs(residual) <= tol):
+                        converged = True
+                        break
+
+                    if nonlin and iteration != 0 and not (iteration % nonlin):
+                        with m.timer("Updating Jacobian", timeit):
+                            if not silent:
+                                print(f"Updating Jacobian, iteration {iteration}")
+                            solver = refresh_solver()
+
+                    update = solver(residual)
+                    if not np.all(np.isfinite(update)):
+                        raise ValueError(
+                            f"Non-finite Newton update at {m.periode}, "
+                            f"iteration {iteration}")
+                    damp = newtonalfa if iteration <= newtonnodamp else 1.0
+                    values[row, newton_col_unknown] = y_old - damp * update
+                    # keep the ___RES equation values in sync
+                    values[row, newton_col_residual] = \
+                        outvalues[row, newton_col_residual]
+                    ctx.ittotal += 1
+
+            # record the equation residual at the last iteration (opt-in)
+            if keep_residual and residual is not None:
+                self._record_residual(ctx, m.periode, eqnames, residual)
+
+            ctx.iteration = iteration
+            ctx.convergence = converged
+            if not silent:
+                word = "solved" if converged else "NOT converged"
+                print(f"{m.periode} {word} in {iteration + 1} iterations "
+                      f"(max res~{newton_conv:,.6g})")
 
 
 class NewtonFbminSolver(SolverBase):
@@ -2151,10 +2412,19 @@ class NewtonStackSolver(SolverBase):
         ctx.is_residual_eq_stacked = np.tile(is_residual_eq, len(ctx.sol_periode))
 
         m.ng_newton_diff_stack.timeit = timeit
-        # ordering of the stacked LU; get_solvestacked defaults to 'NATURAL'
-        # (band-preserving) when unset
-        m.ng_newton_diff_stack.permc_spec = opt("permc_spec", None)
-        m.ng_newton_diff_stack.factorizer = opt("factorizer", None)
+        # ordering of the stacked LU (get_solvestacked defaults to 'NATURAL',
+        # band-preserving, when unset) and factorization engine.  Applied on
+        # every call; when they change, the cached stacked solver is dropped --
+        # it was factorized with the old options and would otherwise be
+        # silently reused.
+        factor_key = (opt("permc_spec", None), opt("factorizer", None))
+        (m.ng_newton_diff_stack.permc_spec,
+         m.ng_newton_diff_stack.factorizer) = factor_key
+        if getattr(m, "ng_stack_factor_key", None) != factor_key:
+            m.ng_stack_factor_key = factor_key
+            for attr in ("ng_stacksolver", "ng_old_stack_periode"):
+                if hasattr(m, attr):
+                    delattr(m, attr)
         m.ng_stackbuildtime = 0.0
         if not hasattr(m, "ng_stacksolver"):
             if not silent:
@@ -2339,6 +2609,9 @@ class NewtonStackSolver(SolverBase):
         max_iterations = opt("max_iterations", 20)
         absconv = opt("absconv", 0.01)
         relconv = opt("relconv", DEFAULT_relconv)
+        # residual tolerance (max |residual|), like legacy newton's
+        # newton_absconv -- see NewtonSolver.iterate
+        newton_absconv = opt("newton_absconv", 0.001)
         nonlin = opt("nonlin", False)
         timeit = opt("timeit", False)
         newtonalfa = opt("newtonalfa", 1.0)
@@ -2428,8 +2701,14 @@ class NewtonStackSolver(SolverBase):
                             + [values[row, p] for p in ctx.dumpplac])
 
                 # same relative-change convergence test as the Gauss solvers
+                # -- AND the equations must actually hold (the step test
+                # cannot see unknowns below ``absconv``, e.g. saturated 0/1
+                # policy switches, whose stuck residuals it would silently
+                # declare converged)
                 after = values[rowidx, colidx_endo]
                 ctx.convergence, _ = self._relconv(before, after, absconv, relconv)
+                ctx.convergence = (ctx.convergence
+                                   and newton_conv <= newton_absconv)
                 if ctx.convergence:
                     break
         ctx.iteration = iteration
@@ -3266,6 +3545,7 @@ class Solver_ng_Mixin:
         "sim": GaussSeidelSolver,
         "sim1d": Sim1dSolver,
         "newton": NewtonSolver,
+        "newton_old": NewtonSolverOld,
         "newton_fbmin": NewtonFbminSolver,
         "newtonstack": NewtonStackSolver,
         "newtonstack_implicit": NewtonStackImplicitSolver,
@@ -3310,17 +3590,29 @@ class Solver_ng_Mixin:
         return Sim1dSolver(self)(databank, *args, **kwargs)
 
     def newton_ng(self, databank=None, *args, **kwargs):
-        """Solve with next-generation per-period Newton (defaults to ``self.basedf``).
+        """Solve with the simple whole-model per-period Newton (defaults to
+        ``self.basedf``).
 
-        ``split=1``: graph-based pro/core/epi split of the current-period
-        graph -- Newton only on variables in current-period cycles (plus all
-        ``___RES`` equations); prolog swept before and epilog after each
-        period.  Useful for ``straight=True`` and implicit/hybrid models,
-        where ``coreorder`` is unavailable or blind to the coupling through
-        an implicit equation's declared unknown."""
+        The model is one system (``endovar = solveorder``) -- normalized,
+        implicit and hybrid models are all handled identically; no ``split``
+        option.  One Jacobian is factorized at the first period and carried
+        forward; ``nonlin=N`` refreshes it every N iterations within a
+        period, ``nonlin=-N`` additionally before every period.  Converges
+        on the residual, per row: implicit (``___RES``) equations
+        absolutely (``|G| <= newton_absconv``, default 0.001), normalized
+        equations relative to the variable's size (``|F(y)-y| <= relconv *
+        max(|y|, absconv)``)."""
         if databank is None:
             databank = self.basedf
         return NewtonSolver(self)(databank, *args, **kwargs)
+
+    def newton_ng_old(self, databank=None, *args, **kwargs):
+        """The former ``newton_ng`` (pro/core/epi split, backtracking line
+        search, Gauss rescues) -- kept for comparison; see
+        :class:`NewtonSolverOld`."""
+        if databank is None:
+            databank = self.basedf
+        return NewtonSolverOld(self)(databank, *args, **kwargs)
 
     def newton_fbmin_ng(self, databank=None, *args, **kwargs):
         """Solve with reduced Newton on the minimal feedback set (defaults to
