@@ -125,3 +125,9 @@
   background: var(--jp-layout-color0);
   color: var(--jp-ui-font-color1);
 }
+
+.mf-count {
+  margin-bottom: 4px;
+  color: var(--jp-ui-font-color2);
+  font-size: var(--jp-ui-font-size0);
+}

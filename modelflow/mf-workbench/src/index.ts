@@ -184,7 +184,11 @@ class WorkbenchWidget extends Widget {
             'but no model instance found yet.'
       );
       if (d.models.length) {
-        this._send({ action: 'vars', model: this._modelSel.value });
+        this._send({
+          action: 'vars',
+          model: this._modelSel.value,
+          pattern: this._varsPattern
+        });
       }
       return;
     }
@@ -225,43 +229,49 @@ class WorkbenchWidget extends Widget {
     const pane = this._pane('vars');
     pane.innerHTML =
       '<input class="mf-filter" type="text" ' +
-      'placeholder="Filter by name or description..." />' +
+      'title="model.vlist pattern - space-separated name wildcards (* ?), ' +
+      '!text searches descriptions, #GROUP or #ENDO selects a group. ' +
+      'Press Enter to apply." ' +
+      'placeholder="vlist pattern, e.g. *GDP*  !carbon  #ENDO" />' +
+      `<div class="mf-count">${rows.length} variables</div>` +
       '<table class="mf-table"><thead><tr>' +
       '<th>Name</th><th>Kind</th><th>Last value</th><th>Description</th>' +
       '</tr></thead><tbody></tbody></table>';
 
-    const tbody = pane.querySelector('tbody') as HTMLElement;
-    const render = (filter: string) => {
-      const f = filter.toLowerCase();
-      tbody.innerHTML = '';
-      for (const r of rows) {
-        if (
-          f &&
-          !r.name.toLowerCase().includes(f) &&
-          !r.desc.toLowerCase().includes(f)
-        ) {
-          continue;
-        }
-        const tr = document.createElement('tr');
-        const val =
-          r.value === null || r.value === undefined
-            ? ''
-            : r.value.toLocaleString(undefined, {
-                maximumFractionDigits: 3
-              });
-        tr.innerHTML =
-          `<td>${r.name}</td><td>${r.kind}</td>` +
-          `<td class="mf-num">${val}</td><td>${escapeHtml(r.desc)}</td>`;
-        tr.onclick = () => {
-          this._varInput.value = r.name;
-          this._refreshVar();
-        };
-        tbody.appendChild(tr);
+    // The pattern is evaluated kernel-side by model.vlist - send on Enter.
+    const patInput = pane.querySelector('.mf-filter') as HTMLInputElement;
+    patInput.value = this._varsPattern;
+    patInput.onkeydown = ev => {
+      if (ev.key === 'Enter') {
+        this._varsPattern = patInput.value.trim() || '*';
+        this._send({
+          action: 'vars',
+          model: this._modelSel.value,
+          pattern: this._varsPattern
+        });
+        this._setStatus(`Requested variables matching ${this._varsPattern} ...`);
       }
     };
-    const filterInput = pane.querySelector('.mf-filter') as HTMLInputElement;
-    filterInput.oninput = () => render(filterInput.value);
-    render('');
+
+    const tbody = pane.querySelector('tbody') as HTMLElement;
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      const val =
+        r.value === null || r.value === undefined
+          ? ''
+          : r.value.toLocaleString(undefined, {
+              maximumFractionDigits: 3
+            });
+      tr.innerHTML =
+        `<td>${r.name}</td><td>${r.kind}</td>` +
+        `<td class="mf-num">${val}</td><td>${escapeHtml(r.desc)}</td>`;
+      tr.onclick = () => {
+        this._varInput.value = r.name;
+        this._refreshVar();
+      };
+      tbody.appendChild(tr);
+    }
+    this._setStatus('');
   }
 
   private _renderAttribution(t: ISplitTable, varName: string): void {
@@ -281,7 +291,8 @@ class WorkbenchWidget extends Widget {
     });
     html += '</tbody></table>';
     pane.innerHTML = html;
-    this._showPane('att');
+    // No _showPane here: the attribution reply arrives after the graph
+    // reply, and switching would steal the pane the user just got.
   }
 
   // -------------------------------------------------------------- helpers
@@ -314,6 +325,7 @@ class WorkbenchWidget extends Widget {
   private _tracker: INotebookTracker;
   private _comm: Kernel.IComm | null = null;
   private _notebookLabel = '';
+  private _varsPattern = '*';
   private _status: HTMLElement;
   private _modelSel: HTMLSelectElement;
   private _varInput: HTMLInputElement;

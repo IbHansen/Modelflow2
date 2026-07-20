@@ -40,6 +40,28 @@ jupyter labextension develop . --overwrite
 jupyter lab                      # Command palette -> "ModelFlow: Open Model Workbench"
 ```
 
+On conda/miniforge, install the build deps into the env first and skip
+pip's build isolation (otherwise pip downloads a second JupyterLab just
+to build):
+
+```bash
+conda activate book314
+pip install hatchling hatch-jupyter-builder
+pip install -e . --no-build-isolation
+jupyter labextension develop . --overwrite
+```
+
+The graph pane pipes DOT text through the Graphviz `dot` executable -
+the same binary `model.draw` uses, so any environment where `.draw`
+works needs nothing extra. (If `dot` is missing:
+`conda install -c conda-forge graphviz`. The python-graphviz wrapper is
+NOT used.)
+
+To use the panel in other environments WITHOUT node or a conda channel,
+build the wheel once (see Release) and `pip install` it there - the
+compiled labextension travels inside the wheel, and JupyterLab 4 picks
+up prebuilt extensions with no rebuild.
+
 The package must also be importable **in the kernel's environment**
 (the panel silently runs `import mf_workbench.kernel` on connect). With
 a single conda env this is automatic; with multiple kernels, install it

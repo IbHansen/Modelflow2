@@ -48,6 +48,11 @@
   "styleModule": "style/index.js",
   "jupyterlab": {
     "extension": true,
-    "outputDir": "mf_workbench/labextension"
+    "outputDir": "mf_workbench/labextension",
+    "_build": {
+      "load": "static\\remoteEntry.f5d0c63e33dca940f3b3.js",
+      "extension": "./extension",
+      "style": "./style"
+    }
   }
 }

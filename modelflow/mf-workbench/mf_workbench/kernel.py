@@ -10,8 +10,9 @@ this target and exchanges small JSON messages:
     -> {"action": "graph", "model": "m", "var": "GDP", "up": 1, "down": 1}
     <- {"svg": "<svg ...>"}
 
-    -> {"action": "vars", "model": "m"}
+    -> {"action": "vars", "model": "m", "pattern": "*"}
     <- {"rows": [{"name": ..., "desc": ..., "value": ..., "kind": ...}]}
+       (pattern goes through model.vlist: name wildcards, !description, #group)
 
     -> {"action": "attribution", "model": "m", "var": "GDP"}
     <- {"table": {"columns": [...], "index": [...], "data": [[...]]}}
@@ -34,26 +35,44 @@ import math
 # --------------------------------------------------------------------------
 
 def _find_models(ip):
-    """Return {name: instance} for ModelFlow model objects in user_ns."""
-    out = {}
-    for name, obj in ip.user_ns.items():
-        if name.startswith('_'):
-            continue
-        # Duck-typed on purpose: works for modelclass.model and subclasses
-        # without importing modelflow into every kernel.
-        if hasattr(obj, 'totgraph') and hasattr(obj, 'endogene'):
-            out[name] = obj
-    return out
+    """Return {name: instance} for ModelFlow model objects in user_ns.
+
+    Identified by type: isinstance(obj, modelclass.model), which also
+    catches subclasses (e.g. simmodel).  The class is taken from
+    sys.modules rather than imported: if any model instance exists in
+    the namespace, modelclass is already imported - and if it is not,
+    there is nothing to find and no reason to drag ModelFlow into the
+    kernel.
+    """
+    import sys
+
+    mc = sys.modules.get('modelclass')
+    model_cls = getattr(mc, 'model', None)
+    if model_cls is None:
+        return {}
+    return {name: obj for name, obj in ip.user_ns.items()
+            if not name.startswith('_') and isinstance(obj, model_cls)}
 
 
 # --------------------------------------------------------------------------
 # Integration point 1: dependency subgraph -> SVG
 # --------------------------------------------------------------------------
 
+def _dot_esc(s):
+    """Escape a string for use inside a double-quoted DOT attribute."""
+    return str(s).replace('\\', '\\\\').replace('"', '\\"')
+
+
 def _mf_graph_svg(m, var, up=1, down=1):
-    """Render the local dependency graph around ``var`` as an SVG string."""
+    """Render the local dependency graph around ``var`` as an SVG string.
+
+    Writes the DOT text directly and pipes it through ``dot -Tsvg`` -
+    the same approach as modelclass.draw, so the only requirement is the
+    Graphviz binary (no python-graphviz wrapper needed).
+    """
+    import subprocess
+
     import networkx as nx
-    from graphviz import Digraph
 
     var = var.strip().upper()
     g = m.totgraph
@@ -68,32 +87,59 @@ def _mf_graph_svg(m, var, up=1, down=1):
     sub = g.subgraph(keep)
 
     desc = getattr(m, 'var_description', {}) or {}
-    dot = Digraph('deps')
-    dot.attr(rankdir='LR')
-    dot.attr('node', shape='box', style='rounded,filled',
-             fillcolor='white', fontname='Helvetica', fontsize='10')
+    lines = [
+        'digraph deps {',
+        'rankdir=LR;',
+        'node [shape=box style="rounded,filled" fillcolor=white '
+        'fontname=Helvetica fontsize=10];',
+    ]
     for n in sub.nodes:
-        dot.node(
-            n,
-            tooltip=str(desc.get(n, n)),
-            fillcolor='lightsteelblue' if n == var else
-                      ('white' if n in m.endogene else 'lightyellow'),
-        )
+        fill = ('lightsteelblue' if n == var else
+                'white' if n in m.endogene else 'lightyellow')
+        lines.append(f'"{_dot_esc(n)}" [tooltip="{_dot_esc(desc.get(n, n))}" '
+                     f'fillcolor={fill}];')
     for a, b in sub.edges:
-        dot.edge(a, b)
-    return dot.pipe(format='svg').decode('utf-8')
+        lines.append(f'"{_dot_esc(a)}" -> "{_dot_esc(b)}";')
+    lines.append('}')
+
+    try:
+        res = subprocess.run(['dot', '-Tsvg'],
+                             input='\n'.join(lines).encode('utf-8'),
+                             capture_output=True)
+    except FileNotFoundError:
+        return ('<p>Graphviz <b>dot</b> executable not found on PATH - '
+                'install it (conda install -c conda-forge graphviz).</p>')
+    if res.returncode != 0:
+        err = res.stderr.decode('utf-8', 'replace')[:500]
+        return f'<p>dot failed:</p><pre>{err}</pre>'
+    return res.stdout.decode('utf-8')
 
 
 # --------------------------------------------------------------------------
 # Integration point 2: variable explorer rows
 # --------------------------------------------------------------------------
 
-def _mf_var_rows(m, limit=4000):
-    """Rows for the variable explorer: name, description, last value."""
+def _mf_var_rows(m, pattern='*', limit=4000):
+    """Rows for the variable explorer, selected with ``model.vlist``.
+
+    The pattern therefore supports everything vlist does: space-separated
+    name wildcards (``*`` ``?``), ``!text`` to search descriptions, and
+    ``#GROUP`` / ``#ENDO`` for variable groups.  Default ``*`` = all.
+    """
+    pattern = (pattern or '*').strip() or '*'
+    try:
+        names = m.vlist(pattern)
+    except Exception as e:
+        groups = ', '.join(getattr(m, 'var_groups', {}) or {})
+        hint = f'  Available groups: {groups}' if groups else ''
+        raise RuntimeError(f'vlist({pattern!r}): {e}.{hint}') from e
+
+    seen = set()
+    names = [v for v in names if not (v in seen or seen.add(v))]
+
     desc = getattr(m, 'var_description', {}) or {}
     df = getattr(m, 'lastdf', None)
     endo = set(getattr(m, 'endogene', set()))
-    exo = set(getattr(m, 'exogene', set()))
 
     def last_value(v):
         try:
@@ -103,7 +149,7 @@ def _mf_var_rows(m, limit=4000):
             return None
 
     rows = []
-    for v in sorted(endo | exo):
+    for v in names:
         rows.append({
             'name': v,
             'kind': 'endo' if v in endo else 'exo',
@@ -139,8 +185,18 @@ def _mf_attribution(m, var):
 # Comm plumbing
 # --------------------------------------------------------------------------
 
+def _flat_labels(labels):
+    """MultiIndex-safe: tuples -> 'a b' strings (to_json orient='split'
+    cannot handle a MultiIndex, and dekomp frames often carry one)."""
+    return [' '.join(map(str, x)) if isinstance(x, tuple) else str(x)
+            for x in labels]
+
+
 def _df_to_split(df):
     """DataFrame -> JSON-safe dict with columns/index/data."""
+    df = df.copy()
+    df.index = _flat_labels(df.index)
+    df.columns = _flat_labels(df.columns)
     d = json.loads(df.round(3).to_json(orient='split', date_format='iso'))
     return d
 
@@ -161,7 +217,7 @@ def _handle(ip, data):
         return {'svg': _mf_graph_svg(m, data.get('var', ''),
                                      data.get('up', 1), data.get('down', 1))}
     if action == 'vars':
-        return {'rows': _mf_var_rows(m)}
+        return {'rows': _mf_var_rows(m, data.get('pattern', '*'))}
     if action == 'attribution':
         df = _mf_attribution(m, data.get('var', ''))
         return {'table': _df_to_split(df), 'var': data.get('var', '')}

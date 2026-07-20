@@ -41,3 +41,13 @@ env/
 # OS cruft
 .DS_Store
 Thumbs.db
+
+# Node / Yarn (mf-workbench and any other JS/TS subprojects)
+**/node_modules/
+**/.yarn/cache/
+**/.yarn/install-state.gz
+**/.yarn/unplugged/
+**/.yarn/build-state.yml
+**/.pnp.*
+**/lib/
+**/*.tsbuildinfo

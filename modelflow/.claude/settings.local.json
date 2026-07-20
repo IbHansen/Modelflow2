@@ -4,7 +4,13 @@
       "Bash(grep -oE '.{20}\\\\.transition\\\\\\(\\\\\\(\\\\\\)=>.{120}|\\\\.transition\\\\\\(function\\\\\\(\\\\\\).{120}|name:\"main\".{120}|duration.{0,3}\\\\\\([0-9]{3,}\\\\\\)' dash_interactive_graphviz.min.js)",
       "Bash(grep -oE 'duration\\\\\\([0-9]{2,}\\\\\\)' dash_interactive_graphviz.min.js.map)",
       "Bash(jupyter book *)",
-      "Bash(myst --version)"
+      "Bash(myst --version)",
+      "Read(//c/Users/ibhan/anaconda3/**)",
+      "Read(//c/Users/ibhan/miniconda3/envs//**)",
+      "Bash(where node *)",
+      "Bash(where.exe node *)",
+      "Read(//c/Users/ibhan/miniconda3/**)",
+      "Read(//c/Users/ibhan//**)"
     ]
   }
 }
