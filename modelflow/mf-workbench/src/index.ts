@@ -73,6 +73,7 @@ class WorkbenchWidget extends Widget {
     this._el<HTMLButtonElement>('.mf-connect').onclick = () => {
       void this._connect();
     };
+    this._modelSel.onchange = () => this._onModelChange();
     this._varInput.onkeydown = ev => {
       if (ev.key === 'Enter') {
         this._refreshVar();
@@ -159,6 +160,19 @@ class WorkbenchWidget extends Widget {
     });
     this._send({ action: 'attribution', model, var: v });
     this._setStatus(`Requested ${v} from ${model || '(first model)'} ...`);
+  }
+
+  private _onModelChange(): void {
+    // Rows/graph/attribution still on screen belong to the previously
+    // selected model. Clear the graph and attribution panes and reload the
+    // variable list so a click on a stale row can't send an old variable to
+    // the newly selected model.
+    const model = this._modelSel.value;
+    this._pane('graph').innerHTML =
+      '<p>Pick a variable to show its dependency graph.</p>';
+    this._pane('att').innerHTML = '';
+    this._send({ action: 'vars', model, pattern: this._varsPattern });
+    this._setStatus(`Switched to ${model}. Loading variables ...`);
   }
 
   // ------------------------------------------------------------- replies
@@ -263,7 +277,7 @@ class WorkbenchWidget extends Widget {
               maximumFractionDigits: 3
             });
       tr.innerHTML =
-        `<td>${r.name}</td><td>${r.kind}</td>` +
+        `<td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.kind)}</td>` +
         `<td class="mf-num">${val}</td><td>${escapeHtml(r.desc)}</td>`;
       tr.onclick = () => {
         this._varInput.value = r.name;

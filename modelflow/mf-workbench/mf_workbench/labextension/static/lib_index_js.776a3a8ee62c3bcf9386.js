@@ -62,6 +62,7 @@ class WorkbenchWidget extends _lumino_widgets__WEBPACK_IMPORTED_MODULE_2__.Widge
         this._el('.mf-connect').onclick = () => {
             void this._connect();
         };
+        this._modelSel.onchange = () => this._onModelChange();
         this._varInput.onkeydown = ev => {
             if (ev.key === 'Enter') {
                 this._refreshVar();
@@ -135,6 +136,18 @@ class WorkbenchWidget extends _lumino_widgets__WEBPACK_IMPORTED_MODULE_2__.Widge
         });
         this._send({ action: 'attribution', model, var: v });
         this._setStatus(`Requested ${v} from ${model || '(first model)'} ...`);
+    }
+    _onModelChange() {
+        // Rows/graph/attribution still on screen belong to the previously
+        // selected model. Clear the graph and attribution panes and reload the
+        // variable list so a click on a stale row can't send an old variable to
+        // the newly selected model.
+        const model = this._modelSel.value;
+        this._pane('graph').innerHTML =
+            '<p>Pick a variable to show its dependency graph.</p>';
+        this._pane('att').innerHTML = '';
+        this._send({ action: 'vars', model, pattern: this._varsPattern });
+        this._setStatus(`Switched to ${model}. Loading variables ...`);
     }
     // ------------------------------------------------------------- replies
     _onReply(d) {
@@ -231,7 +244,7 @@ class WorkbenchWidget extends _lumino_widgets__WEBPACK_IMPORTED_MODULE_2__.Widge
                     maximumFractionDigits: 3
                 });
             tr.innerHTML =
-                `<td>${r.name}</td><td>${r.kind}</td>` +
+                `<td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.kind)}</td>` +
                     `<td class="mf-num">${val}</td><td>${escapeHtml(r.desc)}</td>`;
             tr.onclick = () => {
                 this._varInput.value = r.name;
@@ -319,4 +332,4 @@ const plugin = {
 /***/ }
 
 }]);
-//# sourceMappingURL=lib_index_js.293d7fdf438716c3e590.js.map
+//# sourceMappingURL=lib_index_js.776a3a8ee62c3bcf9386.js.map

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modelflowib"                       # PyPI distribution name
-version = "2.72"                           # OVERWRITTEN at build time from MF_VERSION
+version = "2.73"                           # OVERWRITTEN at build time from MF_VERSION
                                             # (set_pyproject_version.py / make_pip.py -v)
 description = "A tool to solve and manage dynamic economic and financial models"
 readme = "README.md"

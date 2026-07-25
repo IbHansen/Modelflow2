@@ -26,6 +26,7 @@ ModelFlow. Adjust them to taste -- everything else is plumbing.
 
 from __future__ import annotations
 
+import html
 import json
 import math
 
@@ -77,7 +78,8 @@ def _mf_graph_svg(m, var, up=1, down=1):
     var = var.strip().upper()
     g = m.totgraph
     if var not in g:
-        return f'<p>Variable <b>{var}</b> is not in the dependency graph.</p>'
+        return (f'<p>Variable <b>{html.escape(var)}</b> is not in the '
+                f'dependency graph.</p>')
 
     keep = {var}
     keep |= set(nx.single_source_shortest_path_length(
@@ -110,7 +112,7 @@ def _mf_graph_svg(m, var, up=1, down=1):
         return ('<p>Graphviz <b>dot</b> executable not found on PATH - '
                 'install it (conda install -c conda-forge graphviz).</p>')
     if res.returncode != 0:
-        err = res.stderr.decode('utf-8', 'replace')[:500]
+        err = html.escape(res.stderr.decode('utf-8', 'replace')[:500])
         return f'<p>dot failed:</p><pre>{err}</pre>'
     return res.stdout.decode('utf-8')
 

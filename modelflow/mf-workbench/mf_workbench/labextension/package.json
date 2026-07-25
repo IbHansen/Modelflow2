@@ -50,7 +50,7 @@
     "extension": true,
     "outputDir": "mf_workbench/labextension",
     "_build": {
-      "load": "static\\remoteEntry.f5d0c63e33dca940f3b3.js",
+      "load": "static\\remoteEntry.6c0f9737fa6b2a256ade.js",
       "extension": "./extension",
       "style": "./style"
     }
