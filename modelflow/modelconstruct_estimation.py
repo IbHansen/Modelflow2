@@ -1768,20 +1768,39 @@ def _markdown_with_estimation_blocks(original_text: str, estimation_records: lis
     """Insert estimation markdown blocks after estimator-tagged source lines.
 
     This preserves the original user-facing Markdown as much as possible. For
-    the common notebook syntax, each line beginning with ``>`` and containing
+    the common notebook syntax, each equation beginning with ``>`` and containing
     ``<estimator=...>`` gets the next estimation block inserted immediately
     after it. If template expansion creates more estimated equations than can
     be matched to source lines, the remaining blocks are appended at the end.
+
+    An equation can be spread over several lines: a ``>`` line followed by
+    ``>>`` continuations, which the parser joins into one statement. The block
+    goes after the last of those, so the whole equation is shown before its
+    estimation output rather than being split around it.
     """
     records = list(estimation_records or [])
     if not records:
         return original_text
 
+    lines = original_text.splitlines()
     out = []
     rec_i = 0
-    for line in original_text.splitlines():
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         out.append(line)
-        if rec_i < len(records) and _line_has_estimator_tag(line):
+        i += 1
+
+        if not _line_has_estimator_tag(line):
+            continue
+
+        # Carry the rest of the equation across before inserting the block.
+        # The tag may sit on the '>' line or on any of its continuations.
+        while i < len(lines) and lines[i].lstrip().startswith(">>"):
+            out.append(lines[i])
+            i += 1
+
+        if rec_i < len(records):
             out.append(_estimation_record_to_markdown(records[rec_i]).rstrip())
             rec_i += 1
 
@@ -1793,6 +1812,34 @@ def _markdown_with_estimation_blocks(original_text: str, estimation_records: lis
             out.append(_estimation_record_to_markdown(rec).rstrip())
 
     return "\n".join(out)
+
+
+def _strip_markdown_list_blocks(text: str) -> str:
+    """Remove ``>list`` / ``>tlist`` definition blocks from markdown model text.
+
+    A list block is a line whose content (after the leading ``>``) begins with
+    ``list`` or ``tlist``, together with any immediately following ``>>``
+    continuation lines. Equation lines and their ``>>`` continuations are left
+    untouched, because those continuations follow a ``>`` equation line rather
+    than a ``>list`` line.
+
+    Used by ``markdown_with_estimation_no_list`` to support the
+    ``render_list=0`` rendering path of the ``%%Makemymodel`` magic.
+    """
+    out = []
+    in_list = False
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if in_list:
+            if stripped.startswith('>>'):
+                # Continuation of the current list definition.
+                continue
+            in_list = False
+        if re.match(r'>\s*(list|tlist)\b', stripped, flags=re.IGNORECASE):
+            in_list = True
+            continue
+        out.append(line)
+    return '\n'.join(out)
 
 
 @dataclass
@@ -2264,6 +2311,20 @@ class Makemodel(BaseExplode):
         return self.markdown_with_estimation
 
     @property
+    def markdown_with_estimation_no_list(self) -> str:
+        """Like :attr:`markdown_with_estimation`, with ``>list`` blocks removed.
+
+        Same inline estimation tables as :attr:`markdown_with_estimation`, but
+        ``>list``/``>tlist`` definition blocks are stripped from the rendered
+        Markdown. Used by the ``%%Makemymodel`` magic when ``render_list=0`` is
+        combined with the default ``render_est`` rendering path.
+        """
+        return _markdown_with_estimation_blocks(
+            _strip_markdown_list_blocks(self.original_statements),
+            self.estimation_records,
+        )
+
+    @property
     def clean_frml(self) -> str:
         """Normalized equations with add-factors, exogenization, and fitted-value flags stripped."""
         parts_list = []
@@ -2629,6 +2690,14 @@ class Listmodels(BaseExplode):
     def markdown_model_with_estimation(self) -> str:
         """Alias for :attr:`markdown_with_estimation`."""
         return self.markdown_with_estimation
+
+    @property
+    def markdown_with_estimation_no_list(self) -> str:
+        """Concatenate member Makemodel markdown-with-estimation-no-list strings."""
+        return "\n\n".join(
+            mex.markdown_with_estimation_no_list
+            for mex in self.makemodels
+        )
 
     # __str__(self):
         
