@@ -1647,11 +1647,17 @@ def _estimate_and_bake_expression(
     estimator_name,
     input_df=None,
     smpl=None,
+    smpl_is_local: bool = False,
     caption: Optional[str] = None,
     estimator_kwargs: Optional[dict] = None,
     estimator_classes: Optional[dict] = None,
 ):
-    """Instantiate an estimator/factory, run it, and return (baked_expression, estimator_obj)."""
+    """Instantiate an estimator/factory, run it, and return (baked_expression, estimator_obj).
+
+    ``smpl_is_local`` marks a sample that came from this equation's own
+    ``<smpl=...>`` rather than from the model-wide default, which decides
+    whether it may override a model-wide ``estimator_kwargs['smpl']``.
+    """
     estimator_constructor = _get_estimator_class(estimator_name, estimator_classes)
     kwargs = dict(estimator_kwargs or {})
 
@@ -1660,13 +1666,16 @@ def _estimate_and_bake_expression(
     # still override the factory's stored defaults.
     if input_df is not None and 'input_df' not in kwargs:
         kwargs['input_df'] = input_df
-    if smpl is not None and 'smpl' not in kwargs:
+    # An equation-local <smpl=...> outranks the model-wide estimator_kwargs; a
+    # model-wide Makemodel.smpl does not.
+    if smpl is not None and (smpl_is_local or 'smpl' not in kwargs):
         kwargs['smpl'] = smpl
     if caption is not None and 'caption' not in kwargs:
         kwargs['caption'] = caption
 
     estimator_obj = _instantiate_estimator(estimator_constructor, expression, kwargs)
-    estimator_obj = _require_estimator_backend_instance(estimator_obj, estimator_name)
+    # Validates in place and raises; it returns the same object, so do not rebind.
+    _require_estimator_backend_instance(estimator_obj, estimator_name)
     fit_result = _maybe_run_estimator_fit(estimator_obj)
 
     baked = _extract_expression_from_estimator(estimator_obj, fit_result)
@@ -2002,9 +2011,80 @@ class BaseExplode:
 
 @dataclass
 class Makemodel(BaseExplode):
+    """Expand a model template (markdown or modelflow) into solvable FRMLs.
+
+    Every attribute below can be inspected with a ``show`` prefix, which prints
+    it nicely, for instance ``consumption.showpost_sum``. The stages follow the
+    order in which ``__post_init__`` produces them.
+
+    **1. Input and options (what you pass in)**
+
+    | Attribute | Description |
+    |---|---|
+    | `showoriginal_statements` | Input expressions |
+    | `showlist_defs` | Lists definitions |
+    | `showtype_input` | Originaal as type modelflow or markdown |
+    | `showreplacements` | list of string tupels with string replacements |
+    | `showfunks` | List of user specified functions to be used in model |
+    | `showmodelname` | A optional name for this (sub) model |
+    | `showvar_description` | Variable descriptions (user-supplied, merged with descriptions from estimated equations) |
+
+    **2. Estimation setup (used only for `<estimator=...>` equations)**
+
+    | Attribute | Description |
+    |---|---|
+    | `showinput_df` | DataFrame used when tagged equations are estimated |
+    | `showestimator` | Default estimator for tagged equations: method name or callable factory |
+    | `showsmpl` | Model-wide default estimation sample. `None` unless passed to the constructor or the magic -- a per-equation `<smpl=start end>` or a `with_defaults(smpl=...)` factory does not show up here. The sample each equation really used is in `showestimation_records` |
+    | `showestimator_kwargs` | Shared kwargs passed to estimator constructors |
+    | `showestimator_classes` | Optional method-name to estimator-class mapping |
+    | `showestimator_namespace` | Optional namespace for resolving `<estimator=name>`; defaults to caller locals/globals |
+
+    **3. Expansion pipeline (in the order they are produced)**
+
+    | Attribute | Description |
+    |---|---|
+    | `showclean_frml_statements` | With frml and nice lists |
+    | `showpost_doable` | Expanded after doable |
+    | `showpost_do` | Frmls after do expansion |
+    | `showpost_sum` | Frmls after expanding sums |
+    | `showexpanded_frml` | frmls after expanding |
+
+    **4. Lists**
+
+    | Attribute | Description |
+    |---|---|
+    | `showmodellist` | The lists defined in string as a dictionary |
+    | `showlists` | Same as `showmodellist` |
+    | `showlist_specification` | All list specifications in string |
+
+    `modellist` is built between `post_do` and `post_sum` (it feeds the sum
+    expansion), `list_specification` is derived at the very end.
+
+    **5. Normalization and estimation output**
+
+    | Attribute | Description |
+    |---|---|
+    | `shownormal_input_expressions` | Expressions sent to modelnormalize, after optional estimation |
+    | `showestimation_records` | Information about equations estimated during construction |
+    | `shownormal_expressions` | List of normal expressions |
+    | `shownormal_output_frmlnames` | FRML names emitted; estimation flags are preserved |
+    | `shownormal_main` | Normalized frmls |
+    | `shownormal_fit` | Normalized frmls for fitted values |
+    | `shownormal_calc_add` | Normalized frmls to calculate add factors |
+    | `shownormal_frml` | Output normalized expressions (`normal_main` + `normal_fit` + `normal_calc_add`) |
+    | `show` | The finished `normal_frml`, printed |
+
+    **6. Rendering**
+
+    | Attribute | Description |
+    |---|---|
+    | `showmarkdown_model` | As markdown |
+    """
+
     # original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
     # normal_frml           : str       = field(default="",        metadata={"description": "Output normalized expressions"})
-    
+
     normal_main           : str       = field(init=False,        metadata={"description": "Normalized frmls"})
     normal_fit            : str       = field(init=False,        metadata={"description": "Normalized frmls for fitted values"})
     normal_calc_add       : str       = field(init=False,        metadata={"description": "Normalized frmls to calculate add factors"})
@@ -2147,7 +2227,9 @@ class Makemodel(BaseExplode):
                 ))
         
         self.normal_expressions = [n for p,n  in self.normal ]
-        
+
+        self._warn_on_repeated_endogenous()
+
         # udrullet = lagarray_unroll(udrullet,funks=funks )
         # udrullet = creatematrix(udrullet,listin=modellist)
         # udrullet = createarray(udrullet,listin=modellist)
@@ -2177,6 +2259,35 @@ class Makemodel(BaseExplode):
 
         self.list_specification = self.get_lists()
         return
+
+    def _warn_on_repeated_endogenous(self):
+        """Warn when a variable is defined by more than one kept equation.
+
+        Nothing is removed: every equation stays in the emitted FRML, and
+        ``model()`` resolves the collision by letting the last definition win
+        (``modelclass.py``, where each repeat overwrites the variable's entry in
+        ``allvar``). That is usually what a notebook author means when they
+        re-estimate an equation further down, but it is worth saying out loud,
+        because the earlier equations are then dead weight -- and because a
+        typo in a mnemonic looks exactly like a deliberate redefinition.
+        """
+        equations_by_endo = {}
+        for position, (parts, normal) in enumerate(self.normal, start=1):
+            endo = getattr(normal, 'endo_var', '')
+            if endo:
+                equations_by_endo.setdefault(endo, []).append(position)
+
+        for endo, positions in equations_by_endo.items():
+            if len(positions) < 2:
+                continue
+            listed = ', '.join(str(p) for p in positions)
+            print(
+                f"⚠️  {endo} is defined by {len(positions)} equations "
+                f"(kept equations {listed}). The last of them, equation "
+                f"{positions[-1]}, is the one used when the model is solved; "
+                f"the earlier ones go into the FRML but are never evaluated. "
+                f"Tag any you do not want with <DROP>."+'\n'
+            )
 
     def _expression_after_optional_estimation(self, parts, *, equation_index: Optional[int] = None,
                                               estimator_flag: Any = ...) -> str:
@@ -2238,6 +2349,7 @@ class Makemodel(BaseExplode):
             estimator_name=estimator_name,
             input_df=self.input_df,
             smpl=smpl,
+            smpl_is_local=local_smpl is not None,
             caption=local_caption,
             estimator_kwargs=self.estimator_kwargs,
             estimator_classes=self.estimator_classes,

@@ -290,3 +290,6 @@ Version 2.74 uploaded
 Version 2.75 uploaded 
 Version 2.75 uploaded 
 fix error in markdown with estimation 
+fix issue with smpl in Makemodel 
+
+Version 2.76 uploaded 
