@@ -1165,8 +1165,12 @@ def _parse_smpl(smpl, df=None):
     Preferred FRML syntax is::
 
         <smpl=start end>
+        <smpl=(start end)>
 
-    where ``start`` and ``end`` are separated by one or more blanks. The
+    where ``start`` and ``end`` are separated by one or more blanks, with the
+    brackets optional. A comma may separate them when the value does not pass
+    through a FRML tag -- ``smpl='2000, 2025'`` as a keyword argument -- but not
+    inside ``<...>``, where the tag parser splits options on commas first. The
     labels are **not** coerced to integers, because the dataframe index may be
     a PeriodIndex, DatetimeIndex, quarterly strings, or another custom index
     type. If ``df`` is supplied, its index is used via ``slice_locs`` to
@@ -1256,16 +1260,28 @@ def _parse_smpl(smpl, df=None):
     if not text:
         return None
 
+    # Accept a parenthesised spelling, so <smpl=(2000 2025)> reads the same as
+    # the Python-side smpl=(2000, 2025) tuple. Note that inside a FRML tag only
+    # the blank-separated form works: kw_frml_name splits the tag's options on
+    # commas without regard for brackets, so <smpl=(2000,2025)> would arrive
+    # here already broken in two.
+    closing = {'(': ')', '[': ']'}
+    if len(text) > 1 and text[0] in closing and text[-1] == closing[text[0]]:
+        text = text[1:-1].strip()
+        if not text:
+            return None
+
     # New preferred syntax: <smpl=start end>. Keep old colon syntax so older
     # notebooks do not break.
-    if ':' in text and len(text.split()) == 1:
+    if ':' in text and ',' not in text and len(text.split()) == 1:
         start, end = [p.strip() for p in text.split(':', 1)]
     else:
-        parts = text.split()
+        parts = [p for p in re.split(r'[,\s]+', text) if p]
         if len(parts) != 2:
             raise ModelSpecificationError(
-                "SMPL must be written as 'start end' separated by blanks "
-                f"(or legacy 'start:end'); got {smpl!r}"
+                "SMPL must be written as 'start end' separated by blanks, "
+                "optionally bracketed as '(start end)' (or legacy "
+                f"'start:end'); got {smpl!r}"
             )
         start, end = parts
 
