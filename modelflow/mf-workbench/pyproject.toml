@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mf_workbench"
+version = "0.1.0"
+description = "ModelFlow model workbench panel for JupyterLab"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = [
+    "networkx",
+]
+
+[tool.hatch.version]
+path = "mf_workbench/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+artifacts = ["mf_workbench/labextension"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"mf_workbench/labextension" = "share/jupyter/labextensions/mf-workbench"
+"install.json" = "share/jupyter/labextensions/mf-workbench/install.json"
+
+[tool.hatch.build.hooks.jupyter-builder]
+dependencies = ["hatch-jupyter-builder>=0.5"]
+build-function = "hatch_jupyter_builder.npm_builder"
+ensure-targets = [
+    "mf_workbench/labextension/static/style.js",
+    "mf_workbench/labextension/package.json",
+]
+skip-if-exists = ["mf_workbench/labextension/static/style.js"]
+
+[tool.hatch.build.hooks.jupyter-builder.build-kwargs]
+build_cmd = "build:prod"
+npm = ["jlpm"]
+
+[tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
+build_cmd = "build"
+npm = ["jlpm"]
+source_dir = "src"
+build_dir = "mf_workbench/labextension"

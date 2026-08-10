@@ -1193,12 +1193,12 @@ def un_normalize_expression(frml,implicit=False,endo='') :
     else the lhs_varriable is used in <endo=> 
     ''' 
     frml_name,frml_index,frml_rest = findindex_gams(frml.upper())
-    debug_var(frml_name,frml_index,frml_rest)
+    # debug_var(frml_name,frml_index,frml_rest)
     
     if kw_frml_name(frml_name.upper(), 'IMPLICIT') or implicit: 
         
         this_endo = endo.upper() if endo else  kw_frml_name(frml_name.upper(), 'ENDO')
-        debug_var(this_endo)
+        # debug_var(this_endo)
         lhs,rhs  = frml_rest.split('=')
         if this_endo: 
             lhs_var = this_endo.strip()
@@ -1214,7 +1214,7 @@ def un_normalize_expression(frml,implicit=False,endo='') :
     else: 
          return frml
 
-def un_normalize_model(in_equations,funks=[]):
+def un_normalize_model(in_equations,implicit=False,funks=[]):
     ''' un normalize a model '''
     nymodel=[]
     equations=in_equations.upper()  # we want do change the e
@@ -1225,7 +1225,7 @@ def un_normalize_model(in_equations,funks=[]):
         if comment:
             nymodel.append(comment)
         elif command=='FRML':
-            un_frml = un_normalize_expression(value[:-1])
+            un_frml = un_normalize_expression(value[:-1],implicit=implicit)
             nymodel.append(f'FRML {un_frml} $')
         else:
             nymodel.append(command+' '+value)

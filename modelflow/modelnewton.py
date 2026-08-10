@@ -124,8 +124,8 @@ class newton_diff():
     #     pass
     # # [Methods implementations]
 
-    def __init__(self, mmodel, df = None , endovar = None,onlyendocur=False, 
-                 timeit=False, silent = True, forcenum=False,per='',ljit=0,nchunk=None,endoandexo=False):
+    def __init__(self, mmodel, df = None , endovar = None,onlyendocur=False,
+                 timeit=False, silent = True, forcenum=False,per='',ljit=0,nchunk=None,endoandexo=False,ng=0):
         """
         
 
@@ -139,8 +139,9 @@ class newton_diff():
             forcenum (TYPE, optional): Force differentiation to be numeric else try sumbolic (slower)  Defaults to False.
             per (TYPE, optional): Period for which to calculte the jacobi . Defaults to ''.
             ljit (TYPE, optional): Trigger just in time compilation of the differential coiefficient. Defaults to 0.
-            nchunk (TYPE, optional): Chunks for which the model is written  - relevant if ljit == True. Defaults to None.
+            nchunk (TYPE, optional): Chunks for which the model is written  - relevant if ljit == True. Defaults to None (30 if ljit is set).
             endoandexo (TYPE, optional): Calculate for both endogeneous and exogeneous . Defaults to False.
+            ng (TYPE, optional): Evaluate the derivatives model with the ng solver (res_ng) instead of res. Defaults to 0.
 
         Returns:
             None.
@@ -157,7 +158,10 @@ class newton_diff():
         self.timeit= timeit 
         self.per=per
         self.ljit=ljit
-        self.nchunk = nchunk
+        # jitting one huge unchunked function makes numba compilation explode,
+        # so when ljit is on the generated code is always chunked
+        self.nchunk = nchunk if nchunk is not None else (30 if ljit else None)
+        self.ng = ng
         if not self.silent: print(f'Prepare model for calculate derivatives for Newton solver')
         # for all equations list either left hand variable or ENDO in frml name 
         self.declared_endo_list0 =  [pt.kw_frml_name(self.mmodel.allvar[v]['frmlname'], 'ENDO',v) 
@@ -415,7 +419,7 @@ class newton_diff():
                       for rhsvar in sorted(self.diffendocur[lhsvar])
                     ] )
             dmodel = self.newmodel(out,funks=self.mmodel.funks,straight=True,
-           modelname=self.mmodel.name +' Derivatives '+ ' no lags and leads' if self.onlyendocur else ' all lags and leads')
+           modelname=self.mmodel.name +' Derivatives '+ (' no lags and leads' if self.onlyendocur else ' all lags and leads'))
         return dmodel 
  
 
@@ -440,14 +444,19 @@ class newton_diff():
         else:
             _per = [_per_first]
             
-        _df = self.df if type(df)  != pd.DataFrame else df  
+        _df = self.df if type(df)  != pd.DataFrame else df
         self.df = _df
         _df = _df.pipe(lambda df0: df0.rename(columns={c: c.upper() for c in df0.columns}))
-   
-        self.diff_model.current_per = _per     
+        # add the diff-model output columns BEFORE the call: otherwise every
+        # call looks like new data to is_newdata and the evaluator is
+        # re-exec'ed / recompiled on every Jacobian refresh
+        _df = insertModelVar(_df, self.diff_model)
+
+        self.diff_model.current_per = _per
         # breakpoint()
         with ttimer('calculate derivatives',self.timeit):
-            self.difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,
+            reseval = self.diff_model.res_ng if self.ng else self.diff_model.res
+            self.difres = reseval(_df,silent=self.silent,stats=0,ljit=self.ljit,
                                               chunk=self.nchunk).loc[_per,sorted(self.diff_model.endogene)].fillna(0.0)
         with ttimer('Prepare wide input to sparse matrix',self.timeit):
             # breakpoint()
@@ -607,8 +616,23 @@ class newton_diff():
  
     def get_diff_df_1per(self,df=None,periode=None):
         self.jacsparsedic = self.get_diff_mat_1per(df=df,periode=periode)
-        self.jacdfdic = {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar) for p,jac in self.jacsparsedic.items()}
+        self._jacorgsparsedic = self.jacsparsedic
         return self.jacdfdic
+
+    @property
+    def jacdfdic(self):
+        '''Dense DataFrame view of the per-period Jacobians (``jacsparsedic``),
+        materialized on demand.  Inspection aid -- rebuilt on every access, so
+        bind it to a name before working with it repeatedly.'''
+        return {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar)
+                for p,jac in self.jacsparsedic.items()}
+
+    @property
+    def jacorgdfdic(self):
+        '''Dense DataFrame view of the raw per-period Jacobians (before the
+        residual-row mask is applied), materialized on demand.'''
+        return {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar)
+                for p,jac in self._jacorgsparsedic.items()}
      
     
 
@@ -635,13 +659,31 @@ class newton_diff():
            diag_mask = sp.sparse.diags((~is_residual_eq).astype(float))
            temp = self.get_diff_mat_1per(df=df,periode=periode)
            self.jacsparsedic  = { p: jac - diag_mask for p,jac in temp.items()  }
-        else: 
-            self.jacsparsedic = self.get_diff_mat_1per(df=df,periode=periode)
-            
-        self.jacorgdfdic = {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar) for p,jac in temp.items()}
-        self.jacdfdic = {p: pd.DataFrame(jac.toarray(),columns=self.endovar,index=self.endovar) for p,jac in self.jacsparsedic.items()}
-    
-        self.solvelusparsedic = {p: sp.sparse.linalg.factorized(jac) for p,jac in self.jacsparsedic.items()}
+        else:
+            temp = self.get_diff_mat_1per(df=df,periode=periode)
+            self.jacsparsedic = temp
+
+        # dense DataFrame views (jacorgdfdic / jacdfdic) are lazy properties --
+        # materializing n x n frames for every period on each nonlin refresh
+        # dominated the refresh cost for large models
+        self._jacorgsparsedic = temp
+
+        # every period's Jacobian shares one sparsity pattern, so with
+        # factorizer='umfpack' the symbolic analysis is done once and reused
+        # across all periods (and later nonlin refreshes)
+        if getattr(self,'factorizer',None) == 'umfpack':
+            with ttimer('umfpack factorize per-period jacobians',self.timeit):
+                self.solvelusparsedic = {p: self._factorize_umfpack(jac, timeit=False)
+                                         for p,jac in self.jacsparsedic.items()}
+            return self.solvelusparsedic
+        # the per-period Jacobian pattern is the model's dependency graph, not
+        # a band, so scipy's default ordering (COLAMD) is kept unless a
+        # permc_spec is set explicitly
+        if getattr(self,'permc_spec',None):
+            self.solvelusparsedic = {p: sp.sparse.linalg.splu(jac,permc_spec=self.permc_spec).solve
+                                     for p,jac in self.jacsparsedic.items()}
+        else:
+            self.solvelusparsedic = {p: sp.sparse.linalg.factorized(jac) for p,jac in self.jacsparsedic.items()}
         return self.solvelusparsedic
 
      
@@ -651,11 +693,57 @@ class newton_diff():
         # breakpoint()     
         if is_residual_eq is not None and not self.mmodel.normalized :
            diag_mask = sp.sparse.diags((~is_residual_eq).astype(float))
-           self.stacked =  self.get_diff_mat_tot(df=df) - diag_mask 
-        else: 
+           self.stacked =  self.get_diff_mat_tot(df=df) - diag_mask
+        else:
             self.stacked = self.get_diff_mat_tot(df=df)
-        self.solvestacked = sp.sparse.linalg.factorized(self.stacked)
+        if getattr(self,'factorizer',None) == 'umfpack':
+            self.solvestacked = self._factorize_umfpack(self.stacked)
+        else:
+            with ttimer('factorize stacked jacobian',self.timeit):
+                # 'NATURAL' preserves the block-band structure of the stacked
+                # matrix (period blocks coupled over a narrow lag/lead range);
+                # fill-reducing orderings like COLAMD scramble the band and can
+                # explode fill (13s -> 1.2s on FRB/US MCE).  Any SuperLU
+                # ordering can be selected via the permc_spec attribute.
+                permc_spec = getattr(self,'permc_spec',None) or 'NATURAL'
+                self.solvestacked = sp.sparse.linalg.splu(self.stacked,permc_spec=permc_spec).solve
         return self.solvestacked
+
+    def _factorize_umfpack(self, jac, timeit=None):
+        """LU factorization through cvxopt's UMFPACK, reusing the symbolic analysis.
+
+        The Jacobian keeps the same sparsity pattern between factorizations --
+        across rebuilds of the stacked matrix, and across periods and nonlin
+        refreshes of the per-period matrices -- only the values change, so the
+        fill-reducing symbolic analysis is done once and cached on the
+        instance; later factorizations redo only the numeric phase.  The
+        cached analysis is invalidated if the pattern does change (different
+        period range or model).  Returns a solve callable like ``factorized``.
+        """
+        from cvxopt import matrix, spmatrix
+        from cvxopt import umfpack
+
+        timeit = self.timeit if timeit is None else timeit
+        coo = jac.tocoo()
+        with ttimer('umfpack build spmatrix',timeit):
+            A = spmatrix(matrix(coo.data), coo.row.tolist(), coo.col.tolist(), coo.shape)
+
+        same_pattern = (getattr(self,'_umf_pattern',None) is not None
+                        and np.array_equal(self._umf_pattern[0], jac.indptr)
+                        and np.array_equal(self._umf_pattern[1], jac.indices))
+        if not same_pattern:
+            with ttimer('umfpack symbolic analysis',timeit):
+                self._umf_symbolic = umfpack.symbolic(A)
+            self._umf_pattern = (jac.indptr.copy(), jac.indices.copy())
+        with ttimer('umfpack numeric factorization',timeit):
+            numeric = umfpack.numeric(A, self._umf_symbolic)
+
+        def solvejac(b):
+            x = matrix(np.asarray(b, dtype='float64'))
+            umfpack.solve(A, numeric, x)
+            return np.asarray(x).ravel()
+
+        return solvejac
     
     def get_solvestacked_it(self,df='',solver = sp.sparse.linalg.bicg):
 #        if update or not hasattr(self,'stacked'):
@@ -686,12 +774,16 @@ class newton_diff():
             else:
                 _per = [_per_first]
                 
-            _df = self.df if type(df)  != pd.DataFrame else df  
+            _df = self.df if type(df)  != pd.DataFrame else df
             _df = _df.pipe(lambda df0: df0.rename(columns={c: c.upper() for c in df0.columns}))
-       
-            self.diff_model.current_per = _per     
+            # see get_diff_melted: expand before the call so is_newdata
+            # recognizes the databank and the evaluator is reused
+            _df = insertModelVar(_df, self.diff_model)
+
+            self.diff_model.current_per = _per
             # breakpoint()
-            difres = self.diff_model.res(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk
+            reseval = self.diff_model.res_ng if self.ng else self.diff_model.res
+            difres = reseval(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk
                                          ).loc[_per,sorted(self.diff_model.endogene)].fillna(0.0).astype('float')
                   
             cname = namedtuple('cname','var,pvar,lag')

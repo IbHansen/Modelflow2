@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modelflowib"                       # PyPI distribution name
-version = "2.72"                           # OVERWRITTEN at build time from MF_VERSION
+version = "2.76"                           # OVERWRITTEN at build time from MF_VERSION
                                             # (set_pyproject_version.py / make_pip.py -v)
 description = "A tool to solve and manage dynamic economic and financial models"
 readme = "README.md"
@@ -63,7 +63,7 @@ py-modules = [
     "modelhelp", "modelBLfunk", "modeluserfunk", "model_financial_stability",
     "modelmf", "model_parquet_mixin", "model_cvx",
     # solve (3)
-    "modelnewton", "modelinvert", "modeldiff",
+    "modelnewton", "modelinvert", "modeldiff","modelsolver_ng",
     # analysis (2)
     "modeldekom", "modelnet",
     # onboard (8)

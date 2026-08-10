@@ -105,6 +105,7 @@ import modelvis as mv
 import modelpattern as pt
 from modelnet import draw_adjacency_matrix
 from modelnewton import newton_diff
+from modelsolver_ng import Solver_ng_Mixin
 import modeljupyter as mj
 from modelhelp import cutout, update_var
 from modelnormalize import normal
@@ -147,7 +148,7 @@ class BaseModel():
                  tabcomplete=True, previousbase=False, use_preorder=True, normalized=True,safeorder= False,
                  var_description={}, model_description = '', 
                  var_groups = {}, reports = {}, equations_latex='', 
-                 eviews_dict = {},use_fbmin= False,
+                 eviews_dict = {},use_fbmin= True,
                  substitution = {},
                  **kwargs):
         ''' initialize a model'''
@@ -6472,6 +6473,8 @@ class Solver_Mixin():
 
         solver : str, optional
             Specifies the solver to be used. The default solver is chosen based on the model's properties.
+            A next-generation (modelsolver_ng) solver can be selected by passing its
+            ``<name>_ng`` name, e.g. ``solver='newton_ng'`` or ``solver='sim_ng'``.
 
         silent : bool, optional
             If True, the solver runs silently without printing output to the console. Default is True.
@@ -6549,7 +6552,7 @@ class Solver_Mixin():
         solver = newkwargs.get('solver', solverguess)
         silent = newkwargs.get('silent', True)
         self.model_solver = getattr(self, solver)
-        
+
         # print(f'solver:{solver},solverkwargs:{newkwargs}')
         # breakpoint()
         outdf = self.model_solver(*args, **newkwargs)
@@ -6650,7 +6653,9 @@ class Solver_Mixin():
                     # breakpoint()
                    # if we import from a cache, we assume that the dataframe is in the same order
                     if transpile_reset or not hasattr(self, f'pro_{jitname}'):
-                        jitfilename= f'modelsource/{jitname}_jitsolver.py'.replace(' ','_')
+                        # sanitize: the model name can contain characters that
+                        # are illegal in a module name / file path (e.g. 'FRB/US')
+                        jitfilename= f"modelsource/{re.sub(r'[^0-9a-zA-Z_]', '_', jitname)}_jitsolver.py"
                         jitfile = Path(jitfilename)
                         jitfile.parent.mkdir(parents=True, exist_ok=True)
                         if not silent:
@@ -9357,7 +9362,7 @@ class Report_Mixin:
              
 from model_parquet_mixin import Parquet_Mixin
 
-class model(Parquet_Mixin, Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
+class model(Parquet_Mixin, Zip_Mixin, Json_Mixin, Model_help_Mixin, Solver_Mixin, Solver_ng_Mixin, Display_Mixin, Graph_Draw_Mixin, Graph_Mixin,
             Dekomp_Mixin, Org_model_Mixin, BaseModel, Description_Mixin, Excel_Mixin, Dash_Mixin, Modify_Mixin,
             Fix_Mixin,Stability_Mixin,Report_Mixin):
     '''This is the main model definition'''
@@ -9645,8 +9650,7 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         # zz = model.modelload(r'https://raw.githubusercontent.com/IbHansen/Modelflow2/master/Examples/ADAM/baseline.pcim')
         mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True)
         alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
-        result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=0) # simulates the model 
-        diff_level, att_level, att_pct, diff_growth, att_growth = tup = mpak.dekomp('PAKNECONOTHRXN',lprint=False,start=2020,end=2027)
+        result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=0,solver='sim',nonlin=6) # simulates the model 
     
     
         fb_nodes,dag_nodes = mpak.get_minimal_feedback_set(mpak.endograph)
@@ -9654,3 +9658,171 @@ frml <CALC_ADJUST> b_a = a-(c+b)$'''
         print(f'Number of variables in "minimum" feedback set: {len(fb_nodes)}')
         print(f'Number of variables in "DAG" graph           : {len(dag_nodes)}')
         # mtest,bk = model.modelload(r'ibstestnozip')
+
+#%%  test next-generation (ng) solvers against the legacy solvers
+    if 1:
+        ngmodel = model(smallmodel)
+        ngdf = pd.DataFrame(
+            {'X': [0.2, 0.2, 0.2], 'C': [2.0, 3., 5.], 'R': [2., 1., 0.4],
+             'PPP': [0.4, 0., 0.4]})
+
+        # Gauss-Seidel:  legacy .sim  vs  new .sim_ng
+        old_sim = ngmodel.sim(ngdf, silent=1)
+        new_sim = ngmodel.sim_ng(ngdf, silent=1)
+        d_sim = float((old_sim - new_sim).abs().max().max())
+        print(f'sim                  vs sim_ng          max abs diff: {d_sim:.3e}')
+
+        # 1-D stuffed Gauss-Seidel: legacy .sim1d vs new .sim1d_ng
+        old_sim1d = ngmodel.sim1d(ngdf, silent=1)
+        new_sim1d = ngmodel.sim1d_ng(ngdf, silent=1)
+        d_sim1d = float((old_sim1d - new_sim1d).abs().max().max())
+        print(f'sim1d                vs sim1d_ng        max abs diff: {d_sim1d:.3e}')
+
+        # Newton needs a well-posed simultaneous model: the smallmodel above is
+        # singular for D3 (D3 = ... + D3 -> zero on the Jacobian diagonal once the
+        # -I term is applied), so use a small non-degenerate linear one here.
+        # No recursive tail on purpose: per-period Newton solves only the
+        # simultaneous core (endovar = coreorder), so a recursive var would be left
+        # unsolved and legitimately disagree with the stacked solver (all endo).
+        goodmodel = model('frml <> a = 0.5*b + x $ '
+                          'frml <> b = 0.3*a + c $ ')
+        gdf = pd.DataFrame({'X': [1.0, 2., 3.], 'C': [2.0, 2., 2.]})
+
+        # unified per-period Newton: legacy .newton_implicit vs new .newton_ng
+        old_newton = goodmodel.newton_implicit(gdf, silent=1)
+        new_newton = goodmodel.newton_ng(gdf, silent=1)
+        d_newton = float((old_newton - new_newton).abs().max().max())
+        print(f'newton_implicit      vs newton_ng       max abs diff: {d_newton:.3e}')
+
+        # unified stacked Newton: legacy .newtonstack_implicit vs new .newtonstack_ng
+        old_stack = goodmodel.newtonstack_implicit(gdf, silent=1)
+        new_stack = goodmodel.newtonstack_ng(gdf, silent=1)
+        d_stack = float((old_stack - new_stack).abs().max().max())
+        print(f'newtonstack_implicit vs newtonstack_ng  max abs diff: {d_stack:.3e}')
+
+        # 'newtonstack_implicit_ng' is an alias for 'newtonstack_ng'
+        d_alias = float((goodmodel.newtonstack_implicit_ng(gdf, silent=1)
+                         - new_stack).abs().max().max())
+
+        # per-period and stacked Newton must reach the same (well-posed) solution
+        d_cross = float((new_newton - new_stack).abs().max().max())
+        print(f'newton_ng            vs newtonstack_ng  max abs diff: {d_cross:.3e}')
+
+        # single-pass DAG evaluator: legacy .xgenr vs new .xgenr_ng.  (This toy
+        # model is actually simultaneous, so xgenr's single sweep is not a real
+        # solution -- but both implementations must produce the SAME sweep.)
+        old_xgenr = ngmodel.xgenr(ngdf, silent=1)
+        new_xgenr = ngmodel.xgenr_ng(ngdf, silent=1)
+        d_xgenr = float((old_xgenr - new_xgenr).abs().max().max())
+        print(f'xgenr                vs xgenr_ng        max abs diff: {d_xgenr:.3e}')
+
+        # dispatcher form (well-posed model)
+        disp = goodmodel.solve_ng(gdf, solver='newton', silent=1)
+        d_disp = float((disp - new_newton).abs().max().max())
+        print(f'solve_ng(newton) matches newton_ng : {d_disp < 1e-9}')
+
+        # __call__ can select an ng solver via its '<name>_ng' name, with the
+        # unchanged getattr(self, solver) dispatch. The surrounding __call__
+        # behaviour is identical, so solver='sim' and solver='sim_ng' must match.
+        call_classic = ngmodel(ngdf, solver='sim', silent=1, reset_options=True)
+        call_ng = ngmodel(ngdf, solver='sim_ng', silent=1, reset_options=True)
+        d_call = float((call_classic - call_ng).abs().max().max())
+        print(f"__call__(solver='sim') vs (solver='sim_ng') max abs diff: {d_call:.3e}")
+
+        # opt-in residual recording: keep_residual=True populates model.ng_residual
+        # (Gauss builds a no-jit res model only then; default solves skip it).
+        goodmodel.sim_ng(gdf, silent=1, keep_residual=True)
+        r_gauss = float(goodmodel.ng_residual.abs().max().max())
+        goodmodel.newton_ng(gdf, silent=1, keep_residual=True)
+        r_newton = float(goodmodel.ng_residual.abs().max().max())
+        print(f'keep_residual: sim_ng max|F(y)-y| {r_gauss:.3e}, newton_ng {r_newton:.3e}')
+
+        assert (d_sim < 1e-6 and d_sim1d < 1e-6 and d_xgenr < 1e-6
+                and d_newton < 1e-6 and d_stack < 1e-6 and d_alias < 1e-12
+                and d_cross < 1e-6 and d_call < 1e-6
+                and r_gauss < 1e-4 and r_newton < 1e-4), \
+            'ng solver diverges from legacy'
+        print('ng solver test: OK')
+
+#%%  experiment: solve the PAK carbon-tax scenario with each ng solver and
+#     check every solver reaches the same solution as the default solve.
+    if 1:
+        mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True,ljit=False)
+        # The reference is the default solve computed above:
+        #   result = mpak(alternative, 2020, 2100, keep='Carbon tax nominal 30')
+        # Excluded: 'res' (an internal residual-codegen flavour, not a stand-alone
+        # solver) and 'xgenr' (a single topological sweep -- only valid for a DAG,
+        # not this simultaneous model).
+        # ('newtonstack_implicit' is an alias of 'newtonstack' -- same solver.)
+        ng_experiment = ['sim', 'sim1d', 'newton', 'newtonstack','newton_fbmin','newtonstack_fbmin']
+
+        # The Newton-family solvers refresh the Jacobian periodically (nonlin) for
+        # this nonlinear model; Gauss-Seidel needs no options. Any converged solver
+        # must reach the same fixed point as the default solve.
+        newton_opts = dict(nonlin=6)
+        solver_opts = {
+            'sim': {}, 'sim1d': {},
+            'newton': newton_opts, 'newtonstack': newton_opts,
+            'newton_fbmin': newton_opts,  'newtonstack_fbmin': newton_opts
+        }
+
+        endo = sorted(mpak.endogene)
+        ref = result[endo]          # default (auto-guessed) solution, endo columns
+
+        print('\nPAK carbon-tax scenario -- ng solver experiment (vs default solve):')
+        print(f'{"solver":26s}{"max |diff|":>16s}{"max rel diff":>16s}  result')
+        diffs = []          # converged but disagrees -> real problem
+        failed = []         # raised / did not converge -> solver limitation
+        for sname in ng_experiment:
+            try:
+                r = mpak(alternative, 2020, 2100, solver=f'{sname}_ng',
+                         silent=1, reset_options=True,ljit=False, 
+                         keep=f'Carbon tax 30 [{sname}_ng]',
+                         **solver_opts[sname])
+            except Exception as e:
+                print(f'{sname + "_ng":26s}{"solve raised":>32s}  {type(e).__name__}')
+                failed.append(f'{sname} ({type(e).__name__})')
+                continue
+            cur = r[endo]
+            absdiff = (cur - ref).abs()
+            maxabs = float(absdiff.max().max())
+            relerr = float((absdiff / (ref.abs() + 1e-8)).max().max())
+            same = np.allclose(cur.values, ref.values, rtol=1e-2, atol=1e-2)
+            print(f'{sname + "_ng":26s}{maxabs:16.3e}{relerr:16.3e}  '
+                  f'{"same" if same else "DIFFERENT"}')
+            if not same:
+                diffs.append(f'{sname} (max rel diff {relerr:.2e})')
+
+        # Report only -- this is a real-world demonstration, not a unit test.
+        # Gauss-Seidel (sim/sim1d) must match the default solve; the Newton family
+        # should match too now that per-period Newton also solves the recursive
+        # prolog/epilog blocks. Only Gauss-Seidel mismatches are asserted.
+        gs_problems = [d for d in diffs if d.split()[0] in ('sim', 'sim1d')]
+        if failed:
+            print(f'PAK solver experiment: did not converge / raised: {failed}')
+        if diffs:
+            print(f'PAK solver experiment: differ from default solve: {diffs}')
+        if not failed and not diffs:
+            print('PAK solver experiment: all ng solvers match the default solve')
+        assert not gs_problems, \
+            f'Gauss-Seidel ng solver differs from default solve: {gs_problems}'
+#%%
+    with mpak.timer('load') :
+        mpak,baseline = model.modelload(r'pak.pcim',run=1,use_fbmin=True,ljit=False,solver='sim1d')
+    with mpak.timer('update'):     
+        alternative  =  baseline.upd("<2020 2100> PAKGGREVCO2CER PAKGGREVCO2GER PAKGGREVCO2OER = 30")
+#%%
+    with mpak.timer('newton_ng'):     
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=0,solver='newton_ng',nonlin=20,max_iterations=100,ljit=True,jacobian='fd') # simulates the model 
+    with mpak.timer('newton_ng jit'):     
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newton_fbmin_ng',max_iterations=100,ljit=True,jacobian='fd') # simulates the model 
+    with mpak.timer('sim'):     
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='sim_ng',nonlin=23,ljit=False) # simulates the model 
+    with mpak.timer('sim jit'):     
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='sim_ng',nonlin=23,ljit=True) # simulates the model 
+#%%
+    with mpak.timer('newtonstack_fbmin_ng'):
+       # reset_options: __call__ options are sticky, so jacobian='fd' from the
+       # newton_fbmin cells above would otherwise leak in (a fd build here is
+       # n_fb_stacked+1 full-span sweeps -- minutes of silence)
+       result = mpak(alternative,2020,2100,keep='Carbon tax nominal 30',silent=1,solver='newtonstack_fbmin_ng',nonlin=5,max_iterations=100,ljit=False,reset_options=True) # simulates the model

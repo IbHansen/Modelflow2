@@ -1165,8 +1165,12 @@ def _parse_smpl(smpl, df=None):
     Preferred FRML syntax is::
 
         <smpl=start end>
+        <smpl=(start end)>
 
-    where ``start`` and ``end`` are separated by one or more blanks. The
+    where ``start`` and ``end`` are separated by one or more blanks, with the
+    brackets optional. A comma may separate them when the value does not pass
+    through a FRML tag -- ``smpl='2000, 2025'`` as a keyword argument -- but not
+    inside ``<...>``, where the tag parser splits options on commas first. The
     labels are **not** coerced to integers, because the dataframe index may be
     a PeriodIndex, DatetimeIndex, quarterly strings, or another custom index
     type. If ``df`` is supplied, its index is used via ``slice_locs`` to
@@ -1256,16 +1260,28 @@ def _parse_smpl(smpl, df=None):
     if not text:
         return None
 
+    # Accept a parenthesised spelling, so <smpl=(2000 2025)> reads the same as
+    # the Python-side smpl=(2000, 2025) tuple. Note that inside a FRML tag only
+    # the blank-separated form works: kw_frml_name splits the tag's options on
+    # commas without regard for brackets, so <smpl=(2000,2025)> would arrive
+    # here already broken in two.
+    closing = {'(': ')', '[': ']'}
+    if len(text) > 1 and text[0] in closing and text[-1] == closing[text[0]]:
+        text = text[1:-1].strip()
+        if not text:
+            return None
+
     # New preferred syntax: <smpl=start end>. Keep old colon syntax so older
     # notebooks do not break.
-    if ':' in text and len(text.split()) == 1:
+    if ':' in text and ',' not in text and len(text.split()) == 1:
         start, end = [p.strip() for p in text.split(':', 1)]
     else:
-        parts = text.split()
+        parts = [p for p in re.split(r'[,\s]+', text) if p]
         if len(parts) != 2:
             raise ModelSpecificationError(
-                "SMPL must be written as 'start end' separated by blanks "
-                f"(or legacy 'start:end'); got {smpl!r}"
+                "SMPL must be written as 'start end' separated by blanks, "
+                "optionally bracketed as '(start end)' (or legacy "
+                f"'start:end'); got {smpl!r}"
             )
         start, end = parts
 
@@ -1631,11 +1647,17 @@ def _estimate_and_bake_expression(
     estimator_name,
     input_df=None,
     smpl=None,
+    smpl_is_local: bool = False,
     caption: Optional[str] = None,
     estimator_kwargs: Optional[dict] = None,
     estimator_classes: Optional[dict] = None,
 ):
-    """Instantiate an estimator/factory, run it, and return (baked_expression, estimator_obj)."""
+    """Instantiate an estimator/factory, run it, and return (baked_expression, estimator_obj).
+
+    ``smpl_is_local`` marks a sample that came from this equation's own
+    ``<smpl=...>`` rather than from the model-wide default, which decides
+    whether it may override a model-wide ``estimator_kwargs['smpl']``.
+    """
     estimator_constructor = _get_estimator_class(estimator_name, estimator_classes)
     kwargs = dict(estimator_kwargs or {})
 
@@ -1644,13 +1666,16 @@ def _estimate_and_bake_expression(
     # still override the factory's stored defaults.
     if input_df is not None and 'input_df' not in kwargs:
         kwargs['input_df'] = input_df
-    if smpl is not None and 'smpl' not in kwargs:
+    # An equation-local <smpl=...> outranks the model-wide estimator_kwargs; a
+    # model-wide Makemodel.smpl does not.
+    if smpl is not None and (smpl_is_local or 'smpl' not in kwargs):
         kwargs['smpl'] = smpl
     if caption is not None and 'caption' not in kwargs:
         kwargs['caption'] = caption
 
     estimator_obj = _instantiate_estimator(estimator_constructor, expression, kwargs)
-    estimator_obj = _require_estimator_backend_instance(estimator_obj, estimator_name)
+    # Validates in place and raises; it returns the same object, so do not rebind.
+    _require_estimator_backend_instance(estimator_obj, estimator_name)
     fit_result = _maybe_run_estimator_fit(estimator_obj)
 
     baked = _extract_expression_from_estimator(estimator_obj, fit_result)
@@ -1768,20 +1793,39 @@ def _markdown_with_estimation_blocks(original_text: str, estimation_records: lis
     """Insert estimation markdown blocks after estimator-tagged source lines.
 
     This preserves the original user-facing Markdown as much as possible. For
-    the common notebook syntax, each line beginning with ``>`` and containing
+    the common notebook syntax, each equation beginning with ``>`` and containing
     ``<estimator=...>`` gets the next estimation block inserted immediately
     after it. If template expansion creates more estimated equations than can
     be matched to source lines, the remaining blocks are appended at the end.
+
+    An equation can be spread over several lines: a ``>`` line followed by
+    ``>>`` continuations, which the parser joins into one statement. The block
+    goes after the last of those, so the whole equation is shown before its
+    estimation output rather than being split around it.
     """
     records = list(estimation_records or [])
     if not records:
         return original_text
 
+    lines = original_text.splitlines()
     out = []
     rec_i = 0
-    for line in original_text.splitlines():
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         out.append(line)
-        if rec_i < len(records) and _line_has_estimator_tag(line):
+        i += 1
+
+        if not _line_has_estimator_tag(line):
+            continue
+
+        # Carry the rest of the equation across before inserting the block.
+        # The tag may sit on the '>' line or on any of its continuations.
+        while i < len(lines) and lines[i].lstrip().startswith(">>"):
+            out.append(lines[i])
+            i += 1
+
+        if rec_i < len(records):
             out.append(_estimation_record_to_markdown(records[rec_i]).rstrip())
             rec_i += 1
 
@@ -1793,6 +1837,34 @@ def _markdown_with_estimation_blocks(original_text: str, estimation_records: lis
             out.append(_estimation_record_to_markdown(rec).rstrip())
 
     return "\n".join(out)
+
+
+def _strip_markdown_list_blocks(text: str) -> str:
+    """Remove ``>list`` / ``>tlist`` definition blocks from markdown model text.
+
+    A list block is a line whose content (after the leading ``>``) begins with
+    ``list`` or ``tlist``, together with any immediately following ``>>``
+    continuation lines. Equation lines and their ``>>`` continuations are left
+    untouched, because those continuations follow a ``>`` equation line rather
+    than a ``>list`` line.
+
+    Used by ``markdown_with_estimation_no_list`` to support the
+    ``render_list=0`` rendering path of the ``%%Makemymodel`` magic.
+    """
+    out = []
+    in_list = False
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if in_list:
+            if stripped.startswith('>>'):
+                # Continuation of the current list definition.
+                continue
+            in_list = False
+        if re.match(r'>\s*(list|tlist)\b', stripped, flags=re.IGNORECASE):
+            in_list = True
+            continue
+        out.append(line)
+    return '\n'.join(out)
 
 
 @dataclass
@@ -1939,9 +2011,80 @@ class BaseExplode:
 
 @dataclass
 class Makemodel(BaseExplode):
+    """Expand a model template (markdown or modelflow) into solvable FRMLs.
+
+    Every attribute below can be inspected with a ``show`` prefix, which prints
+    it nicely, for instance ``consumption.showpost_sum``. The stages follow the
+    order in which ``__post_init__`` produces them.
+
+    **1. Input and options (what you pass in)**
+
+    | Attribute | Description |
+    |---|---|
+    | `showoriginal_statements` | Input expressions |
+    | `showlist_defs` | Lists definitions |
+    | `showtype_input` | Originaal as type modelflow or markdown |
+    | `showreplacements` | list of string tupels with string replacements |
+    | `showfunks` | List of user specified functions to be used in model |
+    | `showmodelname` | A optional name for this (sub) model |
+    | `showvar_description` | Variable descriptions (user-supplied, merged with descriptions from estimated equations) |
+
+    **2. Estimation setup (used only for `<estimator=...>` equations)**
+
+    | Attribute | Description |
+    |---|---|
+    | `showinput_df` | DataFrame used when tagged equations are estimated |
+    | `showestimator` | Default estimator for tagged equations: method name or callable factory |
+    | `showsmpl` | Model-wide default estimation sample. `None` unless passed to the constructor or the magic -- a per-equation `<smpl=start end>` or a `with_defaults(smpl=...)` factory does not show up here. The sample each equation really used is in `showestimation_records` |
+    | `showestimator_kwargs` | Shared kwargs passed to estimator constructors |
+    | `showestimator_classes` | Optional method-name to estimator-class mapping |
+    | `showestimator_namespace` | Optional namespace for resolving `<estimator=name>`; defaults to caller locals/globals |
+
+    **3. Expansion pipeline (in the order they are produced)**
+
+    | Attribute | Description |
+    |---|---|
+    | `showclean_frml_statements` | With frml and nice lists |
+    | `showpost_doable` | Expanded after doable |
+    | `showpost_do` | Frmls after do expansion |
+    | `showpost_sum` | Frmls after expanding sums |
+    | `showexpanded_frml` | frmls after expanding |
+
+    **4. Lists**
+
+    | Attribute | Description |
+    |---|---|
+    | `showmodellist` | The lists defined in string as a dictionary |
+    | `showlists` | Same as `showmodellist` |
+    | `showlist_specification` | All list specifications in string |
+
+    `modellist` is built between `post_do` and `post_sum` (it feeds the sum
+    expansion), `list_specification` is derived at the very end.
+
+    **5. Normalization and estimation output**
+
+    | Attribute | Description |
+    |---|---|
+    | `shownormal_input_expressions` | Expressions sent to modelnormalize, after optional estimation |
+    | `showestimation_records` | Information about equations estimated during construction |
+    | `shownormal_expressions` | List of normal expressions |
+    | `shownormal_output_frmlnames` | FRML names emitted; estimation flags are preserved |
+    | `shownormal_main` | Normalized frmls |
+    | `shownormal_fit` | Normalized frmls for fitted values |
+    | `shownormal_calc_add` | Normalized frmls to calculate add factors |
+    | `shownormal_frml` | Output normalized expressions (`normal_main` + `normal_fit` + `normal_calc_add`) |
+    | `show` | The finished `normal_frml`, printed |
+
+    **6. Rendering**
+
+    | Attribute | Description |
+    |---|---|
+    | `showmarkdown_model` | As markdown |
+    """
+
     # original_statements   : str       = field(default="",        metadata={"description": "Input expressions"})
     # normal_frml           : str       = field(default="",        metadata={"description": "Output normalized expressions"})
-    
+
     normal_main           : str       = field(init=False,        metadata={"description": "Normalized frmls"})
     normal_fit            : str       = field(init=False,        metadata={"description": "Normalized frmls for fitted values"})
     normal_calc_add       : str       = field(init=False,        metadata={"description": "Normalized frmls to calculate add factors"})
@@ -2084,7 +2227,9 @@ class Makemodel(BaseExplode):
                 ))
         
         self.normal_expressions = [n for p,n  in self.normal ]
-        
+
+        self._warn_on_repeated_endogenous()
+
         # udrullet = lagarray_unroll(udrullet,funks=funks )
         # udrullet = creatematrix(udrullet,listin=modellist)
         # udrullet = createarray(udrullet,listin=modellist)
@@ -2114,6 +2259,35 @@ class Makemodel(BaseExplode):
 
         self.list_specification = self.get_lists()
         return
+
+    def _warn_on_repeated_endogenous(self):
+        """Warn when a variable is defined by more than one kept equation.
+
+        Nothing is removed: every equation stays in the emitted FRML, and
+        ``model()`` resolves the collision by letting the last definition win
+        (``modelclass.py``, where each repeat overwrites the variable's entry in
+        ``allvar``). That is usually what a notebook author means when they
+        re-estimate an equation further down, but it is worth saying out loud,
+        because the earlier equations are then dead weight -- and because a
+        typo in a mnemonic looks exactly like a deliberate redefinition.
+        """
+        equations_by_endo = {}
+        for position, (parts, normal) in enumerate(self.normal, start=1):
+            endo = getattr(normal, 'endo_var', '')
+            if endo:
+                equations_by_endo.setdefault(endo, []).append(position)
+
+        for endo, positions in equations_by_endo.items():
+            if len(positions) < 2:
+                continue
+            listed = ', '.join(str(p) for p in positions)
+            print(
+                f"⚠️  {endo} is defined by {len(positions)} equations "
+                f"(kept equations {listed}). The last of them, equation "
+                f"{positions[-1]}, is the one used when the model is solved; "
+                f"the earlier ones go into the FRML but are never evaluated. "
+                f"Tag any you do not want with <DROP>."+'\n'
+            )
 
     def _expression_after_optional_estimation(self, parts, *, equation_index: Optional[int] = None,
                                               estimator_flag: Any = ...) -> str:
@@ -2175,6 +2349,7 @@ class Makemodel(BaseExplode):
             estimator_name=estimator_name,
             input_df=self.input_df,
             smpl=smpl,
+            smpl_is_local=local_smpl is not None,
             caption=local_caption,
             estimator_kwargs=self.estimator_kwargs,
             estimator_classes=self.estimator_classes,
@@ -2262,6 +2437,20 @@ class Makemodel(BaseExplode):
     def markdown_model_with_estimation(self) -> str:
         """Alias for :attr:`markdown_with_estimation`."""
         return self.markdown_with_estimation
+
+    @property
+    def markdown_with_estimation_no_list(self) -> str:
+        """Like :attr:`markdown_with_estimation`, with ``>list`` blocks removed.
+
+        Same inline estimation tables as :attr:`markdown_with_estimation`, but
+        ``>list``/``>tlist`` definition blocks are stripped from the rendered
+        Markdown. Used by the ``%%Makemymodel`` magic when ``render_list=0`` is
+        combined with the default ``render_est`` rendering path.
+        """
+        return _markdown_with_estimation_blocks(
+            _strip_markdown_list_blocks(self.original_statements),
+            self.estimation_records,
+        )
 
     @property
     def clean_frml(self) -> str:
@@ -2629,6 +2818,14 @@ class Listmodels(BaseExplode):
     def markdown_model_with_estimation(self) -> str:
         """Alias for :attr:`markdown_with_estimation`."""
         return self.markdown_with_estimation
+
+    @property
+    def markdown_with_estimation_no_list(self) -> str:
+        """Concatenate member Makemodel markdown-with-estimation-no-list strings."""
+        return "\n\n".join(
+            mex.markdown_with_estimation_no_list
+            for mex in self.makemodels
+        )
 
     # __str__(self):
         
