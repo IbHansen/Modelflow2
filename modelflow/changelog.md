@@ -291,5 +291,5 @@ Version 2.75 uploaded
 Version 2.75 uploaded 
 fix error in markdown with estimation 
 fix issue with smpl in Makemodel 
-
+wanring for several eq for same var 
 Version 2.76 uploaded 
