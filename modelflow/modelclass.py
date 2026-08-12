@@ -3282,8 +3282,10 @@ class Modify_Mixin():
 
         Parameters
         ----------
-        updateeq : TYPE
-            new equations seperated by newline . 
+        updateeq : str or Makemodel
+            new equations seperated by newline, or a Makemodel instance whose
+            normalized equations (including per-equation add factors and
+            fitted equations, when present) are used as the update.
         newfunks : TYPE, optional
             Additional userspecified functions. The default is [].
         calc_add : bool, optional
@@ -3297,32 +3299,50 @@ class Modify_Mixin():
             a dataframe with calculated add factors. Origin is the original models lastdf.
 
         '''
-        
-            
-        updatefunks=list(set(self.funks+newfunks) ) # 
-        
-        newmodelname = newname if newname else self.name+' Updated'      
-    
-        dfvars = set(self.lastdf.columns)    
-    
-        updatemodel = mp.tofrml(updateeq)   # create the moedl with the usual processing of frml's 
-        while '  ' in updatemodel:
-            updatemodel = updatemodel.replace('  ', ' ')
-        frml2   = updatemodel.split('$') 
-        frml2_strip = [mp.split_frml(f+'$') for f in frml2 if len(f)>2]
-        frml2_normal = [[frml,fname, 
-                         normal(expression[:-1],do_preprocess=do_preprocess,add_add_factor=add_add_factor,
-                                make_fixable = pt.kw_frml_name(fname.upper(),'FIXABLE'))]
-                           for allfrml,frml,fname,expression in frml2_strip] 
-        frmldict_update = {nexpression.endo_var: f'{frml} {fname} {nexpression.normalized}$' for 
-                           frml,fname,nexpression in frml2_normal} 
-        
-        
-        if add_add_factor:
-            frmldict_calc_add = {nexpression.endo_var: f'{frml} {fname} {nexpression.calc_add_factor}$' for 
-                    frml,fname,nexpression in frml2_normal if nexpression.endo_var in self.endogene|self.exogene|dfvars } 
-        else: 
-            frmldict_calc_add={}
+        from modelconstruct_estimation import Makemodel   # local to avoid circular import
+
+        updatefunks=list(set(self.funks+newfunks) ) #
+
+        newmodelname = newname if newname else self.name+' Updated'
+
+        dfvars = set(self.lastdf.columns)
+        new_var_description = self.var_description
+
+        if isinstance(updateeq, Makemodel):
+            # the Makemodel has already expanded, optionally estimated and normalized the
+            # equations, and decided add factor/fixable/fitted per equation from its flags
+            updatefunks = list(set(updatefunks + updateeq.funks))
+            new_var_description = {**self.var_description, **updateeq.var_description}
+            frml2_normal = [['FRML', fname, nexpression]
+                            for fname, (parts, nexpression)
+                            in zip(updateeq.normal_output_frmlnames, updateeq.normal)]
+            frmldict_update = {nexpression.endo_var: f'{frml} {fname} {nexpression.normalized}$' for
+                               frml,fname,nexpression in frml2_normal}
+            frmldict_update = {**frmldict_update,
+                               **{f'{nexpression.endo_var}_FITTED': f'FRML <FIT> {nexpression.fitted}$'
+                                  for frml,fname,nexpression in frml2_normal if len(nexpression.fitted)}}
+            frmldict_calc_add = {nexpression.endo_var: f'{frml} <CALC_ADD_FACTOR> {nexpression.calc_add_factor}$' for
+                    frml,fname,nexpression in frml2_normal
+                    if len(nexpression.calc_add_factor) and nexpression.endo_var in self.endogene|self.exogene|dfvars }
+        else:
+            updatemodel = mp.tofrml(updateeq)   # create the moedl with the usual processing of frml's
+            while '  ' in updatemodel:
+                updatemodel = updatemodel.replace('  ', ' ')
+            frml2   = updatemodel.split('$')
+            frml2_strip = [mp.split_frml(f+'$') for f in frml2 if len(f)>2]
+            frml2_normal = [[frml,fname,
+                             normal(expression[:-1],do_preprocess=do_preprocess,add_add_factor=add_add_factor,
+                                    make_fixable = pt.kw_frml_name(fname.upper(),'FIXABLE'))]
+                               for allfrml,frml,fname,expression in frml2_strip]
+            frmldict_update = {nexpression.endo_var: f'{frml} {fname} {nexpression.normalized}$' for
+                               frml,fname,nexpression in frml2_normal}
+
+
+            if add_add_factor:
+                frmldict_calc_add = {nexpression.endo_var: f'{frml} {fname} {nexpression.calc_add_factor}$' for
+                        frml,fname,nexpression in frml2_normal if nexpression.endo_var in self.endogene|self.exogene|dfvars }
+            else:
+                frmldict_calc_add={}
         # breakpoint()
             
         frmldict    = {k: v['frml'] for (k,v) in self.allvar.items() if k in self.endogene } # frml's in the existing model 
@@ -3331,8 +3351,8 @@ class Modify_Mixin():
         newfrml     = '\n'.join([f for f in newfrmldict.values()])
         newmodel    =  self.__class__(newfrml,modelname = f'updated {self.name}',
                                       funks=updatefunks,
-                                 var_description=self.var_description, 
-                                 model_description = self.model_description, 
+                                 var_description=new_var_description,
+                                 model_description = self.model_description,
                                  var_groups = self.var_groups , 
                                  reports = self.reports , 
                                  substitution = self.substitution, 
