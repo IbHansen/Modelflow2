@@ -129,8 +129,19 @@ def funk_find_arg(funk_match, streng):
             return streng[:start], match[1:index], match[index + 1:]
     assert 1==2,f'Parantese mismatch in {streng}'
 
+def funk_check_arg(funk,arg,udtryk,udtryk_up):
+    '''Guards against variables named like a function.
 
- 
+    A lagged variable with a function name, fx DIFF(-1), matches DIFF( and would
+    silently be swallowed as a function call. If the argument is a pure signed
+    integer it must be such a lag, so raise an informative error instead.'''
+    if re.fullmatch(r'[+-]?\d+',arg.replace(' ','')):
+        raise Exception(f"A variable can not be named {funk}, as {funk}( is a function in the business language.\n"
+                        f"{funk}({arg}) looks like a lagged variable {funk}. Rename the variable.\n"
+                        f"Original expression: {udtryk}\n"
+                        f"Processed so far   : {udtryk_up}")
+
+
 def preprocess(udtryk,funks=[]):
     '''
     test processing expanding dlog,diff,movavg,pct,logit functions 
@@ -146,16 +157,21 @@ def preprocess(udtryk,funks=[]):
 
     '''
     udtryk_up = udtryk.upper().replace(' ','')
+    udtryk_up = funk_replace('PCT','PCT_GROWTH',udtryk_up)
+
     while  dlog_match := funk_in('DLOG',udtryk_up):
          fordlog,dlogudtryk_up,efterdlog=funk_find_arg(dlog_match,udtryk_up)
-         udtryk_up=fordlog+'DIFF(LOG('+dlogudtryk_up+'))'+efterdlog 
-          
+         funk_check_arg('DLOG',dlogudtryk_up,udtryk,udtryk_up)
+         udtryk_up=fordlog+'DIFF(LOG('+dlogudtryk_up+'))'+efterdlog
+
     while  logit_match := funk_in('LOGIT',udtryk_up):
          forlogit,logitudtryk_up,efterlogit=funk_find_arg(logit_match,udtryk_up)
-         udtryk_up=forlogit+'(LOG('+logitudtryk_up+'/(1.0 -'+logitudtryk_up+')))'+efterlogit 
-         
+         funk_check_arg('LOGIT',logitudtryk_up,udtryk,udtryk_up)
+         udtryk_up=forlogit+'(LOG('+logitudtryk_up+'/(1.0 -'+logitudtryk_up+')))'+efterlogit
+
     while  movavg_match := funk_in('MOVAVG', udtryk_up):
          forkaede,kaedeudtryk,efterkaede=funk_find_arg(movavg_match,udtryk_up)
+         funk_check_arg('MOVAVG',kaedeudtryk,udtryk,udtryk_up)
          arg=kaedeudtryk.split(',',1)
          avg='(('
          term=arg[0]
@@ -168,19 +184,23 @@ def preprocess(udtryk,funks=[]):
      
     while  pct_match := funk_in('PCT_GROWTH',udtryk_up):
         forpc,pcudtryk,efterpc=funk_find_arg(pct_match,udtryk_up)
-        udtryk_up=f'{forpc} (100 * ( ({pcudtryk}) / ({lagone(pcudtryk,funks=funks)}) -1)) {efterpc}'           
+        funk_check_arg('PCT_GROWTH',pcudtryk,udtryk,udtryk_up)
+        udtryk_up=f'{forpc} (100 * ( ({pcudtryk}) / ({lagone(pcudtryk,funks=funks)}) -1)) {efterpc}'
 
     while  pct_match := funk_in('PCY',udtryk_up):
         forpc,pcudtryk,efterpc=funk_find_arg(pct_match,udtryk_up)
-        udtryk_up=f'{forpc} (100 * ( ({pcudtryk}) / ({lagone(pcudtryk,funks=funks,laglead=-4)}) -1)) {efterpc}'           
-         
+        funk_check_arg('PCY',pcudtryk,udtryk,udtryk_up)
+        udtryk_up=f'{forpc} (100 * ( ({pcudtryk}) / ({lagone(pcudtryk,funks=funks,laglead=-4)}) -1)) {efterpc}'
+
     while  diff_match := funk_in('DIFF' , udtryk_up):
         fordif,difudtryk_up,efterdif=funk_find_arg(diff_match,udtryk_up)
-        udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif  
-         
+        funk_check_arg('DIFF',difudtryk_up,udtryk,udtryk_up)
+        udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif
+
     while  diff_match := funk_in('D' , udtryk_up):
         # print(f'{udtryk_up} on D')
         fordif,difudtryk_up,efterdif=funk_find_arg(diff_match,udtryk_up)
+        funk_check_arg('D',difudtryk_up,udtryk,udtryk_up)
         difudtryk_up = difudtryk_up.replace(' ','').replace(',0,1','') if difudtryk_up.endswith(',0,1')  else difudtryk_up
         udtryk_up=fordif+'(('+difudtryk_up+')-('+lagone(difudtryk_up+'',funks=funks)+'))'+efterdif  
          
@@ -407,7 +427,7 @@ if __name__ == '__main__':
     normal('a+b = c',add_add_factor=1,make_fitted=1).fprint
     normal('PCT_growth(a) = n(-1)',add_add_factor=0).fprint
     normal('a = movavg(pct(b),2)',add_add_factor=0).fprint
-    normal('pct_growth(c) = pct_growth(d)',add_add_factor=0).fprint
+    normal('pct_growth(c) = pct_growth(dd)',add_add_factor=0).fprint
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
     normal('pct_growth(c) = z+pct(b) + pct(e)').fprint
     normal('a = pct_growth(b)',add_add_factor=0).fprint

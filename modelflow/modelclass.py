@@ -3188,7 +3188,7 @@ class Modify_Mixin():
         newnormalisation = [l.split() for l in lines]
         vars_before_normalization = {beforeendo.upper() for  beforeendo,afterendo in newnormalisation  }
         frml_normalize_strip = {(beforeendo.upper(),afterendo.upper()) : self.allvar[beforeendo]['frml'].replace('$','').split(' ',2)   for beforeendo,afterendo in newnormalisation }
-        frml_normalize_gross = {(beforeendo,afterendo) : (fname ,normal(expression,the_endo = afterendo,endo_lhs=False,add_factor=False))  for (beforeendo,afterendo),(frml,fname,expression)  in frml_normalize_strip.items() }
+        frml_normalize_gross = {(beforeendo,afterendo) : (fname ,normal(expression,the_endo = afterendo,endo_lhs=False,add_add_factor=False))  for (beforeendo,afterendo),(frml,fname,expression)  in frml_normalize_strip.items() }
         frmldict_normalized = {afterendo : f'FRML {fname} {nexpression.normalized}$'
                                for (beforeendo,afterendo),(fname,nexpression)  in frml_normalize_gross.items() }
 #        breakpoint() 
