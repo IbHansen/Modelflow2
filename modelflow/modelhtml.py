@@ -118,6 +118,7 @@ def _mmr_md_to_html(
 
     in_p = in_ul = in_ol = in_bll = in_fence = in_table = False
     tbl_hdr_done = False
+    pending_est = False
 
     def ep():
         nonlocal in_p
@@ -148,8 +149,23 @@ def _mmr_md_to_html(
     def end_all():
         ep(); eul(); eol(); ebll(); etbl()
 
+    def flush_est():
+        # Emit the panel for the last estimated equation once all of its
+        # '>>' continuation lines have been rendered, so the equation is not
+        # split around its estimation output.
+        nonlocal pending_est, rec_i, panel_i
+        if pending_est:
+            pending_est = False
+            if rec_i < len(est_records):
+                ebll()
+                out.append(_mmr_est_panel(est_records[rec_i], panel_i, plot_format))
+                panel_i += 1; rec_i += 1
+
     for raw in lines:
         s = raw.strip()
+
+        if pending_est and not s.startswith('>>'):
+            flush_est()
 
         # code fence (```)
         if s.startswith('```'):
@@ -192,20 +208,20 @@ def _mmr_md_to_html(
                 end_all()
                 out.append('<pre class="mmr-bll"><code>'); in_bll = True
             out.append(_mmr_annotate_bll(content, var_desc))
+            # The estimator tag may sit on a continuation line.
+            if _mmr_has_estimator_tag(raw):
+                pending_est = True
             continue
 
         # BLL equation >
         if s.startswith('>'):
             content = s[1:].strip()
-            has_est = _mmr_has_estimator_tag(raw)
             if not in_bll:
                 end_all()
                 out.append('<pre class="mmr-bll"><code>'); in_bll = True
             out.append(_mmr_annotate_bll(content, var_desc))
-            if has_est and rec_i < len(est_records):
-                ebll()
-                out.append(_mmr_est_panel(est_records[rec_i], panel_i, plot_format))
-                panel_i += 1; rec_i += 1
+            if _mmr_has_estimator_tag(raw):
+                pending_est = True
             continue
 
         # markdown table row
@@ -262,6 +278,7 @@ def _mmr_md_to_html(
 
     if in_fence:
         out.append('</code></pre>')
+    flush_est()
     end_all()
 
     # leftover estimation records not matched to any source line

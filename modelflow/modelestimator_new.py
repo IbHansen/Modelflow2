@@ -99,6 +99,7 @@ from lmfit import Parameters, minimize
 from matplotlib.gridspec import GridSpec
 
 from modelclass import model
+from modelmanipulation import check_syntax
 import modelnormalize as nz
 
 
@@ -904,6 +905,13 @@ class Eq_parent:
         raw = self.org_eq.upper()
         eq_body, constraint_text = _split_st_clause(raw)
 
+        # 2a) Syntax-check the equation text BEFORE parameter-token
+        #     normalization. Typos like ``C(1)2020`` (missing ``*D``) or a
+        #     missing ``+`` between terms are clean SyntaxErrors here, but
+        #     after normalization they can merge into single valid
+        #     identifiers and slip through to give degenerate fits.
+        self._check_eq_syntax(eq_body)
+
         # 2) Normalize parameter tokens in both equation body AND constraints
         #    so names align downstream (e.g. ``C(1)`` -> ``C__1``).
         eq = _normalize_param_tokens(eq_body, self.est_param, self.param_names)
@@ -946,6 +954,7 @@ class Eq_parent:
         #    Subclasses that need a custom dataframe layout (e.g. mfcalc-built
         #    regressors for OLS) handle that themselves.
         if self.input_df is not None:
+            self._check_unknown_variables()
             self.eq_var_df = (
                 self.mdummy.insertModelVar(self.input_df)
                 .loc[:, self.varname_all]
@@ -953,7 +962,49 @@ class Eq_parent:
             )
             self.estimation_df = self.eq_var_df
 
-    # -- variable discovery (cached, derived from mdummy) ---------------------
+    @staticmethod
+    def _check_eq_syntax(eq_body: str) -> None:
+        """Raise ``SyntaxError`` (with a pinpointed location) if the equation
+        text does not parse as Python expressions.
+
+        Each side of the first ``=`` is checked separately — the full
+        statement would be an invalid Python assignment whenever the LHS is
+        a transformation like ``DLOG(...)``. Whitespace is preserved, which
+        is what makes missing-operator typos detectable.
+        """
+        checkable = eq_body.replace("@ABS(", "ABS(")
+        sides = [side.strip() for side in checkable.split("=", 1)]
+        check_syntax([side for side in sides if side])
+
+    def _check_unknown_variables(self) -> None:
+        """Print a diagnosis and raise for variables with no data column.
+
+        Every variable in the equation that is not a parameter placeholder
+        (active prefix or ``param_names``) or a helper slot must exist in
+        ``input_df``. Anything else would be inserted as an all-NaN column
+        by ``insertModelVar`` and silently degrade or break the fit —
+        typically a misspelled variable name or a forgotten ``param_names``
+        entry (``ALFA(1)`` with ``'alfa'`` not declared reads as a lead of
+        an unknown variable ALFA).
+        """
+        helpers = {"ACTUAL", "FITTED", "RESIDUALS"}
+        known = set(self.input_df.columns) | set(self.c_params) | helpers
+        unknown = sorted(set(self.varname_all) - known)
+        if unknown:
+            # Print the diagnosis, then raise a bare SyntaxError — same
+            # style as check_syntax. IPython renders SyntaxError without
+            # the frame stack, so the notebook shows the message above
+            # instead of a long construction call stack.
+            print(
+                f"{type(self).__name__}({self.endo_var}): the equation "
+                f"references variables with no column in input_df:\n"
+                f"    {unknown}\n"
+                f"Equation: {self.org_eq_clean}\n"
+                "Check for misspelled variable names or missing param_names "
+                "entries — such variables would otherwise enter the "
+                "estimation as all-NaN columns."
+            )
+            raise SyntaxError("Unknown variables in equation - see above") from None
 
     @property
     def mdummy(self):
@@ -1078,6 +1129,10 @@ class EstimatorBackend(Eq_parent, ABC):
     :meth:`_validate_equation`
         Default is a no-op. Override to reject equation forms the backend
         cannot handle.
+
+    :meth:`_tvalues_dict`
+        Default returns ``{}`` (no t-statistics). Override to return
+        ``{<prefix>__n: t}`` so the :attr:`tvalues` Series is populated.
 
     Standard attributes set during ``__post_init__``
     ------------------------------------------------
@@ -1229,6 +1284,29 @@ class EstimatorBackend(Eq_parent, ABC):
                     mapped[f"{_up}__{m3.group(1)}"] = v
                     break
         return mapped
+
+    # ---- t-statistics ------------------------------------------------------
+
+    def _tvalues_dict(self) -> Dict[str, float]:
+        """Backend-specific t-statistics keyed by ``{est_param}__n`` token.
+
+        Default: no t-statistics available. Backends override where the
+        fitted result exposes (or allows computing) them.
+        """
+        return {}
+
+    @cached_property
+    def tvalues(self) -> pd.Series:
+        """t-statistics as a Series keyed like :attr:`coef_ser`.
+
+        Parameters without an available t-statistic (fixed, derived, or the
+        backend could not provide one) are NaN.
+        """
+        tvals = self._tvalues_dict()
+        return pd.Series(
+            {p: tvals.get(p, float("nan")) for p in self.c_params},
+            name=self.caption, dtype=float,
+        )
 
     # ---- A/F and residuals (computed once, cached) -------------------------
 
@@ -1486,6 +1564,13 @@ class Estimate_ols(EstimatorBackend):
             "<caption><h3>OLS Regression Results</h3></caption>",
         )
 
+    def _tvalues_dict(self) -> Dict[str, float]:
+        """statsmodels exposes t-statistics directly, keyed by regressor
+        column name — map those back to the canonical parameter tokens."""
+        return self._map_statsmodels_params(
+            self.regression_model.tvalues.to_dict()
+        )
+
     # ---- override estimation_smpl: OLS reports its EFFECTIVE sample --------
 
     @cached_property
@@ -1610,6 +1695,33 @@ class Estimate_nls_lmfit(EstimatorBackend):
             "<h2>Fit Result</h2>", "<h3>NLS Regression Results</h3>"
         )
 
+    def _tvalues_dict(self) -> Dict[str, float]:
+        """lmfit provides standard errors (from the covariance matrix when
+        ``calc_covar=True``); t = value / stderr. Fixed parameters, derived
+        (``expr``) parameters without propagated errors, and fits where the
+        covariance could not be estimated have ``stderr`` None (or NaN) and
+        are omitted (→ NaN in :attr:`tvalues`)."""
+        res = self.regression_model
+        out: Dict[str, float] = {}
+        for name, p in res.params.items():
+            # stderr is None when lmfit produced no uncertainties, and can
+            # be NaN when the covariance matrix is ill-conditioned.
+            if p.stderr and p.stderr == p.stderr:
+                out[name] = p.value / p.stderr
+        if not out and any(p.vary for p in res.params.values()):
+            print(
+                f"[{type(self).__name__}({self.endo_var})] WARNING: lmfit "
+                f"produced no parameter uncertainties "
+                f"(errorbars={getattr(res, 'errorbars', None)}), so no "
+                "t-values are available. Common causes: singular or "
+                "ill-conditioned Jacobian (collinear or huge-scale "
+                "regressors), parameters stuck at a bound, or a fit that "
+                "did not converge. Inspect "
+                "est.regression_model.params.pretty_print() and "
+                "est.regression_model.message."
+            )
+        return out
+
 
 # =============================================================================
 # Estimate_nls_eviews — nonlinear least squares via EViews (py2eviews)
@@ -1701,6 +1813,26 @@ class Estimate_nls_eviews(EstimatorBackend):
 
     def _render_summary_html(self) -> str:
         return eviews_output_to_html(self.regression_model)
+
+    def _tvalues_dict(self) -> Dict[str, float]:
+        """Parse the t-Statistic column from the EViews spool text.
+
+        Only the coefficient vector is read back from EViews numerically;
+        the coefficient table (Coefficient, Std. Error, t-Statistic, Prob.)
+        exists only as text in the spool. Rows where EViews prints ``NA``
+        simply do not match and stay NaN in :attr:`tvalues`.
+        """
+        if not isinstance(self.regression_model, str):
+            return {}
+        num = r"(-?[\d.]+(?:[eE][+-]?\d+)?)"
+        out: Dict[str, float] = {}
+        for m in re.finditer(
+            rf"^\s*C\((\d+)\)\s+{num}\s+{num}\s+{num}",
+            self.regression_model,
+            flags=re.MULTILINE,
+        ):
+            out[f"{self.est_param}__{m.group(1)}"] = float(m.group(4))
+        return out
 
 
 # =============================================================================

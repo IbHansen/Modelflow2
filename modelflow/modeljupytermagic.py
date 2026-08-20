@@ -27,6 +27,10 @@ from modelclass import model
 from modelmanipulation import explode
 from model_latex_class import a_latex_model
 from modelconstruct_estimation import Makemodel, display_model
+# Markdown subclass whose text/plain fallback is the markdown source itself,
+# so latex/pdf exports show the model text instead of
+# '<IPython.core.display.Markdown object>'. Shadows the IPython import above.
+from modelconstruct_estimation import Markdown
 from modelhelp import debug_var
 from modelreport import LatexRepo
 
@@ -589,7 +593,7 @@ try:
             if dict_name in user_ns:
                 segs = list(user_ns[dict_name].keys())
                 print(f"Model `{name}` built from segments: {', '.join(segs)}")
-            print(f"✅ Created Mexplode model: {name}")
+            print(f"✅ Created Makemodel: {name}")
             print(emodel)
 
         return emodel

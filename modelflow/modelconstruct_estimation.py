@@ -982,6 +982,16 @@ from IPython.display import display, Markdown, Math
 import re
 from IPython.display import display, Markdown, Math
 
+class Markdown(Markdown):
+    """IPython Markdown, but with the markdown source as the text/plain fallback.
+
+    The stock class reprs as '<IPython.core.display.Markdown object>', and that
+    string is what latex/pdf exporters show, as they can not render the
+    text/markdown mime type and fall back to text/plain. With the source as
+    repr, exported documents show the model text instead."""
+    def __repr__(self):
+        return str(self.data)
+
 def display_model(cell: str, spec: str = "markdown"):
     """
     Display a model specification.
@@ -1771,15 +1781,34 @@ def _estimation_record_to_markdown(record: dict) -> str:
 
     coefs = _estimator_coefficients_for_markdown(est)
     if coefs:
-        lines.extend([
-            "",
-            "| Parameter | Estimate |",
-            "|:--|--:|",
-        ])
+        try:
+            tvals = est.tvalues.to_dict()
+        except Exception:
+            tvals = {}
+        # NaN != NaN — only add the column when at least one t-stat exists.
+        has_t = any(v == v for v in tvals.values())
+        if has_t:
+            lines.extend([
+                "",
+                "| Parameter | Estimate | t-stat |",
+                "|:--|--:|--:|",
+            ])
+        else:
+            lines.extend([
+                "",
+                "| Parameter | Estimate |",
+                "|:--|--:|",
+            ])
         for key in sorted(coefs, key=lambda x: (str(x).split("__")[0], int(str(x).split("__")[-1]) if str(x).split("__")[-1].lstrip("-").isdigit() else str(x))):
-            lines.append(
-                f"| {_markdown_escape_cell(key)} | {_markdown_escape_cell(_markdown_format_number(coefs[key]))} |"
+            row = (
+                f"| {_markdown_escape_cell(key)} "
+                f"| {_markdown_escape_cell(_markdown_format_number(coefs[key]))} |"
             )
+            if has_t:
+                t = tvals.get(key)
+                t_cell = f"{t:.3f}" if t is not None and t == t else ""
+                row += f" {_markdown_escape_cell(t_cell)} |"
+            lines.append(row)
 
     return "\n".join(lines) + "\n"
 
@@ -2420,6 +2449,31 @@ class Makemodel(BaseExplode):
         return MakeModelReport(self, title=title, plot_format=plot_format, report_all=report_all)
 
     @property
+    def tvalues(self):
+        """t-statistics for all estimated equations as a DataFrame.
+
+        Rows are parameter tokens (``C__1``, ``C__2``, ...), one column per
+        estimated equation named by its endogenous variable. NaN where a
+        parameter is not in that equation or the backend provides no
+        t-statistic (fixed/derived parameters, failed covariance, EViews
+        ``NA`` rows).
+
+        Per-equation access: ``rec['estimator_object'].tvalues`` on the
+        entries of :attr:`estimation_records`.
+        """
+        import pandas as pd
+        cols = {}
+        for rec in self.estimation_records:
+            est = rec.get('estimator_object')
+            try:
+                ser = est.tvalues
+            except Exception:
+                continue
+            name = getattr(est, 'endo_var', '') or rec.get('frmlname', '')
+            cols[name] = ser
+        return pd.DataFrame(cols)
+
+    @property
     def markdown_with_estimation(self) -> str:
         """Original Markdown input with compact estimation tables inserted.
 
@@ -2805,6 +2859,19 @@ class Listmodels(BaseExplode):
         See :meth:`Makemodel.report` for parameter details.
         """
         return MakeModelReport(self, title=title, plot_format=plot_format, report_all=report_all)
+
+    @property
+    def tvalues(self):
+        """t-statistics of all member Makemodels, combined column-wise.
+
+        See :attr:`Makemodel.tvalues` for the layout.
+        """
+        import pandas as pd
+        frames = [mex.tvalues for mex in self.makemodels]
+        frames = [f for f in frames if not f.empty]
+        if not frames:
+            return pd.DataFrame()
+        return pd.concat(frames, axis=1)
 
     @property
     def markdown_with_estimation(self) -> str:

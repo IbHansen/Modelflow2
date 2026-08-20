@@ -293,3 +293,12 @@ fix error in markdown with estimation
 fix issue with smpl in Makemodel 
 wanring for several eq for same var 
 Version 2.76 uploaded 
+equpdate now accept a Makemodel instance instead of an equation
+in normalize PCT fix, a generalized  reserved-name error guard, 
+modelclass flipendo kwarg fix missing add in add_factorVersion 
+2.77 uploaded 
+Fix continuation lines in html report 
+calculate t values in estimation 
+syntax check before estimation 
+check for variables not in df or in parameters before estimation 
+Version 2.78 uploaded 
