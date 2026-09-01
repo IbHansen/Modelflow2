@@ -1436,10 +1436,15 @@ class Org_model_Mixin():
     def __dir__(self):
         if self.tabcomplete:
             if not hasattr(self, '_res'):
-                # self._res = sorted(list(self.allvar.keys()) + list(self.__dict__.keys()) + list(type(self).__dict__.keys()))
-                self._res = sorted(list(self.allvar.keys(
-                )) + list(self.__dict__.keys()) + list(type(self).__dict__.keys()))
-            return self. _res
+                # dir(type(self)) not type(self).__dict__: the latter is only the
+                # model class's own namespace, so everything inherited from the
+                # mixins (modeldump from Zip_Mixin, dekomp, drawmodel, keep_plot ...)
+                # was missing from tab completion. set() because a variable name and
+                # a method name can now collide.
+                self._res = sorted(set(list(self.allvar.keys())
+                                       + list(self.__dict__.keys())
+                                       + dir(type(self))))
+            return self._res
 
         else:
             res = list(self.__dict__.keys())
