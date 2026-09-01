@@ -302,3 +302,4 @@ calculate t values in estimation
 syntax check before estimation 
 check for variables not in df or in parameters before estimation 
 Version 2.78 uploaded 
+Fix __dir__ to make tab completion in jupyter work as intended and including mixins 
