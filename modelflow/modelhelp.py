@@ -17,6 +17,8 @@ import sys
 import itertools
 import operator as op
 
+from IPython.display import Markdown
+
 
 
 
@@ -526,8 +528,52 @@ def build_sorted_rate_desc_dict(var_names):
     parsed.sort()
 
     return {v: desc for _, _, _, v, desc in parsed}
-  
-    
+
+
+def md_to_html(text):
+    '''Converts markdown to html.
+
+    Used to give markdown display objects a text/html representation, so they
+    survive the export of a notebook. Falls back to preformatted text if no
+    markdown converter is installed.
+    '''
+    try:
+        import mistune                        # ships with nbconvert
+        return mistune.html(str(text))
+    except Exception:
+        from html import escape
+        return f'<pre>{escape(str(text))}</pre>'
+
+
+class Markdown_html(Markdown):
+    '''IPython Markdown which also offers text/html and a readable text/plain.
+
+    The stock class publishes text/markdown and text/plain, and its text/plain
+    is the repr '<IPython.core.display.Markdown object>'. Exporters which can
+    not render text/markdown - jupyter book/myst when making latex and pdf -
+    fall back to text/plain and print that string instead of the text.
+
+    This class adds
+
+      - text/html, which the exporters do understand and translate, so the
+        text comes out formatted, the same way the html of a dataframe does
+      - a text/plain which is the markdown source itself, so even an exporter
+        which insists on plain text shows something readable
+
+    Use it wherever display(Markdown(...)) is used in a notebook which is
+    published as a book:
+
+        from modelhelp import Markdown_html as Markdown
+        display(Markdown(f'**Multiplier = {mul}**'))
+    '''
+
+    def _repr_html_(self):
+        return md_to_html(self.data)
+
+    def __repr__(self):
+        return str(self.data)
+
+
 if __name__ == '__main__':
     #%% Test
     if not  'baseline' in locals() or 1 :    

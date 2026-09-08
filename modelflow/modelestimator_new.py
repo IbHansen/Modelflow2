@@ -102,6 +102,15 @@ from modelclass import model
 from modelmanipulation import check_syntax
 import modelnormalize as nz
 
+# Image format for the plot in the inline HTML report, used when an estimator
+# object is displayed on its own. SVG looks sharper on screen, but a notebook
+# whose stored output holds an SVG can not be exported to pdf without inkscape:
+# jupyter book/myst then falls back to imagemagick's `convert`, which on Windows
+# resolves to the system convert.exe instead, and latex is handed an .svg it can
+# not include - the whole book then fails to build. PNG survives every export
+# path. Set to "svg" for screen work where the notebook is not published.
+REPORT_PLOT_FORMAT = "png"
+
 
 # =============================================================================
 # Variable-description shim
@@ -661,11 +670,18 @@ class EquationParse:
         #     division, inside a power, inside a parenthesized sub-expression
         #     that is multiplied or otherwise combined — is rejected.
         #
-        #     A bare parameter at the top level is only accepted for the
-        #     conventional intercept slot ({prefix}__1), regardless of sign.
+        #     A bare parameter at the top level is only accepted for an
+        #     intercept slot ({prefix}__1), regardless of sign.
         #     A standalone non-intercept parameter (e.g. "Y = C__1 + C__2")
         #     would be silently dropped by the regressor-collection step,
         #     so we reject rather than fit a smaller model than the user wrote.
+        #
+        #     Every declared prefix has an intercept slot, not just est_param:
+        #     with param_names=['alfa'], "CON = ALFA + BETA*Y" is the same
+        #     equation as "CON = C(1) + C(2)*Y" with the coefficients named.
+        intercept_slots = {f"{self.est_param}__1"} | {
+            f"{n.upper()}__1" for n in (self.param_names or [])
+        }
         intercept_slot = f"{self.est_param}__1"
 
         def parameterized_term(node: ast.AST) -> Optional[Tuple[ast.Name, ast.AST, int]]:
@@ -694,17 +710,16 @@ class EquationParse:
 
                 # Case (a): the Name itself sits at the top level.
                 if is_at_top_level(node):
-                    if node.id == intercept_slot:
+                    if node.id in intercept_slots:
                         continue
+                    allowed = ", ".join(sorted(intercept_slots))
                     raise ValueError(
                         f"Invalid usage: coefficient {node.id} appears as "
-                        "a standalone term at the top level. Only "
-                        f"{self.est_param}(1) may appear bare (it is the "
-                        "intercept slot). Other coefficients must appear "
-                        f"as '{self.est_param}(n) * <expr>' — if you meant "
-                        f"this as an extra constant, write it as "
-                        f"{self.est_param}(1) instead, or attach a "
-                        "regressor."
+                        "a standalone term at the top level. Only an "
+                        f"intercept slot ({allowed}) may appear bare. Other "
+                        f"coefficients must appear as '<name>(n) * <expr>' — "
+                        "if you meant this as an extra constant, use an "
+                        "intercept slot instead, or attach a regressor."
                     )
 
                 # Case (b): the Name is the left operand of a Mult, possibly
@@ -745,7 +760,11 @@ class EquationParse:
         # the surrounding additive chain. The sign gets folded into the
         # emitted regressor so the estimated coefficient matches the user's
         # written equation.
-        c_terms: Dict[int, Tuple[ast.AST, int]] = {}
+        # Keyed by the full coefficient token, not by its number: with more
+        # than one declared prefix the numbers are no longer unique, and
+        # ALFA__1 and BETA_LONGTERM__1 are different coefficients. The number
+        # is kept alongside, since the ECM convention is stated in terms of it.
+        c_terms: Dict[str, Tuple[ast.AST, int, int]] = {}
         for node in ast.walk(rhs_expr):
             term = parameterized_term(node)
             if term is None:
@@ -753,38 +772,50 @@ class EquationParse:
             name_node, rhs_node, local_sign = term
             n = int(re.match(self.param_regex, name_node.id).group(1))
             sign = local_sign * effective_sign(node)
-            c_terms[n] = (rhs_node, sign)
+            c_terms[name_node.id.upper()] = (rhs_node, sign, n)
 
         # --- Optional explicit constant placeholder.
         # Determine the effective sign of the C__1 token if it appears bare
         # at the top level (it can also appear inside a Mult, in which case
         # it's collected above instead).
         if self.const:
+            seen_intercepts = set()
             for node in ast.walk(rhs_expr):
                 if (isinstance(node, ast.Name)
-                        and node.id == intercept_slot
+                        and node.id in intercept_slots
+                        and node.id not in seen_intercepts
                         and is_at_top_level(node)):
                     c1_sign = effective_sign(node)
                     subexprs.append(
-                        f"{intercept_slot} = {1.0 * c1_sign}"
+                        f"{node.id} = {1.0 * c1_sign}"
                     )
-                    break
+                    seen_intercepts.add(node.id)
 
         # --- ECM term (parameter #2 is the speed-of-adjustment by convention).
-        if self.ecm and 2 in c_terms:
-            expr_node, sign = c_terms[2]
+        ec_token = None
+        if self.ecm:
+            ec_token = next(
+                (t for t, (_, _, n) in c_terms.items() if n == 2), None
+            )
+        if ec_token is not None:
+            expr_node, sign, _ = c_terms[ec_token]
             ec_src = self._ast_to_source(expr_node)
             if sign < 0:
                 ec_src = f"-({ec_src})"
             subexprs.append(f"EC_TERM = {ec_src}")
 
         # --- Remaining parameterized regressors.
-        for n in sorted(k for k in c_terms if not (self.ecm and k == 2)):
-            expr_node, sign = c_terms[n]
+        # The column carries the coefficient's own name, so that a named
+        # coefficient survives into the fitted result; _map_statsmodels_params
+        # reads it back from there.
+        for token in sorted(c_terms, key=lambda t: (c_terms[t][2], t)):
+            if token == ec_token:
+                continue
+            expr_node, sign, _ = c_terms[token]
             src = self._ast_to_source(expr_node)
             if sign < 0:
                 src = f"-({src})"
-            subexprs.append(f"c__{n} = {src}")
+            subexprs.append(f"{token} = {src}")
 
         subexprs.append(model_expr)
         return [line.upper() for line in subexprs]
@@ -1222,6 +1253,15 @@ class EstimatorBackend(Eq_parent, ABC):
     def __post_init__(self) -> None:
         # 1) Parse the equation, build helper equations, build eq_var_df.
         super().__post_init__()
+        # 1b) Move the sample inside the range the equation can be evaluated on,
+        #     once, before anything reads it. An equation with y(-1) has nothing
+        #     to evaluate in the first row of the data, and every consumer of the
+        #     sample - the minimizer's residual function, af_df, residuals_df,
+        #     the OLS regressor frame - would otherwise raise from deep inside
+        #     the solver. residual_eq is the widest of the helper equations, so
+        #     its lag structure covers the others.
+        self.smpl_requested = self.smpl
+        self.smpl = self._smpl_within_lags(model(self.residual_eq))
         # 2) Reject constraints the backend can't apply; verify names are known.
         self._validate_constraints()
         # 3) Backend-specific validation.
@@ -1348,10 +1388,48 @@ class EstimatorBackend(Eq_parent, ABC):
         last_idx = mask[::-1].idxmax()
         return first_idx, last_idx
 
+    def _smpl_within_lags(self, mmodel) -> Tuple[Any, Any]:
+        """``self.smpl`` moved inside the range the equation can be evaluated on.
+
+        An equation with ``y(-1)`` has nothing to evaluate in the first row of
+        the data, and the solver refuses outright with "You are trying to solve
+        the model before all lags are avaiable" — raised from wherever the
+        sample was used first, which is an unhelpful place to discover a
+        one-observation problem. So the sample is shrunk instead, which is what
+        an econometrics package does when it reports an adjusted sample.
+
+        Called once from ``__post_init__`` so that every consumer — the
+        minimizer's residual function, :attr:`af_df`, :attr:`residuals_df`, the
+        OLS regressor frame — sees the same corrected sample. The sample as the
+        caller asked for it stays in ``smpl_requested``, and the sample finally
+        used is reported by :attr:`estimation_smpl`.
+        """
+        start, end = self.smpl
+        index = self.eq_var_df.index
+        if not len(index):
+            return start, end
+
+        # maxlag is stored negative, maxlead positive - the same convention
+        # BaseModel.check_sim_smpl tests against.
+        lag = -min(0, getattr(mmodel, "maxlag", 0))
+        lead = max(0, getattr(mmodel, "maxlead", 0))
+        if not (lag or lead):
+            return start, end
+
+        first = index[min(lag, len(index) - 1)]
+        last = index[max(len(index) - 1 - lead, 0)]
+        try:
+            return (first if start < first else start,
+                    last if end > last else end)
+        except TypeError:
+            # Sample and index are not comparable; leave the sample alone and
+            # let the solver report whatever it finds.
+            return start, end
+
     # ---- HTML report convenience -------------------------------------------
 
     def _repr_html_(self) -> str:
-        return self.mfresult.get_html_report(plot_format="svg")
+        return self.mfresult.get_html_report(plot_format=REPORT_PLOT_FORMAT)
 
     def get_html_report(self, plot_format: str = "svg") -> str:
         return self.mfresult.get_html_report(plot_format=plot_format)
@@ -1466,11 +1544,15 @@ class Estimate_ols(EstimatorBackend):
 
         - **Error** if the equation has no parameter placeholders at all
           (``Y = X`` with no ``C(...)``). There is nothing to estimate.
-        - **Warn** if the intercept slot ``{est_param}__1`` is missing.
-          This is a regression through the origin, which is occasionally
-          intentional but more often an oversight.
+        - **Warn** if no intercept slot is present. Every declared prefix has
+          one — ``{est_param}__1`` and ``{name}__1`` for each ``param_names``
+          entry — so a named constant counts. Without any of them the fit goes
+          through the origin, which is occasionally intentional but more often
+          an oversight.
         """
-        intercept_slot = f"{self.est_param}__1"
+        intercept_slots = {f"{self.est_param}__1"} | {
+            f"{n.upper()}__1" for n in (self.param_names or [])
+        }
         if not self.c_params:
             raise ValueError(
                 f"{type(self).__name__}: equation has no parameters to "
@@ -1478,12 +1560,13 @@ class Estimate_ols(EstimatorBackend):
                 f"{self.est_param}(n) placeholder, e.g. "
                 f"'Y = {self.est_param}(1) + {self.est_param}(2)*X'."
             )
-        if intercept_slot not in self.c_params:
+        if not (intercept_slots & set(self.c_params)):
+            allowed = ", ".join(sorted(intercept_slots))
             print(
                 f"[{type(self).__name__}({self.endo_var})] WARNING: no "
-                f"intercept ({self.est_param}(1)) in the equation — fitting "
-                "through the origin. If that wasn't intentional, add "
-                f"'{self.est_param}(1) + ' to the right-hand side."
+                f"intercept ({allowed}) in the equation — fitting "
+                "through the origin. If that wasn't intentional, add one "
+                "to the right-hand side."
             )
 
     def _prepare_estimation_df(self) -> None:
@@ -1518,7 +1601,9 @@ class Estimate_ols(EstimatorBackend):
         # Drop NaN rows and report what happened.
         self.estimation_df, self._effective_smpl = _trim_invalid_rows(
             raw,
-            requested_smpl=self.smpl,
+            # What the caller asked for, not the lag-adjusted sample, so the
+            # report compares against what was written in the notebook.
+            requested_smpl=self.smpl_requested,
             label=f"{type(self).__name__}({self.endo_var})",
         )
 
@@ -1671,6 +1756,7 @@ class Estimate_nls_lmfit(EstimatorBackend):
         self.lmfit_params = params
 
         mresidual = model(self.residual_eq)
+        # Already moved inside the evaluable range by __post_init__.
         start, end = self.smpl
 
         def residual(p):
@@ -1995,7 +2081,7 @@ class LSResult:
         display(HTML(self.get_html_report(plot_format=plot_format)))
 
     def _repr_html_(self) -> str:
-        return self.get_html_report(plot_format="svg")
+        return self.get_html_report(plot_format=REPORT_PLOT_FORMAT)
 
     # -- internals ------------------------------------------------------------
 

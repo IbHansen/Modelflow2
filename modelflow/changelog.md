@@ -303,3 +303,6 @@ syntax check before estimation
 check for variables not in df or in parameters before estimation 
 Version 2.78 uploaded 
 Fix __dir__ to make tab completion in jupyter work as intended and including mixins 
+Better markdown display 
+check smpl in estimation so missing lags or leads wond cause fault 
+identify build in estimators 

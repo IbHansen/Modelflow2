@@ -3619,8 +3619,8 @@ class Graph_Mixin():
                     self.fblist = [v for v in self.fbhubs.keys()]
                 except Exception as e:  
                     if  self.use_fbmin:
-
-                        print(f'In minimum feedback order {e} ')
+                        
+                        print(f'No minimum feedback order: {e} ')
                     ...
             if  self.use_fbmin:
                 

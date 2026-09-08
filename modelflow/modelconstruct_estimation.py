@@ -982,15 +982,13 @@ from IPython.display import display, Markdown, Math
 import re
 from IPython.display import display, Markdown, Math
 
-class Markdown(Markdown):
-    """IPython Markdown, but with the markdown source as the text/plain fallback.
-
-    The stock class reprs as '<IPython.core.display.Markdown object>', and that
-    string is what latex/pdf exporters show, as they can not render the
-    text/markdown mime type and fall back to text/plain. With the source as
-    repr, exported documents show the model text instead."""
-    def __repr__(self):
-        return str(self.data)
+# Markdown which also publishes text/html and has the markdown source as its
+# text/plain. The stock class only offers text/markdown, which the latex/pdf
+# exporters can not render - they fall back to text/plain and show
+# '<IPython.core.display.Markdown object>' or, at best, the raw markdown.
+# Shadows the IPython import above, so every display(Markdown(...)) below
+# exports properly. See modelhelp.Markdown_html.
+from modelhelp import Markdown_html as Markdown
 
 def display_model(cell: str, spec: str = "markdown"):
     """
@@ -1417,6 +1415,16 @@ def _merge_estimator_namespaces(
     return merged
 
 
+# Estimator method names which can be written straight into an <estimator=...>
+# tag or on a %%Makemymodel line, with nothing imported. Kept here rather than
+# inside _get_estimator_class so the magic can recognize them too.
+BUILTIN_ESTIMATORS = {
+    'ols': 'Estimate_ols',
+    'nls_lmfit': 'Estimate_nls_lmfit',
+    'nls_eviews': 'Estimate_nls_eviews',
+}
+
+
 def _get_estimator_class(estimator_name, estimator_classes: Optional[dict] = None):
     """Resolve an estimator spec to a constructor/factory.
 
@@ -1449,11 +1457,7 @@ def _get_estimator_class(estimator_name, estimator_classes: Optional[dict] = Non
             if str(key).strip().lower() == name:
                 return value
 
-    class_names = {
-        'ols': 'Estimate_ols',
-        'nls_lmfit': 'Estimate_nls_lmfit',
-        'nls_eviews': 'Estimate_nls_eviews',
-    }
+    class_names = BUILTIN_ESTIMATORS
     if name not in class_names:
         allowed = ', '.join(sorted(class_names))
         raise ModelSpecificationError(

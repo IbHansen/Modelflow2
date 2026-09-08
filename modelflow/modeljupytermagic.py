@@ -26,7 +26,7 @@ from model_latex import latextotxt
 from modelclass import model
 from modelmanipulation import explode
 from model_latex_class import a_latex_model
-from modelconstruct_estimation import Makemodel, display_model
+from modelconstruct_estimation import Makemodel, display_model, BUILTIN_ESTIMATORS
 # Markdown subclass whose text/plain fallback is the markdown source itself,
 # so latex/pdf exports show the model text instead of
 # '<IPython.core.display.Markdown object>'. Shadows the IPython import above.
@@ -75,6 +75,51 @@ def get_options(line,defaultname = 'test'):
     opt = {o : False if ( v== '0' or v=='False')  else v for o,v in opt.items()}
     
     return name,opt           
+
+
+def _resolve_name_list(raw, user_ns):
+    """Resolve an option which is a list of bare names, e.g. ``param_names``.
+
+    The magic line is tokenized by ``shlex`` in POSIX mode, which *strips the
+    quotes*: what the user writes as ``param_names=['lambda','beta_longterm']``
+    arrives here as the string ``[lambda,beta_longterm]``. That is neither a
+    Python literal nor a name in the namespace, so ``_resolve_option`` alone
+    would warn and return None, and the equation would then be parsed with its
+    coefficients read as unknown variables.
+
+    So all of these are accepted and mean the same thing::
+
+        param_names=['lambda','beta_longterm']   # quotes stripped by shlex
+        param_names=[lambda,beta_longterm]
+        param_names=lambda,beta_longterm
+        param_names=mynames                      # a list in the notebook
+
+    Returns a list of names, or None if nothing usable was given.
+    """
+    if raw is None or raw is True or raw is False:
+        return None
+    if isinstance(raw, (list, tuple)):
+        return [str(n).strip() for n in raw if str(n).strip()]
+    if not isinstance(raw, str):
+        return None
+
+    text = raw.strip()
+    # a name bound to a list in the notebook
+    if text in user_ns and isinstance(user_ns[text], (list, tuple)):
+        return [str(n).strip() for n in user_ns[text]]
+    # a proper literal, if the quotes happen to have survived
+    try:
+        value = ast.literal_eval(text)
+        if isinstance(value, (list, tuple)):
+            return [str(n).strip() for n in value]
+        if isinstance(value, str):
+            text = value
+    except (ValueError, SyntaxError):
+        pass
+    # bare names: strip any brackets and quotes, split on commas
+    text = text.strip("[]()")
+    names = [n.strip().strip("'\"") for n in text.split(",")]
+    return [n for n in names if n] or None
 
 
 def _resolve_option(options, opt_name, user_ns, default=None):
@@ -457,13 +502,29 @@ try:
         replacements = _resolve_option(options, 'replacements', user_ns)
         funks        = _resolve_option(options, 'funks',        user_ns, default=[]) or []
         input_df     = _resolve_option(options, 'input_df',     user_ns)
-        estimator = _resolve_option(options, "estimator", user_ns, default=None)
-        
-        if estimator is None:
-            estimator = _resolve_option(options, "est", user_ns, default=None)        # smpl can be a tuple/list literal like (2010, 2019) or a name in
+        # A built-in method name - 'ols', 'nls_lmfit', 'nls_eviews' - is a plain
+        # string, not a literal and not a name in the namespace, so it has to be
+        # recognized before _resolve_option looks it up and warns. Makemodel
+        # resolves it the same way it resolves an <estimator=ols> tag.
+        raw_estimator = options.get("estimator", options.get("est"))
+        if isinstance(raw_estimator, str) and raw_estimator.strip().lower() in BUILTIN_ESTIMATORS:
+            estimator = raw_estimator.strip().lower()
+        else:
+            estimator = _resolve_option(options, "estimator", user_ns, default=None)
+
+            if estimator is None:
+                estimator = _resolve_option(options, "est", user_ns, default=None)        # smpl can be a tuple/list literal like (2010, 2019) or a name in
         # user_ns; pass it through to Makemodel which already knows how to
         # parse strings, tuples, slices, etc. via _parse_smpl.
         smpl         = _resolve_option(options, 'smpl',         user_ns)
+        # Named coefficient prefixes, so an equation on a magic line can be
+        # written with lambda/beta_longterm rather than c(1)/c(2). Reaches the
+        # estimator through estimator_kwargs, the same route Makemodel uses for
+        # any option a tag can not carry.
+        param_names  = _resolve_name_list(options.get('param_names'), user_ns)
+        estimator_kwargs = _resolve_option(options, 'estimator_kwargs', user_ns, default={}) or {}
+        if param_names is not None and 'param_names' not in estimator_kwargs:
+            estimator_kwargs = {**estimator_kwargs, 'param_names': param_names}
 
 
         # ------------------------------------------------------------
@@ -544,6 +605,8 @@ try:
             makemodel_kwargs['estimator'] = estimator
         if smpl is not None:
             makemodel_kwargs['smpl'] = smpl
+        if estimator_kwargs:
+            makemodel_kwargs['estimator_kwargs'] = estimator_kwargs
 
         emodel = Makemodel(model_text, **makemodel_kwargs)
 
