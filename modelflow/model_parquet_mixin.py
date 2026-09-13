@@ -181,8 +181,18 @@ class Parquet_Mixin:
             If True (only effective when large=True), store float64
             columns as float32 to roughly halve file size.
             On load the data is restored to float64.
+
+        A model instance without a lastdf holds no dataframe, so the feather
+        format has nothing to be fast about. Such a model is always written as a
+        structure only ``.pcims`` file on the JSON/gzip path.
         """
-        if not large:
+        nodata = (not self.has_data) or (not kwargs.get('data', True)) \
+            or Path(file_path).suffix == self.nodata_suffix
+
+        if nodata and large:
+            print('No dataframe to store, dumping the structure in the json format instead')
+
+        if not large or nodata:
             # ── original JSON/gzip path ──────────────────────────────────
             return super().modeldump(file_path=file_path, keep=keep, **kwargs)
 
@@ -194,10 +204,10 @@ class Parquet_Mixin:
 
         # --- serialise current_per (small – keep as JSON) ----------------
         try:
-            current_per_json = pd.Series(self.current_per).to_json()
+            current_per_json = pd.Series(self.dump_current_per).to_json()
         except Exception:
             current_per_json = _period_series_to_json(
-                pd.Series(self.current_per)
+                pd.Series(self.dump_current_per)
             )
 
         # --- metadata dict (everything *except* DataFrames) --------------
@@ -242,7 +252,7 @@ class Parquet_Mixin:
             # current_per
             zf.writestr('current_per.json', current_per_json)
             # lastdf  →  feather
-            zf.writestr('lastdf.feather', _df_to_feather_bytes(_maybe_compact(self.lastdf)))
+            zf.writestr('lastdf.feather', _df_to_feather_bytes(_maybe_compact(self.dump_df)))
             # keep_solutions  →  one feather each, indexed by position
             if keep:
                 for i, (name, df) in enumerate(self.keep_solutions.items()):
@@ -291,11 +301,13 @@ class Parquet_Mixin:
 
         pinfile = Path(infile.replace('\\', '/'))
         if not pinfile.suffix:
-            # try .pcimz first, fall back to .pcim
-            if pinfile.with_suffix('.pcimz').exists():
-                pinfile = pinfile.with_suffix('.pcimz')
+            # try .pcimz first, then .pcim, then the structure only .pcims
+            for trysuffix in ('.pcimz', cls.data_suffix, cls.nodata_suffix):
+                if pinfile.with_suffix(trysuffix).exists():
+                    pinfile = pinfile.with_suffix(trysuffix)
+                    break
             else:
-                pinfile = pinfile.with_suffix('.pcim')
+                pinfile = pinfile.with_suffix(cls.data_suffix)
 
         # ── detect format ────────────────────────────────────────────────
         if pinfile.exists() and zipfile.is_zipfile(pinfile):

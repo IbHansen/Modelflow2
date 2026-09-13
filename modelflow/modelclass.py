@@ -3617,10 +3617,10 @@ class Graph_Mixin():
                     self.fbaut    =  {k:v for k,v in sorted( a.items(), key=lambda x: x[1], reverse=True)}
                     
                     self.fblist = [v for v in self.fbhubs.keys()]
-                except Exception as e:  
+                except Exception as e:
                     if  self.use_fbmin:
-                        
-                        print(f'No minimum feedback order: {e} ')
+
+                        print('The feedback variables are not directly connected, so the feedback order is left as found')
                     ...
             if  self.use_fbmin:
                 
@@ -6090,17 +6090,81 @@ except:
 
 class Json_Mixin():
     '''This mixin class can dump a model and solution
-    as json serialiation to a file. 
+    as json serialiation to a file.
 
-    allows the precooking of a model and solution, so 
-    a user can use a model without specifying it in 
-    a session. 
+    allows the precooking of a model and solution, so
+    a user can use a model without specifying it in
+    a session.
+
+    A model without a solution can be dumped as well. Such a structure only
+    dump gets the suffix .pcims, so an older modelflow, which always expects
+    a dataframe in the file, will not try to read it.
     '''
 
-    def modeldump_base(self, outfile='',keep=False):
+    #: suffix for a dump which holds a dataframe
+    data_suffix = '.pcim'
+    #: suffix for a structure only dump, no dataframe
+    nodata_suffix = '.pcims'
+
+    @property
+    def dump_df(self):
+        '''The dataframe a dump should store, or None if this model instance has none.
+
+        Normally the lastdf. A model loaded with run=False has a basedf but no
+        lastdf, and then the basedf is dumped.
+
+        Defined as a property, so the attribute lookup of the model class is not
+        consulted for the name.'''
+        for name in ('lastdf', 'basedf'):
+            df = self.__dict__.get(name)
+            if isinstance(df, pd.DataFrame):
+                return df
+        return None
+
+    @property
+    def dump_current_per(self):
+        '''The current_per a dump should store. Falls back to the index of dump_df'''
+        current_per = self.__dict__.get('current_per')
+        if current_per is None or len(current_per) == 0:
+            df = self.dump_df
+            return None if df is None else df.index
+        return current_per
+
+    @property
+    def has_data(self):
+        '''True if this model instance has a dataframe, so there is data to dump'''
+        return self.dump_df is not None
+
+    @classmethod
+    def _dump_pathname(cls, file_path, has_data, data=True):
+        '''Determines the pathname of a dump and if the dataframes should be included.
+
+        A missing suffix is set from the content. An explicit .pcim for a model
+        without a solution is turned into .pcims, and an explicit .pcims always
+        results in a structure only dump.'''
+        pathname = Path(file_path)
+        dump_data = has_data and data
+
+        if not pathname.suffix:
+            pathname = pathname.with_suffix(
+                cls.data_suffix if dump_data else cls.nodata_suffix)
+        elif pathname.suffix == cls.nodata_suffix:
+            if dump_data:
+                print(f'{pathname.name} is a structure only dump, the dataframes are not included')
+            dump_data = False
+        elif not dump_data:
+            pathname = pathname.with_suffix(cls.nodata_suffix)
+            print(f'No solution in this model instance, dumping the structure to {pathname.name}')
+
+        return pathname, dump_data
+
+    def modeldump_base(self, outfile='',keep=False,data=True):
         '''Dumps a model and its lastdf to a json file
-        
-        if keep=True the model.keep_solutions will alse be dumped'''
+
+        if keep=True the model.keep_solutions will alse be dumped
+
+        if data=False, or the model instance has no lastdf, only the model
+        structure is dumped and the file has no dataframes'''
         # print('dump ready')
         def ibs_to_json(series):
             def period_to_dict(period):
@@ -6137,24 +6201,30 @@ class Json_Mixin():
             # Converting the dictionary to a JSON string
             return json.dumps(result_dict)
 
-        # to manage error in pandas 2. 
-        try:
-            current_per_json =  pd.Series(self.current_per).to_json() 
-        except: 
-            print( 'Pandas 2. error handled ')
-            current_per_json  = ibs_to_json(pd.Series(self.current_per))
+        dump_data = self.has_data and data
+
+        if dump_data:
+            # to manage error in pandas 2.
+            try:
+                current_per_json =  pd.Series(self.dump_current_per).to_json()
+            except Exception:
+                print( 'Pandas 2. error handled ')
+                current_per_json  = ibs_to_json(pd.Series(self.dump_current_per))
+        else:
+            current_per_json = None
 
 
         dumpjson = {
-            'version': '1.00',
+            'version': '1.10',
+            'has_data': dump_data,
             'frml': self.equations,
-            'lastdf': self.lastdf.to_json(double_precision=15),
+            'lastdf': self.dump_df.to_json(double_precision=15) if dump_data else None,
             'current_per': current_per_json ,
             'modelname': self.name,
-            'oldkwargs': self.oldkwargs,
+            'oldkwargs': self.__dict__.get('oldkwargs',{}),
             'var_description': self.var_description,
             'equations_latex': self.equations_latex ,
-            'keep_solutions': {k:v.to_json(double_precision=15) for k,v in self.keep_solutions.items()} if keep else {},
+            'keep_solutions': {k:v.to_json(double_precision=15) for k,v in self.keep_solutions.items()} if (keep and dump_data) else {},
             'wb_MFMSAOPTIONS': self.wb_MFMSAOPTIONS if hasattr(self, 'wb_MFMSAOPTIONS') else '',
             'var_groups'     : self.var_groups,
             'reports'        : self.reports , 
@@ -6218,7 +6288,9 @@ class Json_Mixin():
 
         pinfile = Path(nname:=infile.replace('\\','/'))
         if not pinfile.suffix:
-            pinfile = pinfile.with_suffix('.pcim')
+            pinfile = pinfile.with_suffix(cls.data_suffix)
+            if not pinfile.exists() and (nodata := pinfile.with_suffix(cls.nodata_suffix)).exists():
+                pinfile = nodata
 
         def read_file(pinfile):
             try:
@@ -6266,10 +6338,15 @@ class Json_Mixin():
         input = json.loads(json_string)
         version = input['version']
         frml = input['frml']
-        with model.timer('read lastdf',debug):
+        has_data = input.get('has_data', input.get('lastdf') is not None)
+        if has_data:
+            with model.timer('read lastdf',debug):
 
-            lastdf = pd.read_json(StringIO(input['lastdf']))
-        current_per = pd.read_json(StringIO(input['current_per']), typ='series').values
+                lastdf = pd.read_json(StringIO(input['lastdf']))
+            current_per = pd.read_json(StringIO(input['current_per']), typ='series').values
+        else:
+            lastdf = None
+            current_per = None
         modelname = input['modelname']
         # breakpoint()
         mmodel = cls(frml, modelname=modelname, funks=funks,**kwargs)
@@ -6291,15 +6368,23 @@ class Json_Mixin():
         if keep_json:
             mmodel.json_keep = input
 
-        try:
-            lastdf, current_per = make_current_from_quarters(
-                lastdf, current_per)
-        except Exception as e:
-            # print('makecurrent',e)
-            pass
-        
+        if has_data:
+            try:
+                lastdf, current_per = make_current_from_quarters(
+                    lastdf, current_per)
+            except Exception as e:
+                # print('makecurrent',e)
+                pass
+
         if mmodel.model_description:
-            print(f'Model:{mmodel.model_description}')    
+            print(f'Model:{mmodel.model_description}')
+
+        if not has_data:
+            if run:
+                raise ValueError(
+                    f'{pinfile.name} is a structure only dump, there is no dataframe to simulate. Load with run=False and provide a dataframe')
+            print(f'Structure only model loaded, there is no dataframe in {pinfile.name}')
+            return mmodel, None
 
         if run:
             if (start:= kwargs.get('start',False)) and (end:=kwargs.get('end',False)): 
@@ -6319,15 +6404,14 @@ class Json_Mixin():
 
 class Zip_Mixin():
     '''This experimental class zips a dumped file '''
-    def modeldump(self, file_path='',keep=False,zip_file=True):
-        pathname = Path(file_path)
-        if not pathname.suffix:
-            pathname = pathname.with_suffix('.pcim')
+    def modeldump(self, file_path='',keep=False,zip_file=True,data=True):
+        pathname, dump_data = self._dump_pathname(file_path, self.has_data, data=data)
 
         pathname.parent.mkdir(parents=True, exist_ok=True)
 
-        json_string = self.modeldump_base(keep=keep)
-        
+        json_string = self.modeldump_base(keep=keep,data=dump_data)
+
+
         if zip_file:
             with gzip.open(pathname , 'wt') as zipped_file:
                 zipped_file.write(json_string)
