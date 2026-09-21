@@ -262,6 +262,11 @@ class BaseModel():
         '''
         gc.disable()
         mega_all = pt.model_parse(self.equations, self.funks)
+        if not mega_all:
+            gc.enable()
+            raise Exception('No FRML statements found in the model text.\n'
+                            'Text containing "$" is read as FRML statements, like: FRML <> Y = C + I $\n'
+                            'Without "$", write one equation per line and FRML is added automatically.')
         # mega = mega_all
         # breakpoint()
         # now separate a model for calculating add_factor  after the model is 
