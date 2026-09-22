@@ -306,3 +306,11 @@ Fix __dir__ to make tab completion in jupyter work as intended and including mix
 Better markdown display 
 check smpl in estimation so missing lags or leads wond cause fault 
 identify build in estimators 
+modeldump can dump a model without data (data=False or no lastdf) as a structure only .pcims file 
+modelload reads structure only .pcims files, they must be loaded with run=False 
+modeldump with large=True falls back to the json format when there is no dataframe 
+clearer message when the feedback variables are not directly connected in fbmin 
+modeldekom_fast_xgenr.py experimental faster dekomp using the ng xgenr evaluator (dekomp_fast, compare_dekomp) 
+clear error message when the model text has no FRML statements 
+numba is only imported in the generated solver code when ljit=True, so models also solve where numba is missing (e.g. in the browser) 
+modeldashsidebar redraws the graph after 1.5 and 3 seconds, as it may not draw on slow page loads (e.g. GitHub Codespaces) 
