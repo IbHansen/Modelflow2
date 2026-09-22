@@ -299,7 +299,8 @@ def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=Fal
     fib1 = ["def make_los(funks=[],errorfunk=None):\n"]
     fib1.append(short + "import time\n")
     fib1.append(short + "import tqdm\n")
-    fib1.append(short + "from numba import jit\n")
+    if ljit:  # only when compiling, so models also solve where numba is missing (e.g. in the browser)
+        fib1.append(short + "from numba import jit\n")
     fib1.append(short + "from modeluserfunk import " + (", ".join(pt.userfunk)).lower() + "\n")
     fib1.append(short + "from modelBLfunk import " + (", ".join(pt.BLfunk)).lower() + "\n")
     fib1.extend(short + f.__name__ + " = funks[" + str(i) + "]\n"
@@ -396,7 +397,8 @@ def gen_1d(m, debug=0, chunk=None, ljit=False, cache="False"):
     fib1 = ["def make_los(funks=[],errorfunk=None):\n"]
     fib1.append(short + "import time\n")
     fib1.append(short + "import tqdm\n")
-    fib1.append(short + "from numba import jit\n")
+    if ljit:  # only when compiling, so models also solve where numba is missing (e.g. in the browser)
+        fib1.append(short + "from numba import jit\n")
     fib1.append(short + "from modeluserfunk import " + (", ".join(pt.userfunk)).lower() + "\n")
     fib1.append(short + "from modelBLfunk import " + (", ".join(pt.BLfunk)).lower() + "\n")
     fib1.extend(short + f.__name__ + " = funks[" + str(i) + "]\n"
