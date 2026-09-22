@@ -314,3 +314,14 @@ modeldekom_fast_xgenr.py experimental faster dekomp using the ng xgenr evaluator
 clear error message when the model text has no FRML statements 
 numba is only imported in the generated solver code when ljit=True, so models also solve where numba is missing (e.g. in the browser) 
 modeldashsidebar redraws the graph after 1.5 and 3 seconds, as it may not draw on slow page loads (e.g. GitHub Codespaces) 
+get_alllinks returns the links which draw draws, so they can be rendered by others than graphviz 
+alllinks_to_nx makes a networkx graph of the links, with color, description, formula, attribution, width and layer on the nodes and edges 
+draw_nx draws the same graph as draw with networkx and matplotlib, so no graphviz is needed (works in jupyterlite in the browser) 
+nx_layout places the nodes in columns by their distance to the drawn variable, and sorts each column to reduce crossing edges 
+draw falls back to draw_nx if graphviz fails, model.no_graphviz = True forces it, to test the drawing where graphviz works 
+display_graph raises an exception if the graphviz dot program can not be found 
+display_nx is now only a dispatcher, each drawing engine is the method display_nx_<engine>, so a new engine is a new method 
+display_nx_mpl draws with matplotlib as before, the figure is kept in model.last_fig 
+display_nx_svg new engine which writes the drawing as a svg, so it stays sharp when zooming and shows the tooltips when hovering over a node or an edge 
+display_nx_svg options width, fontsize, saveas and browser=True which opens the svg in a separate browser window. The svg is kept in model.last_svg 
+draw_nx and draw take engine='svg' to use the svg drawing 

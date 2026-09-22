@@ -3947,7 +3947,7 @@ class Graph_Draw_Mixin():
         return fig
 
     
-    def draw_alllinks(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
+    def get_alllinks(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
         '''Returns the links which draw draws, as a list of node(lev,parent,child)
 
         Each link is an edge from child to parent. lev is the distance to navn,
@@ -3978,30 +3978,23 @@ class Graph_Draw_Mixin():
         :down: level downstream
         :up: level upstream
 
-        If graphviz can not draw the graph - the dot program is for instance not
-        there when running in a browser - the graph is drawn by draw_nx, which
-        only uses networkx and matplotlib.
-
-        Set model_instance.no_graphviz = True to test that drawing on a machine
-        where graphviz is installed.
+        If graphviz fails - the dot program is for instance not there when running
+        in a browser - or if self.no_graphviz is True, draw_nx draws the graph
+        with networkx and matplotlib instead.
         '''
-        alllinks = self.draw_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
+        alllinks = self.get_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
                                       filter=filter)
         try:
-            if self.no_graphviz and not kwargs.get('dot', False):
+            if self.no_graphviz:
                 raise Exception('no_graphviz is set for this model instance')
             return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter, **kwargs)
         except Exception as e:
-            if kwargs.get('dot', False):
-                # the caller wants the dot file itself, then networkx is no help
-                raise
-            print(f'Graphviz did not draw the graph: {e}')
-            print('The graph is drawn by networkx and matplotlib instead')
+            print(f'Graphviz did not draw the graph: {e}\nDrawing with networkx')
             return self.draw_nx(navn, down=down, up=up, lag=lag, endo=endo,
                                 filter=filter, alllinks=alllinks, **kwargs)
 
-    #: Set to True on a model instance to test the networkx drawing of draw on a
-    #: machine where graphviz is installed. Then draw behaves as if dot was missing
+    #: Set to True on a model instance to make draw use draw_nx, so the networkx
+    #: drawing can be tested on a machine where graphviz works
     no_graphviz = False
 
     #: the fill colors of makedotnew, as graphviz name: matplotlib color
@@ -4009,7 +4002,7 @@ class Graph_Draw_Mixin():
                  'yellow': '#FFFF00', 'springgreen': '#00FF7F', 'olivedrab1': '#C0FF3E'}
 
     def alllinks_to_nx(self, alllinks, navn='', **kwargs):
-        '''Makes a networkx digraph from the links of draw_alllinks
+        '''Makes a networkx digraph from the links of get_alllinks
 
         The properties which makedotnew writes into the graphviz file are placed on
         the nodes and the edges instead, so a renderer which is not graphviz - like
@@ -4075,7 +4068,7 @@ class Graph_Draw_Mixin():
             except Exception:
                 frml = ''
             G.nodes[v].update(
-                label=f'{v}\n{description}' if (des and description) else v,
+                label=f'{v}: {description}' if (des and description) else v,
                 des=description,
                 frml=frml,
                 color=self.nx_colors.get(self.color(v, navn), '#FFFFFF'),
@@ -4146,7 +4139,7 @@ class Graph_Draw_Mixin():
         return {v: (pos[v][0], y) for lev, vs in order.items()
                 for v, y in zip(vs, slots[lev])}
 
-    def draw_nx(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
+    def draw_nx(self, navn, down=1, up=1, lag=False, endo=False, filter=0, alllinks=None, **kwargs):
         '''Draws the same graph as draw, but with networkx and matplotlib
 
         Graphviz is not used, so this also works where the dot program can not be
@@ -4155,15 +4148,18 @@ class Graph_Draw_Mixin():
         The properties of the drawing are placed on a networkx graph by
         alllinks_to_nx, so another renderer can use the same graph.
 
+        :engine: mpl draws with matplotlib, svg makes a svg drawing with tooltips
         :size: figure size, default (10,6)
-        :fontsize: size of the node labels, default 8
+        :fontsize: size of the node labels
         :title: title of the drawing, default navn
         :sort: order the nodes to reduce crossing edges, default True
+        :alllinks: links from get_alllinks, so they are not found again
 
-        and the options of draw_alllinks and alllinks_to_nx
+        and the options of get_alllinks, alllinks_to_nx and the engine
         '''
-        alllinks = self.draw_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
-                                      filter=filter)
+        if alllinks is None:
+            alllinks = self.get_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
+                                          filter=filter)
         if not len(alllinks):
             print(f'No graph {navn}')
             if filter:
@@ -4172,9 +4168,30 @@ class Graph_Draw_Mixin():
         G = self.alllinks_to_nx(alllinks, navn=navn.upper(), **kwargs)
         return self.display_nx(G, navn=navn.upper(), **kwargs)
 
-    def display_nx(self, G, navn='', **kwargs):
-        '''Draws a graph made by alllinks_to_nx with matplotlib, returns the figure'''
-        size = kwargs.get('size', (10, 6))
+    def display_nx(self, G, navn='', engine='mpl', **kwargs):
+        '''Draws a graph made by alllinks_to_nx
+
+        :engine: mpl draws with matplotlib, svg makes a svg drawing
+
+        Each engine is the method display_nx_<engine>, so a new engine is made by
+        writing a new method. They all take the same graph and the positions from
+        nx_layout, and only do the drawing itself.
+        '''
+        try:
+            displayer = getattr(self, f'display_nx_{engine}')
+        except AttributeError:
+            raise Exception(f'{engine} is not a drawing engine for display_nx')
+        return displayer(G, navn=navn, **kwargs)
+
+    def display_nx_mpl(self, G, navn='', **kwargs):
+        '''Draws a graph made by alllinks_to_nx with matplotlib
+
+        The figure is kept in self.last_fig, nothing is returned, else the drawing
+        is displayed once more when the call is the last line in a jupyter cell'''
+        tsize = kwargs.get('size', (10, 6))
+        # size can be a string like '(6,6)' when the options come from draw
+        size = tsize if type(tsize) == tuple else tuple(
+            float(i) for i in str(tsize)[1:-1].split(','))
         fontsize = kwargs.get('fontsize', 8)
         pos = self.nx_layout(G, sort=kwargs.get('sort', True))
 
@@ -4194,8 +4211,124 @@ class Graph_Draw_Mixin():
         ax.set_axis_off()
         ax.margins(0.15)
         fig.tight_layout()
+        # the drawing is shown here, like display_graph does, as the callers of
+        # draw - for instance varvis.tracepre - dont return the result
+        display(fig)
         plt.close(fig)
-        return fig
+        self.last_fig = fig
+        return
+
+    def display_nx_svg(self, G, navn='', **kwargs):
+        '''Draws a graph made by alllinks_to_nx as a svg
+
+        A svg is a vector drawing, so it stays sharp when the browser zooms, and
+        the tooltip of a node or an edge is shown when hovering over it.
+
+        The svg text is kept in self.last_svg, nothing is returned, else the svg
+        source is displayed when the call is the last line in a jupyter cell.
+
+        :fontsize: size of the labels, default 12
+        :width: width of the drawing in the notebook, default '100%'
+        :title: title of the drawing, default navn
+        :saveas: save the svg in the graph folder under this name
+        :browser: open the svg in a separate browser window, where it can be zoomed
+        '''
+        fontsize = kwargs.get('fontsize', 12)
+        pad, gap_x, gap_y = 6, 90, 22
+        char_width = 0.62 * fontsize   # the labels are drawn in a monospace font
+        pos = self.nx_layout(G, sort=kwargs.get('sort', True))
+
+        def esc(text):
+            return (str(text).replace('&', '&amp;').replace('<', '&lt;')
+                    .replace('>', '&gt;').replace('"', '&quot;'))
+
+        # the size of a node box, the width follows the length of the label
+        box = {v: (len(G.nodes[v]['label']) * char_width + 2 * pad, fontsize + 2 * pad)
+               for v in G.nodes}
+
+        # the nodes are placed in columns by layer, in the order found by nx_layout
+        layers = defaultdict(list)
+        for v in sorted(G.nodes, key=lambda v: pos[v][1]):
+            layers[G.nodes[v]['layer']].append(v)
+
+        center, x = {}, gap_x
+        for lev in sorted(layers):
+            colwidth = max(box[v][0] for v in layers[lev])
+            colheight = sum(box[v][1] + gap_y for v in layers[lev]) - gap_y
+            y = -colheight / 2.
+            for v in layers[lev]:
+                center[v] = (x + colwidth / 2., y + box[v][1] / 2.)
+                y += box[v][1] + gap_y
+            x += colwidth + gap_x
+
+        # move the drawing down, so it starts below the title
+        top = min(cy - box[v][1] / 2. for v, (cx, cy) in center.items()) - 2 * gap_y
+        center = {v: (cx, cy - top) for v, (cx, cy) in center.items()}
+        width = x
+        height = max(cy + box[v][1] / 2. for v, (cx, cy) in center.items()) + gap_y
+
+        def border(v, other):
+            '''The point where the line from v towards other leaves the box of v'''
+            (cx, cy), (ox, oy) = center[v], center[other]
+            w, h = box[v]
+            dx, dy = ox - cx, oy - cy
+            if not dx and not dy:
+                return cx, cy
+            scale = min(w / 2. / abs(dx) if dx else 1e9, h / 2. / abs(dy) if dy else 1e9)
+            return cx + dx * scale, cy + dy * scale
+
+        arrow = f'arrow{abs(hash(navn)) % 100000}'   # an id of its own for each drawing
+        lines = []
+        for child, parent in G.edges:
+            edge = G.edges[child, parent]
+            if not edge.get('visible', True):
+                continue
+            x1, y1 = border(child, parent)
+            x2, y2 = border(parent, child)
+            length = max(((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5, 0.1)
+            # stop short of the box, so the arrow head is not drawn on top of it
+            x2, y2 = x2 - (x2 - x1) * 8. / length, y2 - (y2 - y1) * 8. / length
+            lines.append(
+                f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="grey" '
+                f'stroke-width="{max(1., edge["width"]):.1f}" marker-end="url(#{arrow})">'
+                f'<title>{esc(edge["tooltip"])}</title></line>')
+
+        nodes = []
+        for v, (cx, cy) in center.items():
+            w, h = box[v]
+            nodes.append(
+                f'<g><title>{esc(G.nodes[v]["tooltip"])}</title>'
+                f'<rect x="{cx - w / 2:.1f}" y="{cy - h / 2:.1f}" width="{w:.1f}" height="{h:.1f}" '
+                f'rx="5" fill="{G.nodes[v]["color"]}" stroke="black" stroke-width="0.7"/>'
+                f'<text x="{cx:.1f}" y="{cy:.1f}" font-family="monospace" font-size="{fontsize}" '
+                f'text-anchor="middle" dominant-baseline="central" fill="blue">'
+                f'{esc(G.nodes[v]["label"])}</text></g>')
+
+        title = kwargs.get('title', navn)
+        titletext = (f'<text x="{gap_x}" y="{fontsize + 8}" font-family="sans-serif" '
+                     f'font-size="{fontsize + 2}" fill="black">{esc(title)}</text>') if title else ''
+
+        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width:.0f} {height:.0f}" '
+               f'width="{kwargs.get("width", "100%")}" style="max-width:100%;height:auto">'
+               f'<defs><marker id="{arrow}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" '
+               'markerHeight="6" orient="auto-start-reverse">'
+               '<path d="M 0 0 L 10 5 L 0 10 z" fill="grey"/></marker></defs>'
+               + titletext + ''.join(lines) + ''.join(nodes) + '</svg>')
+
+        browser = kwargs.get('browser', False)
+        if kwargs.get('saveas', '') or browser:
+            fname = kwargs.get('saveas', navn if navn else 'A_model_graph')
+            path = Path('graph')
+            path.mkdir(parents=True, exist_ok=True)
+            svgname = path / f'{fname}.svg'
+            svgname.write_text(svg, encoding='utf-8')
+            if browser:
+                # the same as display_graph, a separate window where the svg can be zoomed
+                wb.open(f'file://{svgname.resolve()}', new=2)
+
+        display(HTML(svg))
+        self.last_svg = svg
+        return
 
     def trans(self, ind, root, transdic=None, debug=False):
         ''' as there are many variable starting with SHOCK, the can renamed to save nodes'''
