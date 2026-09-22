@@ -3970,28 +3970,34 @@ class Graph_Draw_Mixin():
                      self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,filter=filter))
         return list(chain(uplinks, downlinks))
 
-    def draw(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
+    def draw(self, navn, down=1, up=1, lag=False, endo=False, filter=0, engine='dot', **kwargs):
         '''draws a graph of dependensies of navn up to maxlevel
 
         :lag: show the complete graph including lagged variables else only variables.
         :endo: Show only the graph for current endogenous variables
         :down: level downstream
         :up: level upstream
+        :engine: dot draws with graphviz, mpl and svg are the engines of draw_nx
 
         If graphviz fails - the dot program is for instance not there when running
         in a browser - or if self.no_graphviz is True, draw_nx draws the graph
-        with networkx and matplotlib instead.
+        with networkx instead.
         '''
         alllinks = self.get_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
                                       filter=filter)
-        try:
-            if self.no_graphviz:
-                raise Exception('no_graphviz is set for this model instance')
-            return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter, **kwargs)
-        except Exception as e:
-            print(f'Graphviz did not draw the graph: {e}\nDrawing with networkx')
-            return self.draw_nx(navn, down=down, up=up, lag=lag, endo=endo,
-                                filter=filter, alllinks=alllinks, **kwargs)
+        # dot=True means the caller wants the dot source, for instance the dash apps,
+        # then no_graphviz is not respected, as networkx can not make a dot file
+        if engine == 'dot' and (not self.no_graphviz or kwargs.get('dot', False)):
+            try:
+                return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter, **kwargs)
+            except Exception as e:
+                print(f'Graphviz did not draw the graph: {e}\nDrawing with networkx')
+                engine = 'mpl'
+        elif engine == 'dot':
+            engine = 'mpl'   # no_graphviz is set, then networkx draws the graph
+
+        return self.draw_nx(navn, down=down, up=up, lag=lag, endo=endo, filter=filter,
+                            alllinks=alllinks, engine=engine, **kwargs)
 
     #: Set to True on a model instance to make draw use draw_nx, so the networkx
     #: drawing can be tested on a machine where graphviz works

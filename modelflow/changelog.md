@@ -324,4 +324,5 @@ display_nx is now only a dispatcher, each drawing engine is the method display_n
 display_nx_mpl draws with matplotlib as before, the figure is kept in model.last_fig 
 display_nx_svg new engine which writes the drawing as a svg, so it stays sharp when zooming and shows the tooltips when hovering over a node or an edge 
 display_nx_svg options width, fontsize, saveas and browser=True which opens the svg in a separate browser window. The svg is kept in model.last_svg 
-draw_nx and draw take engine='svg' to use the svg drawing 
+draw takes engine= : dot (default) draws with graphviz, mpl or svg draws with networkx 
+draw with dot=True always uses graphviz, also when no_graphviz is set, so the dash apps still get their dot source 
