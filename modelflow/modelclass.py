@@ -3947,15 +3947,19 @@ class Graph_Draw_Mixin():
         return fig
 
     
-    def draw(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
-        '''draws a graph of dependensies of navn up to maxlevel
+    def draw_alllinks(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
+        '''Returns the links which draw draws, as a list of node(lev,parent,child)
 
-        :lag: show the complete graph including lagged variables else only variables. 
-        :endo: Show only the graph for current endogenous variables 
+        Each link is an edge from child to parent. lev is the distance to navn,
+        positive for the links upstream and negative for the links downstream.
+
+        Same parameters as draw, so the links can be rendered by another engine
+        than graphviz, for instance as a networkx graph by alllinks_to_nx
+
+        :lag: show the complete graph including lagged variables else only variables.
+        :endo: Show only the graph for current endogenous variables
         :down: level downstream
-        :up: level upstream 
-
-
+        :up: level upstream
         '''
         if filter and lag:
             print('No lagged nodes when using filter')
@@ -3964,8 +3968,234 @@ class Graph_Draw_Mixin():
         uplinks = self.upwalk(graph, navn.upper(), maxlevel=up, lpre=True,filter=filter )
         downlinks = (node(-level, navn, parent) for level, parent, navn in
                      self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,filter=filter))
-        alllinks = chain(uplinks, downlinks)
-        return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter, **kwargs)
+        return list(chain(uplinks, downlinks))
+
+    def draw(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
+        '''draws a graph of dependensies of navn up to maxlevel
+
+        :lag: show the complete graph including lagged variables else only variables.
+        :endo: Show only the graph for current endogenous variables
+        :down: level downstream
+        :up: level upstream
+
+        If graphviz can not draw the graph - the dot program is for instance not
+        there when running in a browser - the graph is drawn by draw_nx, which
+        only uses networkx and matplotlib.
+
+        Set model_instance.no_graphviz = True to test that drawing on a machine
+        where graphviz is installed.
+        '''
+        alllinks = self.draw_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
+                                      filter=filter)
+        try:
+            if self.no_graphviz and not kwargs.get('dot', False):
+                raise Exception('no_graphviz is set for this model instance')
+            return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter, **kwargs)
+        except Exception as e:
+            if kwargs.get('dot', False):
+                # the caller wants the dot file itself, then networkx is no help
+                raise
+            print(f'Graphviz did not draw the graph: {e}')
+            print('The graph is drawn by networkx and matplotlib instead')
+            return self.draw_nx(navn, down=down, up=up, lag=lag, endo=endo,
+                                filter=filter, alllinks=alllinks, **kwargs)
+
+    #: Set to True on a model instance to test the networkx drawing of draw on a
+    #: machine where graphviz is installed. Then draw behaves as if dot was missing
+    no_graphviz = False
+
+    #: the fill colors of makedotnew, as graphviz name: matplotlib color
+    nx_colors = {'red': '#FF0000', 'chocolate1': '#FF7F24', 'steelblue1': '#63B8FF',
+                 'yellow': '#FFFF00', 'springgreen': '#00FF7F', 'olivedrab1': '#C0FF3E'}
+
+    def alllinks_to_nx(self, alllinks, navn='', **kwargs):
+        '''Makes a networkx digraph from the links of draw_alllinks
+
+        The properties which makedotnew writes into the graphviz file are placed on
+        the nodes and the edges instead, so a renderer which is not graphviz - like
+        draw_nx - can use them.
+
+        Node attributes:
+
+        :label: the name, and the description if des=True
+        :des: the variable description
+        :frml: the formula, Exogen for exogenous variables
+        :color: fill color, the same colors as in the graphviz drawing
+        :tooltip: description and formula
+        :layer: the distance to navn, negative upstream and positive downstream
+        :values: the values, only when values=True
+
+        Edge attributes:
+
+        :width: as the penwidth of the graphviz drawing, from the attribution
+        :att_min: :att_max: min and max attribution in pct, None if not calculated
+        :tooltip: the attribution as a string
+        :visible: False for the nodes in the invisible option
+
+        Options:
+
+        :att: calculate attributions, default True
+        :des: include the variable description in the label, default True
+        :values: place the values of each variable on the nodes, default False
+        :invisible: set of invisible nodes
+        :transdic: dict of translations for consolidation of nodes
+        '''
+        navn = navn.upper()
+        alllinks = list(alllinks)
+        transdic = kwargs.get('transdic', getattr(self, 'transdic', None))
+        if transdic:
+            alllinks = [node(x.lev, self.trans(x.parent, navn, transdic),
+                             self.trans(x.child, navn, transdic)) for x in alllinks]
+        invisible = kwargs.get('invisible', set())
+        des = kwargs.get('des', True)
+
+        if kwargs.get('att', True):
+            try:
+                to_att = {p for l, p, c in alllinks} | {c.split('(')[0] for l, p, c in alllinks
+                                                        if c.split('(')[0] in self.endogene}
+                self.att_dic = {v: self.get_att_pct(v.split('(')[0], lag=False, start='', end='')
+                                for v in to_att}
+            except Exception:
+                self.att_dic = {}
+        else:
+            self.att_dic = {}
+
+        G = nx.DiGraph()
+        # a set, to weed out multiple links
+        G.add_edges_from({(x.child, x.parent) for x in alllinks})
+
+        for v in G.nodes:
+            var_name = v.split('(')[0]
+            try:
+                description = self.var_des(v)
+            except Exception:
+                description = ''
+            try:
+                frml = self.allvar[var_name]['frml'] if var_name in self.endogene else 'Exogen'
+            except Exception:
+                frml = ''
+            G.nodes[v].update(
+                label=f'{v}\n{description}' if (des and description) else v,
+                des=description,
+                frml=frml,
+                color=self.nx_colors.get(self.color(v, navn), '#FFFFFF'),
+                tooltip=f'{v}: {description}\n{frml}')
+            if kwargs.get('values', False):
+                try:
+                    G.nodes[v]['values'] = self.get_values(v)
+                except Exception:
+                    G.nodes[v]['values'] = None
+
+        # the layer is the distance to navn, so the drawing can be layered like rankdir=LR
+        if navn in G:
+            upstream = nx.single_source_shortest_path_length(G.reverse(copy=False), navn)
+            downstream = nx.single_source_shortest_path_length(G, navn)
+        else:
+            upstream, downstream = {}, {}
+        for v in G.nodes:
+            up_len, down_len = upstream.get(v), downstream.get(v)
+            if up_len is not None and (down_len is None or up_len <= down_len):
+                G.nodes[v]['layer'] = -up_len
+            else:
+                G.nodes[v]['layer'] = 0 if down_len is None else down_len
+
+        for child, parent in G.edges:
+            try:
+                att = self.att_dic[parent].loc[child]
+                att_min, att_max = float(att.min()), float(att.max())
+                width = max(1., min(8., att.abs().max()/10.))
+                tooltip = f'{child} -> {parent} Min. att. {att_min:.0f}% max: {att_max:.0f}%'
+            except Exception:
+                att_min, att_max = None, None
+                width = 0.5
+                tooltip = f'{child} -> {parent}'
+            G.edges[child, parent].update(
+                width=width, att_min=att_min, att_max=att_max, tooltip=tooltip,
+                visible=not (child in invisible or parent in invisible))
+
+        return G
+
+    @staticmethod
+    def nx_layout(G, sort=True):
+        '''Positions for a graph made by alllinks_to_nx
+
+        The nodes are placed in columns according to their layer attribute, like
+        rankdir=LR in graphviz. If sort, the nodes in each column are ordered to
+        reduce the number of crossing edges (the barycenter heuristic)'''
+        pos = nx.multipartite_layout(G, subset_key='layer', align='vertical')
+        if not sort:
+            return pos
+
+        order = defaultdict(list)
+        for v in sorted(G.nodes, key=lambda v: pos[v][1]):
+            order[G.nodes[v]['layer']].append(v)
+        # the vertical positions to fill out, the same in each sweep
+        slots = {lev: sorted(pos[v][1] for v in vs) for lev, vs in order.items()}
+        undirected = G.to_undirected(as_view=True)
+
+        for sweep in range(4):
+            for lev in sorted(order, reverse=bool(sweep % 2)):
+                rank = {v: i for vs in order.values() for i, v in enumerate(vs)}
+
+                def barycenter(v):
+                    ranks = [rank[n] for n in undirected[v] if G.nodes[n]['layer'] != lev]
+                    return sum(ranks)/len(ranks) if ranks else rank[v]
+
+                order[lev] = sorted(order[lev], key=barycenter)
+
+        return {v: (pos[v][0], y) for lev, vs in order.items()
+                for v, y in zip(vs, slots[lev])}
+
+    def draw_nx(self, navn, down=1, up=1, lag=False, endo=False, filter=0, **kwargs):
+        '''Draws the same graph as draw, but with networkx and matplotlib
+
+        Graphviz is not used, so this also works where the dot program can not be
+        run, for instance in jupyterlite in the browser.
+
+        The properties of the drawing are placed on a networkx graph by
+        alllinks_to_nx, so another renderer can use the same graph.
+
+        :size: figure size, default (10,6)
+        :fontsize: size of the node labels, default 8
+        :title: title of the drawing, default navn
+        :sort: order the nodes to reduce crossing edges, default True
+
+        and the options of draw_alllinks and alllinks_to_nx
+        '''
+        alllinks = self.draw_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
+                                      filter=filter)
+        if not len(alllinks):
+            print(f'No graph {navn}')
+            if filter:
+                print('Perhaps filter prunes to much')
+            return
+        G = self.alllinks_to_nx(alllinks, navn=navn.upper(), **kwargs)
+        return self.display_nx(G, navn=navn.upper(), **kwargs)
+
+    def display_nx(self, G, navn='', **kwargs):
+        '''Draws a graph made by alllinks_to_nx with matplotlib, returns the figure'''
+        size = kwargs.get('size', (10, 6))
+        fontsize = kwargs.get('fontsize', 8)
+        pos = self.nx_layout(G, sort=kwargs.get('sort', True))
+
+        fig, ax = plt.subplots(figsize=size)
+        edgelist = [e for e in G.edges if G.edges[e].get('visible', True)]
+        nx.draw_networkx_edges(G, pos, edgelist=edgelist,
+                               width=[G.edges[e]['width'] for e in edgelist],
+                               edge_color='grey', arrows=True, arrowstyle='-|>',
+                               arrowsize=12, node_size=1200,
+                               min_source_margin=25, min_target_margin=25, ax=ax)
+        for v, (x, y) in pos.items():
+            ax.text(x, y, G.nodes[v]['label'], ha='center', va='center',
+                    fontsize=fontsize, color='blue', zorder=3,
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor=G.nodes[v]['color'],
+                              edgecolor='black', linewidth=0.5))
+        ax.set_title(kwargs.get('title', navn))
+        ax.set_axis_off()
+        ax.margins(0.15)
+        fig.tight_layout()
+        plt.close(fig)
+        return fig
 
     def trans(self, ind, root, transdic=None, debug=False):
         ''' as there are many variable starting with SHOCK, the can renamed to save nodes'''
@@ -4665,6 +4895,12 @@ class Graph_Draw_Mixin():
         from pathlib import Path
         import webbrowser as wb
         from subprocess import run
+        import shutil
+
+        # the dot program is not there in a browser (jupyterlite) and not on all machines
+        if shutil.which('dot') is None:
+            raise Exception(
+                'The graphviz dot program can not be found, so no graph can be drawn')
         # breakpoint()
         tsize = kwargs.get('size', (6, 6))
         size = tsize if type(tsize) == tuple else tuple(int(i)
