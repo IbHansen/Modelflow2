@@ -285,14 +285,15 @@ class Dash_graph():
             style=SIDEBAR_STYLE
         )
         # breakpoint()
-        outvar= selected_var    
+        outvar= selected_var
+        self.last_dot = self.mmodel.draw(selected_var,up=self.up,down=self.down,showatt=False,lag=self.lag,
+                                                 debug=0,dot=True,HR=False,filter = self.filter,
+                                                 all=False,attshow=False)
         tab0 = html.Div([
             dbc.Tabs(id="tabs", children=[
-                dbc.Tab(id='Graph',label='Graph',children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH, 
-                                                                                                        
-                        dot_source =   self.mmodel.draw(selected_var,up=self.up,down=self.down,showatt=False,lag=self.lag,
-                                                 debug=0,dot=True,HR=False,filter = self.filter,
-                                                 all=False,attshow=False))],
+                dbc.Tab(id='Graph',label='Graph',children= [DashInteractiveGraphviz(id="gv" , style=CONTENT_STYLE_GRAPH,
+
+                        dot_source = self.last_dot)],
                         style=CONTENT_STYLE_TOP , ),
 
                 dbc.Tab(id='Chart',label='Chart', 
@@ -326,7 +327,10 @@ class Dash_graph():
         
         
         # app.layout = html.Div([sidebar,body2])
-        self.app.layout = dbc.Container([sidebar,tabbed],style={"height": "100vh","width":"100%"},fluid=True)
+        # The graph component draws only once at page load, and silently gives up if the page
+        # is not laid out yet (slow loads, e.g. GitHub Codespaces). So redraw it after 1.5 and 3 seconds
+        redraw = dcc.Interval(id='initial_redraw',interval=1500,max_intervals=2)
+        self.app.layout = dbc.Container([sidebar,tabbed,redraw],style={"height": "100vh","width":"100%"},fluid=True)
 
         @self.app.callback(
             [Output("gv", "dot_source"),
@@ -340,7 +344,8 @@ class Dash_graph():
                   Input('up', "value"),Input('down', "value"),Input('filter', "value"),
                   Input('orient', "value"),
                   Input('onclick','value'),
-                  Input('node','value')
+                  Input('node','value'),
+                  Input('initial_redraw','n_intervals')
 
                ]
                , State('outvar_state','children')
@@ -351,6 +356,7 @@ class Dash_graph():
                                orient,
                                onclick,
                                node,
+                               n_redraw,
                              outvar_state
                             ):
             # time.sleep(3)
@@ -375,7 +381,11 @@ class Dash_graph():
                     print(f'{outvar_state=}')
                     print(f'{self.fokusvar=} When triggerd')
 
-                update_var = True    
+                if trigger == 'initial_redraw':
+                    # same graph, made different by trailing blanks so the component draws it again
+                    return [self.last_dot + ' ' * n_redraw] + [dash.no_update] * 6
+
+                update_var = True
 
                 if trigger == 'var':
                     outvar=var
@@ -436,6 +446,7 @@ class Dash_graph():
                 print(f'{self.fokusvar=} before render')
             self.outvar_state = outvar if onclick == 'c' or trigger == 'var' else self.outvar_state
             outvar_state = self.outvar_state
+            self.last_dot = dot_out
             return [dot_out, chart_out, chart_dif_out, att_pct_out, att_level_out, outvar_state ,dash.no_update,]
         
         app_run(self.app,jupyter=self.jupyter,debug=self.debug,port=self.port,inline=self.inline)

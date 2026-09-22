@@ -262,6 +262,11 @@ class BaseModel():
         '''
         gc.disable()
         mega_all = pt.model_parse(self.equations, self.funks)
+        if not mega_all:
+            gc.enable()
+            raise Exception('No FRML statements found in the model text.\n'
+                            'Text containing "$" is read as FRML statements, like: FRML <> Y = C + I $\n'
+                            'Without "$", write one equation per line and FRML is added automatically.')
         # mega = mega_all
         # breakpoint()
         # now separate a model for calculating add_factor  after the model is 
@@ -7190,7 +7195,8 @@ class Solver_Mixin():
         fib1 = ['def make_los(funks=[],errorfunk=None):\n']
         fib1.append(short + 'import time' + '\n')
         fib1.append(short + 'import tqdm' + '\n')
-        fib1.append(short + 'from numba import jit' + '\n')
+        if ljit:  # only when compiling, so models also solve where numba is missing (e.g. in the browser)
+            fib1.append(short + 'from numba import jit' + '\n')
         fib1.append(short + 'from modeluserfunk import ' +
                     (', '.join(pt.userfunk)).lower()+'\n')
         fib1.append(short + 'from modelBLfunk import ' +
@@ -7449,7 +7455,8 @@ class Solver_Mixin():
         fib1.append(short + 'import time' + '\n')
         fib1.append(short + 'import tqdm' + '\n')
 
-        fib1.append(short + 'from numba import jit' + '\n')
+        if ljit:  # only when compiling, so models also solve where numba is missing (e.g. in the browser)
+            fib1.append(short + 'from numba import jit' + '\n')
 
         fib1.append(short + 'from modeluserfunk import ' +
                     (', '.join(pt.userfunk)).lower()+'\n')
