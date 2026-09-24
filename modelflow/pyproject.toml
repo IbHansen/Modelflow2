@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modelflowib"                       # PyPI distribution name
-version = "2.80"                           # OVERWRITTEN at build time from MF_VERSION
+version = "2.81"                           # OVERWRITTEN at build time from MF_VERSION
                                             # (set_pyproject_version.py / make_pip.py -v)
 description = "A tool to solve and manage dynamic economic and financial models"
 readme = "README.md"
@@ -18,8 +18,15 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-# PyPI dependencies (pip names). Carried over from the previous make_pip.py.
+# PyPI dependencies (pip names).
+#
+# The ones marked `sys_platform != "emscripten"` have no wasm build, or need a web
+# server, so they can not be installed in a browser (JupyterLite/Pyodide). pip on a
+# desktop installs them as before; micropip in the browser skips them. That makes
+# `piplite.install("modelflowib")` work *with* its dependencies, so a notebook in
+# JupyterLite needs no list of packages of its own.
 dependencies = [
+    # --- everywhere ---
     "pandas",
     "matplotlib",
     "seaborn",
@@ -28,22 +35,27 @@ dependencies = [
     "networkx",
     "tqdm",
     "scipy",
-    "numexpr",
-    "bottleneck",
     "XlsxWriter",
     "pyarrow",
     "tabulate",
     "openpyxl",
     "xarray",
-    "cvxopt",
-    "numba",
-    "dash",
-    "dash-bootstrap-components",
-    "dash-interactive-graphviz",
-    "lmfit",
-    "jupyter",
+    "jinja2",                  # pandas .style, used by the report and vis tables
+    "ipython",                 # IPython.display, imported by most modules
     "ipywidgets",
     "ipydatagrid",
+    "lmfit",                   # modelestimation, modelestimator_new
+    "statsmodels",             # modelestimation, modelestimator_new
+    # --- not in a browser ---
+    "numba;                     sys_platform != 'emscripten'",
+    "cvxopt;                    sys_platform != 'emscripten'",
+    "numexpr;                   sys_platform != 'emscripten'",   # pandas accelerators
+    "bottleneck;                sys_platform != 'emscripten'",
+    "dash;                      sys_platform != 'emscripten'",   # needs a web server
+    "dash-bootstrap-components; sys_platform != 'emscripten'",
+    "dash-interactive-graphviz; sys_platform != 'emscripten'",
+    "plotly;                    sys_platform != 'emscripten'",   # modeldashsidebar
+    "jupyter;                   sys_platform != 'emscripten'",   # JupyterLite is the notebook there
 ]
 
 [project.optional-dependencies]

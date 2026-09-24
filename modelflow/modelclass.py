@@ -73,6 +73,11 @@ from typing import Iterable
 import zipfile
 from functools import partial,cached_property,lru_cache
 from tqdm.auto import tqdm
+if sys.platform == 'emscripten':
+    # a browser has no threads, so tqdm can not start its monitor thread. Set on the
+    # base class, which tqdm.auto and tqdm.notebook inherit it from
+    import tqdm as tqdm_module
+    tqdm_module.tqdm.monitor_interval = 0
 import operator
 from urllib.request import urlopen
 from io import BytesIO,StringIO

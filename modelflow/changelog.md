@@ -333,3 +333,6 @@ the whole model graphs are layered by the logical order when networkx draws them
 browser=True no longer fails in a browser, where no window can be opened 
 Version 2.80 uploaded 
 scroll_off now really shows the whole output cell, it styled the wrong elements in notebook 7, jupyterlab and jupyterlite 
+pyproject: the dependencies which can not exist in a browser (numba, cvxopt, numexpr, bottleneck, dash, dash-bootstrap-components, dash-interactive-graphviz, plotly, jupyter) are marked sys_platform != 'emscripten', so pip installs them as before while micropip in jupyterlite leaves them out, and a notebook there needs no package list of its own 
+pyproject now also requires ipython, jinja2, statsmodels and plotly, which are imported unguarded but were only installed by accident through jupyter and dash 
+modelclass sets tqdm.monitor_interval = 0 in a browser, which can not start the monitor thread 
