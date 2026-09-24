@@ -3907,20 +3907,20 @@ class Graph_Draw_Mixin():
 
     def drawendo(self, **kwargs):
         '''draws a graph of of the whole model'''
-        alllinks = (node(0, n[1], n[0]) for n in self.endograph.edges())
-        return self.todot2(alllinks, **kwargs)
+        alllinks = [node(0, n[1], n[0]) for n in self.endograph.edges()]
+        return self.draw_links(alllinks, **kwargs)
 
     def drawendo_lag_lead(self, **kwargs):
         '''draws a graph of of the whole model'''
-        alllinks = (node(0, n[1], n[0])
-                    for n in self.endograph_lag_lead.edges())
-        return self.todot2(alllinks, **kwargs)
+        alllinks = [node(0, n[1], n[0])
+                    for n in self.endograph_lag_lead.edges()]
+        return self.draw_links(alllinks, **kwargs)
 
     def drawmodel(self, lag=True, **kwargs):
         '''draws a graph of of the whole model'''
         graph = self.totgraph if lag else self.totgraph_nolag
-        alllinks = (node(0, n[1], n[0]) for n in graph.edges())
-        return self.todot2(alllinks, **kwargs)
+        alllinks = [node(0, n[1], n[0]) for n in graph.edges()]
+        return self.draw_links(alllinks, **kwargs)
 
     def plotadjacency(self, size=(5, 5), title='Structure', nolag=False):
         '''
@@ -3970,14 +3970,26 @@ class Graph_Draw_Mixin():
                      self.upwalk(graph, navn.upper(), maxlevel=down, lpre=False,filter=filter))
         return list(chain(uplinks, downlinks))
 
-    def draw(self, navn, down=1, up=1, lag=False, endo=False, filter=0, engine='dot', **kwargs):
+    # in a browser (jupyterlite) there is no graphviz program, and the svg drawing
+    # is the one which can be zoomed and has tooltips
+    if sys.platform == 'emscripten':
+        #: the engine of draw: dot for graphviz, else an engine of draw_nx
+        draw_engine = 'svg'
+        #: the engine of draw_nx: mpl for matplotlib or svg
+        nx_engine = 'svg'
+    else:
+        draw_engine = 'dot'
+        nx_engine = 'mpl'
+
+    def draw(self, navn, down=1, up=1, lag=False, endo=False, filter=0, engine='', **kwargs):
         '''draws a graph of dependensies of navn up to maxlevel
 
         :lag: show the complete graph including lagged variables else only variables.
         :endo: Show only the graph for current endogenous variables
         :down: level downstream
         :up: level upstream
-        :engine: dot draws with graphviz, mpl and svg are the engines of draw_nx
+        :engine: dot draws with graphviz, mpl and svg are the engines of draw_nx,
+                 default self.draw_engine which is svg in a browser else dot
 
         If graphviz fails - the dot program is for instance not there when running
         in a browser - or if self.no_graphviz is True, draw_nx draws the graph
@@ -3985,19 +3997,40 @@ class Graph_Draw_Mixin():
         '''
         alllinks = self.get_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
                                       filter=filter)
-        # dot=True means the caller wants the dot source, for instance the dash apps,
-        # then no_graphviz is not respected, as networkx can not make a dot file
-        if engine == 'dot' and (not self.no_graphviz or kwargs.get('dot', False)):
+        return self.draw_links(alllinks, navn=navn.upper(), engine=engine,
+                               down=down, up=up, filter=filter, **kwargs)
+
+    def draw_links(self, alllinks, navn='', engine='', **kwargs):
+        '''Draws the links from get_alllinks, drawmodel, drawendo ... with the engine
+
+        :engine: dot draws with graphviz, mpl and svg are the engines of draw_nx,
+                 default self.draw_engine which is svg in a browser else dot
+
+        If graphviz fails - the dot program is for instance not there when running
+        in a browser - or if self.no_graphviz is True, networkx draws the graph.
+        '''
+        if kwargs.get('dot', False):
+            # the caller wants the dot source itself, for instance the dash apps.
+            # The dot program is not needed for that, and networkx can not make it
+            return self.todot2(alllinks, navn=navn, **kwargs)
+
+        engine = engine or self.draw_engine
+        if engine == 'dot' and not self.no_graphviz:
             try:
-                return self.todot2(alllinks, navn=navn.upper(), down=down, up=up, filter = filter, **kwargs)
+                return self.todot2(alllinks, navn=navn, **kwargs)
             except Exception as e:
                 print(f'Graphviz did not draw the graph: {e}\nDrawing with networkx')
-                engine = 'mpl'
+                engine = self.nx_engine
         elif engine == 'dot':
-            engine = 'mpl'   # no_graphviz is set, then networkx draws the graph
+            engine = self.nx_engine   # no_graphviz is set, then networkx draws it
 
-        return self.draw_nx(navn, down=down, up=up, lag=lag, endo=endo, filter=filter,
-                            alllinks=alllinks, engine=engine, **kwargs)
+        if not len(alllinks):
+            print(f'No graph {navn}')
+            if kwargs.get('filter', 0):
+                print('Perhaps filter prunes to much')
+            return
+        G = self.alllinks_to_nx(alllinks, navn=navn, **kwargs)
+        return self.display_nx(G, navn=navn, engine=engine, **kwargs)
 
     #: Set to True on a model instance to make draw use draw_nx, so the networkx
     #: drawing can be tested on a machine where graphviz works
@@ -4085,18 +4118,26 @@ class Graph_Draw_Mixin():
                 except Exception:
                     G.nodes[v]['values'] = None
 
-        # the layer is the distance to navn, so the drawing can be layered like rankdir=LR
+        # the layer places the node in a column, so the drawing is layered like rankdir=LR
         if navn in G:
+            # the layer is the distance to navn, upstream to the left of it
             upstream = nx.single_source_shortest_path_length(G.reverse(copy=False), navn)
             downstream = nx.single_source_shortest_path_length(G, navn)
+            for v in G.nodes:
+                up_len, down_len = upstream.get(v), downstream.get(v)
+                if up_len is not None and (down_len is None or up_len <= down_len):
+                    G.nodes[v]['layer'] = -up_len
+                else:
+                    G.nodes[v]['layer'] = 0 if down_len is None else down_len
         else:
-            upstream, downstream = {}, {}
-        for v in G.nodes:
-            up_len, down_len = upstream.get(v), downstream.get(v)
-            if up_len is not None and (down_len is None or up_len <= down_len):
-                G.nodes[v]['layer'] = -up_len
-            else:
-                G.nodes[v]['layer'] = 0 if down_len is None else down_len
+            # no variable in the center, like drawmodel, then the layer is the logical
+            # order. The simultaneous blocks are condensed to one node, else there is
+            # no order, and a node of such a block gets the layer of its block
+            condensed = nx.condensation(G)
+            for layer, blocks in enumerate(nx.topological_generations(condensed)):
+                for block in blocks:
+                    for v in condensed.nodes[block]['members']:
+                        G.nodes[v]['layer'] = layer
 
         for child, parent in G.edges:
             try:
@@ -4166,23 +4207,21 @@ class Graph_Draw_Mixin():
         if alllinks is None:
             alllinks = self.get_alllinks(navn, down=down, up=up, lag=lag, endo=endo,
                                           filter=filter)
-        if not len(alllinks):
-            print(f'No graph {navn}')
-            if filter:
-                print('Perhaps filter prunes to much')
-            return
-        G = self.alllinks_to_nx(alllinks, navn=navn.upper(), **kwargs)
-        return self.display_nx(G, navn=navn.upper(), **kwargs)
+        engine = kwargs.pop('engine', '') or self.nx_engine
+        return self.draw_links(alllinks, navn=navn.upper(), engine=engine,
+                               down=down, up=up, filter=filter, **kwargs)
 
-    def display_nx(self, G, navn='', engine='mpl', **kwargs):
+    def display_nx(self, G, navn='', engine='', **kwargs):
         '''Draws a graph made by alllinks_to_nx
 
-        :engine: mpl draws with matplotlib, svg makes a svg drawing
+        :engine: mpl draws with matplotlib, svg makes a svg drawing,
+                 default self.nx_engine which is svg in a browser else mpl
 
         Each engine is the method display_nx_<engine>, so a new engine is made by
         writing a new method. They all take the same graph and the positions from
         nx_layout, and only do the drawing itself.
         '''
+        engine = engine or self.nx_engine
         try:
             displayer = getattr(self, f'display_nx_{engine}')
         except AttributeError:
@@ -4330,7 +4369,12 @@ class Graph_Draw_Mixin():
             svgname.write_text(svg, encoding='utf-8')
             if browser:
                 # the same as display_graph, a separate window where the svg can be zoomed
-                wb.open(f'file://{svgname.resolve()}', new=2)
+                try:
+                    wb.open(f'file://{svgname.resolve()}', new=2)
+                except Exception as e:
+                    # in a browser (jupyterlite) there is no window to open from
+                    print(f'No separate window here: {e}')
+                    print(f'The drawing is saved as {svgname} and is shown below')
 
         display(HTML(svg))
         self.last_svg = svg
@@ -6273,36 +6317,41 @@ class Display_Mixin():
         from IPython.display import display, Markdown, HTML
         from pathlib import Path
         display(Markdown(text))
+        rows = []
         for dir in sorted(Path(folder).glob('**')):
             # print(f'{dir=} {nocwd=}')
             if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
                 continue
-            
+
             if dir == Path('.') and nocwd :
                 continue
-            
-            filelist = (list(dir.glob('*readme.ipynb')) 
-                    + [f for f in sorted(dir.glob('*.ipynb')) 
-                       if not f.stem.endswith('readme')])
-            
-            for i, notebook in enumerate(filelist):
-                # print(notebook)    
-                if (not all) and (notebook.name.startswith('test') or notebook.name.startswith('Overview')):
-                    continue
-                if i == 0:
-                    blanks = ''.join(
-                        ['&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;']*len(dir.parts))
-                    if len(dir.parts):
-                        display(HTML(f'{blanks}<b>{str(dir)}</b>'))
-                    else:
-                        display(
-                            HTML(f'{blanks}<b>{str(Path.cwd().parts[-1])} (.)</b>'))
 
-                name = notebook.name.split('.')[0]
+            filelist = (list(dir.glob('*readme.ipynb'))
+                    + [f for f in sorted(dir.glob('*.ipynb'))
+                       if not f.stem.endswith('readme')])
+
+            if not all:
+                filelist = [f for f in filelist
+                            if not (f.name.startswith('test') or f.name.startswith('Overview'))]
+
+            if not filelist:
+                continue
+
+            indent = 2 * len(dir.parts)     # indentation of this folder in em
+            folder_name = str(dir) if len(dir.parts) else f'{str(Path.cwd().parts[-1])} (.)'
+            rows.append(
+                f'<tr><td colspan="2" style="text-align:left;padding:6px 12px 2px {indent}em">'
+                f'<b>{folder_name}</b></td></tr>')
+
+            for notebook in filelist:
                 # print(notebook)
-                display(HTML(
-                    f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
-                
+                name = notebook.name.split('.')[0]
+                title = Display_Mixin._notebook_title(notebook)
+                rows.append(
+                    f'<tr><td style="text-align:left;padding:2px 24px 2px {indent+2}em;white-space:nowrap">'
+                    f'<a href="{notebook}" target="_blank">{name}</a></td>'
+                    f'<td style="text-align:left;padding:2px 12px">{title}</td></tr>')
+
                 # try:
                 #     # Replace with your method of opening a notebook
                 #     # Example: Using jupyter command-line to open the notebook
@@ -6310,12 +6359,43 @@ class Display_Mixin():
                 #     subprocess.Popen(["jupyter", "notebook", str(notebook)])
                 # except Exception as e:
                 #     print(f"Error opening notebook {notebook}: {e}")
+        if rows:
+            display(HTML(
+                '<table style="border-collapse:collapse;border:none">'
+                + ''.join(rows) + '</table>'))
 
 
     @staticmethod
+    def _notebook_title(fname):
+        '''Returns the first line starting with one or more # in the first cell of a jupyter notebook.
+
+        Returns an empty string if the notebook can not be read or no such line is found'''
+
+        import json
+        from html import escape
+
+        try:
+            with open(fname, 'rt', encoding='utf-8') as f:
+                nb = json.load(f)
+            cells = nb.get('cells', [])
+            if not cells:
+                return ''
+            source = cells[0].get('source', '')
+            lines = source.splitlines() if isinstance(source, str) else source
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith('#'):
+                    return escape(stripped.lstrip('#').strip())
+        except Exception:
+            ...
+        return ''
+
+    @staticmethod
     def display_toc_this(pat='*',text='**Jupyter notebooks**',path='.',ext='ipynb',showext=False):
-        
-        '''In a jupyter notebook this function displays a clickable table of content in the folder pat with name in path'''
+
+        '''In a jupyter notebook this function displays a clickable table of content in the folder pat with name in path
+
+        For notebooks the first markdown header in the first cell is shown beside the name'''
 
         from IPython.display import display, Markdown, HTML
         from pathlib import Path
@@ -6323,10 +6403,18 @@ class Display_Mixin():
         display(Markdown(text))
         dir = Path(path)
        # print(dir,':')
+        rows = []
         for fname in sorted(dir.glob(pat+'.'+ext)):
             name = fname.name if showext else fname.name.split('.')[0]
+            title = Display_Mixin._notebook_title(fname) if ext == 'ipynb' else ''
+            rows.append(
+                f'<tr><td style="text-align:left;padding:2px 24px 2px 12px;white-space:nowrap">'
+                f'<a href="{fname}" target="_blank">{name}</a></td>'
+                f'<td style="text-align:left;padding:2px 12px">{title}</td></tr>')
+        if rows:
             display(HTML(
-                f'&nbsp; &nbsp; <a href="{fname}" target="_blank">{name}</a>'))
+                '<table style="border-collapse:collapse;border:none">'
+                + ''.join(rows) + '</table>'))
 
   
     @staticmethod
@@ -6379,13 +6467,25 @@ class Display_Mixin():
                 } catch (e) { /* ignore */ }
             """))
     
-            # Notebook 7 / JupyterLab: remove the scrolled-output max-height
-            # and the scrolled modifier wherever it is applied.
+            # Notebook 7 / JupyterLab: the height is set on the output area of the
+            # cell: .jp-mod-outputsScrolled .jp-Cell-outputArea {max-height: 24em}
+            # height:auto also undoes a height the user has dragged in place, as an
+            # important declaration wins over an inline style
             display(HTML("""
             <style id="mf-scroll-off">
-                .jp-OutputArea-output.jp-OutputArea-output { max-height: none !important; }
-                .jp-mod-outputsScrolled .jp-OutputArea-child {
+                .jp-mod-outputsScrolled .jp-Cell-outputArea {
                     max-height: none !important;
+                    height: auto !important;
+                    overflow-y: visible !important;
+                    resize: none !important;
+                }
+                .jp-OutputArea-output.jp-OutputArea-output { max-height: none !important; }
+                /* Classic Notebook (<=6) sets height, not max-height, on output_scroll */
+                .output_scroll {
+                    height: auto !important;
+                    max-height: none !important;
+                    overflow: visible !important;
+                    box-shadow: none !important;
                 }
             </style>
             """))
@@ -6410,11 +6510,12 @@ class Display_Mixin():
                 } catch (e) { /* ignore */ }
             """))
     
-            # Remove the override stylesheet we injected above, if present.
+            # Remove the override stylesheets we injected above, there is one for
+            # each cell where scroll_off has been run
             display(Javascript("""
                 try {
-                    var s = document.getElementById('mf-scroll-off');
-                    if (s) { s.parentNode.removeChild(s); }
+                    document.querySelectorAll('#mf-scroll-off').forEach(
+                        function (s) { s.parentNode.removeChild(s); });
                 } catch (e) { /* ignore */ }
             """))
         except Exception as e:

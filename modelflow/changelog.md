@@ -314,6 +314,7 @@ modeldekom_fast_xgenr.py experimental faster dekomp using the ng xgenr evaluator
 clear error message when the model text has no FRML statements 
 numba is only imported in the generated solver code when ljit=True, so models also solve where numba is missing (e.g. in the browser) 
 modeldashsidebar redraws the graph after 1.5 and 3 seconds, as it may not draw on slow page loads (e.g. GitHub Codespaces) 
+Version 2.79 uploaded 
 get_alllinks returns the links which draw draws, so they can be rendered by others than graphviz 
 alllinks_to_nx makes a networkx graph of the links, with color, description, formula, attribution, width and layer on the nodes and edges 
 draw_nx draws the same graph as draw with networkx and matplotlib, so no graphviz is needed (works in jupyterlite in the browser) 
@@ -326,3 +327,9 @@ display_nx_svg new engine which writes the drawing as a svg, so it stays sharp w
 display_nx_svg options width, fontsize, saveas and browser=True which opens the svg in a separate browser window. The svg is kept in model.last_svg 
 draw takes engine= : dot (default) draws with graphviz, mpl or svg draws with networkx 
 draw with dot=True always uses graphviz, also when no_graphviz is set, so the dash apps still get their dot source 
+drawmodel, drawendo and drawendo_lag_lead draw with networkx too, if graphviz fails 
+in a browser (jupyterlite) svg is the default drawing engine 
+the whole model graphs are layered by the logical order when networkx draws them 
+browser=True no longer fails in a browser, where no window can be opened 
+Version 2.80 uploaded 
+scroll_off now really shows the whole output cell, it styled the wrong elements in notebook 7, jupyterlab and jupyterlite 
