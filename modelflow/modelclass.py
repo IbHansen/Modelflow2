@@ -4098,8 +4098,10 @@ class Graph_Draw_Mixin():
             self.att_dic = {}
 
         G = nx.DiGraph()
-        # a set, to weed out multiple links
-        G.add_edges_from({(x.child, x.parent) for x in alllinks})
+        # a set, to weed out multiple links, sorted so the nodes always go into
+        # the graph in the same order. Then nx_back_edges cuts the same cycles
+        # each time, and the same model gives the same drawing in every session
+        G.add_edges_from(sorted({(x.child, x.parent) for x in alllinks}))
 
         for v in G.nodes:
             var_name = v.split('(')[0]
@@ -4135,14 +4137,18 @@ class Graph_Draw_Mixin():
                 else:
                     G.nodes[v]['layer'] = 0 if down_len is None else down_len
         else:
-            # no variable in the center, like drawmodel, then the layer is the logical
-            # order. The simultaneous blocks are condensed to one node, else there is
-            # no order, and a node of such a block gets the layer of its block
-            condensed = nx.condensation(G)
-            for layer, blocks in enumerate(nx.topological_generations(condensed)):
-                for block in blocks:
-                    for v in condensed.nodes[block]['members']:
-                        G.nodes[v]['layer'] = layer
+            # no variable in the center, like drawmodel, then the layer is the
+            # logical order. A simultaneous block is a cycle and has no order, so
+            # the edges which close the cycles are taken out first, and then the
+            # nodes of the block are spread over the columns like all the others.
+            # This is what graphviz does before it ranks the nodes, and the edges
+            # which were taken out are drawn as back edges by display_nx_svg
+            dag = nx.DiGraph()
+            dag.add_nodes_from(G)
+            dag.add_edges_from(set(G.edges) - self.nx_back_edges(G))
+            for layer, vs in enumerate(nx.topological_generations(dag)):
+                for v in vs:
+                    G.nodes[v]['layer'] = layer
 
         for child, parent in G.edges:
             try:
@@ -4159,6 +4165,43 @@ class Graph_Draw_Mixin():
                 visible=not (child in invisible or parent in invisible))
 
         return G
+
+    @staticmethod
+    def nx_back_edges(G):
+        '''The edges which close a cycle, found by a depth first search
+
+        Taking them out leaves a graph without cycles, which can be sorted into
+        columns. Graphviz does the same before it ranks the nodes of a drawing,
+        and then draws the edges which were taken out as curved back edges.
+
+        For a model this means that a simultaneous block is spread over the
+        columns like the rest of the model, instead of standing in one column
+        where all its edges would be hidden behind the boxes.
+
+        Returns a set of (from, to) edges, self loops included.
+        '''
+        back = set()
+        # the nodes on the current path have state 0, the finished ones state 1.
+        # An edge to a node on the path closes a cycle, and is a back edge
+        state = {}
+        for root in G:
+            if root in state:
+                continue
+            state[root] = 0
+            stack = [(root, iter(G[root]))]
+            while stack:
+                v, children = stack[-1]
+                for child in children:
+                    if state.get(child) == 0:
+                        back.add((v, child))
+                    elif child not in state:
+                        state[child] = 0
+                        stack.append((child, iter(G[child])))
+                        break
+                else:
+                    state[v] = 1
+                    stack.pop()
+        return back
 
     @staticmethod
     def nx_layout(G, sort=True):
@@ -4251,7 +4294,10 @@ class Graph_Draw_Mixin():
                                width=[G.edges[e]['width'] for e in edgelist],
                                edge_color='grey', arrows=True, arrowstyle='-|>',
                                arrowsize=12, node_size=1200,
-                               min_source_margin=25, min_target_margin=25, ax=ax)
+                               min_source_margin=25, min_target_margin=25,
+                               # curved, so the two links between a variable and
+                               # its lagged value are not drawn on top of each other
+                               connectionstyle='arc3,rad=0.12', ax=ax)
         for v, (x, y) in pos.items():
             ax.text(x, y, G.nodes[v]['label'], ha='center', va='center',
                     fontsize=fontsize, color='blue', zorder=3,
@@ -4284,7 +4330,7 @@ class Graph_Draw_Mixin():
         :browser: open the svg in a separate browser window, where it can be zoomed
         '''
         fontsize = kwargs.get('fontsize', 12)
-        pad, gap_x, gap_y = 6, 90, 22
+        pad, gap_y = 6, 22
         char_width = 0.62 * fontsize   # the labels are drawn in a monospace font
         pos = self.nx_layout(G, sort=kwargs.get('sort', True))
 
@@ -4296,14 +4342,20 @@ class Graph_Draw_Mixin():
         box = {v: (len(G.nodes[v]['label']) * char_width + 2 * pad, fontsize + 2 * pad)
                for v in G.nodes}
 
+        # the space between two columns. A fixed distance looks cramped when the
+        # labels carry the variable descriptions and the boxes get wide, so it
+        # follows the widest box. des=False keeps the labels, and the boxes, short
+        gap_x = max(90., 0.25 * max(w for w, h in box.values()))
+
         # the nodes are placed in columns by layer, in the order found by nx_layout
         layers = defaultdict(list)
         for v in sorted(G.nodes, key=lambda v: pos[v][1]):
             layers[G.nodes[v]['layer']].append(v)
 
-        center, x = {}, gap_x
+        center, colwidths, x = {}, {}, gap_x
         for lev in sorted(layers):
             colwidth = max(box[v][0] for v in layers[lev])
+            colwidths[lev] = colwidth
             colheight = sum(box[v][1] + gap_y for v in layers[lev]) - gap_y
             y = -colheight / 2.
             for v in layers[lev]:
@@ -4317,9 +4369,9 @@ class Graph_Draw_Mixin():
         width = x
         height = max(cy + box[v][1] / 2. for v, (cx, cy) in center.items()) + gap_y
 
-        def border(v, other):
-            '''The point where the line from v towards other leaves the box of v'''
-            (cx, cy), (ox, oy) = center[v], center[other]
+        def border(v, ox, oy):
+            '''The point where the line from v towards (ox,oy) leaves the box of v'''
+            cx, cy = center[v]
             w, h = box[v]
             dx, dy = ox - cx, oy - cy
             if not dx and not dy:
@@ -4327,21 +4379,51 @@ class Graph_Draw_Mixin():
             scale = min(w / 2. / abs(dx) if dx else 1e9, h / 2. / abs(dy) if dy else 1e9)
             return cx + dx * scale, cy + dy * scale
 
+        def bow(child, parent):
+            '''How far the link bows out from the straight line, 0 for a straight line
+
+            A straight line fails in three cases. A link which points back to an
+            earlier column - the feedback over the periods from a variable to its
+            lagged value is one - would run straight through the boxes between the
+            two ends. The two links of a pair would fall on top of each other. And
+            both ends in the same column gives a line behind the boxes of the
+            column. Graphviz curves such back edges, and so does this.
+            '''
+            lchild, lparent = G.nodes[child]['layer'], G.nodes[parent]['layer']
+            if lchild == lparent:
+                # out of the column, so the curve is clear of the boxes
+                return colwidths[lchild] + gap_x / 2.
+            if lparent < lchild or G.has_edge(parent, child):
+                # the longer the way back, the more boxes to arch over
+                return gap_y * (1 + abs(lparent - lchild))
+            return 0.
+
         arrow = f'arrow{abs(hash(navn)) % 100000}'   # an id of its own for each drawing
         lines = []
         for child, parent in G.edges:
             edge = G.edges[child, parent]
             if not edge.get('visible', True):
                 continue
-            x1, y1 = border(child, parent)
-            x2, y2 = border(parent, child)
-            length = max(((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5, 0.1)
+            (cx1, cy1), (cx2, cy2) = center[child], center[parent]
+            dx, dy = cx2 - cx1, cy2 - cy1
+            span = max((dx * dx + dy * dy) ** 0.5, 0.1)
+            # the control point sits beside the middle of the straight line. It
+            # follows the direction, so the two links of a pair bow to each their
+            # side. With no bow it is the middle itself, and the curve is a line
+            side = bow(child, parent)
+            ctrlx = (cx1 + cx2) / 2. - dy / span * side
+            ctrly = (cy1 + cy2) / 2. + dx / span * side
+            x1, y1 = border(child, ctrlx, ctrly)
+            x2, y2 = border(parent, ctrlx, ctrly)
             # stop short of the box, so the arrow head is not drawn on top of it
-            x2, y2 = x2 - (x2 - x1) * 8. / length, y2 - (y2 - y1) * 8. / length
+            ex, ey = x2 - ctrlx, y2 - ctrly
+            elen = max((ex * ex + ey * ey) ** 0.5, 0.1)
+            x2, y2 = x2 - ex / elen * 8., y2 - ey / elen * 8.
             lines.append(
-                f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="grey" '
+                f'<path d="M {x1:.1f} {y1:.1f} Q {ctrlx:.1f} {ctrly:.1f} {x2:.1f} {y2:.1f}" '
+                f'fill="none" stroke="grey" '
                 f'stroke-width="{max(1., edge["width"]):.1f}" marker-end="url(#{arrow})">'
-                f'<title>{esc(edge["tooltip"])}</title></line>')
+                f'<title>{esc(edge["tooltip"])}</title></path>')
 
         nodes = []
         for v, (cx, cy) in center.items():
@@ -4355,11 +4437,24 @@ class Graph_Draw_Mixin():
                 f'{esc(G.nodes[v]["label"])}</text></g>')
 
         title = kwargs.get('title', navn)
-        titletext = (f'<text x="{gap_x}" y="{fontsize + 8}" font-family="sans-serif" '
+        titletext = (f'<text x="{gap_x:.0f}" y="{fontsize + 8}" font-family="sans-serif" '
                      f'font-size="{fontsize + 2}" fill="black">{esc(title)}</text>') if title else ''
 
+        # the drawing fits the width of the notebook, as it always did, but it is
+        # not scaled further down than minfontsize, where the labels stop being
+        # readable and the boxes start to look like they run into each other.
+        # A drawing wider than that keeps its size and the cell scrolls sideways.
+        # min-width does this in the browser, which is the one who knows how wide
+        # the cell is. width= overrules, '100%' always fits
+        svgwidth = kwargs.get('width', '')
+        if svgwidth:
+            style = 'max-width:100%;height:auto'
+        else:
+            floor = min(1., kwargs.get('minfontsize', 9) / fontsize)
+            svgwidth = f'{width:.0f}'
+            style = f'max-width:100%;min-width:{width * floor:.0f}px;height:auto'
         svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width:.0f} {height:.0f}" '
-               f'width="{kwargs.get("width", "100%")}" style="max-width:100%;height:auto">'
+               f'width="{svgwidth}" style="{style}">'
                f'<defs><marker id="{arrow}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" '
                'markerHeight="6" orient="auto-start-reverse">'
                '<path d="M 0 0 L 10 5 L 0 10 z" fill="grey"/></marker></defs>'
@@ -4381,7 +4476,8 @@ class Graph_Draw_Mixin():
                     print(f'No separate window here: {e}')
                     print(f'The drawing is saved as {svgname} and is shown below')
 
-        display(HTML(svg))
+        # the div scrolls when min-width keeps the drawing wider than the cell
+        display(HTML(f'<div style="overflow-x:auto;max-width:100%">{svg}</div>'))
         self.last_svg = svg
         return
 

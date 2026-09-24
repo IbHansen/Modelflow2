@@ -336,3 +336,5 @@ scroll_off now really shows the whole output cell, it styled the wrong elements 
 pyproject: the dependencies which can not exist in a browser (numba, cvxopt, numexpr, bottleneck, dash, dash-bootstrap-components, dash-interactive-graphviz, plotly, jupyter) are marked sys_platform != 'emscripten', so pip installs them as before while micropip in jupyterlite leaves them out, and a notebook there needs no package list of its own 
 pyproject now also requires ipython, jinja2, statsmodels and plotly, which are imported unguarded but were only installed by accident through jupyter and dash 
 modelclass sets tqdm.monitor_interval = 0 in a browser, which can not start the monitor thread 
+Version 2.81 uploaded 
+draw with the networkx engines now shows the links back over the periods, like gdp -> gdp(-1), which were hidden 
