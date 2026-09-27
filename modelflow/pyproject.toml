@@ -44,7 +44,9 @@ dependencies = [
     "ipython",                 # IPython.display, imported by most modules
     "ipywidgets",
     "ipydatagrid",
-    "lmfit",                   # modelestimation, modelestimator_new
+    "anywidget>=0.11,<0.12",  # modelcausality, same version as in jupyter_lite requirements.txt
+    "grandalf",               # modelcausality, dot-like layout in pure Python, also in a browser
+    "lmfit",                  # modelestimation, modelestimator_new
     "statsmodels",             # modelestimation, modelestimator_new
     # --- not in a browser ---
     "numba;                     sys_platform != 'emscripten'",
@@ -90,4 +92,5 @@ py-modules = [
     # viz (8)
     "modelvis", "modeljupyter", "modeljupytermagic", "modelwidget",
     "modelwidget_input", "modeldash", "modeldashboot", "modeldashsidebar",
+    "modelcausality",
 ]

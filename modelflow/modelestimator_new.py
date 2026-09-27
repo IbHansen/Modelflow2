@@ -749,7 +749,13 @@ class EquationParse:
                     "side of a multiplication, possibly within a +/- chain. "
                     "It cannot appear inside a function call, a division, "
                     "an exponentiation, or a parenthesized sub-expression "
-                    "that is then combined with another operator."
+                    "that is then combined with another operator. "
+                    "OLS needs an equation that is linear in the "
+                    "coefficients: if it is nonlinear, estimate it with NLS "
+                    "(<est=nls_lmfit> in Makemodel, or Estimate_nls_lmfit); "
+                    "if it is linear, write each term as "
+                    "<coefficient>*<expr>, e.g. "
+                    "C(2)*(2*X) rather than 2*C(2)*X."
                 )
 
         # --- Collect parameterized regressor terms with effective signs.
@@ -1589,6 +1595,11 @@ class Estimate_ols(EstimatorBackend):
             param_names=self.param_names,
         )
         self.mfcalc_code = parser.mfcalc_code
+        # Terms without a coefficient are fixed and must be moved to the LHS
+        # before the fit. Coefficients only appear as top-level +/- terms, so
+        # setting every one of them to 0 leaves exactly the fixed terms.
+        self._fixed_rhs = re.sub(r"\b" + parser.param_regex + r"\b", "0",
+                                 parser.rhs_raw, flags=re.IGNORECASE)
 
         # Restrict eq_var_df to columns the parser actually saw.
         used_cols = list(parser.used_vars & set(self.input_df.columns))
@@ -1623,7 +1634,9 @@ class Estimate_ols(EstimatorBackend):
             raise RuntimeError(
                 "OLS pre-fit mfcalc failures:\n  " + "\n  ".join(failures)
             )
-        return df.drop(columns=to_drop)
+        df = df.mfcalc(f"<{start},{end}> OLS_FIXED_TERMS = {self._fixed_rhs}")
+        df["LHS"] = df["LHS"] - df["OLS_FIXED_TERMS"]
+        return df.drop(columns=to_drop + ["OLS_FIXED_TERMS"])
 
     # ---- contract ----------------------------------------------------------
 
