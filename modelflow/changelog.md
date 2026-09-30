@@ -343,4 +343,7 @@ modelcausality: model.causality(var) is an interactive causality graph in the no
 modelestimator_new Estimate_ols: terms without a coefficient are now moved to the left-hand side before the fit, so equations mixing imposed and estimated coefficients are estimated correctly; a nonlinear equation is rejected with a hint to use nls_lmfit 
 modelclass display_toc no longer shows the name of the root folder as a header, showroot=True brings it back 
 modelclass modelflow_auto no longer autoruns the notebook (it only worked in classic notebook 6), it now only makes the notebook wider 
-modelwidget_input slidewidget new operators %of and +%of, the slider value is in percent of a divisor variable (typically gdp) which sets or adds to the variable 
+modelwidget_input slidewidget new operators %of and +%of (and %of_impulse, +%of_impulse for the first period only), the slider value is in percent of a divisor variable (typically gdp) which sets or adds to the variable 
+modelwidget_input slidewidget.update_df uses match instead of a long if/elif to make the operators easier to read 
+pyproject requires-python is now >=3.12 (modelflow already uses match, which needs 3.10) 
+Version 2.83 uploaded 

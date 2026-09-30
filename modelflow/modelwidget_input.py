@@ -765,11 +765,12 @@ class slidewidget(SingleWidgetBase):
     - ``"%"``: multiply by (1 + value/100)
     - ``"%of"``: set var = value/100 * divisor, value is in percent of the ``divisor`` variable
     - ``"+%of"``: add value/100 * divisor to var
+    - ``"%of_impulse"``, ``"+%of_impulse"``: like ``"%of"`` and ``"+%of"`` but only current_per[0]
 
     Notes
     -----
     - ``var`` can be a string with space-separated variable names.
-    - ``"%of"`` and ``"+%of"`` need ``"divisor"``, the name of a variable, typically GDP.
+    - the ``%of`` operators need ``"divisor"``, the name of a variable, typically GDP.
     """
 
     altname: str = field(default="Alternative")
@@ -845,49 +846,56 @@ class slidewidget(SingleWidgetBase):
             value = cont["value"]
             # debug_var(value,current_per)
             for var in cont["var"]:
-                if op == "+":
-                    df.loc[current_per, var] = df.loc[current_per, var] + value
-                elif op == "+impulse":
-                    df.loc[current_per[0], var] = df.loc[current_per[0], var] + value
-                elif op == "=start-":
-                    startindex = df.index.get_loc(current_per[0])
-                    varloc = df.columns.get_loc(var)
-                    df.iloc[:startindex, varloc] = value
-                elif op == "=":
-                    df.loc[current_per, var] = value
-                elif op == "=impulse":
-                    df.loc[current_per[0], var] = value
-                elif op == "%":
-                    df.loc[current_per, var] = df.loc[current_per, var] * (1 + value / 100)
-                elif op in ("%of", "+%of"):
-                    divisor = cont.get("divisor", "")
-                    if not divisor:
-                        raise ValueError(f"For {op} we need a divisor= for {var!r}")
-                    amount = df.loc[current_per, divisor] * value / 100
-                    if op == "%of":
-                        df.loc[current_per, var] = amount
-                    else:
-                        df.loc[current_per, var] = df.loc[current_per, var] + amount
-                elif op == "%growth":
-                    startindex = df.index.get_loc(current_per[0])
-                    varloc = df.columns.get_loc(var)
-                    start_value = cont.get('start_value','')
+                match op:
+                    case "+":
+                        df.loc[current_per, var] = df.loc[current_per, var] + value
 
-                    if startindex < 1: 
-                        if start_value :
-                           df.iloc[startindex,varloc]= float(start_value)
-                        else:    
-                            raise ValueError('For %growth we need a start value=')
-                    else: 
+                    case "+impulse":
+                        df.loc[current_per[0], var] = df.loc[current_per[0], var] + value
 
-                        df.iloc[startindex,varloc]= df.iloc[startindex-1,varloc] * (1 + value / 100)
-                       
-                    for i,per in enumerate(current_per) :    
-                       if i == 0: 
-                           continue 
-                       df.iloc[i+startindex,varloc]= df.iloc[i+startindex-1,varloc] * (1 + value / 100)
-                else:
-                    raise ValueError(f"Unsupported operator {op!r} in slider mapping for {var!r}.")
+                    case "=":
+                        df.loc[current_per, var] = value
+
+                    case "=impulse":
+                        df.loc[current_per[0], var] = value
+
+                    case "=start-":
+                        startindex = df.index.get_loc(current_per[0])
+                        varloc = df.columns.get_loc(var)
+                        df.iloc[:startindex, varloc] = value
+
+                    case "%":
+                        df.loc[current_per, var] = df.loc[current_per, var] * (1 + value / 100)
+
+                    case "%of" | "+%of" | "%of_impulse" | "+%of_impulse":
+                        divisor = cont.get("divisor", "")
+                        if not divisor:
+                            raise ValueError(f"For {op} we need a divisor= for {var!r}")
+                        pers = [current_per[0]] if op.endswith("_impulse") else current_per
+                        amount = df.loc[pers, divisor] * value / 100
+                        if op.startswith("+"):
+                            df.loc[pers, var] = df.loc[pers, var] + amount
+                        else:
+                            df.loc[pers, var] = amount
+
+                    case "%growth":
+                        startindex = df.index.get_loc(current_per[0])
+                        varloc = df.columns.get_loc(var)
+                        start_value = cont.get('start_value', '')
+
+                        if startindex < 1:
+                            if start_value:
+                                df.iloc[startindex, varloc] = float(start_value)
+                            else:
+                                raise ValueError('For %growth we need a start value=')
+                        else:
+                            df.iloc[startindex, varloc] = df.iloc[startindex-1, varloc] * (1 + value / 100)
+
+                        for i in range(1, len(current_per)):
+                            df.iloc[i+startindex, varloc] = df.iloc[i+startindex-1, varloc] * (1 + value / 100)
+
+                    case _:
+                        raise ValueError(f"Unsupported operator {op!r} in slider mapping for {var!r}.")
 
     def _on_slider_change(self, g: dict) -> None:
         """Update internal mapping when a slider changes."""
