@@ -6411,15 +6411,18 @@ class Display_Mixin():
     
 
     @staticmethod
-    def display_toc(text='**Jupyter notebooks**',folder='.',all=False,nocwd=False):
-        '''In a jupyter notebook this function displays a clickable table of content of all 
-        jupyter notebooks in this and sub folders'''
+    def display_toc(text='**Jupyter notebooks**',folder='.',all=False,nocwd=False,showroot=False):
+        '''In a jupyter notebook this function displays a clickable table of content of all
+        jupyter notebooks in this and sub folders
+
+        showroot=True also shows the name of the root folder as a header'''
 
         from IPython.display import display, Markdown, HTML
         from pathlib import Path
         display(Markdown(text))
         rows = []
-        for dir in sorted(Path(folder).glob('**')):
+        root = Path(folder)
+        for dir in sorted(root.glob('**')):
             # print(f'{dir=} {nocwd=}')
             if len(dir.parts) and str(dir.parts[-1]).startswith('.'):
                 continue
@@ -6439,10 +6442,11 @@ class Display_Mixin():
                 continue
 
             indent = 2 * len(dir.parts)     # indentation of this folder in em
-            folder_name = str(dir) if len(dir.parts) else f'{str(Path.cwd().parts[-1])} (.)'
-            rows.append(
-                f'<tr><td colspan="2" style="text-align:left;padding:6px 12px 2px {indent}em">'
-                f'<b>{folder_name}</b></td></tr>')
+            if dir != root or showroot:
+                folder_name = str(dir) if len(dir.parts) else f'{str(Path.cwd().parts[-1])} (.)'
+                rows.append(
+                    f'<tr><td colspan="2" style="text-align:left;padding:6px 12px 2px {indent}em">'
+                    f'<b>{folder_name}</b></td></tr>')
 
             for notebook in filelist:
                 # print(notebook)
@@ -6624,41 +6628,12 @@ class Display_Mixin():
 
     @staticmethod
     def modelflow_auto(run=True):
-        '''In a jupyter notebook this function activate autorun of the notebook. 
+        '''Makes Jupyter use a larger portion of the browser width.
 
-        Also it makes Jupyter use a larger portion of the browser width
-
-        The function should be run before the notebook is saved, and the output should not be cleared
+        Autorun of the notebook is no longer supported, the function is kept so old notebooks still run.
         '''
-        if not run:
-            return
-        try:
-            from IPython.display import HTML, display
-            display(HTML(data="""
-            <style>
-                div#notebook-container    { width: 95%; }
-                div#menubar-container     { width: 65%; }
-                div#maintoolbar-container { width: 99%; }
-            </style>
-            """))
-
-            display(HTML("""\
-            <script>
-                // AUTORUN ALL CELLS ON NOTEBOOK-LOAD!
-                require(
-                    ['base/js/namespace', 'jquery'], 
-                    function(jupyter, $) {
-                        $(jupyter.events).on('kernel_ready.Kernel', function () {
-                            console.log('Auto-running all cells-below...');
-                            jupyter.actions.call('jupyter-notebook:run-all-cells-below');
-                            jupyter.actions.call('jupyter-notebook:save-notebook');
-                        });
-                    }
-                );
-            </script>"""))
-
-        except:
-            print('modelflow_auto not run')
+        if run:
+            Display_Mixin.widescreen()
             
 try:
     import modelwidget_input

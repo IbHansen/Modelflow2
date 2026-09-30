@@ -762,11 +762,14 @@ class slidewidget(SingleWidgetBase):
     - ``"="``: set df.loc[current_per, var] = value
     - ``"=impulse"``: set only current_per[0]
     - ``"=start-"``: set all periods *before* current_per[0] to value
-    - ``"%"``: multiply by (1 - value/100)
+    - ``"%"``: multiply by (1 + value/100)
+    - ``"%of"``: set var = value/100 * divisor, value is in percent of the ``divisor`` variable
+    - ``"+%of"``: add value/100 * divisor to var
 
     Notes
     -----
     - ``var`` can be a string with space-separated variable names.
+    - ``"%of"`` and ``"+%of"`` need ``"divisor"``, the name of a variable, typically GDP.
     """
 
     altname: str = field(default="Alternative")
@@ -856,6 +859,15 @@ class slidewidget(SingleWidgetBase):
                     df.loc[current_per[0], var] = value
                 elif op == "%":
                     df.loc[current_per, var] = df.loc[current_per, var] * (1 + value / 100)
+                elif op in ("%of", "+%of"):
+                    divisor = cont.get("divisor", "")
+                    if not divisor:
+                        raise ValueError(f"For {op} we need a divisor= for {var!r}")
+                    amount = df.loc[current_per, divisor] * value / 100
+                    if op == "%of":
+                        df.loc[current_per, var] = amount
+                    else:
+                        df.loc[current_per, var] = df.loc[current_per, var] + amount
                 elif op == "%growth":
                     startindex = df.index.get_loc(current_per[0])
                     varloc = df.columns.get_loc(var)

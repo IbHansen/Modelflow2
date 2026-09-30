@@ -341,3 +341,5 @@ draw with the networkx engines now shows the links back over the periods, like g
 Version 2.82 uploaded 
 modelcausality: model.causality(var) is an interactive causality graph in the notebook (anywidget), which works in jupyterlab, vs code and jupyterlite without graphviz or dash; a click on a variable moves the graph to it, and the boxes are placed by graphviz dot, grandalf or the nx_layout columns (engine= or the Layout menu) 
 modelestimator_new Estimate_ols: terms without a coefficient are now moved to the left-hand side before the fit, so equations mixing imposed and estimated coefficients are estimated correctly; a nonlinear equation is rejected with a hint to use nls_lmfit 
+modelclass display_toc no longer shows the name of the root folder as a header, showroot=True brings it back 
+modelclass modelflow_auto no longer autoruns the notebook (it only worked in classic notebook 6), it now only makes the notebook wider 
