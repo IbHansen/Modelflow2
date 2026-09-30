@@ -343,3 +343,4 @@ modelcausality: model.causality(var) is an interactive causality graph in the no
 modelestimator_new Estimate_ols: terms without a coefficient are now moved to the left-hand side before the fit, so equations mixing imposed and estimated coefficients are estimated correctly; a nonlinear equation is rejected with a hint to use nls_lmfit 
 modelclass display_toc no longer shows the name of the root folder as a header, showroot=True brings it back 
 modelclass modelflow_auto no longer autoruns the notebook (it only worked in classic notebook 6), it now only makes the notebook wider 
+modelwidget_input slidewidget new operators %of and +%of, the slider value is in percent of a divisor variable (typically gdp) which sets or adds to the variable 
