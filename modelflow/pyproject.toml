@@ -91,6 +91,6 @@ py-modules = [
     "modelreport", "modelhtml", "modeldisplay",
     # viz (8)
     "modelvis", "modeljupyter", "modeljupytermagic", "modelwidget",
-    "modelwidget_input", "modeldash", "modeldashboot", "modeldashsidebar",
-    "modelcausality",
+    "modelwidget_input", "modelwidget_core", "modeldash", "modeldashboot", "modeldashsidebar",
+    "modelcausality", "modelinput_shiny",
 ]

@@ -347,3 +347,4 @@ modelwidget_input slidewidget new operators %of and +%of (and %of_impulse, +%of_
 modelwidget_input slidewidget.update_df uses match instead of a long if/elif to make the operators easier to read 
 pyproject requires-python is now >=3.12 (modelflow already uses match, which needs 3.10) 
 Version 2.83 uploaded 
+modelwidget_core: new module with the ui independent part of the input widgets (definitions, values, update_df operators, scenario runner, result figures), modelwidget_input now only draws them with ipywidgets, so the same widgets can later be drawn with shiny 
