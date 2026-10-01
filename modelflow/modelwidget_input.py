@@ -212,7 +212,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any, Callable, Dict, List, Tuple
 
 import pandas as pd
@@ -259,6 +259,8 @@ from modelwidget_core import (
     CheckCore,
     SheetCore,
     ScenarioRunner,
+    ViewerOptions,
+    viewer_option_dict,
     keep_figs,
     figs_addname,
     fig_to_image,
@@ -1039,37 +1041,47 @@ class checkwidget(SingleWidgetBase):
 
 
 @dataclass
-class updatewidget:
+class updatewidget(ViewerOptions):
     ''' class to input and run a model
 
     - display(wtotal) to activate the widget
 
     The scenario logic (baseline, run, keep) is in ``self.runner``, a
     :class:`modelwidget_core.ScenarioRunner`.
+
+    The result viewer options (``selectfrom``, ``legend``, ``use_smpl``, ``vline``,
+    ``relativ_start``, ``short`` ...) are those of :class:`modelwidget_core.ViewerOptions`
+    and are passed on to :class:`keep_plot_widget`; they are keyword only.
+    :func:`modelinput_shiny.make_app` takes the same options.
+
+    ``varpat`` and ``showvarpat`` are the old names of ``selectfrom`` and
+    ``showselectfrom`` and still work.
     '''
 
     mmodel : Any     # a model
-    datawidget : Any # a widget  to update from  
+    datawidget : Any # a widget  to update from
     basename : str ='Business as usual'
     keeppat   : str = '*'
-    varpat    : str ='*'
-    showvarpat  : bool = True    # Show varpaths to 
+    varpat    : Any = None      # old name of selectfrom
+    showvarpat  : Any = None    # old name of showselectfrom
     lwrun    : bool = True
     lwupdate : bool = False
     lwreset  :  bool = True
     lwsetbas  :  bool = True
     outputwidget : str  = 'jupviz'
-    display_first :Any = None 
-  # to the plot widget  
-
-    vline  : list = field(default_factory=list)
-    relativ_start : int = 0 
-    short :bool = False 
+    display_first :Any = None
     render_mode : Any = None
 
     def __post_init__(self):
         if self.render_mode is None:
             self.render_mode = _detect_render_mode()
+
+        # the old names win only when the new ones are not set
+        if self.varpat is not None and self.selectfrom == '*':
+            self.selectfrom = self.varpat
+        if self.showvarpat is not None and self.showselectfrom:
+            self.showselectfrom = self.showvarpat
+        self.varpat = self.selectfrom
 
         # the model side: baseline, keep_solutions, running scenarios
         self.runner = ScenarioRunner(self.mmodel, basename=self.basename, keeppat=self.keeppat)
@@ -1099,22 +1111,18 @@ class updatewidget:
 
         self.wname = Text(value=self.runner.next_name,placeholder='Type something',description='Scenario name:',
                         layout={'width':'30%'},style={'description_width':'50%'})
-        self.wselectfrom = Text(value= self.varpat,placeholder='Type something',description='Display variables:',
+        self.wselectfrom = Text(value= self.selectfrom,placeholder='Type something',description='Display variables:',
                         layout={'width':'65%'},style={'description_width':'30%'})
 
-        self.wselectfrom.layout.visibility = 'visible' if self.showvarpat else 'hidden'
+        self.wselectfrom.layout.visibility = 'visible' if self.showselectfrom else 'hidden'
 
         winputstring = HBox([self.wname,self.wselectfrom])
 
         self.wtotal = VBox([HTML(value="Hello <b>World</b>")])
 
         def init_run(g):
-            self.varpat = g['new']
-            self.keep_ui = keep_plot_widget(mmodel = self.mmodel,
-                                      selectfrom = self.varpat,
-                                      vline=self.vline,relativ_start=self.relativ_start,
-                                      short = self.short,
-                                      render_mode = self.render_mode)
+            self.selectfrom = self.varpat = g['new']
+            self.keep_ui = self._make_keep_ui()
 
             self.wtotal.children  = [self.datawidget.datawidget,winputstring,wbut,
                                         self.keep_ui.datawidget]
@@ -1124,6 +1132,11 @@ class updatewidget:
         self.wselectfrom.observe(init_run,names='value',type='change')
 
         init_run({'new':self.varpat})
+
+    def _make_keep_ui(self):
+        """The result viewer with this widget's viewer options."""
+        return keep_plot_widget(mmodel=self.mmodel, render_mode=self.render_mode,
+                                **viewer_option_dict(self, keep_plot_widget))
 
     # the scenario state lives in self.runner, these keep the old attribute names
     @property
@@ -1161,14 +1174,7 @@ class updatewidget:
         self.wname.value = self.runner.next_name
         self.keep_ui.trigger(None)
         # --- FULL REBUILD of keep_plot_widget to force scenario refresh ---
-        self.keep_ui = keep_plot_widget(
-            mmodel=self.mmodel,
-            selectfrom=self.varpat,
-            vline=self.vline,
-            relativ_start=self.relativ_start,
-            short=self.short,
-            render_mode = self.render_mode
-        )
+        self.keep_ui = self._make_keep_ui()
 
         self.wtotal.children = [
             self.datawidget.datawidget,
@@ -1524,6 +1530,16 @@ class keep_plot_widget:
             select = VBox([selected_vars])
             if len(gross_selectfrom):
                 selected_vars.value = [gross_selectfrom[0][1]]
+
+        if self.selected:
+            # the variables to show at start
+            try:
+                wanted = {v.upper() for v in self.mmodel.vlist(self.selected)}
+            except Exception:
+                wanted = set()
+            start_vars = [v for _, v in selected_vars.options if v in wanted]
+            if start_vars:
+                selected_vars.value = start_vars
 
         options1 = HBox([diff]) if self.short >= 2 else HBox([diff, legend])
         options2 = HBox([scale, showtype, self.wxopen])

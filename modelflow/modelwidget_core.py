@@ -522,6 +522,66 @@ class ScenarioRunner:
 
 
 # ---------------------------------------------------------------------------
+# Options of the result viewer, shared by the notebook and Shiny
+# ---------------------------------------------------------------------------
+
+@dataclass(kw_only=True)
+class ViewerOptions:
+    """Options of the result viewer.
+
+    The names are those of :class:`modelwidget_input.keep_plot_widget`.
+    :class:`modelwidget_input.updatewidget` (notebook) and
+    :func:`modelinput_shiny.make_app` (Shiny) both take them, so a call can be
+    moved between the two. A renderer ignores what it can not use
+    (``allow_download`` in the notebook).
+    """
+
+    selectfrom: str = '*'           # pattern of the variables which can be shown
+    showselectfrom: bool = True     # let the user change that pattern
+    selected: str = ''              # pattern of the variables shown at start (default the first)
+    smpl: tuple = ('', '')          # periods shown
+    relativ_start: int = 0          # start the charts this many periods from the smpl start
+    use_smpl: bool = False          # let the user choose the periods
+    legend: bool = False
+    dec: str = ''
+    use_descriptions: bool = True   # variable descriptions instead of names
+    add_var_name: bool = False      # name and description
+    vline: Any = None
+    var_groups: dict = field(default_factory=dict)   # {label: prefix}, default mmodel.var_groups
+    use_var_groups: bool = True
+    short: int = 0                  # 1: fewer options, 2: also no legend choice
+    select_scenario: bool = True    # choose the scenarios shown
+    displaytype: str = 'tab'        # 'tab', 'accordion' or 'list'
+    switch: bool = False
+    init_dif: Any = False           # False, True or 'pct'
+    allow_download: bool = True     # Shiny: download the charts as svg/png/pdf
+
+
+def viewer_options(varpat: str = None, showvarpat: bool = None, **options) -> ViewerOptions:
+    """:class:`ViewerOptions` from keyword arguments.
+
+    ``varpat`` and ``showvarpat`` are accepted as the old names of
+    ``selectfrom`` and ``showselectfrom``; the new names win if both are given.
+    """
+    if varpat is not None:
+        options.setdefault('selectfrom', varpat)
+    if showvarpat is not None:
+        options.setdefault('showselectfrom', showvarpat)
+    return ViewerOptions(**options)
+
+
+def viewer_option_dict(obj: Any, target: Any = None) -> dict:
+    """The viewer options of ``obj`` as a dict; with ``target`` (a dataclass)
+    only the options it has a field for."""
+    from dataclasses import fields
+    names = [f.name for f in fields(ViewerOptions)]
+    if target is not None:
+        accepted = {f.name for f in fields(target)}
+        names = [n for n in names if n in accepted]
+    return {n: getattr(obj, n) for n in names}
+
+
+# ---------------------------------------------------------------------------
 # Figures of kept solutions
 # ---------------------------------------------------------------------------
 
