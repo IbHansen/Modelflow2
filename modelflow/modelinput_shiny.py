@@ -153,7 +153,8 @@ _DIFF = {'no': False, 'yes': True, 'pct': 'pct'}
 
 
 def make_app(widgetdef, mmodel: Any = None, *, model_factory: Callable[[], Any] = None,
-             title: str = 'ModelFlow scenarios', varpat: str = '*', basename: str = 'Business as usual',
+             title: str = 'ModelFlow scenarios', varpat: str = '*', selected: str = '',
+             basename: str = 'Business as usual',
              keeppat: str = '*', relativ_start: int = 0, vline: Any = None,
              sidebar_width: int = 420) -> App:
     """A Shiny app: input widgets, run scenarios, and charts of the kept solutions.
@@ -170,6 +171,8 @@ def make_app(widgetdef, mmodel: Any = None, *, model_factory: Callable[[], Any] 
         users on a shared server get their own model. Use this or ``mmodel``.
     varpat:
         Pattern of the variables which can be shown in the charts.
+    selected:
+        Pattern of the variables charted when the app opens (default the first one).
     basename, keeppat:
         Name of the baseline scenario and pattern of the variables to keep, as
         in :class:`modelwidget_input.updatewidget`.
@@ -231,8 +234,10 @@ def make_app(widgetdef, mmodel: Any = None, *, model_factory: Callable[[], Any] 
             des = model.var_description[v]
             return v if des == v else f'{des} ({v})'
 
+        showset = set(showvars)
+        first = [v.upper() for v in model.vlist(selected) if v.upper() in showset] if selected else []
         ui.update_selectize('mf_vars', choices={v: label(v) for v in showvars},
-                            selected=showvars[:1])
+                            selected=first or showvars[:1])
         ui.update_text('mf_name', value=runner.next_name)
 
         @reactive.effect

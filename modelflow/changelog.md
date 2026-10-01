@@ -348,3 +348,4 @@ modelwidget_input slidewidget.update_df uses match instead of a long if/elif to 
 pyproject requires-python is now >=3.12 (modelflow already uses match, which needs 3.10) 
 Version 2.83 uploaded 
 modelwidget_core: new module with the ui independent part of the input widgets (definitions, values, update_df operators, scenario runner, result figures), modelwidget_input now only draws them with ipywidgets, so the same widgets can later be drawn with shiny 
+modelinput_shiny: new module, make_app(widgetdef, ...) makes a standalone Shiny web app from the same widget definitions as the notebook input widgets (slide, radio, check, base, tab), runs scenarios and charts the kept solutions; also works in the browser with shinylive 
