@@ -352,3 +352,4 @@ modelinput_shiny: new module, make_app(widgetdef, ...) makes a standalone Shiny 
 modelinput_shiny: all input widgets in shiny (sumslide with slack, sheet as editable table), inputs above results, a result viewer with the keep_plot_widget options and download of the charts, and a shiny only columns key for slide and radio 
 modelinput_shiny and modelwidget_input use the same names: ViewerOptions in modelwidget_core is shared, updatewidget takes all viewer options (keep_plot_widget selected now works), make_app accepts a make_widget widget and updatewidget arguments, show_app shows a shiny app in a notebook 
 Version 2.84 uploaded 
+pyproject: pyarrow is also marked sys_platform != 'emscripten': it is only used for .pcimz (large=True) models, and an older Pyodide (0.27, used by the live code in Jupyter Books) has no pyarrow, so micropip install modelflowib failed there 
