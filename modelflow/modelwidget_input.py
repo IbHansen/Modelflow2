@@ -20,6 +20,15 @@ This module provides two layers:
    - :class:`keep_plot_widget` visualizes stored solutions from the model
      (typically ``mmodel.keep_solutions``) and can optionally save figures.
 
+Core and drawing
+----------------
+Everything which is not drawing - parsing the definitions, the current values,
+``update_df`` with the operators, running scenarios and making the result
+figures - lives in :mod:`modelwidget_core`, which imports no ipywidgets. Each
+widget here draws its values with ipywidgets and keeps them in ``self.core``.
+This makes it possible to draw the same definitions with other front ends
+(for instance Shiny for Python) later.
+
 Motivation
 ----------
 The original ``modelwidget_input.py`` grew organically and relied on implicit
@@ -203,7 +212,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any, Callable, Dict, List, Tuple
 
 import pandas as pd
@@ -240,6 +249,22 @@ import matplotlib.pyplot as plt
 
 
 from modelhelp import debug_var
+
+from modelwidget_core import (
+    BaseCore,
+    TabCore,
+    SlideCore,
+    SumSlideCore,
+    RadioCore,
+    CheckCore,
+    SheetCore,
+    ScenarioRunner,
+    ViewerOptions,
+    viewer_option_dict,
+    keep_figs,
+    figs_addname,
+    fig_to_image,
+)
 
 WIDGET_REGISTRY = {}
 
@@ -325,11 +350,12 @@ class SingleWidgetBase(WidgetABC):
     widgetdef: Dict[str, Any]
     content: Any = field(init=False)
     heading: str = field(init=False)
+    core: Any = field(init=False, default=None)   # the modelwidget_core widget holding the values
 
     def __post_init__(self) -> None:
         self.content = self.widgetdef["content"]
         self.heading = self.widgetdef.get("heading", "Heading")
-        
+
     @property
     def show(self):
         display(self.datawidget)
@@ -355,6 +381,7 @@ class ContainerWidgetBase(ContainerWidgetABC):
     heading: str = field(init=False)
     _children: List[WidgetABC] = field(init=False, default_factory=list)
     _datawidget: Any = field(init=False, default=None)
+    core: Any = field(init=False, default=None)   # the modelwidget_core container of the children's cores
 
     def __post_init__(self) -> None:
         self.content = self.widgetdef["content"]
@@ -486,6 +513,7 @@ class basewidget(ContainerWidgetBase):
     def __post_init__(self) -> None:
         super().__post_init__()
         self._children = [make_widget(widgettype, widgetdict) for widgettype, widgetdict in self.content]
+        self.core = BaseCore(self.widgetdef, [child.core for child in self._children])
         self._datawidget = VBox([child.datawidget for child in self._children])
 
 @register_widget
@@ -515,6 +543,7 @@ class tabwidget(ContainerWidgetBase):
 
         ctor = Tab if self.tab else Accordion
         self._children = [make_widget(subtype, subdef) for _, (subtype, subdef) in self.content]
+        self.core = TabCore(self.widgetdef, [child.core for child in self._children])
 
         self._datawidget = ctor(
             [child.datawidget for child in self._children],
@@ -546,6 +575,7 @@ class colabtabwidget(ContainerWidgetBase):
             make_widget(subtype, subdef)
             for _, (subtype, subdef) in entries
         ]
+        self.core = TabCore(self.widgetdef, [child.core for child in self._children])
 
         self._selector = Select(
             options=titles,
@@ -633,114 +663,39 @@ class sheetwidget(SingleWidgetBase):
     ``update_df`` adds the edited grid values to the corresponding cells in ``df``.
     """
 
-    df_var: pd.DataFrame = field(init=False) # input update dataframe before transpose and rename 
-    org_df_var: pd.DataFrame = field(init=False) # input datadateframe as displayed by sheet, so renamed and transposed 
-    org_values: pd.DataFrame = field(init=False) # copy of abowe for reset of update 
-    # df_to_update: pd.DataFrame = field(init=False) # A dataframe to update 
-
-    trans: Callable[[str], str] = field(default=lambda x: x)
-    transpose: bool = field(default=False)
     wexp: Label = field(init=False)
     wsheet: Any = field(init=False)
     _datawidget: Any = field(init=False)
-    dec: int = field(init=False, default=2)
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.op = self.content.get('operator','+')
+        self.core = SheetCore(self.widgetdef)
+        # kept as attributes for code which uses them
+        self.df_var = self.core.df_var
+        self.org_df_var = self.core.org_df_var
+        self.org_values = self.core.org_values
+        self.dec = self.core.dec
+        self.op = self.core.op
+        self.transpose = self.core.transpose
+        self.trans = self.core.trans
 
-        update_col   = self.content.get("update_col", None)
-        update_index = self.content.get("update_index", None)
-        update_df    = self.content.get("update_df", None)
-        
-        if update_col is not None and update_index is not None:
-            # normalize to Index objects (handles list/tuple/Index)
-            cols = pd.Index(update_col) if not isinstance(update_col, pd.Index) else update_col
-            idx  = pd.Index(update_index) if not isinstance(update_index, pd.Index) else update_index
-        
-            self.df_var = pd.DataFrame(0, index=idx, columns=cols)
-        
-        elif isinstance(update_df, pd.DataFrame):
-            self.df_var = update_df
-        
-        elif update_df is not None and not isinstance(update_df, pd.DataFrame):
-            raise TypeError("'update_df' must be a pandas DataFrame")
-        else:
-            raise ValueError(
-                "Provide either both 'update_col' and 'update_index', or 'update_df'."
-            )
-
-        self.dec = int(self.content.get("dec", 2))
-        self.transpose = bool(self.widgetdef.get("transpose", True))
-        self.trans = self.widgetdef.get("trans", {})
-        if not self.transpose: 
-            raise NotImplementedError("Non-transposed sheetwidget is not implemented yet.")
         self.wexp = Label(value=self.heading, layout={"width": "54%"})
-
-        newnamedf = self.df_var.copy().rename(columns=self.trans)
-        self.org_df_var = newnamedf.T if self.transpose else newnamedf
-        
-        
-        
         self.wsheet = df_to_grid(self.org_df_var, self.dec)
-        # self.wsheet2 = df_to_grid(self.org_df_var-1.0, self.dec)
-        
-        # wtab = Tab([self.wsheet,self.wsheet2])
-            
-        grid_container = Box(
-            [self.wsheet],
-            layout=Layout(
-                width="100%",
-                height="360px",
-                overflow="scroll",
-                border="1px solid #ddd"
-            )
-        )
-        
-        self._datawidget = VBox([self.wexp, self.wsheet]) 
-        
-        
-        self.org_values = self.org_df_var.copy()
+        self._datawidget = VBox([self.wexp, self.wsheet])
 
     @property
     def datawidget(self) -> Any:
         return self._datawidget
 
     def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
-        updated_df = pd.DataFrame(self.wsheet.data)
-        if self.transpose:
-            updated_df = updated_df.T
-
-        updated_df.columns = self.df_var.columns
-        updated_df.index = self.df_var.index
-        df_copy = df.loc[updated_df.index, updated_df.columns].copy()  
-        # debug_var(updated_df,df_copy)
-        match self.op:
-            case "+":
-                df.loc[updated_df.index, updated_df.columns] =df_copy + updated_df
-
-            case "=":
-                df.loc[updated_df.index, updated_df.columns] = updated_df
-
-            case "*":
-                df.loc[updated_df.index, updated_df.columns] = df_copy * updated_df
-
-            case "%":
-                df.loc[updated_df.index, updated_df.columns] = df_copy * (1+updated_df/100) 
-
-
-            case _:
-                raise ValueError(
-                    f"Unsupported operator {self.op!r} in sheetwidget mapping for {self.heading!r}."
-            )
-
-        
+        self.core.set_data(self.wsheet.data)
+        self.core.update_df(df, current_per)
 
     def reset(self, g: Any) -> None:
-        self.wsheet.data = self.org_values
+        self.core.reset()
+        self.wsheet.data = self.core.data
 
-      
-            
+
 @register_widget
 @dataclass
 class slidewidget(SingleWidgetBase):
@@ -778,11 +733,11 @@ class slidewidget(SingleWidgetBase):
 
     wset: List[FloatSlider] = field(init=False)
     wslide: List[HBox] = field(init=False)
-    current_values: Dict[str, Dict[str, Any]] = field(init=False)
     _datawidget: VBox = field(init=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        self.core = SlideCore(self.widgetdef)
 
         self.altname = self.widgetdef.get("altname", "Alternative")
         self.basename = self.widgetdef.get("basename", "Baseline")
@@ -797,7 +752,7 @@ class slidewidget(SingleWidgetBase):
                 description=des,
                 min=cont["min"],
                 max=cont["max"],
-                value=cont["value"],
+                value=self.core.values[des],
                 step=cont.get("step", 0.01),
                 layout={"width": "60%"},
                 style={"description_width": "40%"},
@@ -821,86 +776,22 @@ class slidewidget(SingleWidgetBase):
         self.wslide = [HBox([s, v]) for s, v in zip(self.wset, waltval)]
         self._datawidget = VBox([whead] + self.wslide)
 
-        # Normalize current_values (notably split var strings)
-        self.current_values = {
-            # des: {k: (v.split() if k == "var" else v) for k, v in cont.items() if k in {"value", "var", "op"}}
-            des: {k: (v.split() if k == "var" else v) for k, v in cont.items()}
-            for des, cont in self.widgetdef["content"].items()
-        }
-
     @property
     def datawidget(self) -> Any:
         return self._datawidget
 
     def reset(self, g: Any) -> None:
-        for i, (_, cont) in enumerate(self.content.items()):
-            self.wset[i].value = cont["value"]
+        self.core.reset()
+        for w in self.wset:
+            w.value = self.core.values[w.description]
 
     def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
-    # If not provided, operate on the full index
-        if current_per is None:
-            current_per = df.index
-            
-        for _, cont in self.current_values.items():
-            op = cont.get("op", "=")
-            value = cont["value"]
-            # debug_var(value,current_per)
-            for var in cont["var"]:
-                match op:
-                    case "+":
-                        df.loc[current_per, var] = df.loc[current_per, var] + value
-
-                    case "+impulse":
-                        df.loc[current_per[0], var] = df.loc[current_per[0], var] + value
-
-                    case "=":
-                        df.loc[current_per, var] = value
-
-                    case "=impulse":
-                        df.loc[current_per[0], var] = value
-
-                    case "=start-":
-                        startindex = df.index.get_loc(current_per[0])
-                        varloc = df.columns.get_loc(var)
-                        df.iloc[:startindex, varloc] = value
-
-                    case "%":
-                        df.loc[current_per, var] = df.loc[current_per, var] * (1 + value / 100)
-
-                    case "%of" | "+%of" | "%of_impulse" | "+%of_impulse":
-                        divisor = cont.get("divisor", "")
-                        if not divisor:
-                            raise ValueError(f"For {op} we need a divisor= for {var!r}")
-                        pers = [current_per[0]] if op.endswith("_impulse") else current_per
-                        amount = df.loc[pers, divisor] * value / 100
-                        if op.startswith("+"):
-                            df.loc[pers, var] = df.loc[pers, var] + amount
-                        else:
-                            df.loc[pers, var] = amount
-
-                    case "%growth":
-                        startindex = df.index.get_loc(current_per[0])
-                        varloc = df.columns.get_loc(var)
-                        start_value = cont.get('start_value', '')
-
-                        if startindex < 1:
-                            if start_value:
-                                df.iloc[startindex, varloc] = float(start_value)
-                            else:
-                                raise ValueError('For %growth we need a start value=')
-                        else:
-                            df.iloc[startindex, varloc] = df.iloc[startindex-1, varloc] * (1 + value / 100)
-
-                        for i in range(1, len(current_per)):
-                            df.iloc[i+startindex, varloc] = df.iloc[i+startindex-1, varloc] * (1 + value / 100)
-
-                    case _:
-                        raise ValueError(f"Unsupported operator {op!r} in slider mapping for {var!r}.")
+        self.core.update_df(df, current_per)
 
     def _on_slider_change(self, g: dict) -> None:
-        """Update internal mapping when a slider changes."""
-        line_des = g["owner"].description
-        self.current_values[line_des]["value"] = g["new"]
+        """Write the slider value to the core."""
+        self.core.set_value(g["owner"].description, g["new"])
+
 
 @register_widget
 @dataclass
@@ -919,22 +810,21 @@ class sumslidewidget(SingleWidgetBase):
     lastdes: str = field(init=False)
     wset: List[FloatSlider] = field(init=False)
     wslide: List[HBox] = field(init=False)
-    current_values: Dict[str, Dict[str, Any]] = field(init=False)
     _datawidget: VBox = field(init=False)
-    
+
     _in_programmatic_update: bool = field(default=False, init=False)
-  
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        self.core = SumSlideCore(self.widgetdef)
 
         self.altname = self.widgetdef.get("altname", "Alternative")
         self.basename = self.widgetdef.get("basename", "Baseline")
-        self.maxsum = float(self.widgetdef.get("maxsum", 1.0))
+        self.maxsum = self.core.maxsum
 
         self.lastdes = list(self.content.keys())[-1]
 
-      # fixed columns (won't disappear)
+        # fixed columns (won't disappear)
         val_layout = Layout(
             width="90px", min_width="90px",
             flex="0 0 auto",
@@ -945,25 +835,25 @@ class sumslidewidget(SingleWidgetBase):
             flex="0 0 auto",
             display="flex", justify_content="center", align_items="center",
         )
-        
+
         # slider column (takes the remaining space)
         slider_layout = Layout(
             width="auto",
             flex="1 1 auto",      # <-- this one flexes
             min_width="260px",    # prevent it collapsing too far
         )
-        
+
         # header uses same locked layouts
         wexp   = Label(self.heading, layout=Layout(flex="1 1 auto"))  # take remaining space
         wbas_h = Label(self.basename, layout=val_layout)
         wsl_h  = Label("Slack var", layout=slack_layout)
         whead  = HBox([wexp, wbas_h, wsl_h], layout=Layout(width="100%", align_items="center"))
-        
+
         # sliders keep description INSIDE
         self.wset = [
             FloatSlider(
                 description=des,
-                min=cont["min"], max=cont["max"], value=cont["value"],
+                min=cont["min"], max=cont["max"], value=self.core.values[des],
                 step=cont.get("step", 0.01),
                 layout=slider_layout,
                 style={"description_width": "40%"},  # you can shrink this to 30% if tight
@@ -972,179 +862,69 @@ class sumslidewidget(SingleWidgetBase):
             )
             for des, cont in self.content.items()
         ]
-        
+
         for w in self.wset:
             w.observe(self._on_slider_change, names="value", type="change")
-        
+
         wbasval = [
             Label(f"{cont['value']:>,.{cont.get('dec', 2)}f}", layout=val_layout)
             for _, cont in self.content.items()
         ]
-        
-        slackvar = [ '' != cont.get('slack','') for _, cont in self.content.items()] 
-        if not any(slackvar): 
-            slackvar[-1] = True
-        
+
         self.wslackval = [
             Checkbox(value=slack, indent=False, layout=slack_layout)
-            for slack in slackvar
+            for slack in self.core.slack
         ]
-        
+
         row_layout = Layout(width="100%", align_items="center")
         self.wslide = [
             HBox([s, v, sla], layout=row_layout)
             for s, v, sla in zip(self.wset, wbasval, self.wslackval)
         ]
-        
+
         self._datawidget = VBox([whead] + self.wslide, layout=Layout(width="100%"))
-        self.current_values = {
-            des: {k: (v.split() if k == "var" else v) for k, v in cont.items()
-                  if k in {"value", "var", "op", "min", "max"}}
-            for des, cont in self.content.items()
-        }
 
     @property
     def datawidget(self) -> Any:
         return self._datawidget
 
-    def reset(self, g: Any) -> None:
+    def _show_core_values(self) -> None:
+        """Move the sliders to the core values without triggering the sum constraint."""
         self._in_programmatic_update = True
         try:
-            for i, (_, cont) in enumerate(self.content.items()):
-                self.wset[i].value = cont["value"]
+            for w in self.wset:
+                w.value = self.core.values[w.description]
         finally:
-            self._in_programmatic_update = False        
+            self._in_programmatic_update = False
+        # the sliders may have clipped a value, so the core gets what is shown
+        for w in self.wset:
+            self.core.set_value(w.description, w.value)
 
+    def reset(self, g: Any) -> None:
+        self.core.reset()
+        self._show_core_values()
 
     def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
-    # If not provided, operate on the full index
-        if current_per is None:
-            current_per = df.index
+        self.core.update_df(df, current_per)
 
-        
-        for i,cont in enumerate(self.current_values.values()):
-            op = cont.get("op", "=")
-            value = self.wset[i].value
-
-    
-            for var in cont["var"]:
-                match op:
-                    case "+":
-                        df.loc[current_per, var] = df.loc[current_per, var] + value
-    
-                    case "+impulse":
-                        df.loc[current_per[0], var] = df.loc[current_per[0], var] + value
-    
-                    case "=":
-                        df.loc[current_per, var] = value
-    
-                    case "=impulse":
-                        df.loc[current_per[0], var] = value
-    
-                    case _:
-                        raise ValueError(
-                            f"Unsupported operator {op!r} in sumslide mapping for {var!r}."
-                    )
-    def _on_slider_change_old (self, g: dict) -> None:
-        """Maintain the sum constraint when a slider changes."""
-        if self._in_programmatic_update:
-            return 
-
-        line_des = g["owner"].description
-        line_index = list(self.current_values.keys()).index(line_des)
-        self.current_values[line_des]["value"] = g["new"]
-        # debug_var(g,line_des,line_index)
-
-        allvalues = [v["value"] for v in self.current_values.values()]
-        
-        self.slacklines = [cb.value for cb in self.wslackval]
-        if not any(self.slacklines):
-            self.wslackval[0].value = True 
-            self.slacklines = [cb.value for cb in self.wslackval]
-
-            
-        
-        sumall = sum(allvalues)
-        
-        if round(sum(allvalues),6) == round(self.maxsum,6) :
-            return
-        
-        sumslack = sum(v for v, slack in zip(allvalues, self.slacklines) if slack)
-        sumnoslack = sumall-sumslack 
-        numberslack = float(self.slacklines.count(True))
-        # debug_var(allvalues,self.slacklines,sumall,sumslack,sumnoslack,numberslack)
-        
-        # Adjust last slider first
-        adjustment = self.maxsum - sumall
-        adjustment_pr_slack = [adjustment/numberslack if a_slack else 0.0 for a_slack in self.slacklines]
-        newvalues = [v+a for v,a in zip(allvalues,adjustment_pr_slack)]
-        newvalues = [max(cont['min'],min(value,cont['max'])) for
-                     cont,value in zip(self.current_values.values(),newvalues)]    
-
-        # debug_var('before adjustment',allvalues,sumall,adjustment_pr_slack)
-
-        newsum = sum(newvalues)
-
-        if not  round(sum(allvalues),6) == round(self.maxsum,6) :
-           newvalues = [max(cont['min'],min(value,cont['max'])) for
-                     cont,value in zip(self.current_values.values(),newvalues)]    
-                   # If still too high, reduce the changed slider to fit
-           newvalues[line_index] = newvalues[line_index] - newsum + self.maxsum
-        self._in_programmatic_update = True
-        # debug_var(sum(newvalues), newvalues)
-
-        for i,v in enumerate(newvalues):  
-            # print(i,v)
-            self.wset[i].value = v
-
-        self._in_programmatic_update = False
-        
     def _on_slider_change(self, g: dict) -> None:
         """Maintain the sum constraint when a slider changes."""
         if self._in_programmatic_update:
             return
-    
-        line_des = g["owner"].description
-        line_index = list(self.current_values.keys()).index(line_des)
-        self.current_values[line_des]["value"] = g["new"]
-    
-        values = [v["value"] for v in self.current_values.values()]
-        slacklines = [cb.value for cb in self.wslackval]
-    
-        # Ensure at least one slack variable
-        if not any(slacklines):
-            self.wslackval[-1].value = True
-            slacklines = [cb.value for cb in self.wslackval]
-    
-        total = sum(values)
-        if round(total, 6) == round(self.maxsum, 6):
-            return
-    
-        slack_count = slacklines.count(True)
-        adjustment = (self.maxsum - total) / slack_count
-    
-        newvalues = []
-        for value, is_slack, cont in zip(values, slacklines, self.current_values.values()):
-            candidate = value + adjustment if is_slack else value
-            candidate = max(cont["min"], min(candidate, cont["max"]))
-            newvalues.append(candidate)
-    
-        # Final correction on the changed slider to hit maxsum exactly
-        gap = self.maxsum - sum(newvalues)
-        cont = list(self.current_values.values())[line_index]
-        newvalues[line_index] = max(
-            cont["min"],
-            min(newvalues[line_index] + gap, cont["max"])
-        )
-    
-        self._in_programmatic_update = True
-        try:
-            for widget, value in zip(self.wset, newvalues):
-                widget.value = value
-        finally:
-            self._in_programmatic_update = False        
 
-@register_widget    
+        line_des = g["owner"].description
+        self.core.set_value(line_des, g["new"])
+
+        # Ensure at least one slack variable
+        if not any(cb.value for cb in self.wslackval):
+            self.wslackval[-1].value = True
+        self.core.slack = [cb.value for cb in self.wslackval]
+
+        if self.core.rebalance(line_des):
+            self._show_core_values()
+
+
+@register_widget
 @dataclass
 class radiowidget(SingleWidgetBase):
     """
@@ -1169,6 +949,7 @@ class radiowidget(SingleWidgetBase):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        self.core = RadioCore(self.widgetdef)
 
         wexp = Label(value=self.heading, layout={"width": "54%"})
         whead = HBox([wexp])
@@ -1176,12 +957,16 @@ class radiowidget(SingleWidgetBase):
         self.wradiolist = [
             RadioButtons(
                 options=[label for label, _ in cont],
+                index=self.core.selected[des],
                 description=des,
                 layout={"width": "70%"},
                 style={"description_width": "37%"},
             )
             for des, cont in self.content.items()
         ]
+
+        for w in self.wradiolist:
+            w.observe(self._on_change, names="index", type="change")
 
         groups = HBox(self.wradiolist) if len(self.wradiolist) <= 2 else VBox(self.wradiolist)
         self._datawidget = VBox([whead, groups])
@@ -1190,20 +975,18 @@ class radiowidget(SingleWidgetBase):
     def datawidget(self) -> Any:
         return self._datawidget
 
+    def _on_change(self, g: dict) -> None:
+        if g["new"] is not None:
+            self.core.select(g["owner"].description, g["new"])
+
     def reset(self, g: Any) -> None:
+        self.core.reset()
         for wradio in self.wradiolist:
-            wradio.index = 0
+            wradio.index = self.core.selected[wradio.description]
 
     def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
-    # If not provided, operate on the full index
-        if current_per is None:
-            current_per = df.index
+        self.core.update_df(df, current_per)
 
-        for wradio, (_, cont) in zip(self.wradiolist, self.content.items()):
-            for _, variable in cont:
-                df.loc[current_per, variable] = 0
-            selected_variable = cont[wradio.index][1]
-            df.loc[current_per, selected_variable] = 1
 
 @register_widget
 @dataclass
@@ -1226,14 +1009,18 @@ class checkwidget(SingleWidgetBase):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        self.core = CheckCore(self.widgetdef)
 
         wexp = Label(value=self.heading, layout={"width": "54%"})
         whead = HBox([wexp])
 
         self.wchecklist = [
-            Checkbox(description=des, value=val)
-            for des, (variable, val) in self.content.items()
+            Checkbox(description=des, value=self.core.values[des])
+            for des in self.content
         ]
+
+        for w in self.wchecklist:
+            w.observe(self._on_change, names="value", type="change")
 
         self._datawidget = VBox([whead, VBox(self.wchecklist)])
 
@@ -1241,168 +1028,154 @@ class checkwidget(SingleWidgetBase):
     def datawidget(self) -> Any:
         return self._datawidget
 
+    def _on_change(self, g: dict) -> None:
+        self.core.set_value(g["owner"].description, g["new"])
+
     def reset(self, g: Any) -> None:
-        for wcheck, (_, (variable, val)) in zip(self.wchecklist, self.content.items()):
-            wcheck.value = val
+        self.core.reset()
+        for wcheck in self.wchecklist:
+            wcheck.value = self.core.values[wcheck.description]
 
     def update_df(self, df: pd.DataFrame, current_per: Any = None) -> None:
-    # If not provided, operate on the full index
-        if current_per is None:
-            current_per = df.index
-
-        for wcheck, (_, (variable, _)) in zip(self.wchecklist, self.content.items()):
-            df.loc[current_per, variable] = 1.0 if wcheck.value else 0.0
-
-
+        self.core.update_df(df, current_per)
 
 
 @dataclass
-class updatewidget:   
+class updatewidget(ViewerOptions):
     ''' class to input and run a model
-    
-    - display(wtotal) to activate the widget 
-    
+
+    - display(wtotal) to activate the widget
+
+    The scenario logic (baseline, run, keep) is in ``self.runner``, a
+    :class:`modelwidget_core.ScenarioRunner`.
+
+    The result viewer options (``selectfrom``, ``legend``, ``use_smpl``, ``vline``,
+    ``relativ_start``, ``short`` ...) are those of :class:`modelwidget_core.ViewerOptions`
+    and are passed on to :class:`keep_plot_widget`; they are keyword only.
+    :func:`modelinput_shiny.make_app` takes the same options.
+
+    ``varpat`` and ``showvarpat`` are the old names of ``selectfrom`` and
+    ``showselectfrom`` and still work.
     '''
-    
-    mmodel : Any     # a model 
-    datawidget : Any # a widget  to update from  
+
+    mmodel : Any     # a model
+    datawidget : Any # a widget  to update from
     basename : str ='Business as usual'
     keeppat   : str = '*'
-    varpat    : str ='*'
-    showvarpat  : bool = True    # Show varpaths to 
+    varpat    : Any = None      # old name of selectfrom
+    showvarpat  : Any = None    # old name of showselectfrom
     lwrun    : bool = True
     lwupdate : bool = False
     lwreset  :  bool = True
     lwsetbas  :  bool = True
     outputwidget : str  = 'jupviz'
-    display_first :Any = None 
-  # to the plot widget  
-
-    vline  : list = field(default_factory=list)
-    relativ_start : int = 0 
-    short :bool = False 
+    display_first :Any = None
     render_mode : Any = None
-    
-    exodif   : Any = field(default_factory=pd.DataFrame)          # definition 
-    
-    
-    
+
     def __post_init__(self):
         if self.render_mode is None:
-            self.render_mode = _detect_render_mode()        
+            self.render_mode = _detect_render_mode()
 
-        
-        
-        self.baseline = self.mmodel.basedf.copy()
+        # the old names win only when the new ones are not set
+        if self.varpat is not None and self.selectfrom == '*':
+            self.selectfrom = self.varpat
+        if self.showvarpat is not None and self.showselectfrom:
+            self.showselectfrom = self.showvarpat
+        self.varpat = self.selectfrom
+
+        # the model side: baseline, keep_solutions, running scenarios
+        self.runner = ScenarioRunner(self.mmodel, basename=self.basename, keeppat=self.keeppat)
+
         self.wrun    = Button(description="Run scenario")
         self.wrun .on_click(self.run)
         self.wrun .tooltip = 'Click to run'
         self.wrun.style.button_color = 'Lime'
 
-        
         wupdate   = Button(description="Update the dataset ")
         wupdate.on_click(self.update)
-        
+
         wreset   = Button(description="Reset to start")
         wreset.on_click(self.reset)
 
-        
         wsetbas   = Button(description="Use as baseline")
         wsetbas.on_click(self.setbasis)
-        self.experiment = 0 
-        
+
         lbut = []
-        
+
         if self.lwrun: lbut.append(self.wrun )
         if self.lwupdate: lbut.append(wupdate)
         if self.lwreset: lbut.append(wreset)
         if self.lwsetbas : lbut.append(wsetbas)
-        
+
         wbut  = HBox(lbut)
-        
-        
-        self.wname = Text(value=self.basename,placeholder='Type something',description='Scenario name:',
+
+        self.wname = Text(value=self.runner.next_name,placeholder='Type something',description='Scenario name:',
                         layout={'width':'30%'},style={'description_width':'50%'})
-        self.wselectfrom = Text(value= self.varpat,placeholder='Type something',description='Display variables:',
+        self.wselectfrom = Text(value= self.selectfrom,placeholder='Type something',description='Display variables:',
                         layout={'width':'65%'},style={'description_width':'30%'})
-        
-        self.wselectfrom.layout.visibility = 'visible' if self.showvarpat else 'hidden'
+
+        self.wselectfrom.layout.visibility = 'visible' if self.showselectfrom else 'hidden'
 
         winputstring = HBox([self.wname,self.wselectfrom])
-       
-    
-        self.mmodel.keep_solutions = {}
-        self.mmodel.keep_solutions = {self.wname.value : self.baseline}
-        self.mmodel.keep_exodif = {}
-        
-        self.experiment +=  1 
-        self.wname.value = f'Experiment {self.experiment}'
-        
-        self.wtotal = VBox([HTML(value="Hello <b>World</b>")])  
-        
+
+        self.wtotal = VBox([HTML(value="Hello <b>World</b>")])
+
         def init_run(g):
-            # print(f'{g=}')
-            self.varpat = g['new']
-            self.keep_ui = keep_plot_widget(mmodel = self.mmodel, 
-                                      selectfrom = self.varpat,
-                                      vline=self.vline,relativ_start=self.relativ_start,
-                                      short = self.short,
-                                      render_mode = self.render_mode) 
-            
-            # self.wtotal = VBox([self.datawidget.datawidget,winputstring,wbut,
-            #                             self.keep_ui.datawidget])
+            self.selectfrom = self.varpat = g['new']
+            self.keep_ui = self._make_keep_ui()
+
             self.wtotal.children  = [self.datawidget.datawidget,winputstring,wbut,
                                         self.keep_ui.datawidget]
-            
-            self.start = copy(self.mmodel.current_per[0])
-            self.end = copy(self.mmodel.current_per[-1])
-            
+
+            self.runner.set_period()
+
         self.wselectfrom.observe(init_run,names='value',type='change')
 
         init_run({'new':self.varpat})
-    
+
+    def _make_keep_ui(self):
+        """The result viewer with this widget's viewer options."""
+        return keep_plot_widget(mmodel=self.mmodel, render_mode=self.render_mode,
+                                **viewer_option_dict(self, keep_plot_widget))
+
+    # the scenario state lives in self.runner, these keep the old attribute names
+    @property
+    def baseline(self): return self.runner.baseline
+
+    @property
+    def thisexperiment(self): return self.runner.thisexperiment
+
+    @property
+    def exodif(self): return self.runner.exodif
+
+    @property
+    def experiment(self): return self.runner.experiment
+
+    @property
+    def current_experiment(self): return self.runner.current_experiment
+
+    @property
+    def start(self): return self.runner.start
+
+    @property
+    def end(self): return self.runner.end
+
     def update(self,g):
-        self.thisexperiment = self.baseline.copy()
-        # print(f'update smpl  {self.mmodel.current_per=}')
-        
-        self.datawidget.update_df(self.thisexperiment,self.mmodel.current_per)
-        self.exodif = self.mmodel.exodif(self.baseline,self.thisexperiment)
-        # print(f'update 2 smpl  {self.mmodel.current_per[0]=}')
+        self.runner.update(self.datawidget)
 
-
-              
-        
     def run(self,g):
-        self.update(g)
-        # print(f'run  smpl  {self.mmodel.current_per[0]=}')
-        # self.start = self.mmodel.current_per[0]
-        # self.end = self.mmodel.current_per[-1]
-        # print(f'{self.start=}  {self.end=}')
         self.wrun .tooltip = 'Running'
         self.wrun.style.button_color = 'Red'
 
-        self.mmodel(self.thisexperiment,start=self.start,end=self.end,progressbar=0,keep = self.wname.value,                    
-                keep_variables = self.keeppat)
+        self.runner.run(self.datawidget, self.wname.value)
+
         self.wrun .tooltip = 'Click to run'
         self.wrun.style.button_color = 'Lime'
-        # print(f'run  efter smpl  {self.mmodel.current_per[0]=}')
-        self.mmodel.keep_exodif[self.wname.value] = self.exodif 
-        self.mmodel.inputwidget_alternativerun = True
-        self.current_experiment = self.wname.value
-        self.experiment +=  1 
-        self.wname.value = f'Experiment {self.experiment}'
-        self.keep_ui.trigger(None) 
+        self.wname.value = self.runner.next_name
+        self.keep_ui.trigger(None)
         # --- FULL REBUILD of keep_plot_widget to force scenario refresh ---
-        # debug_var(self.plot_render_mode)
-        self.keep_ui = keep_plot_widget(
-            mmodel=self.mmodel,
-            selectfrom=self.varpat,
-            vline=self.vline,
-            relativ_start=self.relativ_start,
-            short=self.short,
-            render_mode = self.render_mode
-        )
-        
+        self.keep_ui = self._make_keep_ui()
+
         self.wtotal.children = [
             self.datawidget.datawidget,
             self.wtotal.children[1],   # scenario name + variable selector row
@@ -1410,37 +1183,15 @@ class updatewidget:
             self.keep_ui.datawidget    # NEW plot widget
         ]
 
-        
     def setbasis(self,g):
-        if not hasattr(self, "current_experiment"):
-            return
+        self.runner.setbasis()
 
-        self.mmodel.keep_solutions={self.current_experiment:self.mmodel.keep_solutions[self.current_experiment]}
-        
-        self.mmodel.keep_exodif[self.current_experiment] = self.exodif 
-        self.mmodel.inputwidget_alternativerun = True
-
-        
-        
-         
     def reset(self,g):
-        self.datawidget.reset(g) 
-        
-        
+        self.datawidget.reset(g)
+
     def _ipython_display_(self):
         """Displays the widget in a Jupyter Notebook."""
         display(self.wtotal)
-
-
-def fig_to_image(fig,format='svg'):
-    from io import StringIO
-    f = StringIO()
-    fig.savefig(f,format=format,bbox_inches="tight")
-    f.seek(0)
-    image= f.read()
-    return image
-  
-    
 
 
 
@@ -1780,6 +1531,16 @@ class keep_plot_widget:
             if len(gross_selectfrom):
                 selected_vars.value = [gross_selectfrom[0][1]]
 
+        if self.selected:
+            # the variables to show at start
+            try:
+                wanted = {v.upper() for v in self.mmodel.vlist(self.selected)}
+            except Exception:
+                wanted = set()
+            start_vars = [v for _, v in selected_vars.options if v in wanted]
+            if start_vars:
+                selected_vars.value = start_vars
+
         options1 = HBox([diff]) if self.short >= 2 else HBox([diff, legend])
         options2 = HBox([scale, showtype, self.wxopen])
 
@@ -1812,38 +1573,14 @@ class keep_plot_widget:
         return f'{(varname+" ") if self.add_var_name else ""}{self.mmodel.var_description[varname] if self.use_descriptions else varname}'
 
     def explain(self, i_smpl=None, selected_vars=None, diff=None, showtype=None, scale=None, legend=None):
-        variabler = ' '.join(v for v in selected_vars)
         smpl = (self.mmodel.lastdf.index[i_smpl[0]], self.mmodel.lastdf.index[i_smpl[1]])
 
-        if type(diff) == str:
-            diffpct = True
-            ldiff = False
-        else:
-            ldiff = diff
-            diffpct = False
+        self.save_dialog.waddname.value = figs_addname(showtype, diff, scale)
 
-        self.save_dialog.waddname.value = (
-            ('_level' if showtype == 'level' else '_growth') +
-            ('_diff' if ldiff else '') +
-            ('_diffpct' if diffpct else '') +
-            ('_log' if scale == 'log' else '')
-        )
-
-        with self.mmodel.keepswitch(switch=self.switch, scenarios=self.scenarioselected):
-            with self.mmodel.set_smpl(*smpl):
-                self.keep_wiz_figs = self.mmodel.keep_plot(
-                    variabler,
-                    diff=ldiff,
-                    diffpct=diffpct,
-                    scale=scale,
-                    showtype=showtype,
-                    showfig=False,
-                    legend=legend,
-                    dec=self.dec,
-                    vline=self.vline
-                )
-                plt.close('all')
-                return self.keep_wiz_figs
+        self.keep_wiz_figs = keep_figs(self.mmodel, selected_vars, smpl, diff=diff, showtype=showtype,
+                                       scale=scale, legend=legend, dec=self.dec, vline=self.vline,
+                                       switch=self.switch, scenarios=self.scenarioselected)
+        return self.keep_wiz_figs
 
     def _show_selected_figure(self, key: str) -> None:
         with self.plot_output:
@@ -1930,24 +1667,3 @@ class keep_plot_widget:
                     self.plot_output.clear_output(wait=True)
             else:
                 self.out_widget.layout.visibility = 'hidden'
-        
-class shinywidget:
-    """Placeholder for a future Shiny wrapper."""
-    a_widget : Any # The datawidget to wrap 
-    widget_id  : str 
-    
-    def __post_init__(self):
-        from shinywidgets import register_widget
-        ...        
-        register_widget(self.widget_id, self.a_widget.datawidget)
-       
-           
-    def update_df(self,df,current_per):
-        ''' will update container widgets'''
-        self.a_widget.update_df(df,current_per)
-            
-            
-    def reset(self,g):
-        ''' will reset  container widgets'''
-        self.a_widget.reset(g) 
-

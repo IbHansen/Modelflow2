@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modelflowib"                       # PyPI distribution name
-version = "2.83"                           # OVERWRITTEN at build time from MF_VERSION
+version = "2.85"                           # OVERWRITTEN at build time from MF_VERSION
                                             # (set_pyproject_version.py / make_pip.py -v)
 description = "A tool to solve and manage dynamic economic and financial models"
 readme = "README.md"
@@ -36,7 +36,6 @@ dependencies = [
     "tqdm",
     "scipy",
     "XlsxWriter",
-    "pyarrow",
     "tabulate",
     "openpyxl",
     "xarray",
@@ -57,6 +56,7 @@ dependencies = [
     "dash-bootstrap-components; sys_platform != 'emscripten'",
     "dash-interactive-graphviz; sys_platform != 'emscripten'",
     "plotly;                    sys_platform != 'emscripten'",   # modeldashsidebar
+    "pyarrow;                   sys_platform != 'emscripten'",   # only .pcimz (large=True) dump/load; not in every Pyodide (0.27 lacks it)
     "jupyter;                   sys_platform != 'emscripten'",   # JupyterLite is the notebook there
 ]
 
@@ -91,6 +91,6 @@ py-modules = [
     "modelreport", "modelhtml", "modeldisplay",
     # viz (8)
     "modelvis", "modeljupyter", "modeljupytermagic", "modelwidget",
-    "modelwidget_input", "modeldash", "modeldashboot", "modeldashsidebar",
-    "modelcausality",
+    "modelwidget_input", "modelwidget_core", "modeldash", "modeldashboot", "modeldashsidebar",
+    "modelcausality", "modelinput_shiny",
 ]
