@@ -354,3 +354,4 @@ modelinput_shiny and modelwidget_input use the same names: ViewerOptions in mode
 Version 2.84 uploaded 
 pyproject: pyarrow is also marked sys_platform != 'emscripten': it is only used for .pcimz (large=True) models, and an older Pyodide (0.27, used by the live code in Jupyter Books) has no pyarrow, so micropip install modelflowib failed there 
 Version 2.85 uploaded 
+pyproject and conda recipe: jupyterlab-myst is a dependency (not in a browser), so MyST markdown such as {mermaid} directives renders in notebook cells 

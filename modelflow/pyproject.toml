@@ -58,6 +58,7 @@ dependencies = [
     "plotly;                    sys_platform != 'emscripten'",   # modeldashsidebar
     "pyarrow;                   sys_platform != 'emscripten'",   # only .pcimz (large=True) dump/load; not in every Pyodide (0.27 lacks it)
     "jupyter;                   sys_platform != 'emscripten'",   # JupyterLite is the notebook there
+    "jupyterlab-myst;           sys_platform != 'emscripten'",   # MyST markdown (directives, mermaid) in notebook cells; a front-end extension, in JupyterLite it comes from the site build
 ]
 
 [project.optional-dependencies]
