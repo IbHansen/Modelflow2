@@ -1525,15 +1525,22 @@ class DisplayKeepFigDef(DisplayDef):
         return  [self.out_html ]
     
     
-    @property 
-    def out_html(self):
+    @property
+    def fig_tabwidget(self):
         figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
-        out = tabwidget(figlist,tab=False,selected_index=0)
-        return out.datawidget 
-    
-    
-    # def _ipython_display_(self):
-    #     display(self.out_html)
+        return tabwidget(figlist,tab=False,selected_index=0)
+
+    @property
+    def out_html(self):
+        return self.fig_tabwidget.datawidget
+
+
+    def _ipython_display_(self):
+        # model.plain_html: the charts in plain html sections, which also display where ipywidgets containers don't (RISE)
+        if getattr(self.mmodel, 'plain_html', False):
+            display(HTML(self.fig_tabwidget.html))
+        else:
+            display(self.out_html)
             
         # display(self.out_html)
 

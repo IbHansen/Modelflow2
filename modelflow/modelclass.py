@@ -2390,7 +2390,7 @@ class Model_help_Mixin():
                         f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{githubname}" target="_blank">{name}</a>'))
                 else:
                     display(HTML(
-                        f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook}" target="_blank">{name}</a>'))
+                        f'&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{blanks} <a href="{notebook.as_posix()}" target="_blank">{name}</a>'))
                     
 
         
@@ -5246,6 +5246,11 @@ class Graph_Draw_Mixin():
 
 class Display_Mixin():
 
+    #: True: the result viewers (mpak['...'] and .rplot()) are shown as plain html tabs and
+    #: collapsible sections instead of ipywidgets. They then also display where ipywidgets
+    #: containers don't, like RISE slides. Set it for all models with model.plain_html = True
+    plain_html = False
+
     def vis(self, *args, **kwargs):
         ''' Visualize the data of this model instance 
         if the user has another vis class she can place it in _vis, then that will be used'''
@@ -6454,7 +6459,7 @@ class Display_Mixin():
                 title = Display_Mixin._notebook_title(notebook)
                 rows.append(
                     f'<tr><td style="text-align:left;padding:2px 24px 2px {indent+2}em;white-space:nowrap">'
-                    f'<a href="{notebook}" target="_blank">{name}</a></td>'
+                    f'<a href="{notebook.as_posix()}" target="_blank">{name}</a></td>'
                     f'<td style="text-align:left;padding:2px 12px">{title}</td></tr>')
 
                 # try:
@@ -6514,7 +6519,7 @@ class Display_Mixin():
             title = Display_Mixin._notebook_title(fname) if ext == 'ipynb' else ''
             rows.append(
                 f'<tr><td style="text-align:left;padding:2px 24px 2px 12px;white-space:nowrap">'
-                f'<a href="{fname}" target="_blank">{name}</a></td>'
+                f'<a href="{fname.as_posix()}" target="_blank">{name}</a></td>'
                 f'<td style="text-align:left;padding:2px 12px">{title}</td></tr>')
         if rows:
             display(HTML(
@@ -6843,11 +6848,20 @@ class Json_Mixin():
             base.index = base_dates
             return base, current_dates
 
+        def any_case(p):
+            '''p, or else a file in the same folder whose name only differs in case
+            (Windows ignores case, Linux and the browser (JupyterLite) do not)'''
+            if p.exists() or not p.parent.is_dir():
+                return p
+            return next((f for f in p.parent.iterdir() if f.name.lower() == p.name.lower()), p)
+
         pinfile = Path(nname:=infile.replace('\\','/'))
         if not pinfile.suffix:
-            pinfile = pinfile.with_suffix(cls.data_suffix)
-            if not pinfile.exists() and (nodata := pinfile.with_suffix(cls.nodata_suffix)).exists():
+            pinfile = any_case(pinfile.with_suffix(cls.data_suffix))
+            if not pinfile.exists() and (nodata := any_case(pinfile.with_suffix(cls.nodata_suffix))).exists():
                 pinfile = nodata
+        else:
+            pinfile = any_case(pinfile)
 
         def read_file(pinfile):
             try:

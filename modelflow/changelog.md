@@ -355,3 +355,7 @@ Version 2.84 uploaded
 pyproject: pyarrow is also marked sys_platform != 'emscripten': it is only used for .pcimz (large=True) models, and an older Pyodide (0.27, used by the live code in Jupyter Books) has no pyarrow, so micropip install modelflowib failed there 
 Version 2.85 uploaded 
 pyproject and conda recipe: jupyterlab-myst is a dependency (not in a browser), so MyST markdown such as {mermaid} directives renders in notebook cells 
+model.plain_html = True shows the result viewer (mpak['...']) and rplot as plain html tabs and collapsible sections instead of ipywidgets, so they also display where ipywidgets containers don't, like RISE slides 
+model.display_toc, display_toc_this and Worldbank_Models write notebook links with / instead of \ so they open in JupyterLab on Windows 
+model.modelload finds the file when the name only differs in upper/lower case (data/BOL finds data/bol.pcim), as Linux and JupyterLite are case sensitive 
+Version 2.86 uploaded 

@@ -15,8 +15,9 @@ import  ipywidgets as widgets
 # except:
 #     ...
 #     print('No ipysheet ')
-from IPython.display import display, clear_output,Latex, Markdown
+from IPython.display import display, clear_output,Latex, Markdown, HTML
 from dataclasses import dataclass,field
+import uuid
 import matplotlib.pylab  as plt 
 
 try:
@@ -41,8 +42,34 @@ class basewidget:
         ''' will update container widgets'''
         for w in self.datachildren:
             w.update_df(df,current_per)
-    
-    
+
+
+def html_tabs(parts, tab=True, selected=0):
+    '''Plain html (no ipywidgets) version of a Tab or an Accordion, used when model.plain_html is True.
+
+    parts: {title: html string}. tab=True gives tabs made of hidden radio buttons, labels and css,
+    tab=False collapsible <details> sections. selected: the index shown first (None: all closed). '''
+    uid = 'mft' + uuid.uuid4().hex[:8]   # unique, so tabs in other outputs are not affected
+    if not tab:
+        # the same name makes the sections exclusive: opening one closes the others
+        return ''.join(f'<details name="{uid}"{" open" if i == selected else ""}>'
+                       f'<summary style="cursor:pointer;font-weight:bold">{title}</summary>{body}</details>'
+                       for i, (title, body) in enumerate(parts.items()))
+    css = [f'#{uid} > input {{display:none}}',
+           f'#{uid} > label {{display:inline-block;padding:4px 12px;margin-right:2px;cursor:pointer;'
+           f'border:1px solid #bbb;border-bottom:none;border-radius:4px 4px 0 0;background:#eee}}',
+           f'#{uid} > div {{display:none;border-top:1px solid #bbb;padding-top:6px}}']
+    head, panels = '', ''
+    for i, (title, body) in enumerate(parts.items()):
+        rid = f'{uid}-{i}'
+        head += (f'<input type="radio" name="{uid}" id="{rid}"{" checked" if i == (selected or 0) else ""}>'
+                 f'<label for="{rid}">{title}</label>')
+        panels += f'<div>{body}</div>'
+        css.append(f'#{rid}:checked + label {{background:#fff;font-weight:bold}}')
+        css.append(f'#{rid}:checked ~ div:nth-of-type({i + 1}) {{display:block}}')
+    return f'<style>{" ".join(css)}</style><div id="{uid}">{head}{panels}</div>'
+
+
 @dataclass
 class tabwidget:
     '''A widget to create tab or acordium contaners'''
@@ -62,8 +89,13 @@ class tabwidget:
          
         for i,key in enumerate(self.tabdefdict.keys()):
            self.datawidget.set_title(i,key)
-           
-           
+
+    @property
+    def html(self):
+        ''' the same container as plain html, see html_tabs '''
+        return html_tabs({key: child.html for key, child in zip(self.tabdefdict.keys(), self.datachildren)},
+                         tab=self.tab, selected=self.selected_index)
+
     def update_df(self,df,current_per):
         ''' will update container widgets'''
         for w in self.datachildren:
@@ -514,6 +546,7 @@ table, th, td {
 
             self.whtml = widgets.HTML(image)
             self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+            self.html = (f'<div>{self.expname}</div>' if len(self.expname) else '') + image
 
 
         
@@ -540,6 +573,7 @@ class htmlwidget_fig:
         image = fig_to_image(self.figs,format=self.format)
         self.whtml = widgets.HTML(image)
         self.datawidget=widgets.VBox([self.wexp,self.whtml]) if len(self.expname) else self.whtml
+        self.html = (f'<div>{self.expname}</div>' if len(self.expname) else '') + image
 
 @dataclass
 class htmlwidget_style:
@@ -561,7 +595,8 @@ table, th, td {
 }
 </style>
 """         
-        self.datawidget = widgets.HTML(f'{style_html}{self.styler.to_html()}' )
+        self.html = f'{style_html}{self.styler.to_html()}'
+        self.datawidget = widgets.HTML(self.html)
         
     def display(self):
         # Function to display the widget
@@ -580,9 +615,10 @@ class htmlwidget_label:
         ...
         
         self.wexp  = widgets.Label(value = self.expname,layout={'width':'54%'})
- 
-    
+
+
         self.datawidget=self.wexp
+        self.html = f'<div>{self.expname}</div>'
 
 @dataclass
 class htmlwidget_text:
@@ -593,8 +629,9 @@ class htmlwidget_text:
     
     def __post_init__(self):
         # Initialize the label widget with the provided text
+        self.html = f"<p style='font-family:sans-serif;'>{self.text}</p>"
         self.datawidget = widgets.HTML(
-            value=f"<p style='font-family:sans-serif;'>{self.text}</p>",
+            value=self.html,
             layout={'width': '90%'}
         )
         
@@ -684,10 +721,10 @@ class visshow:
             # print('exo inf  created')
 
         this =   tabwidget(tabnew,selected_index=0)
-        # print('this created ')   
-            
-        
-        self.datawidget = this.datawidget  
+        # print('this created ')
+
+        # model.plain_html: plain html tabs, which also display where ipywidgets containers don't (RISE)
+        self.datawidget = HTML(this.html) if getattr(self.mmodel, 'plain_html', False) else this.datawidget
         if self.show_on:
             ...
             display(self.datawidget)
