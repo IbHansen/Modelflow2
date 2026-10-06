@@ -358,3 +358,4 @@ pyproject and conda recipe: jupyterlab-myst is a dependency (not in a browser), 
 model.plain_html = True shows the result viewer (mpak['...']) and rplot as plain html tabs and collapsible sections instead of ipywidgets, so they also display where ipywidgets containers don't, like RISE slides 
 model.display_toc, display_toc_this and Worldbank_Models write notebook links with / instead of \ so they open in JupyterLab on Windows 
 model.modelload finds the file when the name only differs in upper/lower case (data/BOL finds data/bol.pcim), as Linux and JupyterLite are case sensitive 
+Version 2.86 uploaded 
