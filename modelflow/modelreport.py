@@ -60,8 +60,9 @@ import pandas as pd
 import matplotlib.pyplot as plt 
 import matplotlib as mpl
 import seaborn as sns 
-import fnmatch 
-import re 
+import fnmatch
+import html
+import re
 from matplotlib import dates
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
@@ -253,7 +254,9 @@ class Options:
         size (tuple): Tuple specifying the figure size (width, height). Default is (10, 6).
         legend (bool): If True, display legend in plots. Default is True.
         transpose (bool): If True, transpose the data when displaying. Default is False.
-        scenarios (str): Text specifying the scenarios for the display. Default is an empty string. if Empty use basedf/lastdf 
+        scenarios (str): Text specifying the scenarios for the display. Default is an empty string. if Empty use basedf/lastdf
+        scenario_layout (str): Scenario tables only. 'headline' (default) groups the whole table under one
+            headline row per scenario; 'suffix' appends ' — scenario' to each row label. Transposed tables use 'suffix'.
         smpl (tuple): Tuple specifying start and end periods. Default is ('', '').
         landscape (bool): If True, the table will be displayed in landscape mode. Default is False.
         latex_text (str): Text for a LaTeX output. Default is an empty string.
@@ -288,6 +291,7 @@ class Options:
     legend: bool = True
     transpose : bool = False
     scenarios : str  =''
+    scenario_layout : str = 'headline'
     smpl : tuple = ('','')
     landscape : bool = False
     
@@ -858,48 +862,123 @@ class DisplayVarTableDef(DisplayDef):
     def __post_init__(self):
         super().__post_init__()  # Call the parent class's __post_init__
 
-        
-        with self.mmodel.set_smpl(*self.options.smpl):
-            self.dfs = [self.make_var_df(line).astype('float')  for line in self.lines ] 
-            self.report_smpl = self.get_report_smpl
-        
+        self.base_last = self.options.scenarios in ('', 'base_last')
+        self.unitline = ''
+        if not self.base_last:
+            # keepswitch falls back to all solutions on an unmatched selector.
+            # A report must not silently display a different set of scenarios.
+            selector = self.options.scenarios
+            sep = ' ' if '*' in selector or '?' in selector else '|'
+            patterns = selector.split(sep)
+            if not self.mmodel.keep_solutions or any(
+                not fnmatch.filter(self.mmodel.keep_solutions, pat)
+                for pat in patterns
+            ):
+                raise ValueError(f'No scenarios match part or all of: {selector!r}')
+
+        with self.mmodel.keepswitch(scenarios=self.options.scenarios,
+                                   base_last=self.base_last):
+            self.scenario_names = list(self.mmodel.keep_solutions)
+            if not self.base_last and len(self.scenario_names) < 2 and any(
+                line.diftype in ('dif', 'difpct') and not line.textlinetype
+                for line in self.lines
+            ):
+                raise ValueError('An impact table needs a reference scenario and at least one alternative.')
+            with self.mmodel.set_smpl(*self.options.smpl):
+                results = [self.make_var_df(line) for line in self.lines]
+                self.report_smpl = self.get_report_smpl
+
+                self.headline = (not self.base_last and not self.options.transpose
+                                 and self.options.scenario_layout == 'headline')
+                # display_lines/dfs are the rendered rows: one frame per entry, aligned
+                # with the Line that controls its formatting (textline, decimals ...).
+                if self.headline:
+                    self.display_lines, self.dfs = self.make_headline_rows(results)
+                else:
+                    self.display_lines = self.lines
+                    self.dfs = [self.make_suffix_rows(line, result)
+                                for line, result in zip(self.lines, results)]
+
         if self.options.transpose:
-            self.df = self.dfs[-1].T
-            ...
+            if self.base_last:
+                self.df = self.dfs[-1].T
+                self.column_decimals = [self.lines[-1].dec] * len(self.df.columns)
+            else:
+                numeric = [(line, df) for line, df in zip(self.lines, self.dfs)
+                           if line.textlinetype != 'textline']
+                self.df = (pd.concat([df for line, df in numeric]).T if numeric
+                           else pd.DataFrame(index=self.dfs[0].columns))
+                self.column_decimals = [line.dec for line, df in numeric for _ in df.index]
         else:    
             self.df     = pd.concat( self.dfs ) 
             # assert 1==2
         return 
 
-    def make_var_df(self, line):   
-        showtype = line.showtype
-        diftype = line.diftype
-        
-        with self.mmodel.keepswitch(switch=True): 
+    def make_var_df(self, line):
+        '''Returns a frame for a textline, else a dict {scenario: frame} with plain row labels'''
+        if line.textlinetype == 'textline':
+            self.unitline = self.lines[0].centertext
+            return pd.DataFrame(np.nan, index=[line.centertext],
+                                columns=self.mmodel.current_per)
 
-            # Pre-process for cases that use linevars and linedes
-            if line.textlinetype  in ['textline']:                
-                linedf = pd.DataFrame(np.nan , index=self.mmodel.current_per, columns=[line.centertext]).T
-                self.unitline = self.lines[0].centertext
-            else:                    
-                def getline(start_ofset= 0,**kvargs):
-                    locallinedfdict = self.mmodel.keep_get_plotdict_new(pat=line.pat,showtype=showtype,
-                                    diftype = diftype,by_var=False)
-                    if diftype == 'basedf':
-                        locallinedf = next(iter((locallinedfdict.values()))).T
-                    else: 
-                        locallinedf = next(iter(reversed(locallinedfdict.values()))).T
-                        
-                    return locallinedf.loc[:,self.mmodel.current_per] 
-                
-                # print(line.mul)
-                
-                
-                
-                linedf = getline() * line.mul
-            linedf = self.get_rowdes(linedf,line)    
-            
-        return(linedf)
+        results = self.mmodel.keep_get_plotdict_new(
+            pat=line.pat, showtype=line.showtype, diftype=line.diftype, by_var=False)
+        if self.base_last or line.diftype in ('basedf', 'lastdf'):
+            key = next(iter(results)) if line.diftype == 'basedf' else next(reversed(results))
+            results = {key: results[key]}
+
+        return {scenario: self.get_rowdes(df.loc[self.mmodel.current_per].T * line.mul, line).astype('float')
+                for scenario, df in results.items()}
+
+    def make_suffix_rows(self, line, result):
+        '''One frame per Line: variable first, scenarios beneath it, labelled "label — scenario"'''
+        if line.textlinetype == 'textline':
+            return result.astype('float')
+        blocks = list(result.values())
+        if not self.base_last:
+            blocks = [block.set_axis([f'{label} — {scenario}' for label in block.index])
+                      for scenario, block in result.items()]
+        combined = pd.concat(blocks)
+        nvars, nscenarios = len(blocks[0]), len(blocks)
+        return combined.iloc[[s * nvars + v for v in range(nvars)
+                              for s in range(nscenarios)]]
+
+    def make_headline_rows(self, results):
+        '''The whole table is repeated once per scenario under a headline row.
+
+        Leading textlines (heading, unit line) are shown once at the top. A Line
+        appears in a scenario block only if it has data for that scenario: base
+        datatypes for the reference, impacts for the alternatives. A textline
+        inside the table is dropped from a block when the lines it heads are.
+        A block with only impact lines is headed "scenario vs reference".
+        '''
+        first_numeric = next((i for i, line in enumerate(self.lines)
+                              if line.textlinetype != 'textline'), len(self.lines))
+        rows = [(line, result.astype('float')) for line, result in
+                zip(self.lines[:first_numeric], results[:first_numeric])]
+        reference = self.scenario_names[0]
+
+        for scenario in self.scenario_names:
+            block, pending, after_numeric, impact = [], [], False, set()
+            for line, result in zip(self.lines[first_numeric:], results[first_numeric:]):
+                if line.textlinetype == 'textline':
+                    if after_numeric:       # a new section starts
+                        pending, after_numeric = [], False
+                    pending.append((line, result.astype('float')))
+                    continue
+                after_numeric = True
+                if scenario in result:
+                    block += pending + [(line, result[scenario])]
+                    pending = []
+                    impact.add(line.diftype in ('dif', 'difpct'))
+            if block:
+                headline = f'{scenario} vs {reference}' if impact == {True} else scenario
+                headline_line = Line(textlinetype='scenarioline', centertext=headline)
+                rows.append((headline_line, pd.DataFrame(np.nan, index=[headline],
+                                                         columns=self.mmodel.current_per)))
+                rows += block
+
+        return [line for line, df in rows], [df for line, df in rows]
 
             
     
@@ -927,17 +1006,17 @@ class DisplayVarTableDef(DisplayDef):
         width = self.options.width
         # df = self.df.copy( )
         if self.options.transpose:
-            dec = self.lines[-1].dec 
             thisdf = self.df.loc[self.timeslice,:] if self.timeslice else self.df 
             df_char = pd.DataFrame(' ', index=thisdf.index, columns=thisdf.columns)
             # for c in thisdf.columns:
             #     df_char.loc[:,c] = thisdf.loc[:,c].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
-            for i,_ in enumerate(thisdf.index):
-                df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
+            for i, dec in enumerate(self.column_decimals):
+                df_char.iloc[:, i] = thisdf.iloc[:, i].apply(
+                    lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip())
         else:
             df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
     
-            format_decimal = [  line.dec for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            format_decimal = [  line.dec for line,df  in zip(self.display_lines,self.dfs) for row in range(len(df))]
             for i, dec in enumerate(format_decimal):
                   df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
       
@@ -947,14 +1026,24 @@ class DisplayVarTableDef(DisplayDef):
 
     @property    
     def df_str_disp(self):
-        center = [ (line.textlinetype == 'textline' and line.centertext !='' )  for line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+        center = [ (line.textlinetype == 'textline' and line.centertext !='' )  for line,df  in zip(self.display_lines,self.dfs) for row in range(len(df))]
         center_index = [index+1 for index, value in enumerate(center) if value]
 
         width = self.options.width
-        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str 
-            
+        thisdf = self.df_str.loc[:,self.timeslice] if self.timeslice else self.df_str
+        # Scenario headlines are written across the row afterwards, so a long
+        # name does not widen the label column.
+        rowtypes = [line.textlinetype for line, df in zip(self.display_lines, self.dfs) for row in range(len(df))]
+        headline_index = [index for index, rowtype in enumerate(rowtypes) if rowtype == 'scenarioline']
+        if headline_index:
+            thisdf = thisdf.copy()
+            thisdf.index = ['' if rowtype == 'scenarioline' else label
+                            for label, rowtype in zip(thisdf.index, rowtypes)]
+
         rawdata = thisdf.to_string(max_cols= self.options.max_cols).split('\n')
         data = center_title_under_years(rawdata,center_index)
+        for index in headline_index:
+            data[index+1] = self.df_str.index[index]
         # print(*data,sep='\n')
         # rawdata[0],rawdata[1] = rawdata[1],rawdata[0]
         out = '\n'.join(data)
@@ -1026,11 +1115,14 @@ class DisplayVarTableDef(DisplayDef):
         def tab_to_html(i,df,line):
             nonlocal endhtml
             out = ''
-            html_all = self.mmodel.ibsstyle(df,use_tooltip=False,dec=line.dec).to_html() 
+            style = self.mmodel.ibsstyle(df,use_tooltip=False,dec=line.dec)
+            if not self.base_last:
+                style = style.format_index(escape='html', axis=0)
+            html_all = style.to_html()
             splitted_html = HTMLSplitData(html_all)
             if i == 0:
                 caption = f'<caption>{self.mmodel.string_substitution(self.options.title)}</caption>' if self.options.title else '' 
-                out = splitted_html.text_before_thead + caption + '<thead>' + splitted_html.thead+'\n'
+                out = splitted_html.text_before_thead + caption + splitted_html.thead+'\n'
                 
                 
                 endhtml = splitted_html.text_after_tbody
@@ -1039,7 +1131,12 @@ class DisplayVarTableDef(DisplayDef):
                 col0 = '<tr><td <th class="row_heading level0 row0" >  </td>'
                 out = out + '\n'+col0 + f"<td colspan='{len(df.columns)}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{line.centertext}</td></tr>"
 
-            else: 
+            elif line.textlinetype == 'scenarioline':
+                # Spans the whole row so a long name does not widen the label column
+                out = (out + '\n' + f"<tr><th colspan='{len(df.columns) + 1}' style='text-align: left; font-weight: bold;'>"
+                       + f"{html.escape(line.centertext)}</th></tr>")
+
+            else:
                 out = out + splitted_html.tbody
                 
             return out         
@@ -1050,6 +1147,8 @@ class DisplayVarTableDef(DisplayDef):
     
             
             outsty =  self.make_html_style(thisdf)  
+            if not self.base_last:
+                outsty = outsty.format_index(escape='html', axis=1)
                 
             if self.options.title: 
                 outsty = outsty.set_caption(self.options.title)
@@ -1064,11 +1163,11 @@ class DisplayVarTableDef(DisplayDef):
 
         else:    
            thisdfs = [(i,df.loc[:,self.timeslice] if self.timeslice else df, line) for i,(df,line) in 
-             enumerate(zip(self.dfs,self.lines))]
+             enumerate(zip(self.dfs,self.display_lines))]
             
            out = '\n'.join([tab_to_html(i,df,line) for i,df,line in thisdfs])+'\n'
            if self.options.foot:               
-               foot = f"<tfoot><tr><td colspan='5' style='text-align: left;'>{self.options.foot}</td></tr></tfoot>"
+                foot = f"<tfoot><tr><td colspan='{len(thisdfs[0][1].columns) + 1}' style='text-align: left;'>{self.options.foot}</td></tr></tfoot>"
            else:
                foot =''
            
@@ -1085,11 +1184,19 @@ class DisplayVarTableDef(DisplayDef):
     def latex(self): 
         return self.latex_transpose if self.options.transpose else self.latex_straight
 
+    @staticmethod
+    def _latex_scenario_label(label):
+        # Percent is escaped by the existing final LaTeX replacements below.
+        escapes = {'\\': r'\textbackslash{}', '&': r'\&', '_': r'\_',
+                   '#': r'\#', '$': r'\$', '{': r'\{', '}': r'\}',
+                   '~': r'\textasciitilde{}', '^': r'\textasciicircum{}'}
+        return ''.join(escapes.get(char, char) for char in str(label))
+
     
     @property
     def latex_straight(self): 
             last_cols = 0 
-            rowlines  = [ line for  line,df  in zip(self.lines,self.dfs) for row in range(len(df))]
+            rowlines  = [ line for  line,df  in zip(self.display_lines,self.dfs) for row in range(len(df))]
             if self.timeslice: 
                 dfs = [self.df_str.loc[:,self.timeslice]]
             else:    
@@ -1107,10 +1214,18 @@ class DisplayVarTableDef(DisplayDef):
             outlist = [] 
             for i,df in enumerate(dfs): 
                 ncol=len(df.columns)
-                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i]+'}}'  
+                first_headline = next((line for line in rowlines if line.textlinetype == 'scenarioline'), None)
+                newindex = [fr'&\multicolumn{{{ncol}}}'+'{c}{' + f'{line.latexfont}' + '{' + df.index[i]+'}}'
                             if line.textlinetype == 'textline'
-                            else df.index[i]
-                    for i, line  in enumerate(rowlines)]    
+                            # spans the whole row, the blank cells are removed with the textline cells below.
+                            # Zero width: LaTeX adds any excess width of a multicolumn to the last column.
+                            else ('' if line is first_headline else r'\addlinespace ')
+                                  + fr'\multicolumn{{{ncol + 1}}}{{l}}{{\makebox[0pt][l]{{\textbf{{'
+                                  + self._latex_scenario_label(df.index[i]) + '}}}'
+                            if line.textlinetype == 'scenarioline'
+                            else (df.index[i] if self.base_last or self.headline
+                                  else self._latex_scenario_label(df.index[i]))
+                    for i, line  in enumerate(rowlines)]
     
                 df.index = newindex
                 tabformat = 'l'+'r'*(ncol-last_cols) + ( ('|'+'r'*last_cols) if last_cols else '') 
@@ -1159,6 +1274,9 @@ class DisplayVarTableDef(DisplayDef):
     def latex_transpose(self): 
     
           thisdf = self.df_str.loc[self.timeslice,:] if self.timeslice else self.df_str
+          if not self.base_last:
+              thisdf = thisdf.copy()
+              thisdf.columns = [self._latex_scenario_label(c) for c in thisdf.columns]
           tabformat = 'l'+'r'*len(thisdf.columns) 
     
           latex_df = (thisdf.style.format(lambda x:x)
@@ -1525,22 +1643,15 @@ class DisplayKeepFigDef(DisplayDef):
         return  [self.out_html ]
     
     
-    @property
-    def fig_tabwidget(self):
-        figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
-        return tabwidget(figlist,tab=False,selected_index=0)
-
-    @property
+    @property 
     def out_html(self):
-        return self.fig_tabwidget.datawidget
-
-
-    def _ipython_display_(self):
-        # model.plain_html: the charts in plain html sections, which also display where ipywidgets containers don't (RISE)
-        if getattr(self.mmodel, 'plain_html', False):
-            display(HTML(self.fig_tabwidget.html))
-        else:
-            display(self.out_html)
+        figlist = {t: htmlwidget_fig(f) for t,f in self.figs.items() }
+        out = tabwidget(figlist,tab=False,selected_index=0)
+        return out.datawidget 
+    
+    
+    # def _ipython_display_(self):
+    #     display(self.out_html)
             
         # display(self.out_html)
 

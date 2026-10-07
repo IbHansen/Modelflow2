@@ -9944,8 +9944,13 @@ class Report_Mixin:
           timeslice (List[int]): Time slice for data display, empty by default.
           max_cols (int): Maximum columns when displayed as a string, faulting to the system wide setting.
           last_cols (int): Specifies the number of last columns to include in a display slice, particularly in Latex.
-          col_desc  (str): text centered on columns 
-        
+          col_desc  (str): text centered on columns
+          scenarios (str): Empty uses basedf/lastdf (the default). '*' uses all keep_solutions,
+              exact names are separated by '|', wildcard patterns by spaces. Impact datatypes compare
+              with the first selected scenario.
+          scenario_layout (str): 'headline' (default) shows the table once per scenario under a
+              headline row ('scenario vs reference' for impacts); 'suffix' appends ' — scenario' to row labels.
+
         Returns:
             DisplayVarTableDef: Configured table definition object ready for rendering, which includes detailed specifications
                         such as units and type of transformation based on the datatype.
