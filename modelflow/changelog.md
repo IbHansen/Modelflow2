@@ -359,3 +359,4 @@ model.plain_html = True shows the result viewer (mpak['...']) and rplot as plain
 model.display_toc, display_toc_this and Worldbank_Models write notebook links with / instead of \ so they open in JupyterLab on Windows 
 model.modelload finds the file when the name only differs in upper/lower case (data/BOL finds data/bol.pcim), as Linux and JupyterLite are case sensitive 
 Version 2.86 uploaded 
+model.table(scenarios=...) shows tables for saved scenarios (keep_solutions): each scenario gets a headline row ('Carbon tax vs Baseline' for impacts) above its rows; scenario_layout='suffix' instead appends the scenario to the row labels 
