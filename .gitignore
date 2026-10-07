@@ -12,6 +12,8 @@ ipython_config.py
 
 # Modelflow
 graph/
+# generated jit solver source (transpiled per model), at any level
+modelsource/
 
 # spyder project 
 .spyproject/
