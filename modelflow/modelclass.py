@@ -7215,9 +7215,14 @@ class Solver_Mixin():
             if self.previousbase and hasattr(self, 'lastdf'):
                 self.basedf = self.lastdf.copy(deep=True)
 
+        # normalized and fully implicit models get their own solvers; a hybrid
+        # model (normalized and ___RES equations mixed) needs a unified Newton
+        # solver, which handles both residual conventions in one system
         if self.maxlead >= 1:
             if self.normalized:
                 solverguess = 'newtonstack'
+            elif self.hybrid:
+                solverguess = 'newtonstack_ng'
             else:
                 solverguess = 'newtonstack_un_normalized'
         else:
@@ -7226,6 +7231,8 @@ class Solver_Mixin():
                     solverguess = 'xgenr'
                 else:
                     solverguess = 'sim'
+            elif self.hybrid:
+                solverguess = 'newton_ng'
             else:
                 solverguess = 'newton_un_normalized'
 
@@ -7390,7 +7397,10 @@ class Solver_Mixin():
             for i in [j for j in self.allvar.keys() if self.allvar[j]['matrix']]:
                 # Make sure columns with matrixes are of this type
                 databank.loc[:, i] = databank.loc[:, i].astype('O')
-            newdata = True
+            # a frame that only lacked model variables (e.g. the X___RES columns
+            # of an implicit model) ends up with the column layout the solver
+            # code was generated for -- that is not new data
+            newdata = not self.eqcolumns(self.genrcolumns, databank.columns)
         else:
             newdata = False
         return newdata, databank
@@ -8975,7 +8985,15 @@ class Solver_Mixin():
           - Equation list (rows):       endovar  (may contain both VAR and VAR___RES)
           - Unknowns (columns):         declared_endo_list (base VAR names)
           - is_residual_eq:             mask marking rows using residual form G(y,x)
-    
+
+        Which equations are Newton rows:
+          - normalized model: the simultaneous core (coreorder); the recursive
+            prolog / epilog are evaluated in place before / after the Newton
+            iterations of each period
+          - implicit or hybrid model: every equation (solveorder) -- implicit
+            equations can sit outside the core of the dependency graph, which
+            does not see dependencies on a declared unknown
+
         Newton step:
           residual_i = {
               G_i(y,x)                    if is_residual_eq[i]
@@ -9034,10 +9052,20 @@ class Solver_Mixin():
         # ======================================================================
         # 1) Setup derivative solver / Jacobian factorization
         # ======================================================================
-        if not hasattr(self, 'newton_diff_implicit') or newton_reset:
+        # Normalized model: Newton on the simultaneous core only; the recursive
+        # prolog / epilog are evaluated in place once before / after the Newton
+        # iterations of each period (as legacy newton).
+        # Implicit or hybrid model: the whole model is one Newton system. The
+        # dependency graph cannot see dependencies on a declared unknown, so
+        # implicit equations can end up in the prolog / epilog -- they must be
+        # Newton rows, and so must the normalized equations around them.
+        core_only = bool(self.normalized and self.use_preorder and len(self.coreorder))
+        newton_endovar = list(self.coreorder if core_only else self.solveorder)
+
+        if (not hasattr(self, 'newton_diff_implicit') or newton_reset
+                or list(self.newton_diff_implicit.endovar) != newton_endovar):
             # --- Determine equation list (rows of Jacobian) --------------------
-            endovar = (self.coreorder  if hasattr(self, 'coreorder') and len(self.coreorder)
-                else self.solveorder)
+            endovar = newton_endovar
     
             # Declared endogenous list (true unknowns / columns of Jacobian)
             self.declared_endo_list = [ v[:-6] if v.endswith('___RES') else v
@@ -9127,9 +9155,12 @@ class Solver_Mixin():
                     )
     
                 # --------------------------------------------------------------
-                # Recursive "pre" block: update lags, identities, etc.
+                # Recursive "pre" block (normalized model): solved exactly, in
+                # place, before the Newton iterations on the core
                 # --------------------------------------------------------------
-    
+                if core_only:
+                    self.pronew2d(values, values, row, alfa)
+
                 # --------------------------------------------------------------
                 # Newton iterations for this period
                 # --------------------------------------------------------------
@@ -9232,14 +9263,15 @@ class Solver_Mixin():
                         values[row, newton_col_unknown] = (
                             y_old - base_damp * update
                         )
-                        values[row,newton_col_residual] = outvalues[row,newton_col_residual] # TO KEEP THE RES UPDATED 
-    
+                        values[row,newton_col_residual] = outvalues[row,newton_col_residual] # TO KEEP THE RES UPDATED
+
                         ittotal += 1
-    
-    
-    
-                
-    
+
+                # Recursive "post" block (normalized model): the epilog, in
+                # place, from the converged core
+                if core_only:
+                    self.epinew2d(values, values, row, alfa)
+
                 if newton_conv > newton_absconv:
                     print(
                         f'{self.periode} not converged in '

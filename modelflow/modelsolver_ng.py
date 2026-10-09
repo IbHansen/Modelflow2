@@ -2467,7 +2467,8 @@ class NewtonStackSolver(SolverBase):
 
         The per-period prolog/core/epilog decomposition lifted to the stacked
         graph: *core* variables take part in some cycle of the collapsed
-        (variable-level) dependency graph -- or are ``___RES`` equations --
+        (variable-level) dependency graph -- or are ``___RES`` equations, or
+        lie on a path from the core back into the core (hybrid models) --
         and become the only stacked Newton unknowns; *prolog* variables never
         depend on the core at any lag or lead and are solved exactly by one
         stacked topological sweep before Newton; *epilog* (reporting)
@@ -2562,6 +2563,19 @@ class NewtonStackSolver(SolverBase):
                 selflags.setdefault(a, set()).add(l)
         core |= {v for v, lags in selflags.items()
                  if min(lags) < 0 and max(lags) > 0}
+
+        # a variable on a path from the core back into the core (a descendant
+        # AND an ancestor of the core) must be solved with the core: as an
+        # epilog variable it would only be swept after convergence, so the
+        # core equations depending on it would iterate against a stale value
+        # (wrong solution).  It happens when the core is not one strongly
+        # connected block -- notably in a hybrid model, where the ___RES
+        # equations forced into the core leave normalized equations between
+        # them
+        if core:
+            desc = set().union(*(nx.descendants(cg, v) for v in core))
+            anc = set().union(*(nx.ancestors(cg, v) for v in core))
+            core |= desc & anc
 
         desc = (set().union(*(nx.descendants(cg, v) for v in core))
                 if core else set())
@@ -2679,14 +2693,22 @@ class NewtonStackSolver(SolverBase):
                 if not silent:
                     print(f"Iteration  {iteration} Max residual "
                           f"{newton_conv:>{25},.{12}f}")
-                if iteration != 0 and nonlin and not (iteration % nonlin):
+                # scheduled Jacobian refresh -- skipped when the equations
+                # already hold (max |residual| <= newton_absconv): the
+                # remaining step is tiny and the current Jacobian is good
+                # enough for it, while a rebuild (stacked derivatives +
+                # factorization) costs many times a whole iteration
+                if (iteration != 0 and nonlin and not (iteration % nonlin)
+                        and newton_conv > newton_absconv):
                     with m.timer("Updating solver", timeit):
                         if not silent:
                             print(f"Updating solver, iteration {iteration}")
                         df_now = pd.DataFrame(
                             values, index=ctx.databank.index,
                             columns=ctx.databank.columns)
+                        buildstart = time.time()
                         ctx.solver = m.ng_getstacksolver(df_now, resmask)
+                        m.ng_stackbuildtime += time.time() - buildstart
                         m.ng_stacksolver = ctx.solver
                         ctx.diffcount += 1
 
@@ -2748,6 +2770,7 @@ class NewtonStackSolver(SolverBase):
             f'Setup time (seconds)                       :{m.setuptime:>15,.4f}',
             f'Total model evaluations                    :{ctx.ittotal:>15,}',
             f'Number of solver update                    :{ctx.diffcount:>15,}',
+            # all builds in this call: in prepare and the nonlin refreshes
             f'Jacobian build time (seconds)              :{getattr(m, "ng_stackbuildtime", 0.0):>15,.4f}',
             f'Simulation time (seconds)                  :{m.simtime:>15,.4f}',
             f'Floating point operations in model         : {numberfloats:>15,}',
@@ -2948,6 +2971,8 @@ class NewtonStackFbminSolver(SolverBase):
         m.ng_stackfbmin_fb = [(per[t], diff.declared_endo_list[s])
                               for t, s in zip(fb_t, fb_s)]
 
+        m.ng_stackfbmin_buildtime = 0.0     # all solver builds in this call
+
         if not len(fb):
             # the stacked graph is acyclic: one topological sweep solves it
             ctx.solver = None
@@ -2979,10 +3004,12 @@ class NewtonStackFbminSolver(SolverBase):
                 print(f"Creating new stacked fbmin Newton solver "
                       f"(jacobian={jac_mode!r})")
             ctx.diffcount += 1
+            buildstart = time.time()
             if jac_mode == "stack":
                 m.ng_stackfbmin_solver = self._stack_schur_solver(ctx, databank)
             else:
                 m.ng_stackfbmin_solver = self._fd_jacobian_solver(ctx)
+            m.ng_stackfbmin_buildtime = time.time() - buildstart
             m.ng_stackfbmin_jacmode = jac_mode
         ctx.solver = m.ng_stackfbmin_solver
 
@@ -3180,6 +3207,9 @@ class NewtonStackFbminSolver(SolverBase):
         # the factorization like newtonstack does
         nonlin = opt("nonlin", (max(len(self.fb_rows), 2)
                                 if jac_mode == "fd" else False))
+        # no scheduled solver refresh once the feedback equations hold
+        # (max |residual| <= newton_absconv) -- see NewtonStackSolver.iterate
+        newton_absconv = opt("newton_absconv", 0.001)
         timeit = opt("timeit", False)
         newtonalfa = opt("newtonalfa", 1.0)
         newtonnodamp = opt("newtonnodamp", 0)
@@ -3219,10 +3249,11 @@ class NewtonStackFbminSolver(SolverBase):
                           f"{newton_conv:>25,.6f}")
 
                 if (iteration != 0 and nonlin and not (iteration % nonlin)
-                        and jac_mode != "gauss"):
+                        and jac_mode != "gauss" and newton_conv > newton_absconv):
                     with m.timer("Updating solver", timeit):
                         if not silent:
                             print(f"Updating solver, iteration {iteration}")
+                        buildstart = time.time()
                         if jac_mode == "stack":
                             df_now = pd.DataFrame(
                                 values, index=ctx.databank.index,
@@ -3230,6 +3261,7 @@ class NewtonStackFbminSolver(SolverBase):
                             ctx.solver = self._stack_schur_solver(ctx, df_now)
                         else:
                             ctx.solver = self._fd_jacobian_solver(ctx)
+                        m.ng_stackfbmin_buildtime += time.time() - buildstart
                         m.ng_stackfbmin_solver = ctx.solver
                         ctx.diffcount += 1
 
@@ -3298,6 +3330,7 @@ class NewtonStackFbminSolver(SolverBase):
             f'Stacked DAG sweeps                   :{getattr(ctx, "dag_sweeps", 0):>15,}',
             f'Newton steps on the feedback system  :{ctx.ittotal:>15,}',
             f'Number of solver builds              :{ctx.diffcount:>15,}',
+            f'Solver build time (seconds)          :{getattr(m, "ng_stackfbmin_buildtime", 0.0):>15,.4f}',
             f'Simulation time (seconds)            :{m.simtime:>15,.2f}',
         ]
 

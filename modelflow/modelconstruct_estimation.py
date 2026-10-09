@@ -2162,6 +2162,10 @@ class Makemodel(BaseExplode):
             extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
             self.markdown_model = (mfmod_list_to_codeblock(self.original_statements))
             
+        elif self.type_input == 'single':  
+           extracted_frml = self.original_statements.replace('\n', '')
+           self.markdown_model = ''
+            
         else:   
            extracted_frml = self.list_defs+self.original_statements
            self.markdown_model = ''

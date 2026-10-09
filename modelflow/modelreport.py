@@ -1004,23 +1004,20 @@ class DisplayVarTableDef(DisplayDef):
     @property    
     def df_str(self):
         width = self.options.width
-        # df = self.df.copy( )
+        fmt = lambda x, dec: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip()
+        # The frame is built in one go: assigning rows into a string frame with
+        # iloc fails in pandas 3 (python string storage) when it has one column.
         if self.options.transpose:
-            thisdf = self.df.loc[self.timeslice,:] if self.timeslice else self.df 
-            df_char = pd.DataFrame(' ', index=thisdf.index, columns=thisdf.columns)
-            # for c in thisdf.columns:
-            #     df_char.loc[:,c] = thisdf.loc[:,c].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
-            for i, dec in enumerate(self.column_decimals):
-                df_char.iloc[:, i] = thisdf.iloc[:, i].apply(
-                    lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip())
+            thisdf = self.df.loc[self.timeslice,:] if self.timeslice else self.df
+            values = [[fmt(x, dec) for x, dec in zip(row, self.column_decimals)]
+                      for row in thisdf.to_numpy()]
         else:
-            df_char = pd.DataFrame(' ', index=self.df.index, columns=self.df.columns)
-    
+            thisdf = self.df
             format_decimal = [  line.dec for line,df  in zip(self.display_lines,self.dfs) for row in range(len(df))]
-            for i, dec in enumerate(format_decimal):
-                  df_char.iloc[i] = self.df.iloc[i].apply(lambda x: " " * width if pd.isna(x) else f"{x:>{width},.{dec}f}".strip() )
-      
-        return  df_char   
+            values = [[fmt(x, dec) for x in row]
+                      for row, dec in zip(thisdf.to_numpy(), format_decimal)]
+        df_char = pd.DataFrame(values, index=thisdf.index, columns=thisdf.columns, dtype=object)
+        return  df_char
 
 
 
