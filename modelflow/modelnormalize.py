@@ -20,7 +20,7 @@ from IPython.display import SVG, display, Image, IFrame, HTML
 
 
 from modelmanipulation import lagone, find_arg,pastestring,stripstring
-from modelpattern import udtryk_parse, namepat
+from modelpattern import udtryk_parse, namepat, fixedpat
 from modelhelp import debug_var
 
 
@@ -134,10 +134,10 @@ def funk_check_arg(funk,arg,udtryk,udtryk_up):
 
     A lagged variable with a function name, fx DIFF(-1), matches DIFF( and would
     silently be swallowed as a function call. If the argument is a pure signed
-    integer it must be such a lag, so raise an informative error instead.'''
-    if re.fullmatch(r'[+-]?\d+',arg.replace(' ','')):
+    integer it must be such a lag - and @2002 a fixed period - so raise an informative error instead.'''
+    if re.fullmatch(r'[+-]?\d+|' + fixedpat,arg.replace(' ','')):
         raise Exception(f"A variable can not be named {funk}, as {funk}( is a function in the business language.\n"
-                        f"{funk}({arg}) looks like a lagged variable {funk}. Rename the variable.\n"
+                        f"{funk}({arg}) looks like the variable {funk} with a lag or at a fixed period. Rename the variable.\n"
                         f"Original expression: {udtryk}\n"
                         f"Processed so far   : {udtryk_up}")
 
@@ -207,6 +207,7 @@ def preprocess(udtryk,funks=[]):
     return udtryk_up         
  
 def fixleads(eq,check=False):
+   ''' Eviews leads without sign X(1) -> X(+1). A variable at a fixed period X(@2002) is not touched'''
    leadpat      = r'(?:\(([0-9]+)\))'
    this = eq.replace(' ','').replace('\n','')
    res = re.sub(namepat+leadpat,r'\g<1>(+\g<2>)',this)

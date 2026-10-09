@@ -71,9 +71,26 @@ class diff_value_col(diff_value_base):
 class diff_value(diff_value_base):
     ''' class to contain values from differentiation'''
 
-    number    : int = field(default=0)     # index relativ to start in current_per 
-    date      : any = field(default=0)    # index in dataframe 
-               
+    number    : int = field(default=0)     # index relativ to start in current_per
+    date      : any = field(default=0)    # index in dataframe
+
+
+def split_diffname(name,rsplit=False):
+    ''' Splits the name of a derivative variable of the derivative model into (var, pvar, lag):
+
+     - Y__P__X___LAG___1   -> ('Y','X',-1)
+     - Y__P__X___LEAD___1  -> ('Y','X',1)
+     - Y__P__X___PER___2002 -> ('Y','X','@2002') the derivative with respect to X(@2002)
+
+    rsplit=True splits at the last __P__ instead of the first'''
+    var,rest = name.rsplit('__P__',1) if rsplit else name.split('__P__',1)
+    pvar,kind,number = re.fullmatch(r'(.+?)___(LAG|LEAD|PER)___(\w+)',rest).groups()
+    if kind == 'LAG':
+        return var,pvar,-int(number)
+    if kind == 'LEAD':
+        return var,pvar,int(number)
+    return var,pvar,'@'+number
+
 
 class newton_diff():
     ''' 
@@ -180,8 +197,14 @@ class newton_diff():
         # breakpoint()
         self.diffendocur = self.modeldiff()
         self.diff_model = self.get_diffmodel()
-        
-           
+
+    @property
+    def use_res_ng(self):
+        ''' The derivative model is evaluated with res_ng when asked for (ng), and when the
+        derivatives refer to variables at fixed periods (X(@2002)), which only the ng
+        solvers evaluate'''
+        return bool(self.ng) or bool(getattr(self.diff_model,'fixed_periods',None))
+
     def modeldiff(self):
         ''' Differentiate relations for self.enovar with respect to endogeneous variable 
         The result is placed in a dictory in the model instanse: model.diffendocur
@@ -408,8 +431,8 @@ class newton_diff():
                     return f'{vterm.var}___lag___{vterm.lag[1:]}'
                 elif vterm.lag[0] == '+':
                     return f'{vterm.var}___lead___{vterm.lag[1:]}'
-                else:
-                    return f'{vterm.var}___per___{vterm.lag}'
+                else:   # a variable at a fixed period X(@2002) -> X___per___2002
+                    return f'{vterm.var}___per___{vterm.lag.lstrip("@")}'
             else:
                 return f'{vterm.var}___lag___0'
             
@@ -426,13 +449,7 @@ class newton_diff():
 
     def get_diff_melted(self,periode=None,df=None):
         '''returns a tall matrix with all values to construct jacobimatrix(es)  '''
-        
-        def get_lagnr(l):
-            ''' extract lag/lead from variable name and returns a signed lag (leads are positive'''
-            # breakpoint()
-            return int('-'*(l.split('___')[0]=='AG') + l.split('___')[1])
-        
-        
+
         def get_elm(vartuples,i):
             ''' returns a list of lags  list of tupels '''
             return [v[i] for v in vartuples]
@@ -455,16 +472,13 @@ class newton_diff():
         self.diff_model.current_per = _per
         # breakpoint()
         with ttimer('calculate derivatives',self.timeit):
-            reseval = self.diff_model.res_ng if self.ng else self.diff_model.res
+            reseval = self.diff_model.res_ng if self.use_res_ng else self.diff_model.res
             self.difres = reseval(_df,silent=self.silent,stats=0,ljit=self.ljit,
                                               chunk=self.nchunk).loc[_per,sorted(self.diff_model.endogene)].fillna(0.0)
         with ttimer('Prepare wide input to sparse matrix',self.timeit):
             # breakpoint()
             cname = namedtuple('cname','var,pvar,lag')
-            self.coltup = [cname(i.split('__P__',1)[0], 
-                            i.split('__P__',1)[1].split('___L',1)[0],
-                  get_lagnr(i.split('__P__',1)[1].split('___L',1)[1])) 
-                   for i in self.difres.columns]
+            self.coltup = [cname(*split_diffname(i)) for i in self.difres.columns]
             # breakpoint()
             self.coltupnum = [(self.placdic[var],self.placdic[pvar+'___RES' if (pvar+'___RES' in self.mmodel.endogene) else pvar],lag) 
                                for var,pvar,lag in self.coltup]
@@ -485,9 +499,31 @@ class newton_diff():
             # breakpoint()
             dmelt = dmelt.assign(var = lambda x: get_elm(x.variable,0),
                                           pvar = lambda x: get_elm(x.variable,1),
-                                          lag  = lambda x: get_elm(x.variable,2)) 
+                                          lag  = lambda x: get_elm(x.variable,2))
+            if any(pt.is_fixed_lag(c.lag) for c in self.coltup):
+                dmelt = self.fixed_to_rowlag(dmelt)
         return dmelt
-    
+
+    def fixed_to_rowlag(self,dmelt):
+        '''Places derivatives with respect to a variable at a fixed period, X(@2002).
+
+        Seen from the row with number n, X(@2002) is X lagged n-p periods, where p is the number
+        of 2002 in the evaluated periods. With this lag, which differs from row to row, the
+        lag/lead arithmetic of the stacked and the one period jacobians puts the derivative in the
+        column of 2002 - and in the one period jacobian of 2002 itself.
+        If 2002 is not among the evaluated periods X(@2002) is data, the lag is set to -1-n,
+        which points before the first period, so the jacobians drop it.'''
+        isfixed = dmelt['lag'].map(pt.is_fixed_lag).astype(bool)
+        number = {}
+        for lag in dmelt.loc[isfixed,'lag'].unique():
+            try:
+                number[lag] = pt.fixed_period_loc(self.difres.index,lag)
+            except KeyError:
+                number[lag] = -1
+        dmelt.loc[isfixed,'lag'] = dmelt.loc[isfixed,'lag'].map(number) - dmelt.loc[isfixed,'number']
+        dmelt['lag'] = dmelt['lag'].astype(int)
+        return dmelt
+
   
 
     def get_diff_mat_tot(self, df=None):
@@ -756,13 +792,7 @@ class newton_diff():
 
     def get_diff_melted_var(self,periode=None,df=None):
             '''makes dict with all  derivative matrices for all lags '''
-            
-            def get_lagnr(l):
-                ''' extract lag/lead from variable name and returns a signed lag (leads are positive'''
-                #breakpoint()
-                return int('-'*(l.split('___')[0]=='AG') + l.split('___')[1])
-            
-            
+
             def get_elm(vartuples,i):
                 ''' returns a list of lags  list of tupels '''
                 return [v[i] for v in vartuples]
@@ -782,15 +812,13 @@ class newton_diff():
 
             self.diff_model.current_per = _per
             # breakpoint()
-            reseval = self.diff_model.res_ng if self.ng else self.diff_model.res
+            reseval = self.diff_model.res_ng if self.use_res_ng else self.diff_model.res
             difres = reseval(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk
                                          ).loc[_per,sorted(self.diff_model.endogene)].fillna(0.0).astype('float')
-                  
+
             cname = namedtuple('cname','var,pvar,lag')
-            col_vars = [cname(i.rsplit('__P__',1)[0], 
-                            i.rsplit('__P__',1)[1].split('___L',1)[0],
-                  get_lagnr(i.rsplit('__P__',1)[1].split('___L',1)[1])) 
-                   for i in difres.columns]
+            # lag is '@2002' for a derivative with respect to a variable at a fixed period
+            col_vars = [cname(*split_diffname(i,rsplit=True)) for i in difres.columns]
             
             col_ident = [diff_value_col(**i._asdict(), var_plac=self.placdic[i.var],
             pvar_plac=self.placdic.get(i.pvar+'___RES' if (i.pvar+'___RES' in self.mmodel.endogene) else i.pvar, 0),
@@ -811,6 +839,10 @@ class newton_diff():
         
     def get_diff_mat_all_1per(self,periode=None,df=None,asdf=False):
         dmelt = self.get_diff_melted_var(periode=periode,df=df)
+        if dmelt['lag'].dtype == object:
+            # derivatives with respect to a variable at a fixed period, X(@2002),
+            # are not part of the lag structure
+            dmelt = dmelt[~dmelt['lag'].map(pt.is_fixed_lag).astype(bool)]
         with ttimer('Prepare numpy input to sparse matrix',self.timeit):
             outdic = defaultdict(lambda: defaultdict(dict))
             grouped = dmelt.groupby(by=['pvar_endo','dates','lag'])  
@@ -929,7 +961,7 @@ class newton_diff():
             grouped = dmelt.groupby(by=['var','pvar','lag'])  
             for (var,pvar,lag),df in grouped:
                 res = df.pivot(index='pvar',columns='dates',values='value')
-                pvar_name = tovarlag(pvar,int(lag))
+                pvar_name = tovarlag(pvar,lag if pt.is_fixed_lag(lag) else int(lag))
                 #reakpoint()
     # #csc_matrix((data, (row_ind, col_ind)), [shape=(M, N)]) 
                 # print(f'endo:{endo} ,date:{date}, lag:{lag}, \n df')

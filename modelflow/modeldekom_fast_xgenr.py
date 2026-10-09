@@ -19,6 +19,8 @@ from collections import namedtuple
 import numpy as np
 import pandas as pd
 
+import modelpattern as pt
+
 DekompResult = namedtuple(
     "dekompres", "diff_level att_level att_pct diff_growth att_growth"
 )
@@ -78,7 +80,7 @@ def dekomp_fast(
     vars_ = list(mfrml.allvar.keys())
 
     varterms = [
-        (term.var, int(term.lag) if term.lag else 0)
+        (term.var, pt.lag_value(term.lag))    # lag is '@2002' for X(@2002)
         for term in mfrml.allvar[varnavn]["terms"]
         if term.var and not (term.var == varnavn and term.lag == "")
     ]
@@ -107,7 +109,8 @@ def dekomp_fast(
     for (varlag, per) in experiments:
         var_, lag_ = varlag
         outrow = index.get_loc(per)
-        inrow = outrow + lag_
+        inrow = (pt.fixed_period_loc(index, lag_) if pt.is_fixed_lag(lag_)
+                 else outrow + lag_)
         incol = columns.get_loc(var_)
 
         if inrow < 0 or inrow >= len(index):

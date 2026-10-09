@@ -290,8 +290,12 @@ class BaseModel():
                                                                    
         termswithvar = {t for (f, nt) in mega for t in nt if t.var}
 #        varnames = list({t.var for t in termswithvar})
-        termswithlag = sorted([(t.var, '0' if t.lag == '' else t.lag)
+        # a variable at a fixed period, X(@2002), is neither lagged nor leaded
+        termswithlag = sorted([(t.var, '0' if t.lag == '' or pt.is_fixed_lag(t.lag) else t.lag)
                               for t in termswithvar], key=lambda x: x[0])   # sorted by varname and lag
+        # the (variable, '@period') references and the periods - only the ng solvers evaluate them
+        self.fixed_terms = sorted({(t.var, t.lag) for t in termswithvar if pt.is_fixed_lag(t.lag)})
+        self.fixed_periods = sorted({lag for var, lag in self.fixed_terms})
         groupedvars = groupby(termswithlag, key=lambda x: x[0])
         varmaxlag = {varandlags[0]: (
             min([int(t[1]) for t in list(varandlags[1])])) for varandlags in groupedvars}
@@ -314,6 +318,9 @@ class BaseModel():
         for frmlnumber, ((frml, fr, n, udtryk), nt) in enumerate(mega):
             # find the position of =
             assigpos = nt.index(self.aequalterm)
+            if any(pt.is_fixed_lag(t.lag) for t in nt[:assigpos] if t.var):
+                gc.enable()
+                raise Exception(f'A variable at a fixed period (like X(@2002)) can not be on the left hand side:\n{frml}')
             # variables to the left of the =
             zendovar = [t.var for t in nt[:assigpos] if t.var]
             # do this formular define a matrix on the left of =
@@ -612,12 +619,24 @@ class BaseModel():
         used for fast getting and setting of variable values in the dataframe'''
         return {v: i for i, v in enumerate(df.columns)}
 
+    def fixed_period_guard(self, what):
+        ''' Only the ng solvers can evaluate a variable at a fixed period, X(@2002).
+        Raises an exception naming *what* (the legacy evaluator) if the model has such references '''
+        if getattr(self, 'fixed_periods', None):
+            refs = ', '.join(f'{var}({lag})' for var, lag in self.fixed_terms[:6])
+            more = ' ...' if len(self.fixed_terms) > 6 else ''
+            raise Exception(f'{self.name} refers to variables at fixed periods: {refs}{more}\n'
+                            f'{what} can not evaluate them. Use a ng solver: '
+                            'xgenr_ng, res_ng, sim_ng, newton_ng, newtonstack_ng ...\n'
+                            'model(df,...) without a solver option picks one.')
+
     def outeval(self, databank):
         ''' takes a list of terms and translates to a evaluater function called los
 
-        The model axcess the data through:Dataframe.value[rowindex+lag,coloumnindex] which is very efficient 
+        The model axcess the data through:Dataframe.value[rowindex+lag,coloumnindex] which is very efficient
 
         '''
+        self.fixed_period_guard('xgenr')
         short, long, longer = 4*' ', 8*' ', 12 * ' '
 
         def totext(t):
@@ -1334,11 +1353,11 @@ class Org_model_Mixin():
             else:
                 current_per = per
 
-            varterms = [(term.var, int(term.lag) if term.lag else 0)
+            varterms = [(term.var, pt.lag_value(term.lag))
                         #                            for term in self.allvar[varnavn.upper()]['terms'] if term.var]
                         for term in self.allvar[varnavn.upper()]['terms'] if term.var and not (term.var == varnavn.upper() and term.lag == '')]
-            # now we have droped dublicate terms and sorted
-            sterms = sorted(set(varterms), key=lambda x: (x[0], -x[1]))
+            # now we have droped dublicate terms and sorted, fixed periods (X(@2002)) after lags
+            sterms = sorted(set(varterms), key=lambda x: (x[0], 1, x[1]) if pt.is_fixed_lag(x[1]) else (x[0], 0, -x[1]))
             if nolag:
                 sterms = sorted({(v, 0) for v, l in sterms})
             if showvar:
@@ -1382,7 +1401,7 @@ class Org_model_Mixin():
         ''' returns a dataframe with the data points for a node,  including lags '''
         t = pt.udtryk_parse(v, funks=[])
         var = t[0].var
-        lag = int(t[0].lag) if t[0].lag else 0
+        lag = pt.lag_value(t[0].lag)
         bvalues = [float(get_a_value(self.basedf, per, var, lag))
                    for per in self.current_per]
         lvalues = [float(get_a_value(self.lastdf, per, var, lag))
@@ -2547,7 +2566,7 @@ class Dekomp_Mixin():
 
 
         vars = mfrml.allvar.keys()
-        varterms = [(term.var, int(term.lag) if term.lag else 0)
+        varterms = [(term.var, pt.lag_value(term.lag))
                     for term in mfrml.allvar[varnavn]['terms'] if term.var and not (term.var == varnavn and term.lag == '')]
         # now we have droped dublicate terms and sorted
         sterms = sorted(set(varterms), key=lambda x: varterms.index(x))
@@ -2573,7 +2592,9 @@ class Dekomp_Mixin():
         difdf = {e: smallalt - alldf[e] for e in eksperiments}
         # allres       = {e : mfrml.xgenr(alldf[e],str(e[1]),str(e[1]),silent= True ) for e in eksperiments} # now evaluate each experiment
         # now evaluate each experiment
-        allres = {e: mfrml.xgenr(
+        # a variable at a fixed period (X(@2002)) is only evaluated by the ng xgenr
+        xgenr = mfrml.xgenr_ng if mfrml.fixed_periods else mfrml.xgenr
+        allres = {e: xgenr(
             alldf[e], e[1], e[1], silent=True) for e in eksperiments}
         # dataframes with the effect of each update
         diffres = {e: smallalt - allres[e] for e in eksperiments}
@@ -4973,8 +4994,8 @@ class Graph_Draw_Mixin():
                 try:
                     t = pt.udtryk_parse(v, funks=[])
                     var = t[0].var
-                    lag = int(t[0].lag) if t[0].lag else 0
-                    try: 
+                    lag = pt.lag_value(t[0].lag)
+                    try:
                         bvalues = [float(get_a_value(self.basedf, per, var, lag))for per in self.current_per]
                         base = "<TR><TD ALIGN='LEFT' TOOLTIP='Baseline values' href='bogus'>Base</TD>"+''.join(["<TD ALIGN='RIGHT'  TOOLTIP='Baseline values' href='bogus' >"+(
                             f'{b:{25},.{dec}f}'.strip()+'</TD>').strip() for b in bvalues])+'</TR>'
@@ -7236,6 +7257,13 @@ class Solver_Mixin():
             else:
                 solverguess = 'newton_un_normalized'
 
+        # a variable at a fixed period, X(@2002), is only evaluated by the ng solvers
+        if getattr(self, 'fixed_periods', None):
+            solverguess = {'xgenr': 'xgenr_ng', 'sim': 'sim_ng',
+                           'newtonstack': 'newtonstack_ng',
+                           'newtonstack_un_normalized': 'newtonstack_ng',
+                           'newton_un_normalized': 'newton_ng'}.get(solverguess, solverguess)
+
         solver = newkwargs.get('solver', solverguess)
         silent = newkwargs.get('silent', True)
         self.model_solver = getattr(self, solver)
@@ -7303,6 +7331,7 @@ class Solver_Mixin():
     def makelos(self, databank, ljit=0, stringjit=False,
                 solvename='sim', chunk=30, transpile_reset=False, newdata=False,
                 silent=True, **kwargs):
+        self.fixed_period_guard(f'The legacy {solvename} evaluator')
         jitname = f'{self.name}_{solvename}_jit'
         nojitname = f'{self.name}_{solvename}_nojit'
         if solvename == 'sim':
@@ -9559,16 +9588,19 @@ class Solver_Mixin():
                 if not var:
                     continue
     
-                lagtxt = t.lag
-                lag = int(lagtxt) if str(lagtxt).strip() else 0
+                lag = pt.lag_value(t.lag)
                 key = (var, lag)
                 if key in seen:
                     continue
                 seen.add(key)
-    
-                pos = basepos + lag
+
+                if pt.is_fixed_lag(lag):        # a variable at a fixed period, X(@2002)
+                    pos = pt.fixed_period_loc(self.errdump.index, lag)
+                    term = f'{var}({lag})'
+                else:
+                    pos = basepos + lag
+                    term = f'{var}({lag:+})' if lag else var
                 value = self.errdump.iloc[pos][var] if 0 <= pos < len(self.errdump.index) else float('nan')
-                term = f'{var}({lag:+})' if lag else var
                 rows.append({'term': term, 'value': value})
     
             if rows:
@@ -10168,20 +10200,29 @@ def create_model(navn, hist=0, name='', new=True, finished=False, xmodel=model, 
 
 
 
+def get_a_row(df, per, lag=0):
+    ''' the row number of period per shifted lag periods.
+
+    lag can also be a fixed period like '@2002' (from X(@2002)), then per does not matter'''
+    if pt.is_fixed_lag(lag):
+        return pt.fixed_period_loc(df.index, lag)
+    return df.index.get_loc(per)+lag
+
+
 def get_a_value(df, per, var, lag=0):
-    ''' returns a value for row=p+lag, column = var 
+    ''' returns a value for row=p+lag, column = var
 
     to take care of non additive row index'''
 
-    return df.iat[df.index.get_loc(per)+lag, df.columns.get_loc(var)]
+    return df.iat[get_a_row(df, per, lag), df.columns.get_loc(var)]
 
 
 def set_a_value(df, per, var, lag=0, value=np.nan):
-    ''' Sets a value for row=p+lag, column = var 
+    ''' Sets a value for row=p+lag, column = var
 
     to take care of non additive row index'''
 
-    df.iat[df.index.get_loc(per)+lag, df.columns.get_loc(var)] = value
+    df.iat[get_a_row(df, per, lag), df.columns.get_loc(var)] = value
 
 
 def insertModelVar(dataframe, model=None):

@@ -29,10 +29,13 @@ class FrmlParts(NamedTuple):
 
 
 
-# names and lags 
+# names and lags
 namepat_ng  = r'(?:[A-Za-z_{][A-Za-z_{}0-9]*)'     # a name non grouped
 namepat     = r'(' + namepat_ng + ')' # a name  grouped
-lagpat      = r'(?:\(([+-][0-9]+)\))?'
+# a variable at a fixed period: X(@2002), X(@2002Q1), X(@2002M3).
+# The period is kept with its @ in the lag field of the term ('@2002')
+fixedpat    = r'@[0-9]+(?:[QqMm][0-9]+)?'
+lagpat      = r'(?:\(([+-][0-9]+|' + fixedpat + r')\))?'
 
 # comments 
 commentchar = '£' 
@@ -379,8 +382,48 @@ def udtryk_parse(udtryk,funks=[]):
     xxx = udtrykre(funks=funks).findall(temp) # the compiled re pattern is importet from pattern 
  # her laver vi det til en named tuple
     ibh = [nterm(t[0],t[1],t[2], '' if t[3] == '-0' or t[3]=='+0' else t[3]) for t in xxx]
-    # ibh = [nterm._make(t) for t in xxx]   # Easier to remember by using named tupels . 
+    # ibh = [nterm._make(t) for t in xxx]   # Easier to remember by using named tupels .
     return ibh
+
+def is_fixed_lag(lag):
+    ''' True if the lag field of a term is a fixed period, like '@2002' from X(@2002) '''
+    return isinstance(lag, str) and lag[:1] == '@'
+
+def lag_value(lag):
+    ''' The lag field of a term as a value: an int (0 for the current period), or for a
+    variable at a fixed period the period with its @ ('@2002') '''
+    if is_fixed_lag(lag):
+        return lag
+    return int(lag) if lag else 0
+
+def fixed_period_loc(index, lag):
+    ''' Row number in a pandas index of a fixed period like '@2002' or '@2002Q1'.
+
+    The period is looked up as an integer in an integer index (annual models), else as
+    text which pandas parses for a period or datetime index.
+    Raises KeyError if the period is not exactly one row of the index '''
+    import numbers
+    from pandas.api.types import is_integer_dtype, is_object_dtype
+
+    per = lag[1:] if is_fixed_lag(lag) else str(lag)
+    keys = []
+    if per.isdigit() and (is_integer_dtype(index.dtype) or is_object_dtype(index.dtype)):
+        keys.append(int(per))
+    if not is_integer_dtype(index.dtype):
+        keys.append(per)
+    loc = None
+    for key in keys:
+        try:
+            loc = index.get_loc(key)
+            break
+        except (KeyError, ValueError, TypeError):
+            loc = None
+    if isinstance(loc, slice) and loc.start is not None and loc.stop is not None and loc.stop - loc.start == 1:
+        loc = loc.start      # a partial string match on a datetime index
+    if not isinstance(loc, numbers.Integral):
+        span = f' ({index[0]} to {index[-1]})' if len(index) else ''
+        raise KeyError(f'The period {per} in a reference like X(@{per}) is not a row in the dataframe index{span}')
+    return int(loc)
 
 def kw_frml_name(frml_name0, kw,default=None):
     ''' find keywords and associated value from string '<kw=xxx,res=kdkdk>' '''

@@ -25,6 +25,7 @@ import ast
 
 
 from modelpattern import find_statements,split_frml,find_frml,list_extract,udtryk_parse,kw_frml_name,commentchar,split_frml_reqopts
+from modelpattern import is_fixed_lag, fixedpat
 from modelhelp import debug_var
 
 
@@ -658,19 +659,25 @@ def kaedeunroll(in_equations,funks=[]):
     equations='\n'.join(nymodel)
     return equations  
 
+def ast_ready(udtryk):
+    ''' Python can not parse a variable at a fixed period like X(@2002).
+    The period is replaced by zeros of the same length, X(00000), so the position of
+    another syntax error in the expression is unchanged '''
+    return re.sub(r'\((' + fixedpat + r')\)', lambda m: '(' + '0' * len(m.group(1)) + ')', udtryk)
+
 def check_syntax_frml(frml):
-    ''' check syntax of frml ''' 
+    ''' check syntax of frml '''
     try:
         a, fr, n, udtryk = split_frml(frml)
-        ast.parse(re.sub(r'\n','',re.sub(' ','',udtryk[:-1])))
+        ast.parse(ast_ready(re.sub(r'\n','',re.sub(' ','',udtryk[:-1]))))
         return True
     except:
         return False
-    
+
 def check_syntax_udtryk(udtryk):
-    ''' check syntax of frml ''' 
+    ''' check syntax of frml '''
     try:
-        ast.parse(re.sub(r'\n','',re.sub(' ','',udtryk)))
+        ast.parse(ast_ready(re.sub(r'\n','',re.sub(' ','',udtryk))))
         return True
     except:
         return False
@@ -729,8 +736,8 @@ def check_syntax(expression_list, noprint=False, raise_error=True):
 def check_syntax_udtryk_new(udtryk):
     '''Check syntax of an expression, pinpoint errors, and show error location.'''
     try:
-        # Parse the original string without modifying it
-        ast.parse(udtryk)
+        # Parse the original string - only fixed periods X(@2002) are neutralized
+        ast.parse(ast_ready(udtryk))
         return True, "No syntax errors found."
     except SyntaxError as e:
         # Extract the offending line from the original string
@@ -977,19 +984,21 @@ def lagone(ind,funks=[],laglead=-1):
     s lagged one more time '''
     nt=udtryk_parse(ind,funks=funks)
     fib=[]
-    for t in nt: 
+    for t in nt:
         if t.op:
-            ud=t.op 
+            ud=t.op
         elif t.number:
             ud=t.number
+        elif t.var and is_fixed_lag(t.lag):
+            ud = f'{t.var}({t.lag})'     # a variable at a fixed period is not shifted
         elif t.var:
             lag=t.lag if t.lag else '0'
             org_lag = int(lag)
             new_lag = org_lag+laglead
             if new_lag == 0:
                 ud = t.var
-            else:    
-                ud= t.var+ f'({new_lag:+})'           
+            else:
+                ud= t.var+ f'({new_lag:+})'
         fib.append(ud)
     return ''.join(fib)
 
@@ -1012,20 +1021,27 @@ lag_n_tup('a',n=-3)
 
 
  
+FIXEDSYMBOL = '___AT___'   # marks a variable at a fixed period in pastestring, X(@2002) -> X<post>___AT___2002
+
 def pastestring(ind,post,funks=[],onlylags = False):
-    ''' All variable names in a  in a string **ind** is pasted with the string **post** 
-    
-    This function can be used to awoid variable name conflict with the internal variable names in sympy. 
-    
+    ''' All variable names in a  in a string **ind** is pasted with the string **post**
+
+    This function can be used to awoid variable name conflict with the internal variable names in sympy.
+
+    A variable at a fixed period, X(@2002), becomes the single name X<post>___AT___2002,
+    as sympy can not read the @. stripstring makes it X(@2002) again.
+
     an advanced function
     '''
     nt=udtryk_parse(ind,funks=funks)
     fib=[]
-    for t in nt: 
+    for t in nt:
         if t.op:
-            ud=t.op 
+            ud=t.op
         elif t.number:
             ud=t.number
+        elif t.var and is_fixed_lag(t.lag):
+            ud = f'{t.var}{post.upper()}{FIXEDSYMBOL}{t.lag[1:]}'
         elif t.var:
             if onlylags:
                 if t.lag: 
@@ -1046,17 +1062,22 @@ def stripstring(ind,post,funks=[]):
     nt=udtryk_parse(ind,funks=funks)
     fib=[]
     lenpost=len(post)
-    for t in nt: 
+    fixedsymbol = re.compile('(.+)' + re.escape(post.upper()) + FIXEDSYMBOL + '(' + fixedpat[1:] + ')')
+    for t in nt:
         if t.op:
-            ud=t.op 
+            ud=t.op
         elif t.number:
             ud=t.number
+        elif t.var and (fixed := fixedsymbol.fullmatch(t.var)):
+            ud = f'{fixed.group(1)}(@{fixed.group(2)})'    # a variable at a fixed period, see pastestring
+        elif t.var and is_fixed_lag(t.lag):
+            ud = f'{t.var[:-lenpost] if t.var.endswith(post.upper()) else t.var}({t.lag})'
         elif t.var:
             if t.var.endswith(post.upper()):
-                ud= t.var[:-lenpost]+  ('('+(str(int(t.lag)))+')' if t.lag else '')  
-            else: 
-                ud= t.var+  ('('+(str(int(t.lag)))+')' if t.lag else '')  
-                
+                ud= t.var[:-lenpost]+  ('('+(str(int(t.lag)))+')' if t.lag else '')
+            else:
+                ud= t.var+  ('('+(str(int(t.lag)))+')' if t.lag else '')
+
                 # print('Tries to strip '+post +' from '+ind)
         fib.append(ud)
     return ''.join(fib)

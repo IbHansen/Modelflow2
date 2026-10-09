@@ -754,6 +754,8 @@ def an_expression_to_latex(exp,funks=[]):
     def t_to_latex(t):
         if t.var:
             var =vtol(t.var)
+            if pt.is_fixed_lag(t.lag):     # a variable at a fixed period, X(@2002) -> X_{2002}
+                return f'{var}_{{{t.lag[1:]}}}'
             if t.lag:
                 return f'{var}_{{t{t.lag}}}'
             else:

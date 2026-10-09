@@ -145,6 +145,26 @@ def _grouper(iterable, n, fillvalue=""):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
+def fixed_rows(m, index):
+    """``{'@2002': row}`` -- the row in *index* of every fixed period the model
+    refers to (``X(@2002)``).  Empty for a model without such references;
+    raises KeyError if a period is not in the index."""
+    return {lag: pt.fixed_period_loc(index, lag)
+            for lag in getattr(m, "fixed_periods", ())}
+
+
+def _cell(arr, t, columnsnr, fixrow):
+    """Python source reading term *t* from the 2-D array *arr*.
+
+    ``arr[row+lag,col]`` -- or, for a variable at a fixed period
+    (``X(@2002)``), the row of that period: a constant, so the generated code
+    depends on the databank index, see ``SolverBase._fixrow_changed``.
+    """
+    if pt.is_fixed_lag(t.lag):
+        return f"{arr}[{fixrow[t.lag]},{columnsnr[t.var]}]"
+    return f"{arr}[row{t.lag},{columnsnr[t.var]}]"
+
+
 def _gaussline_1d(m, vx, nodamp=False):
     """One Gauss-Seidel line addressing the stuffed 1-D array ``a`` (by startnr)."""
     termer = m.allvar[vx]["terms"]
@@ -193,6 +213,7 @@ def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=Fal
     """
     short, long, longer = 4 * " ", 8 * " ", 12 * " "
     columnsnr = m.get_columnsnr(databank)
+    fixrow = fixed_rows(m, databank.index)
     thisdebug = False if ljit else debug
 
     def make_gaussline2(vx, nodamp=False):
@@ -218,7 +239,7 @@ def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=Fal
             if t.number:
                 out.append(t.number)
             elif t.var:
-                out.append("values[row" + t.lag + "," + str(columnsnr[t.var]) + "]")
+                out.append(_cell("values", t, columnsnr, fixrow))
         if ldamp:
             out.append(")")
         return "".join(out) + "\n"
@@ -234,10 +255,8 @@ def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=Fal
             if t.number:
                 out.append(t.number)
             elif t.var:
-                if i < assigpos:
-                    out.append("outvalues[row" + t.lag + "," + str(columnsnr[t.var]) + "]")
-                else:
-                    out.append("values[row" + t.lag + "," + str(columnsnr[t.var]) + "]")
+                out.append(_cell("outvalues" if i < assigpos else "values",
+                                 t, columnsnr, fixrow))
         return "".join(out) + "\n"
 
     def makeafunk(name, order, linemake, chunknumber, debug=False, overhead=0,
@@ -333,6 +352,10 @@ def gen_1d(m, debug=0, chunk=None, ljit=False, cache="False"):
     The functions take the stuffed one-period array ``a`` (signature ``(a,alfa)``).
     Replacement for ``model.outsolve1dcunk``.
     """
+    if getattr(m, "fixed_periods", None):
+        raise NotImplementedError(
+            "sim1d can not evaluate variables at fixed periods (X(@2002)): its "
+            "stuffed one-period array only holds lags and leads. Use sim_ng.")
     short, long, longer = 4 * " ", 8 * " ", 12 * " "
     m.findpos()
     thisdebug = False if ljit else debug
@@ -437,6 +460,7 @@ def gen_dag(m, databank):
     """
     short, long, longer = 4 * " ", 8 * " ", 12 * " "
     columnsnr = m.get_columnsnr(databank)
+    fixrow = fixed_rows(m, databank.index)
 
     def totext(t):
         """Render one parsed term ``t`` as Python source (op, number or var access)."""
@@ -445,7 +469,7 @@ def gen_dag(m, databank):
         elif t.number:
             return t.number
         elif t.var:
-            return "values[row" + t.lag + "," + str(columnsnr[t.var]) + "]"
+            return _cell("values", t, columnsnr, fixrow)
 
     fib1 = ["def make_los(funks=[],errorfunk=None):\n"]
     fib1.append(short + "from modeluserfunk import " + (", ".join(pt.userfunk)).lower() + "\n")
@@ -480,6 +504,7 @@ def gen_eqdict(m, databank):
     """
     short, long = 4 * " ", 8 * " "
     columnsnr = m.get_columnsnr(databank)
+    fixrow = fixed_rows(m, databank.index)
 
     def make_resline2(vx):
         """Translate one equation ``vx`` to a residual line (LHS -> outvalues)."""
@@ -492,10 +517,8 @@ def gen_eqdict(m, databank):
             if t.number:
                 out.append(t.number)
             elif t.var:
-                if i < assigpos:
-                    out.append("outvalues[row" + t.lag + "," + str(columnsnr[t.var]) + "]")
-                else:
-                    out.append("values[row" + t.lag + "," + str(columnsnr[t.var]) + "]")
+                out.append(_cell("outvalues" if i < assigpos else "values",
+                                 t, columnsnr, fixrow))
         return "".join(out) + "\n"
 
     fib1 = ["def make_los(funks=[],errorfunk=None):\n"]
@@ -587,6 +610,11 @@ class SolverBase:
     dump_sort_cols = None
     #: default value of the ``silent`` option for this solver
     DEFAULT_SILENT = 1
+    #: whether an endogenous variable at a fixed period inside the solve span
+    #: (``X(@2025)`` solved 2020-2100) is handled exactly -- true for the
+    #: stacked solvers (all periods at once) and for res (input values by
+    #: design); the per-period solvers warn, see ``_check_fixed_periods``
+    fixed_in_span_ok = False
 
     def __init__(self, model):
         """Bind the solver to a *model* instance (accessed as ``self.m``)."""
@@ -685,6 +713,11 @@ class SolverBase:
         # the recompilation decision in build_evaluator.
         ctx.newdata, ctx.databank = m.is_newdata(ctx.databank)
 
+        # variables at fixed periods (X(@2002)): the periods must be rows of
+        # the databank
+        if getattr(m, "fixed_periods", None):
+            self._check_fixed_periods(ctx)
+
         # solver-specific evaluator construction (makelos, stuffers, DAG, ...);
         # sets genrcolumns / genrindex.
         self.build_evaluator(ctx)
@@ -696,6 +729,61 @@ class SolverBase:
         ctx.outvalues = np.empty_like(ctx.values) if needs_out else None
         ctx.endtimesetup = time.time()
         return ctx
+
+    def _check_fixed_periods(self, ctx):
+        """Check the model's references to variables at fixed periods
+        (``X(@2002)``) against the databank and the solve span.
+
+        Every period must be a row of the databank (``fixed_rows`` raises).
+        The generated code reads ``X(@2002)`` from the databank row of 2002:
+        before the solve span that is data, inside the span the solution in
+        the periods after 2002.  A per-period solver can not do better for an
+        endogenous X: periods before 2002 read the starting value, and in
+        2002 itself the dependency is not part of the solve order.  That case
+        is printed as a warning, once for the same references, span and
+        solver; the stacked solvers handle it exactly.
+        """
+        m = ctx.model
+        index = ctx.databank.index
+        rows = fixed_rows(m, index)
+        if self.fixed_in_span_ok:
+            return
+        first = index.get_loc(ctx.sol_periode[0])
+        last = index.get_loc(ctx.sol_periode[-1])
+        endo = m.endogene
+        inside = [f"{var}({lag})" for var, lag in m.fixed_terms
+                  if (var in endo or var + "___RES" in endo)
+                  and first <= rows[lag] <= last]
+        if not inside:
+            return
+        key = (tuple(inside), first, last, type(self).__name__)
+        if getattr(m, "ng_fixed_inspan_warned", None) != key:
+            m.ng_fixed_inspan_warned = key
+            print(f"Warning: {', '.join(inside)} refers to an endogenous variable "
+                  f"inside the solve span {ctx.sol_periode[0]} to "
+                  f"{ctx.sol_periode[-1]}.\n"
+                  "This solver solves one period at a time: periods before the "
+                  "fixed period use its starting value, and in the fixed period "
+                  "itself the dependency is not part of the solve order.\n"
+                  "newtonstack_ng solves all periods together and handles this exactly.")
+
+    def _fixrow_changed(self, cachename, databank):
+        """True if the cached evaluator *cachename* was generated for other
+        rows of the fixed periods (``X(@2002)``) than those of *databank*.
+
+        The rows are compiled into the code as constants, so the same columns
+        with another index (another start year) need new code.  The rows are
+        recorded per cached evaluator -- the solver flavours are cached apart.
+        Always False for a model without fixed-period references.
+        """
+        m = self.m
+        if databank is None or not getattr(m, "fixed_periods", None):
+            return False
+        rows = fixed_rows(m, databank.index)
+        attr = f"ng_fixrow_{cachename}"
+        changed = getattr(m, attr, None) != rows
+        setattr(m, attr, rows)
+        return changed
 
     def makelos(self, solvename, databank=None, *, ljit=0, stringjit=False,
                 chunk=30, transpile_reset=False, newdata=False, silent=True, **kwargs):
@@ -744,6 +832,8 @@ class SolverBase:
 
         jitname = f"{m.name}_{solvename}_jit"
         nojitname = f"{m.name}_{solvename}_nojit"
+        # rows of fixed periods (X(@2002)) are compiled into the code
+        newdata = self._fixrow_changed(jitname if ljit else nojitname, databank) or newdata
 
         if solvename == "sim":
             solveout = partial(gen_2d, m, databank, chunk=chunk, ljit=ljit,
@@ -848,6 +938,7 @@ class SolverBase:
         """Compile + cache the single-pass DAG evaluator (``outeval``)."""
         m = self.m
         attr = f"ng_solve_dag_{m.name}".replace(" ", "_")
+        newdata = self._fixrow_changed(attr, databank) or newdata
         if newdata or transpile_reset or not hasattr(m, attr):
             if not silent:
                 print(f"makelos_ng compiles the xgenr (DAG) evaluator for {m.name}")
@@ -880,6 +971,7 @@ class SolverBase:
         """
         m = self.m
         attr = f"ng_fbmin_{m.name}_{'jit' if ljit else 'nojit'}".replace(" ", "_")
+        newdata = self._fixrow_changed(attr, databank) or newdata
         if newdata or transpile_reset or not hasattr(m, attr):
             if not silent:
                 print(f"makelos_ng compiles the fbmin evaluators for {m.name}"
@@ -913,6 +1005,7 @@ class SolverBase:
         """
         m = self.m
         attr = f"ng_stackeq_{m.name}".replace(" ", "_")
+        newdata = self._fixrow_changed(attr, databank) or newdata
         if newdata or transpile_reset or not hasattr(m, attr):
             if not silent:
                 print(f"makelos_ng compiles the per-equation (stackeq) "
@@ -2369,6 +2462,7 @@ class NewtonStackSolver(SolverBase):
 
     solvename = "res"          # residual 2-D evaluator (== legacy 'newton')
     needs_outvalues = True
+    fixed_in_span_ok = True    # X(@2025) is a column of the stacked Jacobian
 
     def dump_order(self, ctx):
         """Dump order: the declared (base) endogenous names of the Jacobian object."""
@@ -2525,9 +2619,10 @@ class NewtonStackSolver(SolverBase):
         fulldiff = newton_diff(m, forcenum=True, df=databank, silent=True)
 
         def varlag(s):
+            # lag is an int, or '@2002' for a variable at a fixed period
             if "(" in s:
                 name, lag = s.split("(", 1)
-                return name, int(lag[:-1])
+                return name, pt.lag_value(lag[:-1])
             return s, 0
 
         endo = m.endogene
@@ -2557,12 +2652,16 @@ class NewtonStackSolver(SolverBase):
         # stacked cycle projects to a closed walk there, and a closed walk in
         # a DAG cannot leave a node -- so mixed-sign self-dependence is the
         # only stacked cycle the collapsed test can miss.
+        # A variable depending on itself at a fixed period (x(@2025)) is also
+        # promoted: in that period it is its own current value.  Conservative
+        # when the period is outside the span.
         selflags = {}
         for a, b, l in cedges:
             if a == b:
                 selflags.setdefault(a, set()).add(l)
         core |= {v for v, lags in selflags.items()
-                 if min(lags) < 0 and max(lags) > 0}
+                 if any(pt.is_fixed_lag(l) for l in lags)
+                 or (min(lags) < 0 and max(lags) > 0)}
 
         # a variable on a path from the core back into the core (a descendant
         # AND an ancestor of the core) must be solved with the core: as an
@@ -2583,6 +2682,21 @@ class NewtonStackSolver(SolverBase):
         pro_vars = [v for v in fulldiff.endovar
                     if v not in core and v not in desc]
 
+        # period number in the span of each fixed period (None outside the span)
+        fixedpos = {}
+        for a, b, l in cedges:
+            if pt.is_fixed_lag(l) and l not in fixedpos:
+                try:
+                    fixedpos[l] = pt.fixed_period_loc(ctx.sol_periode, l)
+                except KeyError:
+                    fixedpos[l] = None
+
+        def source(l, t):
+            """Period number of a dependency at lag *l* seen from period *t*,
+            None outside the span (a fixed period is the same for every t)."""
+            s = fixedpos[l] if pt.is_fixed_lag(l) else t + l
+            return s if s is not None and 0 <= s < T else None
+
         def node_order(vars_):
             """Stacked topological order of (var, t) nodes over *vars_* --
             acyclic by construction (any collapsed cycle and any mixed-sign
@@ -2590,10 +2704,10 @@ class NewtonStackSolver(SolverBase):
             vset = set(vars_)
             g = nx.DiGraph()
             g.add_nodes_from((v, t) for v in vars_ for t in range(T))
-            g.add_edges_from(((a, t + l), (b, t))
+            g.add_edges_from(((a, s), (b, t))
                              for a, b, l in cedges
                              if a in vset and b in vset
-                             for t in range(T) if 0 <= t + l < T)
+                             for t in range(T) if (s := source(l, t)) is not None)
             try:
                 return list(nx.topological_sort(g))
             except nx.NetworkXUnfeasible:
@@ -2865,6 +2979,7 @@ class NewtonStackFbminSolver(SolverBase):
 
     solvename = "stackeq"
     needs_outvalues = True
+    fixed_in_span_ok = True    # X(@2025) is a node of the stacked graph
     DEFAULT_JACOBIAN = "stack"
     #: SCCs larger than this use the collapsed variable-level feedback set
     #: instead of the cycle-by-cycle FVS heuristic (which is O(n_fb * edges)
@@ -3531,6 +3646,7 @@ class ResSolver(SolverBase):
 
     solvename = "res"
     needs_outvalues = True
+    fixed_in_span_ok = True    # every reference reads the input, by design
 
     def _setup_conv(self, ctx):
         """No-op: a single evaluation pass has no convergence test."""
