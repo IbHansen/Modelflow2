@@ -290,10 +290,11 @@ class BaseModel():
                                                                    
         termswithvar = {t for (f, nt) in mega for t in nt if t.var}
 #        varnames = list({t.var for t in termswithvar})
-        # a variable at a fixed period, X(@2002), is neither lagged nor leaded
+        # a variable at a fixed period, X(2002), is neither lagged nor leaded
         termswithlag = sorted([(t.var, '0' if t.lag == '' or pt.is_fixed_lag(t.lag) else t.lag)
                               for t in termswithvar], key=lambda x: x[0])   # sorted by varname and lag
-        # the (variable, '@period') references and the periods - only the ng solvers evaluate them
+        # the (variable, period) references, the period as written ('2002', "'2002Q1'"),
+        # and the periods - only the ng solvers evaluate them
         self.fixed_terms = sorted({(t.var, t.lag) for t in termswithvar if pt.is_fixed_lag(t.lag)})
         self.fixed_periods = sorted({lag for var, lag in self.fixed_terms})
         groupedvars = groupby(termswithlag, key=lambda x: x[0])
@@ -320,7 +321,15 @@ class BaseModel():
             assigpos = nt.index(self.aequalterm)
             if any(pt.is_fixed_lag(t.lag) for t in nt[:assigpos] if t.var):
                 gc.enable()
-                raise Exception(f'A variable at a fixed period (like X(@2002)) can not be on the left hand side:\n{frml}')
+                raise Exception(f'A variable at a fixed period (like X(2002)) can not be on the left hand side:\n{frml}')
+            # a function name followed by ( is an operator term, so a variable followed by ( is
+            # a malformed lag or fixed period - X( -1 ), X( 2002 ), X(2002Q1) without quotes, the
+            # unsigned lead X(1) - or an unknown function. The generated code would fail on it.
+            if (bad := next((a.var for a, b in zip(nt, nt[1:]) if a.var and b.op == '('), None)):
+                gc.enable()
+                raise Exception(f'{bad}( : {bad} is not a function. Lags and leads are written with a sign, '
+                                f'{bad}(-1) or {bad}(+1), a fixed period as a year, {bad}(2002), or as text, '
+                                f"{bad}('2002Q1'), all without blanks:\n{frml}")
             # variables to the left of the =
             zendovar = [t.var for t in nt[:assigpos] if t.var]
             # do this formular define a matrix on the left of =
@@ -620,7 +629,7 @@ class BaseModel():
         return {v: i for i, v in enumerate(df.columns)}
 
     def fixed_period_guard(self, what):
-        ''' Only the ng solvers can evaluate a variable at a fixed period, X(@2002).
+        ''' Only the ng solvers can evaluate a variable at a fixed period, X(2002).
         Raises an exception naming *what* (the legacy evaluator) if the model has such references '''
         if getattr(self, 'fixed_periods', None):
             refs = ', '.join(f'{var}({lag})' for var, lag in self.fixed_terms[:6])
@@ -770,6 +779,7 @@ class BaseModel():
         New version to take hand of several lhs variables. Dampning is not allowed for
         this. But can easely be implemented by makeing a function to multiply tupels
         '''
+        self.fixed_period_guard('The one-period array (make_gaussline)')
         termer = self.allvar[vx]['terms']
         assigpos = self.allvar[vx]['assigpos']
         if nodamp:
@@ -805,6 +815,7 @@ class BaseModel():
     def make_resline(self, vx):
         ''' takes a list of terms and translates to a line calculating line
         '''
+        self.fixed_period_guard('The one-period array (make_resline)')
         termer = self.allvar[vx]['terms']
         assigpos = self.allvar[vx]['assigpos']
         out = []
@@ -1179,8 +1190,10 @@ class Org_model_Mixin():
         Returns a list of variable in the model matching the pattern, the pattern can be a list of patterns
 
         Args:
-            pat (string or list of strings): One or more pattern seperated by space wildcards * and ?, special pattern: #ENDO  
-        
+            pat (string or list of strings): One or more pattern seperated by space wildcards * and ?, special pattern: #ENDO
+                A pattern with a leading - removes the variables it matches: 'PAK* -*__FITTED -*_X'.
+                Only removals, like '-*__FITTED', select from all variables.
+
         Returns:
             out (list): list of variable names matching the pat.
 
@@ -1222,20 +1235,27 @@ class Org_model_Mixin():
         if debug: 
             print(f'\nPattern list after substitution:\n{patlist}') 
 
+        # A pattern with a leading - removes the variables it matches: '* -*__FITTED -*__X'.
+        # The removals are done after all selections, so their place in the list does not
+        # matter. Only removals ('-*__X') select from all variables.
+        exclude = [up[1:] for up in patlist if up.startswith('-') and len(up) > 1]
+        include = [up for up in patlist if not (up.startswith('-') and len(up) > 1)]
+        if exclude and not include:
+            include = ['*']
+
         try:
-            out = [v for  up in patlist  for v in sorted(
-                self.deslist(up[1:] ) if up.startswith('!')
-                else 
-                self.smart_filter(self.allvar.keys(), up)               
-                # fnmatch.filter(self.allvar.keys(), up.upper())                
-                )]
+            def match(up):
+                return (self.deslist(up[1:]) if up.startswith('!')
+                        else self.smart_filter(self.allvar.keys(), up))
+            out = [v for up in include for v in sorted(match(up))]
         except:
             ''' in case the model instance is an empty instance around datatframes, typical for visualization'''
-            out = [v for p in ipat for up in p.split() for v in sorted(
-                
-                fnmatch.filter(self.lastdf.columns, up.upper()) 
-                )
-                ]
+            def match(up):
+                return fnmatch.filter(self.lastdf.columns, up.upper())
+            out = [v for up in include for v in sorted(match(up))]
+        if exclude:
+            drop = {v for up in exclude for v in match(up)}
+            out = [v for v in out if v not in drop]
         return out
     
     @staticmethod
@@ -1356,7 +1376,7 @@ class Org_model_Mixin():
             varterms = [(term.var, pt.lag_value(term.lag))
                         #                            for term in self.allvar[varnavn.upper()]['terms'] if term.var]
                         for term in self.allvar[varnavn.upper()]['terms'] if term.var and not (term.var == varnavn.upper() and term.lag == '')]
-            # now we have droped dublicate terms and sorted, fixed periods (X(@2002)) after lags
+            # now we have droped dublicate terms and sorted, fixed periods (X(2002)) after lags
             sterms = sorted(set(varterms), key=lambda x: (x[0], 1, x[1]) if pt.is_fixed_lag(x[1]) else (x[0], 0, -x[1]))
             if nolag:
                 sterms = sorted({(v, 0) for v, l in sterms})
@@ -2592,7 +2612,7 @@ class Dekomp_Mixin():
         difdf = {e: smallalt - alldf[e] for e in eksperiments}
         # allres       = {e : mfrml.xgenr(alldf[e],str(e[1]),str(e[1]),silent= True ) for e in eksperiments} # now evaluate each experiment
         # now evaluate each experiment
-        # a variable at a fixed period (X(@2002)) is only evaluated by the ng xgenr
+        # a variable at a fixed period (X(2002)) is only evaluated by the ng xgenr
         xgenr = mfrml.xgenr_ng if mfrml.fixed_periods else mfrml.xgenr
         allres = {e: xgenr(
             alldf[e], e[1], e[1], silent=True) for e in eksperiments}
@@ -7257,7 +7277,7 @@ class Solver_Mixin():
             else:
                 solverguess = 'newton_un_normalized'
 
-        # a variable at a fixed period, X(@2002), is only evaluated by the ng solvers
+        # a variable at a fixed period, X(2002), is only evaluated by the ng solvers
         if getattr(self, 'fixed_periods', None):
             solverguess = {'xgenr': 'xgenr_ng', 'sim': 'sim_ng',
                            'newtonstack': 'newtonstack_ng',
@@ -9594,7 +9614,7 @@ class Solver_Mixin():
                     continue
                 seen.add(key)
 
-                if pt.is_fixed_lag(lag):        # a variable at a fixed period, X(@2002)
+                if pt.is_fixed_lag(lag):        # a variable at a fixed period, X(2002)
                     pos = pt.fixed_period_loc(self.errdump.index, lag)
                     term = f'{var}({lag})'
                 else:
@@ -10203,7 +10223,7 @@ def create_model(navn, hist=0, name='', new=True, finished=False, xmodel=model, 
 def get_a_row(df, per, lag=0):
     ''' the row number of period per shifted lag periods.
 
-    lag can also be a fixed period like '@2002' (from X(@2002)), then per does not matter'''
+    lag can also be a fixed period like '2002' (from X(2002)), then per does not matter'''
     if pt.is_fixed_lag(lag):
         return pt.fixed_period_loc(df.index, lag)
     return df.index.get_loc(per)+lag

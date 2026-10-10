@@ -80,7 +80,8 @@ def split_diffname(name,rsplit=False):
 
      - Y__P__X___LAG___1   -> ('Y','X',-1)
      - Y__P__X___LEAD___1  -> ('Y','X',1)
-     - Y__P__X___PER___2002 -> ('Y','X','@2002') the derivative with respect to X(@2002)
+     - Y__P__X___PER___2002 -> ('Y','X','2002') the derivative with respect to X(2002)
+     - Y__P__X___PER___2002_03 -> ('Y','X',"'2002-03'") with respect to X('2002-03')
 
     rsplit=True splits at the last __P__ instead of the first'''
     var,rest = name.rsplit('__P__',1) if rsplit else name.split('__P__',1)
@@ -89,7 +90,7 @@ def split_diffname(name,rsplit=False):
         return var,pvar,-int(number)
     if kind == 'LEAD':
         return var,pvar,int(number)
-    return var,pvar,'@'+number
+    return var,pvar,pt.symbol_period(number)
 
 
 class newton_diff():
@@ -201,7 +202,7 @@ class newton_diff():
     @property
     def use_res_ng(self):
         ''' The derivative model is evaluated with res_ng when asked for (ng), and when the
-        derivatives refer to variables at fixed periods (X(@2002)), which only the ng
+        derivatives refer to variables at fixed periods (X(2002)), which only the ng
         solvers evaluate'''
         return bool(self.ng) or bool(getattr(self.diff_model,'fixed_periods',None))
 
@@ -295,7 +296,9 @@ class newton_diff():
                             try:
                                 ud=str(kat.diff(sympify(pastestring(rhv, post,funks=self.mmodel.funks,onlylags=True ),clash)))
                                 ud = stripstring(ud,post,self.mmodel.funks)
-                                ud = re.sub(pt.namepat+r'(?:(\()([0-9]*)(\)))',r'\g<1>\g<2>+\g<3>\g<4>',ud) 
+                                # a lead comes back from sympy as X(1): give it its sign. Only 1 to 3 digits,
+                                # X(2002) is a variable at a fixed period (the same rule as fixleads)
+                                ud = re.sub(pt.namepat+r'(?:(\()([0-9]{1,3})(\)))',r'\g<1>\g<2>+\g<3>\g<4>',ud)
                             except:
                                 ud = numdif(self.mmodel,v,rhv,silent=self.silent)
 
@@ -431,8 +434,8 @@ class newton_diff():
                     return f'{vterm.var}___lag___{vterm.lag[1:]}'
                 elif vterm.lag[0] == '+':
                     return f'{vterm.var}___lead___{vterm.lag[1:]}'
-                else:   # a variable at a fixed period X(@2002) -> X___per___2002
-                    return f'{vterm.var}___per___{vterm.lag.lstrip("@")}'
+                else:   # a variable at a fixed period X(2002) -> X___per___2002, X('2002-03') -> X___per___2002_03
+                    return f'{vterm.var}___per___{pt.period_symbol(vterm.lag)}'
             else:
                 return f'{vterm.var}___lag___0'
             
@@ -505,13 +508,13 @@ class newton_diff():
         return dmelt
 
     def fixed_to_rowlag(self,dmelt):
-        '''Places derivatives with respect to a variable at a fixed period, X(@2002).
+        '''Places derivatives with respect to a variable at a fixed period, X(2002).
 
-        Seen from the row with number n, X(@2002) is X lagged n-p periods, where p is the number
+        Seen from the row with number n, X(2002) is X lagged n-p periods, where p is the number
         of 2002 in the evaluated periods. With this lag, which differs from row to row, the
         lag/lead arithmetic of the stacked and the one period jacobians puts the derivative in the
         column of 2002 - and in the one period jacobian of 2002 itself.
-        If 2002 is not among the evaluated periods X(@2002) is data, the lag is set to -1-n,
+        If 2002 is not among the evaluated periods X(2002) is data, the lag is set to -1-n,
         which points before the first period, so the jacobians drop it.'''
         isfixed = dmelt['lag'].map(pt.is_fixed_lag).astype(bool)
         number = {}
@@ -817,7 +820,7 @@ class newton_diff():
                                          ).loc[_per,sorted(self.diff_model.endogene)].fillna(0.0).astype('float')
 
             cname = namedtuple('cname','var,pvar,lag')
-            # lag is '@2002' for a derivative with respect to a variable at a fixed period
+            # lag is the period as written ('2002') for a derivative with respect to a variable at a fixed period
             col_vars = [cname(*split_diffname(i,rsplit=True)) for i in difres.columns]
             
             col_ident = [diff_value_col(**i._asdict(), var_plac=self.placdic[i.var],
@@ -840,7 +843,7 @@ class newton_diff():
     def get_diff_mat_all_1per(self,periode=None,df=None,asdf=False):
         dmelt = self.get_diff_melted_var(periode=periode,df=df)
         if dmelt['lag'].dtype == object:
-            # derivatives with respect to a variable at a fixed period, X(@2002),
+            # derivatives with respect to a variable at a fixed period, X(2002),
             # are not part of the lag structure
             dmelt = dmelt[~dmelt['lag'].map(pt.is_fixed_lag).astype(bool)]
         with ttimer('Prepare numpy input to sparse matrix',self.timeit):

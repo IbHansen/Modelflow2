@@ -146,8 +146,8 @@ def _grouper(iterable, n, fillvalue=""):
 
 
 def fixed_rows(m, index):
-    """``{'@2002': row}`` -- the row in *index* of every fixed period the model
-    refers to (``X(@2002)``).  Empty for a model without such references;
+    """``{'2002': row}`` -- the row in *index* of every fixed period the model
+    refers to (``X(2002)``).  Empty for a model without such references;
     raises KeyError if a period is not in the index."""
     return {lag: pt.fixed_period_loc(index, lag)
             for lag in getattr(m, "fixed_periods", ())}
@@ -157,7 +157,7 @@ def _cell(arr, t, columnsnr, fixrow):
     """Python source reading term *t* from the 2-D array *arr*.
 
     ``arr[row+lag,col]`` -- or, for a variable at a fixed period
-    (``X(@2002)``), the row of that period: a constant, so the generated code
+    (``X(2002)``), the row of that period: a constant, so the generated code
     depends on the databank index, see ``SolverBase._fixrow_changed``.
     """
     if pt.is_fixed_lag(t.lag):
@@ -354,7 +354,7 @@ def gen_1d(m, debug=0, chunk=None, ljit=False, cache="False"):
     """
     if getattr(m, "fixed_periods", None):
         raise NotImplementedError(
-            "sim1d can not evaluate variables at fixed periods (X(@2002)): its "
+            "sim1d can not evaluate variables at fixed periods (X(2002)): its "
             "stuffed one-period array only holds lags and leads. Use sim_ng.")
     short, long, longer = 4 * " ", 8 * " ", 12 * " "
     m.findpos()
@@ -611,9 +611,9 @@ class SolverBase:
     #: default value of the ``silent`` option for this solver
     DEFAULT_SILENT = 1
     #: whether an endogenous variable at a fixed period inside the solve span
-    #: (``X(@2025)`` solved 2020-2100) is handled exactly -- true for the
-    #: stacked solvers (all periods at once) and for res (input values by
-    #: design); the per-period solvers warn, see ``_check_fixed_periods``
+    #: (``X(2025)`` solved 2020-2100) is allowed -- for now only for res, which
+    #: evaluates the input values by design; every simulation refuses it, see
+    #: ``_check_fixed_periods``
     fixed_in_span_ok = False
 
     def __init__(self, model):
@@ -713,7 +713,7 @@ class SolverBase:
         # the recompilation decision in build_evaluator.
         ctx.newdata, ctx.databank = m.is_newdata(ctx.databank)
 
-        # variables at fixed periods (X(@2002)): the periods must be rows of
+        # variables at fixed periods (X(2002)): the periods must be rows of
         # the databank
         if getattr(m, "fixed_periods", None):
             self._check_fixed_periods(ctx)
@@ -732,16 +732,17 @@ class SolverBase:
 
     def _check_fixed_periods(self, ctx):
         """Check the model's references to variables at fixed periods
-        (``X(@2002)``) against the databank and the solve span.
+        (``X(2002)``) against the databank and the solve span.
 
         Every period must be a row of the databank (``fixed_rows`` raises).
-        The generated code reads ``X(@2002)`` from the databank row of 2002:
-        before the solve span that is data, inside the span the solution in
-        the periods after 2002.  A per-period solver can not do better for an
-        endogenous X: periods before 2002 read the starting value, and in
-        2002 itself the dependency is not part of the solve order.  That case
-        is printed as a warning, once for the same references, span and
-        solver; the stacked solvers handle it exactly.
+        The generated code reads ``X(2002)`` from the databank row of 2002:
+        before the solve span that is data. For an endogenous X inside the
+        span a per-period solver reads the starting value in the periods
+        before 2002, and in 2002 itself the dependency is not part of the
+        solve order - so for now a simulation with an endogenous variable at a
+        fixed period inside the span raises an exception. (The stacked
+        solvers handle it exactly, X(2025) is a column of the stacked
+        Jacobian; fixed_in_span_ok = True allows it again.)
         """
         m = ctx.model
         index = ctx.databank.index
@@ -754,22 +755,17 @@ class SolverBase:
         inside = [f"{var}({lag})" for var, lag in m.fixed_terms
                   if (var in endo or var + "___RES" in endo)
                   and first <= rows[lag] <= last]
-        if not inside:
-            return
-        key = (tuple(inside), first, last, type(self).__name__)
-        if getattr(m, "ng_fixed_inspan_warned", None) != key:
-            m.ng_fixed_inspan_warned = key
-            print(f"Warning: {', '.join(inside)} refers to an endogenous variable "
-                  f"inside the solve span {ctx.sol_periode[0]} to "
-                  f"{ctx.sol_periode[-1]}.\n"
-                  "This solver solves one period at a time: periods before the "
-                  "fixed period use its starting value, and in the fixed period "
-                  "itself the dependency is not part of the solve order.\n"
-                  "newtonstack_ng solves all periods together and handles this exactly.")
+        if inside:
+            raise Exception(
+                f"{', '.join(inside)} refers to an endogenous variable at a fixed "
+                f"period inside the solve span {ctx.sol_periode[0]} to "
+                f"{ctx.sol_periode[-1]}. That is not allowed in a simulation.\n"
+                "Solve a span without the period, or let an exogenous variable "
+                "hold the value.")
 
     def _fixrow_changed(self, cachename, databank):
         """True if the cached evaluator *cachename* was generated for other
-        rows of the fixed periods (``X(@2002)``) than those of *databank*.
+        rows of the fixed periods (``X(2002)``) than those of *databank*.
 
         The rows are compiled into the code as constants, so the same columns
         with another index (another start year) need new code.  The rows are
@@ -832,7 +828,7 @@ class SolverBase:
 
         jitname = f"{m.name}_{solvename}_jit"
         nojitname = f"{m.name}_{solvename}_nojit"
-        # rows of fixed periods (X(@2002)) are compiled into the code
+        # rows of fixed periods (X(2002)) are compiled into the code
         newdata = self._fixrow_changed(jitname if ljit else nojitname, databank) or newdata
 
         if solvename == "sim":
@@ -2462,7 +2458,7 @@ class NewtonStackSolver(SolverBase):
 
     solvename = "res"          # residual 2-D evaluator (== legacy 'newton')
     needs_outvalues = True
-    fixed_in_span_ok = True    # X(@2025) is a column of the stacked Jacobian
+    fixed_in_span_ok = False   # exact (X(2025) is a column of the stacked Jacobian), but not allowed for now
 
     def dump_order(self, ctx):
         """Dump order: the declared (base) endogenous names of the Jacobian object."""
@@ -2619,10 +2615,11 @@ class NewtonStackSolver(SolverBase):
         fulldiff = newton_diff(m, forcenum=True, df=databank, silent=True)
 
         def varlag(s):
-            # lag is an int, or '@2002' for a variable at a fixed period
+            # lag is an int, or the period as written ('2002', "'2002Q1'") for a
+            # variable at a fixed period: s is written like an equation, see tovarlag
             if "(" in s:
                 name, lag = s.split("(", 1)
-                return name, pt.lag_value(lag[:-1])
+                return name, pt.lag_value(pt.lag_field(lag[:-1]))
             return s, 0
 
         endo = m.endogene
@@ -2652,7 +2649,7 @@ class NewtonStackSolver(SolverBase):
         # stacked cycle projects to a closed walk there, and a closed walk in
         # a DAG cannot leave a node -- so mixed-sign self-dependence is the
         # only stacked cycle the collapsed test can miss.
-        # A variable depending on itself at a fixed period (x(@2025)) is also
+        # A variable depending on itself at a fixed period (x(2025)) is also
         # promoted: in that period it is its own current value.  Conservative
         # when the period is outside the span.
         selflags = {}
@@ -2979,7 +2976,7 @@ class NewtonStackFbminSolver(SolverBase):
 
     solvename = "stackeq"
     needs_outvalues = True
-    fixed_in_span_ok = True    # X(@2025) is a node of the stacked graph
+    fixed_in_span_ok = False   # exact (X(2025) is a node of the stacked graph), but not allowed for now
     DEFAULT_JACOBIAN = "stack"
     #: SCCs larger than this use the collapsed variable-level feedback set
     #: instead of the cycle-by-cycle FVS heuristic (which is O(n_fb * edges)

@@ -80,7 +80,7 @@ def dekomp_fast(
     vars_ = list(mfrml.allvar.keys())
 
     varterms = [
-        (term.var, pt.lag_value(term.lag))    # lag is '@2002' for X(@2002)
+        (term.var, pt.lag_value(term.lag))    # lag is '2002' for X(2002)
         for term in mfrml.allvar[varnavn]["terms"]
         if term.var and not (term.var == varnavn and term.lag == "")
     ]

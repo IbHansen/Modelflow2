@@ -1361,9 +1361,10 @@ def replace_c_params(equation: str, est_param: str = "C") -> str:
         - Allows negative indices in parentheses (consistent with your original code).
     """
     # 1) Convert C(n) -> {est_param}__n
-    equation = re.sub(r'C\((\-?\d+)\)', rf'{est_param}__\1', equation)
+    # \b: PC(-1) and PC(2002) are the variable PC, not P followed by the coefficient C(n)
+    equation = re.sub(r'\bC\((\-?\d+)\)', rf'{est_param}__\1', equation)
     # 2) Also convert {est_param}(n) -> {est_param}__n
-    equation = re.sub(rf'{re.escape(est_param)}\((\-?\d+)\)', rf'{est_param}__\1', equation)
+    equation = re.sub(rf'\b{re.escape(est_param)}\((\-?\d+)\)', rf'{est_param}__\1', equation)
     return equation
 
 

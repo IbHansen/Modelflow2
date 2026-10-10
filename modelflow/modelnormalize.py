@@ -134,7 +134,7 @@ def funk_check_arg(funk,arg,udtryk,udtryk_up):
 
     A lagged variable with a function name, fx DIFF(-1), matches DIFF( and would
     silently be swallowed as a function call. If the argument is a pure signed
-    integer it must be such a lag - and @2002 a fixed period - so raise an informative error instead.'''
+    integer it must be such a lag - or a fixed period like 2002 - so raise an informative error instead.'''
     if re.fullmatch(r'[+-]?\d+|' + fixedpat,arg.replace(' ','')):
         raise Exception(f"A variable can not be named {funk}, as {funk}( is a function in the business language.\n"
                         f"{funk}({arg}) looks like the variable {funk} with a lag or at a fixed period. Rename the variable.\n"
@@ -207,8 +207,11 @@ def preprocess(udtryk,funks=[]):
     return udtryk_up         
  
 def fixleads(eq,check=False):
-   ''' Eviews leads without sign X(1) -> X(+1). A variable at a fixed period X(@2002) is not touched'''
-   leadpat      = r'(?:\(([0-9]+)\))'
+   ''' Eviews leads without sign X(1) -> X(+1).
+
+   Only 1 to 3 digits: an unsigned number with 4 or more digits is a fixed period,
+   X(2002), which is not touched (nor is X('2002Q1'))'''
+   leadpat      = r'(?:\(([0-9]{1,3})\))'
    this = eq.replace(' ','').replace('\n','')
    res = re.sub(namepat+leadpat,r'\g<1>(+\g<2>)',this)
    if check:

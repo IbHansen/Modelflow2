@@ -32,9 +32,13 @@ class FrmlParts(NamedTuple):
 # names and lags
 namepat_ng  = r'(?:[A-Za-z_{][A-Za-z_{}0-9]*)'     # a name non grouped
 namepat     = r'(' + namepat_ng + ')' # a name  grouped
-# a variable at a fixed period: X(@2002), X(@2002Q1), X(@2002M3).
-# The period is kept with its @ in the lag field of the term ('@2002')
-fixedpat    = r'@[0-9]+(?:[QqMm][0-9]+)?'
+# a variable at a fixed period: X(2002) - an unsigned number with at least 4 digits, as a lag
+# or lead always has a sign - or X('2002Q1'), X('2002-03'): the period as text, the key which
+# indexes the dataframe like in df.loc['2002Q1']. Both are legal Python.
+# The lag field of a term keeps the period as it is written, '2002' or "'2002Q1'" (see lag_field).
+# A lag or lead has a sign, a fixed period is 4+ digits or text in quotes (is_fixed_lag).
+# Use lag_value, not int(), on a lag field: int('2002') would read a lead.
+fixedpat    = r"[0-9]{4,}|'[0-9][0-9A-Za-z-]*'|\"[0-9][0-9A-Za-z-]*\""
 lagpat      = r'(?:\(([+-][0-9]+|' + fixedpat + r')\))?'
 
 # comments 
@@ -198,7 +202,7 @@ def model_parse(equations,funks=[]):
     # nterm = namedtuple('nterm', [ 'number', 'op', 'var', 'lag'])
     expressionre= udtrykre(funks)
     ibh = [(fatoms(*c),
-            [ nterm(t[0],t[1],t[2], '' if t[3] == '-0' or t[3]=='+0' else t[3]) for t in expressionre.findall(c[3])])  
+            [ nterm(t[0],t[1],t[2], lag_field(t[3])) for t in expressionre.findall(c[3])])
            for c in (split_frml(f)  for f in find_frml(equations.upper()) )]
     return ibh
 
@@ -381,23 +385,51 @@ def udtryk_parse(udtryk,funks=[]):
     temp=re.sub(r'\s+', '', udtryk.upper()) # remove all blanks 
     xxx = udtrykre(funks=funks).findall(temp) # the compiled re pattern is importet from pattern 
  # her laver vi det til en named tuple
-    ibh = [nterm(t[0],t[1],t[2], '' if t[3] == '-0' or t[3]=='+0' else t[3]) for t in xxx]
+    ibh = [nterm(t[0],t[1],t[2], lag_field(t[3])) for t in xxx]
     # ibh = [nterm._make(t) for t in xxx]   # Easier to remember by using named tupels .
     return ibh
 
+def lag_field(lag):
+    ''' The lag field of a term from the text in the parentheses: '' for no lag and for -0/+0,
+    the signed lag '-1', '+2', or a fixed period as it is written: '2002' for X(2002),
+    "'2002Q1'" for X('2002Q1'). A year in quotes, X('2002'), is the year '2002', and double
+    quotes become single quotes '''
+    if lag == '-0' or lag == '+0':
+        return ''
+    if lag[:1] in ('"', "'"):
+        per = lag[1:-1]
+        return per if re.fullmatch(r'[0-9]{4,}', per) else f"'{per}'"
+    return lag
+
+def period_text(lag):
+    ''' The period of a fixed period lag field without quotes: '2002' -> '2002', "'2002Q1'" -> '2002Q1' '''
+    return lag.strip("'")
+
+def period_symbol(lag):
+    ''' A fixed period as a part of a name: '2002' -> '2002', "'2002Q1'" -> '2002Q1',
+    "'2002-03'" -> '2002_03'. For the names which stand for X(2002) in sympy and in the
+    derivative model. symbol_period reverses it '''
+    return period_text(lag).replace('-', '_')
+
+def symbol_period(text):
+    ''' The lag field from a part of a name made by period_symbol: '2002_03' -> "'2002-03'", '2002' -> '2002' '''
+    return lag_field("'" + text.replace('_', '-') + "'")
+
 def is_fixed_lag(lag):
-    ''' True if the lag field of a term is a fixed period, like '@2002' from X(@2002) '''
-    return isinstance(lag, str) and lag[:1] == '@'
+    ''' True if the lag field of a term is a fixed period: '2002' from X(2002), "'2002Q1'" from
+    X('2002Q1') - at least 4 digits or text in quotes, as lag_field makes them.
+    A lag or lead has a sign, the current period is '' '''
+    return isinstance(lag, str) and (lag[:1] == "'" or (len(lag) >= 4 and lag.isdigit()))
 
 def lag_value(lag):
     ''' The lag field of a term as a value: an int (0 for the current period), or for a
-    variable at a fixed period the period with its @ ('@2002') '''
+    variable at a fixed period the period as written ('2002', "'2002Q1'") '''
     if is_fixed_lag(lag):
         return lag
     return int(lag) if lag else 0
 
 def fixed_period_loc(index, lag):
-    ''' Row number in a pandas index of a fixed period like '@2002' or '@2002Q1'.
+    ''' Row number in a pandas index of a fixed period like '2002' or "'2002Q1'" (a lag field).
 
     The period is looked up as an integer in an integer index (annual models), else as
     text which pandas parses for a period or datetime index.
@@ -405,7 +437,7 @@ def fixed_period_loc(index, lag):
     import numbers
     from pandas.api.types import is_integer_dtype, is_object_dtype
 
-    per = lag[1:] if is_fixed_lag(lag) else str(lag)
+    per = period_text(lag) if isinstance(lag, str) else str(lag)
     keys = []
     if per.isdigit() and (is_integer_dtype(index.dtype) or is_object_dtype(index.dtype)):
         keys.append(int(per))
@@ -422,7 +454,7 @@ def fixed_period_loc(index, lag):
         loc = loc.start      # a partial string match on a datetime index
     if not isinstance(loc, numbers.Integral):
         span = f' ({index[0]} to {index[-1]})' if len(index) else ''
-        raise KeyError(f'The period {per} in a reference like X(@{per}) is not a row in the dataframe index{span}')
+        raise KeyError(f'The period {per} in a reference like X({lag}) is not a row in the dataframe index{span}')
     return int(loc)
 
 def kw_frml_name(frml_name0, kw,default=None):

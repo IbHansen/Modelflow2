@@ -157,9 +157,10 @@ def replace_c_params(equation: str, est_param: str = "C") -> str:
     accepted. Negative indices are preserved. When ``est_param == "C"`` the
     second pass is a no-op.
     """
-    equation = re.sub(r'C\((-?\d+)\)', rf'{est_param}__\1', equation)
+    # \b: PC(-1) and PC(2002) are the variable PC, not P followed by the coefficient C(n)
+    equation = re.sub(r'\bC\((-?\d+)\)', rf'{est_param}__\1', equation)
     if est_param != "C":
-        equation = re.sub(rf'{re.escape(est_param)}\((-?\d+)\)',
+        equation = re.sub(rf'\b{re.escape(est_param)}\((-?\d+)\)',
                           rf'{est_param}__\1', equation)
     return equation
 
