@@ -37,7 +37,7 @@ import numpy as np
 import numpy.linalg as linalg
 import sys
 
-from modelmanipulation import split_frml,udtryk_parse,find_arg,stripstring,pastestring 
+from modelmanipulation import split_frml,udtryk_parse,find_arg,has_funk,stripstring,pastestring
 from modelclass import model 
 from modelmanipulation import normalize
 import modelclass as mc
@@ -414,10 +414,10 @@ def settozero(instring):
     '''
     value=instring[:].upper()
     try:
-        while 'SUBS(' in value:
+        while has_funk('SUBS', value):
             forsum, sumudtryk, eftersum = find_arg('SUBS', value)
             value = forsum + '0' + eftersum
-        while 'DERIVATIVE(' in value:
+        while has_funk('DERIVATIVE', value):
             forsum, sumudtryk, eftersum = find_arg('DERIVATIVE', value)
             value = forsum + '0' + eftersum
     except:

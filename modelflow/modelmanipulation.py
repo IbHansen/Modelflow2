@@ -361,18 +361,27 @@ def dounloop(in_equations,listin=False):
     return equations
 
 #%
+def funk_pattern(funk):
+    ''' funk( not preceded by a character of a name, so CONSUM( is not SUM( '''
+    return re.compile(r'(?<![A-Z0-9_{}])' + re.escape(funk.upper()) + r'\(')
+
+def has_funk(funk, streng):
+    ''' True if the function funk is called in streng '''
+    return bool(funk_pattern(funk).search(streng.upper()))
+
 def find_arg(funk, streng):
     '''  chops a string in 3 parts \n
-    1. before 'funk(' 
+    1. before 'funk('
 
-    2. in the matching parantesis 
+    2. in the matching parantesis
 
-    3. after the last matching parenthesis '''
-    tfunk, tstreng = funk.upper(), streng.upper()
-    tfunk = tfunk + '('
-    if tfunk in tstreng:
-        start = tstreng.find(tfunk)
-        match = tstreng[start + len(tfunk):]
+    3. after the last matching parenthesis
+
+    funk inside a variable name is not found: SUM in CONSUM(-1) '''
+    tstreng = streng.upper()
+    if (funk_match := funk_pattern(funk).search(tstreng)):
+        start = funk_match.start()
+        match = tstreng[funk_match.end():]
         open = 1
         for index in range(len(match)):
             if match[index] in '()':
@@ -392,7 +401,7 @@ def sumunroll_old(in_equations,listin=False):
         if comment:
             nymodel.append(comment)
         else:
-            while 'SUM(' in value.upper():
+            while has_funk('SUM', value):
                 forsum, sumudtryk, eftersum = find_arg('sum', value.upper())
                 sumover, sumled = sumudtryk.split(',', 1)
                 current_dict = liste_dict[sumover]
@@ -412,7 +421,7 @@ def lagarray_unroll(in_equations,funks=[]):
         if comment:
             nymodel.append(comment)
         else:
-            while 'LAG_ARRAY(' in value:
+            while has_funk('LAG_ARRAY', value):
                 forlag, lagudtryk, efterlag = find_arg('LAG_ARRAY', value.upper())
                 lagnumber, lagled = lagudtryk.split(',', 1)
                 ibsud = lag_n_tup(lagled,int(lagnumber),funks=funks)
@@ -435,7 +444,7 @@ def sumunroll(in_equations,listin=False):
         if comment:
             nymodel.append(comment)
         else:
-            while 'SUM(' in value.upper():
+            while has_funk('SUM', value):
                 forsum, sumudtryk, eftersum = find_arg('sum', value.upper())
                 suminit, sumled = sumudtryk.split(',', 1)
                 
@@ -487,7 +496,7 @@ def funkunroll(in_equations,funk='MAX',listin=False,replacefunk=''):
             nymodel.append(comment)
         else:
             hit=False
-            while f'{funk.upper()}(' in value.upper():
+            while has_funk(funk, value):
                 hit=True
                 forsum, sumudtryk, eftersum = find_arg(f'{funk.upper()}', value.upper())
                 suminit, sumled = sumudtryk.split(',', 1)
@@ -533,7 +542,7 @@ def argunroll(in_equations,listin=False):
         if comment:
             nymodel.append(comment)
         else:
-            while 'ARGEXPAND(' in value.upper():
+            while has_funk('ARGEXPAND', value):
                 forsum, sumudtryk, eftersum = find_arg('ARGEXPAND', value.upper())
                 sumover, sumled = sumudtryk.split(',', 1)
                 current_dict = liste_dict[sumover]
@@ -554,7 +563,7 @@ def creatematrix(in_equations,listin=False):
         if comment:
             nymodel.append(comment)
         else:
-            while 'TO_MATRIX(' in value.upper():
+            while has_funk('TO_MATRIX', value):
                 forcreate, createudtryk, eftercreate = find_arg('TO_MATRIX', value.upper())
                 temp        = createudtryk.split(',', 2)
                 mat_name    = temp[-1]
@@ -583,7 +592,7 @@ def createarray(in_equations,listin=False):
         if comment:
             nymodel.append(comment)
         else:
-            while 'TO_ARRAY(' in value.upper():
+            while has_funk('TO_ARRAY', value):
                 forcreate, createudtryk, eftercreate = find_arg('TO_ARRAY', value.upper())
                 temp        = createudtryk.split(',', 2)
                 mat_name    = temp[-1]
@@ -613,7 +622,7 @@ def kaedeunroll(in_equations,funks=[]):
             nymodel.append(comment)
         elif command=='FRML':
             a,fr,n,udtryk=split_frml((command+' '+value).upper())
-            while  'KAEDE(' in udtryk.upper():
+            while  has_funk('KAEDE', udtryk):
                 forkaede,kaedeudtryk,efterkaede=find_arg('KAEDE',udtryk)
                 arg=kaedeudtryk.split(',')
                 taller,navner='(','('
@@ -625,7 +634,7 @@ def kaedeunroll(in_equations,funks=[]):
                 taller=taller[:-1]+')'   
                 #print(taller,'/',navner)
                 udtryk=forkaede+'('+taller+'/'+navner+')'+efterkaede 
-            while  'KAEDEP(' in udtryk.upper():
+            while  has_funk('KAEDEP', udtryk):
                 forkaede,kaedeudtryk,efterkaede=find_arg('KAEDEP',udtryk)
                 arg=kaedeudtryk.split(',')
                 #print(arg,len(arg)/2)
@@ -638,7 +647,7 @@ def kaedeunroll(in_equations,funks=[]):
                 taller=taller[:-1]+')'   
                 #print(taller,'/',navner)
                 udtryk=forkaede+'('+taller+'/'+navner+')'+efterkaede 
-            while  'MOVAVG(' in udtryk.upper():
+            while  has_funk('MOVAVG', udtryk):
                 forkaede,kaedeudtryk,efterkaede=find_arg('MOVAVG',udtryk)
                 arg=kaedeudtryk.split(',',1)
                 avg='(('
@@ -801,13 +810,13 @@ def normalize(in_equations,sym=False,funks=[]):
                 nymodel.append(comment)
             elif command=='FRML':
                 a,fr,n,udtryk=split_frml((command+' '+value).upper())
-                while  'DLOG(' in udtryk.upper():
+                while  has_funk('DLOG', udtryk):
                     fordlog,dlogudtryk,efterdlog=find_arg('dlog',udtryk)
                     udtryk=fordlog+'diff(log('+dlogudtryk+'))'+efterdlog           
-                while  'LOGIT(' in udtryk.upper():
+                while  has_funk('LOGIT', udtryk):
                     forlogit,logitudtryk,efterlogit=find_arg('LOGIT',udtryk)
                     udtryk=forlogit+'(log(('+logitudtryk+')/(1.0-('+logitudtryk+'))))'+efterlogit
-                while  'DIFF(' in udtryk.upper():
+                while  has_funk('DIFF', udtryk):
                     fordif,difudtryk,efterdif=find_arg('diff',udtryk)
                     udtryk=fordif+'(('+difudtryk+')-('+lagone(difudtryk+'',funks=funks)+'))'+efterdif           
                 nymodel.append(command+' '+n+' '+findendo(udtryk))
@@ -854,10 +863,10 @@ def normalize(in_equations,sym=False,funks=[]):
                     pass
 #                    print('*** Try to normalize relation for:',lhs)
                 # now the right hand side is expanded for DLOG and DIFF
-                while  'DLOG(' in udtryk.upper():
+                while  has_funk('DLOG', udtryk):
                     fordlog,dlogudtryk,efterdlog=find_arg('dlog',udtryk)
                     udtryk=fordlog+'diff(log('+dlogudtryk+'))'+efterdlog           
-                while  'DIFF(' in udtryk.upper():
+                while  has_funk('DIFF', udtryk):
                     fordif,difudtryk,efterdif=find_arg('diff',udtryk)
                     udtryk=fordif+'(('+difudtryk+')-('+lagone(difudtryk+'',funks=funks)+'))'+efterdif           
                 nymodel.append(command+' '+n+' '+udtryk)

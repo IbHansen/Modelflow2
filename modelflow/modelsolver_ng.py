@@ -687,8 +687,8 @@ class SolverBase:
         silent = opts.get("silent", self.DEFAULT_SILENT)
         starttimesetup = time.time()
 
-        fairopt = opts.get("fairopt", {"fair_max_iterations ": 1})
-        fair_max_iterations = {**fairopt, **opts}.get("fair_max_iterations ", 1)
+        fairopt = opts.get("fairopt", {"fair_max_iterations": 1})
+        fair_max_iterations = {**fairopt, **opts}.get("fair_max_iterations", 1)
 
         sol_periode = m.smpl(start, end, databank)
         m.check_sim_smpl(databank)

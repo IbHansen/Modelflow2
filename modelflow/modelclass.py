@@ -7477,7 +7477,7 @@ class Solver_Mixin():
             max_iterations=200, conv='*', absconv=0.01, relconv=DEFAULT_relconv,
             stringjit=False, transpile_reset=False,
             dumpvar='*', init=False, ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, timeon=False,
-            fairopt={'fair_max_iterations ': 1}, progressbar=False,**kwargs):
+            fairopt={'fair_max_iterations': 1}, progressbar=False,**kwargs):
         '''
         Evaluates this model on a databank from start to end (means end in Danish). 
 
@@ -7547,7 +7547,7 @@ class Solver_Mixin():
         
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
-                               kwargs}.get('fair_max_iterations ', 1)
+                               kwargs}.get('fair_max_iterations', 1)
         sol_periode = self.smpl(start, end, databank)
         # breakpoint()
         self.check_sim_smpl(databank)
@@ -7871,7 +7871,7 @@ class Solver_Mixin():
     def sim1d(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1,
               max_iterations=100, conv='*', absconv=1.0, relconv=DEFAULT_relconv, init=False,
               dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=True, transpile_reset=False,
-              fairopt={'fair_max_iterations ': 1}, timeon=0, **kwargs):
+              fairopt={'fair_max_iterations': 1}, timeon=0, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
@@ -7885,7 +7885,7 @@ class Solver_Mixin():
         '''
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
-                               kwargs}.get('fair_max_iterations ', 1)
+                               kwargs}.get('fair_max_iterations', 1)
         sol_periode = self.smpl(start, end, databank)
 
         self.check_sim_smpl(databank)
@@ -8132,7 +8132,7 @@ class Solver_Mixin():
                max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False, newton_reset=1,
                dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False, init=False,
                newtonalfa=1.0, newtonnodamp=0, forcenum=True,
-               fairopt={'fair_max_iterations ': 1}, **kwargs):
+               fairopt={'fair_max_iterations': 1}, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
 
         First it finds the values in the Dataframe, then creates the evaluater function through the *outeval* function 
@@ -8147,7 +8147,7 @@ class Solver_Mixin():
     #    print('new nwwton')
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
-                               kwargs}.get('fair_max_iterations ', 1)
+                               kwargs}.get('fair_max_iterations', 1)
         sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
 
@@ -8305,7 +8305,7 @@ class Solver_Mixin():
     def newtonstack(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                     max_iterations=20, conv='*', absconv=1., relconv=DEFAULT_relconv,
                     dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=30, ljit=False, stringjit=False, transpile_reset=False, nljit=0,
-                    fairopt={'fair_max_iterations ': 1}, debug=False, timeit=False, nonlin=False,
+                    fairopt={'fair_max_iterations': 1}, debug=False, timeit=False, nonlin=False,
                     newtonalfa=1.0, newtonnodamp=0, forcenum=True, newton_reset=False, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
 
@@ -8323,7 +8323,7 @@ class Solver_Mixin():
         diffcount = 0
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
-                               kwargs}.get('fair_max_iterations ', 1)
+                               kwargs}.get('fair_max_iterations', 1)
         sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
 
@@ -8479,7 +8479,7 @@ class Solver_Mixin():
     def newton_un_normalized(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                              max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv, nonlin=False, timeit=False, newton_reset=1,
                              dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False,
-                             fairopt={'fair_max_iterations ': 1},
+                             fairopt={'fair_max_iterations': 1},
                              newtonalfa=1.0, newtonnodamp=0, forcenum=True, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
 
@@ -8495,7 +8495,7 @@ class Solver_Mixin():
     #    print('new nwwton')
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
-                               kwargs}.get('fair_max_iterations ', 1)
+                               kwargs}.get('fair_max_iterations', 1)
         sol_periode = self.smpl(start, end, databank)
         # breakpoint()
         self.check_sim_smpl(databank)
@@ -8652,7 +8652,7 @@ class Solver_Mixin():
     def newtonstack_un_normalized(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                                   max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv,
                                   dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=None, ljit=False, nljit=0, stringjit=False, transpile_reset=False,
-                                  fairopt={'fair_max_iterations ': 1}, debug=False, timeit=False, nonlin=False,
+                                  fairopt={'fair_max_iterations': 1}, debug=False, timeit=False, nonlin=False,
                                   newtonalfa=1.0, newtonnodamp=0, forcenum=True, newton_reset=False, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
 
@@ -8670,7 +8670,7 @@ class Solver_Mixin():
         diffcount = 0
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
-                               kwargs}.get('fair_max_iterations ', 1)
+                               kwargs}.get('fair_max_iterations', 1)
         sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
 
@@ -8837,7 +8837,7 @@ class Solver_Mixin():
     def newtonstack_implicit(self, databank, start='', end='', silent=1, samedata=0, alfa=1.0, stats=False, first_test=1, newton_absconv=0.001,
                                   max_iterations=20, conv='*', absconv=1.0, relconv=DEFAULT_relconv,
                                   dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5, chunk=30, nchunk=None, ljit=False, nljit=0, stringjit=False, transpile_reset=False,
-                                  fairopt={'fair_max_iterations ': 1}, debug=False, timeit=False, nonlin=False,
+                                  fairopt={'fair_max_iterations': 1}, debug=False, timeit=False, nonlin=False,
                                   newtonalfa=1.0, newtonnodamp=0, forcenum=True, newton_reset=False, **kwargs):
         '''Evaluates this model on a databank from start to end (means end in Danish). 
 
@@ -8855,7 +8855,7 @@ class Solver_Mixin():
         diffcount = 0
         starttimesetup = time.time()
         fair_max_iterations = {**fairopt, **
-                               kwargs}.get('fair_max_iterations ', 1)  # only used for the dump 
+                               kwargs}.get('fair_max_iterations', 1)  # only used for the dump 
         sol_periode = self.smpl(start, end, databank)
         self.check_sim_smpl(databank)
 
@@ -9042,7 +9042,7 @@ class Solver_Mixin():
             newton_reset=False, dumpvar='*', ldumpvar=False, dumpwith=15, dumpdecimal=5,
             chunk=30, ljit=False, stringjit=False, transpile_reset=False, lnjit=False,
             init=False, newtonalfa=1.0, newtonnodamp=0, forcenum=False,
-            fairopt={'fair_max_iterations ': 1}, **kwargs):
+            fairopt={'fair_max_iterations': 1}, **kwargs):
         """
         Unified Newton solver supporting both:
           - normalized equations:    y = F(y, x)
@@ -9092,7 +9092,7 @@ class Solver_Mixin():
         starttimesetup = time.time()
     
         # --- FAIR options ------------------------------------------------------
-        fair_max_iterations = {**fairopt, **kwargs}.get('fair_max_iterations ', 1)
+        fair_max_iterations = {**fairopt, **kwargs}.get('fair_max_iterations', 1)
     
         # --- Sample & consistency checks ---------------------------------------
         sol_periode = self.smpl(start, end, databank)
