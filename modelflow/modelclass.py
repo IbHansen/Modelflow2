@@ -2532,8 +2532,7 @@ class Dekomp_Mixin():
     '''This class defines methods and properties related to equation attribution analyses (dekomp)
     '''
 
-    @lru_cache(maxsize=2048)
-    def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
+    def _dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
         '''Print all variables that determines input variable (varnavn)
         optional -- enter period and databank to get var values for chosen period
         Optionally, enter the period and databank to get variable values for the chosen period.
@@ -2584,9 +2583,10 @@ class Dekomp_Mixin():
          
         old_start, old_end = altdf_.index.slice_locs(
             print_per[0], print_per[-1])
-        new_start = max(0, old_start-1)
-        new_end = min(len(self.basedf.index), old_end)
-        calc_per = self.basedf.index[new_start:new_end]
+        # one period before print_per for the growth rates, but not before the lags of the equation exist
+        new_start = max(-mfrml.maxlag, old_start-1)
+        new_end = min(len(altdf_.index), old_end)
+        calc_per = altdf_.index[new_start:new_end]
 
         # print(print_per)
         # print(calc_per)
@@ -2698,8 +2698,8 @@ class Dekomp_Mixin():
                 float_format=lambda x: '{0:9.0f}%'.format(x)))
             
             print('\n Difference in growth rate', varnavn)
-            print(print(diff_growth.to_string(na_rep=' ',
-                float_format=lambda x: '{0:9.1f}%'.format(x))))
+            print(diff_growth.to_string(na_rep=' ',
+                float_format=lambda x: '{0:9.1f}%'.format(x)))
             
             print('\n Contribution to growth rate', varnavn)
             print(att_growth.to_string(na_rep=' ',
@@ -2709,6 +2709,20 @@ class Dekomp_Mixin():
         dekomp_res_name  = namedtuple('dekompres', 'diff_level, att_level, att_pct, ,diff_growth , att_growth')
         dekomp_res = dekomp_res_name(diff_level, att_level, att_pct, diff_growth, att_growth )
         return dekomp_res
+
+    _dekomp_cached = lru_cache(maxsize=2048)(_dekomp)
+
+    def dekomp(self, varnavn, start='', end='', basedf=None, altdf=None, lprint=True,time_att=False):
+        if isinstance(basedf, pd.DataFrame) or isinstance(altdf, pd.DataFrame):
+            # a special case, not used by the graph walking - and a dataframe can not be a cache key
+            return self._dekomp(varnavn, start, end, basedf, altdf, lprint, time_att)
+        # the actual periods in the cache key, so a changed smpl is not served from the cache
+        start_ = start if start != '' else self.current_per[0]
+        end_ = end if end != '' else self.current_per[-1]
+        return self._dekomp_cached(varnavn, start_, end_, None, None, lprint, time_att)
+
+    dekomp.__doc__ = _dekomp.__doc__
+    dekomp.cache_clear = _dekomp_cached.cache_clear   # model.dekomp.cache_clear() as before
 
     def impact(self, var, ldekomp=False, leq=False, adverse=None, base=None, maxlevel=3, start='', end=''):
         for v in self.treewalk(self.endograph, var.upper(), parent='start', lpre=True, maxlevel=maxlevel):
