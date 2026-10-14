@@ -60,6 +60,8 @@ Locations: [modelsolver_ng.py:662](/C:/modelflow2/modelflow/modelsolver_ng.py:66
 
 Reproductions: `convergence`, `nanconv`.
 
+**Follow-up recorded 11 October 2026 — fix to implement later:** Update `itbefore` on every non-breaking iteration, including the warm-up iterations before `first_test`. The first convergence test must compare the current sweep with the previous sweep, not with the initial values. Apply this consistently to legacy and newer 1D/2D Gauss–Seidel paths (`sim`, `sim_ng`, `sim1d`, `sim1d_ng`). Increasing `first_test` is not the fix; keep its existing timing semantics unless separately requested. Verify with the zero-initialized two-variable cycle above. Non-finite values and the small-value tolerance policy remain separate aspects of F2 to address explicitly. This records the fix only; no production changes have been made.
+
 ### F3 — P1: Solver caches share one column-layout marker
 
 Locations: [modelclass.py:7443](/C:/modelflow2/modelflow/modelclass.py:7443), [modelsolver_ng.py:1034](/C:/modelflow2/modelflow/modelsolver_ng.py:1034), [modelsolver_ng.py:879](/C:/modelflow2/modelflow/modelsolver_ng.py:879).

@@ -1770,13 +1770,12 @@ class NewtonSolverOld(SolverBase):
 
             ctx.iteration = iteration
             ctx.convergence = converged
-            if not silent:
-                if not converged:
-                    print(f"{m.periode} not converged in {iteration + 1} iterations "
-                          f"(max res~{newton_conv:,.6g})")
-                else:
-                    print(f"{m.periode} solved in {iteration + 1} iterations "
-                          f"(max res~{newton_conv:,.6g})")
+            if not converged:
+                print(f"{m.periode} not converged in {iteration + 1} iterations "
+                      f"(max res~{newton_conv:,.6g})")
+            elif not silent:
+                print(f"{m.periode} solved in {iteration + 1} iterations "
+                      f"(max res~{newton_conv:,.6g})")
 
     def stats_lines(self, ctx):
         """Per-period Newton timing / floating-point-operation statistics."""
@@ -2008,7 +2007,7 @@ class NewtonSolver(SolverBase):
 
             ctx.iteration = iteration
             ctx.convergence = converged
-            if not silent:
+            if not converged or not silent:
                 word = "solved" if converged else "NOT converged"
                 print(f"{m.periode} {word} in {iteration + 1} iterations "
                       f"(max res~{newton_conv:,.6g})")
@@ -2423,13 +2422,12 @@ class NewtonFbminSolver(SolverBase):
 
             ctx.iteration = iteration
             ctx.convergence = converged
-            if not silent:
-                if not converged:
-                    print(f"{m.periode} not converged in {iteration + 1} outer "
-                          f"iterations (last outer res~{outer_res:,.6g})")
-                else:
-                    print(f"{m.periode} solved in {iteration + 1} outer "
-                          f"iterations (last outer res~{outer_res:,.6g})")
+            if not converged:
+                print(f"{m.periode} not converged in {iteration + 1} outer "
+                      f"iterations (last outer res~{outer_res:,.6g})")
+            elif not silent:
+                print(f"{m.periode} solved in {iteration + 1} outer "
+                      f"iterations (last outer res~{outer_res:,.6g})")
 
     def stats_lines(self, ctx):
         """Reduced-Newton statistics: size of the feedback system vs the core,
@@ -2863,11 +2861,10 @@ class NewtonStackSolver(SolverBase):
             for i, periode in enumerate(ctx.sol_periode):
                 self._record_residual(ctx, periode, eqnames, resmat[i])
 
-        if not silent:
-            if not ctx.convergence:
-                print(f"Not converged in {iteration} iterations")
-            else:
-                print(f"Solved in {iteration} iterations")
+        if not ctx.convergence:
+            print(f"Not converged in {iteration} iterations")
+        elif not silent:
+            print(f"Solved in {iteration} iterations")
 
     def stats_lines(self, ctx):
         """Stacked Newton timing / floating-point-operation statistics (model +
@@ -3423,13 +3420,12 @@ class NewtonStackFbminSolver(SolverBase):
                 index=pd.MultiIndex.from_tuples(
                     m.ng_stackfbmin_fb, names=["per", "var"]))
 
-        if not silent:
-            if converged:
-                print(f"Solved in {iteration + 1} outer iterations "
-                      f"(last max res~{newton_conv:,.6g})")
-            else:
-                print(f"Not converged in {iteration + 1} outer iterations "
-                      f"(last max res~{newton_conv:,.6g})")
+        if not converged:
+            print(f"Not converged in {iteration + 1} outer iterations "
+                  f"(last max res~{newton_conv:,.6g})")
+        elif not silent:
+            print(f"Solved in {iteration + 1} outer iterations "
+                  f"(last max res~{newton_conv:,.6g})")
 
     def stats_lines(self, ctx):
         """Stacked fbmin statistics: size of the stacked feedback set vs the

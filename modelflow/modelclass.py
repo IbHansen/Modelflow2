@@ -8195,6 +8195,7 @@ class Solver_Mixin():
 
                 itbefore = [values[row, c] for c in convplace]
                 self.pronew2d(values, values,  row,  alfa)
+                convergence = False
                 for iteration in range(max_iterations):
                     with self.timer(f'sim per:{self.periode} it:{iteration}', timeit) as xxtt:
                         before = values[row, newton_col]
@@ -8206,6 +8207,7 @@ class Solver_Mixin():
                             print(
                                 f'Iteration  {iteration} Sum of distances {newton_conv:>{15},.{6}f}')
                         if newton_conv <= newton_absconv:
+                            convergence = True
                             break
                         # breakpoint()
                         if iteration != 0 and nonlin and not (iteration % nonlin):
@@ -8244,12 +8246,11 @@ class Solver_Mixin():
     #                        itbefore=itafter
                 self.epinew2d(values, values, row,  alfa)
 
-                if not silent:
-                    if not convergence:
-                        print(
-                            f'{self.periode} not converged in {iteration} iterations')
-                    else:
-                        print(f'{self.periode} Solved in {iteration} iterations')
+                if not convergence:
+                    print(
+                        f'{self.periode} not converged in {iteration} iterations')
+                elif not silent:
+                    print(f'{self.periode} Solved in {iteration} iterations')
 
         if ldumpvar:
             self.dumpdf = pd.DataFrame(self.dumplist)
@@ -8421,11 +8422,10 @@ class Solver_Mixin():
     #                        itbefore=itafter
 #                self.epistack2d(values, values, row ,  alfa )
 
-        if not silent:
-            if not convergence:
-                print(f'Not converged in {iteration} iterations')
-            else:
-                print(f'Solved in {iteration} iterations')
+        if not convergence:
+            print(f'Not converged in {iteration} iterations')
+        elif not silent:
+            print(f'Solved in {iteration} iterations')
 
         if ldumpvar:
             self.dumpdf = pd.DataFrame(self.dumplist)
@@ -8536,6 +8536,7 @@ class Solver_Mixin():
 
                 itbefore = [values[row, c] for c in convplace]
                 self.pronew2d(values, values,  row,  alfa)
+                convergence = False
                 for iteration in range(max_iterations):
                     with self.timer(f'sim per:{self.periode} it:{iteration}', 0) as xxtt:
                         before = values[row, newton_col_endo]
@@ -8553,6 +8554,7 @@ class Solver_Mixin():
                             print(
                                 f'Iteration  {iteration} Sum of distances {newton_conv:>{15},.{6}f}')
                         if newton_conv <= newton_absconv:
+                            convergence = True
                             break
                         if iteration != 0 and nonlin and not (iteration % nonlin):
                             with self.timer('Updating solver', timeit) as t3:
@@ -8591,12 +8593,11 @@ class Solver_Mixin():
     #                        itbefore=itafter
                 self.epinew2d(values, values, row,  alfa)
 
-                if not silent:
-                    if not convergence:
-                        print(
-                            f'{self.periode} not converged in {iteration} iterations')
-                    else:
-                        print(f'{self.periode} Solved in {iteration} iterations')
+                if not convergence:
+                    print(
+                        f'{self.periode} not converged in {iteration} iterations')
+                elif not silent:
+                    print(f'{self.periode} Solved in {iteration} iterations')
 
         if ldumpvar:
             self.dumpdf = pd.DataFrame(self.dumplist)
@@ -8691,7 +8692,7 @@ class Solver_Mixin():
         convvar = self.list_names(self.coreorder, conv)
         # this is how convergence is measured
         convplace = [databank.columns.get_loc(c) for c in convvar]
-        convergence = True
+        convergence = False
 
         if ldumpvar:
             self.dumplist = []
@@ -8774,11 +8775,10 @@ class Solver_Mixin():
     #                        itbefore=itafter
 #                self.epistack2d(values, values, row ,  alfa )
 
-        if not silent:
-            if not convergence:
-                print(f'Not converged in {iteration} iterations')
-            else:
-                print(f'Solved in {iteration} iterations')
+        if not convergence:
+            print(f'Not converged in {iteration} iterations')
+        elif not silent:
+            print(f'Solved in {iteration} iterations')
 
         if ldumpvar:
             self.dumpdf = pd.DataFrame(self.dumplist)
@@ -8880,7 +8880,7 @@ class Solver_Mixin():
         convvar = self.list_names(self.coreorder, conv)
         # this is how convergence is measured
         convplace = [databank.columns.get_loc(c) for c in convvar]
-        convergence = True
+        convergence = False
 
         if ldumpvar:
             self.dumplist = []
@@ -8974,11 +8974,10 @@ class Solver_Mixin():
     #                        itbefore=itafter
 #                self.epistack2d(values, values, row ,  alfa )
 
-        if not silent:
-            if not convergence:
-                print(f'Not converged in {iteration} iterations')
-            else:
-                print(f'Solved in {iteration} iterations')
+        if not convergence:
+            print(f'Not converged in {iteration} iterations')
+        elif not silent:
+            print(f'Solved in {iteration} iterations')
 
         if ldumpvar:
             self.dumpdf = pd.DataFrame(self.dumplist)
