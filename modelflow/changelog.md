@@ -370,3 +370,5 @@ Version 2.87 uploaded
 Newton solvers (legacy and ng) always report non-convergence, also with silent=1; newton, newton_un_normalized, newtonstack_un_normalized and newtonstack_implicit no longer say "Solved" when max_iterations is reached 
 sim1d, sim1d_ng, base_sim and base_res raise an exception on models with leads instead of reading the lead from another variable's slot 
 LOGIT(expression) is expanded with the argument in parentheses, so LOGIT(1-S) or LOGIT(A+B) no longer gives a wrong result 
+model() options keep, keep_variables, setbase and setlast apply to that call only and are no longer carried over to later calls (a later run, e.g. from attribution, overwrote the kept scenario) 
+targets_instruments restores the model's solve options, save setting and sample also when the target search fails, and restores the options from before the search instead of those from when the object was created 

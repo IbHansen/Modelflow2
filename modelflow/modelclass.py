@@ -7241,19 +7241,17 @@ class Solver_Mixin():
         
         do_calc_add_factor = kwargs.get('do_calc_add_factor',True)
         
+        # options for this call only, never carried over to the next call
+        once_options = {'reset_options', 'keep', 'keep_variables', 'setbase', 'setlast'}
+
         if kwargs.get('reset_options', False):
             self.oldkwargs = {}
 
-        if hasattr(self, 'oldkwargs'):
-            newkwargs = {**self.oldkwargs, **kwargs}
-        else:
-            newkwargs  = kwargs
-            
-            
-        if 'reset_options' in newkwargs:
-            del newkwargs['reset_options']
-            
-        self.oldkwargs = newkwargs.copy()
+        oldkwargs = {k: v for k, v in getattr(self, 'oldkwargs', {}).items()
+                     if k not in once_options}
+        newkwargs = {**oldkwargs, **kwargs}
+        newkwargs.pop('reset_options', None)
+        self.oldkwargs = {k: v for k, v in newkwargs.items() if k not in once_options}
 
         self.save = newkwargs.get('save', self.save)
  
