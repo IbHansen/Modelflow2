@@ -15,6 +15,7 @@ import re
 import inspect 
 from collections import namedtuple
 from collections import defaultdict
+from functools import lru_cache
 from typing import NamedTuple, Optional
 
 import modelmanipulation as mp
@@ -47,11 +48,14 @@ commentpat  = r'('+commentchar+r'.*)'
 
 try: # import the names of functions defined in modeluserfunk 
     import modeluserfunk
-    userfunk = [o.upper() for o,t in inspect.getmembers(modeluserfunk) if not o.startswith('__')]
+    userfunk = [o.upper() for o,t in inspect.getmembers(modeluserfunk)
+                if not o.startswith('__') and callable(t) and not inspect.ismodule(t) and o != 'jit']
 except: 
     userfunk = []
 
-BLfunk = [o.upper() for o,t in inspect.getmembers(modelBLfunk) if not o.startswith('__')  ]
+# only real functions, not imported modules, lists or the numba jit decorator
+BLfunk = [o.upper() for o,t in inspect.getmembers(modelBLfunk)
+          if not o.startswith('__') and callable(t) and not inspect.ismodule(t) and o != 'jit']
 classfunk = modelBLfunk.classfunk   
 # Operators 
 funkname    = 'DLOG SUM_EXCEL DIFF MIN MAX FLOAT NORM.CDF NORM.PPF ABS MOVAVG PCT_GROWTH'.split() + BLfunk+ userfunk + classfunk
@@ -201,10 +205,34 @@ def model_parse(equations,funks=[]):
     fatoms = namedtuple('fatoms', 'whole, frml ,frmlname, expression')
     # nterm = namedtuple('nterm', [ 'number', 'op', 'var', 'lag'])
     expressionre= udtrykre(funks)
+    frmls = [split_frml(f) for f in find_frml(equations.upper())]
+    check_lagged_functions(frmls)
     ibh = [(fatoms(*c),
             [ nterm(t[0],t[1],t[2], lag_field(t[3])) for t in expressionre.findall(c[3])])
-           for c in (split_frml(f)  for f in find_frml(equations.upper()) )]
+           for c in frmls]
     return ibh
+
+@lru_cache(maxsize=32)
+def lagged_function_re(names):
+    ''' A compiled pattern for a function name written with a lag or a period in quotes:
+    EXP(-1), EXP(+2), EXP('2002Q1'). names is a tuple of function names '''
+    return re.compile(r'(?<![A-Z0-9_{}.])(' + '|'.join(re.escape(f) for f in names)
+                      + r''')\(([+-][0-9]+|'[0-9][0-9A-Z-]*'|"[0-9][0-9A-Z-]*")\)''')
+
+def check_lagged_functions(frmls):
+    ''' Raises an exception if a function name is written with a lag, EXP(-1). The tokenizer
+    reads it as the function, so a variable with the name of a function would silently get a
+    wrong value. frmls is a list of split_frml results, the expression is element 3.
+    Uses funkname, so call udtrykre(funks) first '''
+    guard = lagged_function_re(tuple(funkname))
+    if not guard.search('\n'.join(c[3] for c in frmls)):   # one search for the whole model
+        return
+    for c in frmls:
+        if (m := guard.search(c[3])):
+            f, arg = m.groups()
+            constant = '' if arg[:1] in '\'"' else f'\nFor the function of a constant write {f}({arg}.0)'
+            raise Exception(f'{f}({arg}) in {c[0].strip()}\n{f} is a function in the business language '
+                            f'and can not be a variable with a lag. Rename the variable.{constant}')
 
 
 def list_extract(equations, silent=True, add_auto_sublists=True):

@@ -372,3 +372,4 @@ sim1d, sim1d_ng, base_sim and base_res raise an exception on models with leads i
 LOGIT(expression) is expanded with the argument in parentheses, so LOGIT(1-S) or LOGIT(A+B) no longer gives a wrong result 
 model() options keep, keep_variables, setbase and setlast apply to that call only and are no longer carried over to later calls (a later run, e.g. from attribution, overwrote the kept scenario) 
 targets_instruments restores the model's solve options, save setting and sample also when the target search fails, and restores the options from before the search instead of those from when the object was created 
+model_parse raises an exception when a function name is written with a lag, EXP(-1), as it was silently read as the function instead of a variable with that name; the function names no longer include the modules, lists and jit decorator imported in modelBLfunk and modeluserfunk (INSPECT, JIT, CLASSFUNK can be variable names) 
