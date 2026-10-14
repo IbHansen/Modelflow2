@@ -167,7 +167,7 @@ def preprocess(udtryk,funks=[]):
     while  logit_match := funk_in('LOGIT',udtryk_up):
          forlogit,logitudtryk_up,efterlogit=funk_find_arg(logit_match,udtryk_up)
          funk_check_arg('LOGIT',logitudtryk_up,udtryk,udtryk_up)
-         udtryk_up=forlogit+'(LOG('+logitudtryk_up+'/(1.0 -'+logitudtryk_up+')))'+efterlogit
+         udtryk_up=forlogit+'(LOG(('+logitudtryk_up+')/(1.0-('+logitudtryk_up+'))))'+efterlogit
 
     while  movavg_match := funk_in('MOVAVG', udtryk_up):
          forkaede,kaedeudtryk,efterkaede=funk_find_arg(movavg_match,udtryk_up)

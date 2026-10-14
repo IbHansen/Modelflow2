@@ -806,7 +806,7 @@ def normalize(in_equations,sym=False,funks=[]):
                     udtryk=fordlog+'diff(log('+dlogudtryk+'))'+efterdlog           
                 while  'LOGIT(' in udtryk.upper():
                     forlogit,logitudtryk,efterlogit=find_arg('LOGIT',udtryk)
-                    udtryk=forlogit+'(log('+logitudtryk+'/(1.0 -'+logitudtryk+')))'+efterlogit           
+                    udtryk=forlogit+'(log(('+logitudtryk+')/(1.0-('+logitudtryk+'))))'+efterlogit
                 while  'DIFF(' in udtryk.upper():
                     fordif,difudtryk,efterdif=find_arg('diff',udtryk)
                     udtryk=fordif+'(('+difudtryk+')-('+lagone(difudtryk+'',funks=funks)+'))'+efterdif           

@@ -367,3 +367,6 @@ model.is_newdata no longer reports new data when the frame only lacks model vari
 model() picks a unified Newton solver for hybrid models (normalized and ___RES equations mixed): newton_ng without leads, newtonstack_ng with leads; the _un_normalized solvers stay the choice for fully implicit models
 model.table no longer fails with 'setting an array element with a sequence' on one-column tables (e.g. transpose=True with a single variable) under pandas 3 without pyarrow, as in JupyterLite
 Version 2.87 uploaded 
+Newton solvers (legacy and ng) always report non-convergence, also with silent=1; newton, newton_un_normalized, newtonstack_un_normalized and newtonstack_implicit no longer say "Solved" when max_iterations is reached 
+sim1d, sim1d_ng, base_sim and base_res raise an exception on models with leads instead of reading the lead from another variable's slot 
+LOGIT(expression) is expanded with the argument in parentheses, so LOGIT(1-S) or LOGIT(A+B) no longer gives a wrong result 

@@ -838,6 +838,13 @@ class BaseModel():
         ''' Connect a dataframe with the solution vector used by the iterative sim2 solver) 
         return a function to place data in solution vector and to retrieve it again. '''
 
+        # the vector only has slots for lags, a lead would read another variable's slot
+        if self.maxlead >= 1:
+            raise Exception(f'{self.name} has leads (max lead {self.maxlead}).\n'
+                            'sim1d only solves models without leads. '
+                            'Use newtonstack or newtonstack_ng.\n'
+                            'model(df,...) without a solver option picks one.')
+
         columsnr = {v: i for i, v in enumerate(dfxx.columns)}
         pos0 = sorted([(self.allvar[var]['startnr']-lag, (var, lag, columsnr[var]))
                        for var in self.allvar for lag in range(0, -1+int(self.allvar[var]['maxlag']), -1)])
