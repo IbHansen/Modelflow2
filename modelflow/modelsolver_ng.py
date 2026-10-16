@@ -539,6 +539,52 @@ def gen_eqdict(m, databank):
     return "".join(chain(fib1, body, fib2))
 
 
+def import_transpiled(jitname, solveout, partnames, transpile_reset, silent=True):
+    """Write/refresh the transpiled jit source file and import its functions.
+
+    Used by both the ng and the legacy (modelclass ``Solver_Mixin``) makelos.
+
+    The source is always regenerated (cheap string building) and compared
+    with the file on disk: model-equation, solve-order or databank
+    column-layout changes alter the generated text, so a stale file is
+    rewritten, the module (re)loaded and numba recompiles -- its on-disk
+    cache keys on the file content, an unchanged file reuses the compiled
+    code.  ``transpile_reset`` forces the rewrite.  Returns the module
+    attributes named in *partnames* as a tuple.
+    """
+    # the model name can contain characters that are illegal in a module
+    # name / file path (e.g. 'FRB/US ...' -- '/' would create a spurious
+    # subdirectory and break the package-relative import below)
+    safename = re.sub(r"\W", "_", jitname)
+    jitfile = Path(f"modelsource/{safename}_jitsolver.py")
+    jitfile.parent.mkdir(parents=True, exist_ok=True)
+    initfile = jitfile.parent / "__init__.py"
+    if not initfile.exists():
+        with open(initfile, "wt") as i:
+            i.write("#")
+    solvetext0 = solveout()
+    solvetext = "\n".join([l[4:] for l in solvetext0.split("\n")[1:-2]])
+    solvetext = solvetext.replace("cache=False", "cache=True")
+    try:
+        current = (jitfile.read_text(encoding="utf-8")
+                   if jitfile.is_file() else None)
+    except UnicodeDecodeError:
+        current = None
+    stale = transpile_reset or current != solvetext
+    if stale:
+        jitfile.write_text(solvetext, encoding="utf-8")
+        importlib.invalidate_caches()
+    if not silent:
+        print(f'{"Writes" if stale else "Reuses"} the evaluation functions in {jitfile}')
+    modname = f"{jitfile.parent.name}.{jitfile.stem}"
+    if modname in sys.modules:
+        m1 = (importlib.reload(sys.modules[modname]) if stale
+              else sys.modules[modname])
+    else:
+        m1 = importlib.import_module("." + jitfile.stem, jitfile.parent.name)
+    return tuple(getattr(m1, name) for name in partnames)
+
+
 @dataclass
 class SolveContext:
     """Everything the shared setup produces and the core loop / teardown needs."""
@@ -889,45 +935,8 @@ class SolverBase:
                     getattr(m, f"epi_{nojitname}"))
 
     def _import_transpiled(self, jitname, solveout, partnames, transpile_reset):
-        """Write/refresh the transpiled jit source file and import its functions.
-
-        The source is always regenerated (cheap string building) and compared
-        with the file on disk: model-equation, solve-order or databank
-        column-layout changes alter the generated text, so a stale file is
-        rewritten, the module (re)loaded and numba recompiles -- its on-disk
-        cache keys on the file content, an unchanged file reuses the compiled
-        code.  ``transpile_reset`` forces the rewrite.  Returns the module
-        attributes named in *partnames* as a tuple.
-        """
-        # the model name can contain characters that are illegal in a module
-        # name / file path (e.g. 'FRB/US ...' -- '/' would create a spurious
-        # subdirectory and break the package-relative import below)
-        safename = re.sub(r"\W", "_", jitname)
-        jitfile = Path(f"modelsource/{safename}_jitsolver.py")
-        jitfile.parent.mkdir(parents=True, exist_ok=True)
-        initfile = jitfile.parent / "__init__.py"
-        if not initfile.exists():
-            with open(initfile, "wt") as i:
-                i.write("#")
-        solvetext0 = solveout()
-        solvetext = "\n".join([l[4:] for l in solvetext0.split("\n")[1:-2]])
-        solvetext = solvetext.replace("cache=False", "cache=True")
-        try:
-            current = (jitfile.read_text(encoding="utf-8")
-                       if jitfile.is_file() else None)
-        except UnicodeDecodeError:
-            current = None
-        stale = transpile_reset or current != solvetext
-        if stale:
-            jitfile.write_text(solvetext, encoding="utf-8")
-            importlib.invalidate_caches()
-        modname = f"{jitfile.parent.name}.{jitfile.stem}"
-        if modname in sys.modules:
-            m1 = (importlib.reload(sys.modules[modname]) if stale
-                  else sys.modules[modname])
-        else:
-            m1 = importlib.import_module("." + jitfile.stem, jitfile.parent.name)
-        return tuple(getattr(m1, name) for name in partnames)
+        """See the module-level ``import_transpiled``."""
+        return import_transpiled(jitname, solveout, partnames, transpile_reset)
 
     def _makelos_dag(self, databank, *, transpile_reset=False, newdata=False,
                      silent=True):

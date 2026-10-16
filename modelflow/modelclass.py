@@ -110,7 +110,7 @@ import modelvis as mv
 import modelpattern as pt
 from modelnet import draw_adjacency_matrix
 from modelnewton import newton_diff
-from modelsolver_ng import Solver_ng_Mixin
+from modelsolver_ng import Solver_ng_Mixin, import_transpiled
 import modeljupyter as mj
 from modelhelp import cutout, update_var
 from modelnormalize import normal
@@ -7463,41 +7463,14 @@ class Solver_Mixin():
                     pro_jit, core_jit, epi_jit = make_los(
                         self.funks, self.errfunk)
                 else:
-                    # breakpoint()
-                   # if we import from a cache, we assume that the dataframe is in the same order
-                    if transpile_reset or not hasattr(self, f'pro_{jitname}'):
-                        # sanitize: the model name can contain characters that
-                        # are illegal in a module name / file path (e.g. 'FRB/US')
-                        jitfilename= f"modelsource/{re.sub(r'[^0-9a-zA-Z_]', '_', jitname)}_jitsolver.py"
-                        jitfile = Path(jitfilename)
-                        jitfile.parent.mkdir(parents=True, exist_ok=True)
-                        if not silent:
-                            print(f'{transpile_reset=} {hasattr(self, f"pro_{jitname}")=}  {jitfile.is_file()=}')
-                        initfile = jitfile.parent /'__init__.py' 
-                        if not initfile.exists():
-                            with open(initfile,'wt') as i: 
-                                i.write('#')
-                        if transpile_reset or not jitfile.is_file():
-                            solvetext0 = solveout()
-                            solvetext = '\n'.join(
-                                [l[4:] for l in solvetext0.split('\n')[1:-2]])
-                            solvetext = solvetext.replace(
-                                'cache=False', 'cache=True')
-
-                            with open(jitfile, 'wt') as f:
-                                f.write(solvetext)
-                            importlib.invalidate_caches()  
-                            if not silent:
-                                print(f'Writes the evaluation functon to {jitfile.is_file()=}')
-                                
-                        if not silent:
-                            print(f'Importing {jitfile}')    
-                            print('modelsource in sys.path?', any(str(Path('modelsource').resolve().parent) == p for p in sys.path))
-                            print('is package?', Path('modelsource/__init__.py').exists())
-                            print('jit exists?', Path('modelsource/PAK_sim_jit_jitsolver.py').exists())
-                        m1 = importlib.import_module('.'+jitfile.stem,jitfile.parent.name)
-
-                        pro_jit, core_jit, epi_jit = m1.prolog, m1.core, m1.epilog
+                    # transpiled-file path: the file is rewritten (and the module
+                    # reloaded, numba recompiling) whenever the freshly generated
+                    # source no longer matches the file on disk -- i.e. on any
+                    # model-equation, solve-order or databank column-layout change.
+                    # Same file as the ng solver with the same name.
+                    pro_jit, core_jit, epi_jit = import_transpiled(
+                        jitname, solveout, ('prolog', 'core', 'epilog'),
+                        transpile_reset, silent=silent)
                 setattr(self, f'pro_{jitname}', pro_jit)
                 setattr(self, f'core_{jitname}', core_jit)
                 setattr(self, f'epi_{jitname}', epi_jit)
