@@ -2001,7 +2001,7 @@ class Model_help_Mixin():
             return f'{{{key}}}'
 
 
-    def test_model(self, base_input, start=None, end=None, maxvar=1_000_000, maxerr=100, tol=0.0001, showall=False, dec=8, width=30, ref_df=None):
+    def test_model_old(self, base_input, start=None, end=None, maxvar=1_000_000, maxerr=100, tol=0.0001, showall=False, dec=8, width=30, ref_df=None):
         '''
         Compares a straight calculation with the input dataframe. 
 
@@ -2054,6 +2054,64 @@ class Model_help_Mixin():
                     print(f'{check}')
                     print(f'\nValues: \n {self.get_eq_values(v,showvar=1)} \n')
         self.oldkwargs = {}
+
+    def test_model(self, df, start=None, end=None, ref_df=None, maxvar=1_000_000, maxerr=100, tol=0.0001,
+                   showall=False, showinput=False, nofit=True):
+        '''
+        Calculates the model once (solver='res') on df and compares each endogenous variable with the
+        values in a reference dataframe.
+
+        shows which variables dont have the same value
+
+        Very useful when implementing a model where the results are known
+
+        Args:
+            df (DataFrame): dataframe to run.
+            start (index, optional): start period. Defaults to the first period where all lags are available.
+            end (index, optional): end period. Defaults to the last period where all leads are available.
+            ref_df (DataFrame, optional): dataframe to check against. Defaults to df.
+            maxvar (int, optional): how many variables are to be chekked. Defaults to 1_000_000.
+            maxerr (int, optional): how many errors to check Defaults to 100.
+            tol (float, optional): check for absolute value of difference. Defaults to 0.0001.
+            showall (bool, optional): show more . Defaults to False.
+            showinput (bool, optional): show the input values Defaults to False.
+            nofit (bool, optional): if True dont show the fitted values. Defaults to True.
+
+        Returns:
+            None.
+
+        '''
+        _start = start if start is not None else df.index[-self.maxlag]
+        _end   = end   if end   is not None else df.index[-1-self.maxlead]
+
+        resresult = self(df,_start,_end,reset_options=True,silent=0,solver='res')
+        self.basedf = df if ref_df is None else ref_df
+        err=0
+        with pd.option_context('display.float_format', '{:.10f}'.format,
+                               'display.max_columns', None,
+                               'display.width', 1000):
+            print(f'\nChekking residuals for {self.name} {_start} to {_end}')
+            for i,v in enumerate(self.solveorder):
+                if i > maxvar : break
+                if err > maxerr : break
+                if nofit and v.endswith('_FITTED'): continue
+                check = self.get_values(v,pct=True).T
+                check.columns = ['Before check','After calculation','Difference','Pct']
+                if (check.Difference.abs() >= tol).any():
+                    err=err+1
+                    maxdiff = check.Difference.abs().max()
+                    maxpct  = check.Pct.abs().max()
+                    if err==1 :
+                        print('\nVariable with residuals above threshold')
+                    print(f"{v:{self.maxnavlen}}, Max difference:{maxdiff:15.8f} Max Pct {maxpct:15.10f}% It is number {i:5} in the solveorder and error number {err}")
+                    if showall:
+                        print(f'{self.allvar[v]["frml"]}')
+                        print(f'{self.var_description[v]}')
+
+                        print(f'\nResult of equation \n {check}\n')
+                        if showinput:
+                            print(f'\nEquation values before calculations: \n {self.get_eq_values(v,last=False,showvar=1)} \n')
+        self.oldkwargs = {}   # reset sticky options
 
     @property
     def print_model(self):
