@@ -106,7 +106,7 @@ This is a new way to write a model: describe it in a Markdown notebook cell, wit
 | `<ENDO=var>`, `<ENDO_LHS=FALSE>` | Picks the endogenous variable for normalization |
 | `<IMPLICIT>` | Keeps the equation in implicit (residual) form |
 | `<DAMP>` (or `Z`) | The equation is damped in Gauss-Seidel solving (`alfa=`) |
-| `<IDENT>` (or `I`) | Marks an identity; `model.get_histmodel()` uses these to make a model that calculates historic values |
+| `<IDENT>` (or `I`) | Marks an identity; `model.get_histmodel()` uses these to make a model that calculates historic values (`tags=` picks other tags, next release) |
 | `<QUASIIDENT>` | Set by the EViews onboarding for quasi-identities from MFMSA |
 | `<DROP>` | Leaves the equation out |
 | `<estimator=...>` / `<est=...>` | Estimates the equation while the model is built and inserts the coefficients |

@@ -211,13 +211,18 @@ def find_res_dynare_new(equations):
             
     return   '\n'.join(out) 
 
-def find_hist_model(equations):
+def find_hist_model(equations, tags=('IDENT', 'I')):
     ''' takes a unrolled model and create a model which can be run for historic periode \n
-        and the identities are also calculeted'''
+        and the identities are also calculeted
+
+        tags is a string or a list of strings. A frml is included when its frml name
+        has one of the tags. The default is the identities (IDENT or I), but
+        for instance tags='HIST' makes a model of the frmls marked <HIST>'''
+    tags = [tags] if isinstance(tags, str) else tags
     hist = []
     for f in find_frml(equations):
         a, fr, n, udtryk = split_frml(f.upper())
-        if kw_frml_name(n, 'IDENT') or kw_frml_name(n, 'I'):
+        if any(kw_frml_name(n, tag.upper()) for tag in tags):
             # identites are just replicated in order to calculate backdata
             hist.append(f.strip())
     return('\n'.join(hist))

@@ -382,3 +382,4 @@ modelgrabgekkobank (new): read_gbk reads a Gekko 2.x databank (.gbk) into a Data
 model.explain respects start= and end=: the value table in each box covers only that window, and '% Explained by' uses the attribution just computed instead of a leftover from an earlier draw; model.dekomp (and dekomp_fast) prints the growth tables with 3 decimals instead of 1, so small shocks don't show as 0.0% 
 modelgrabexcel (renamed from model_Excel, which is kept as a stub that warns): Excel onboarding without the broken xlwings fallback (openpyxl expands repeated formulas itself); array formulas and data tables raise a clear NotImplementedError instead of failing in the tokenizer
 Version 2.88 uploaded 
+model.get_histmodel and find_hist_model take tags= (a string or a list of strings) to make a model of the frmls with other tags than IDENT/I, e.g. tags='HIST'; the default is unchanged 

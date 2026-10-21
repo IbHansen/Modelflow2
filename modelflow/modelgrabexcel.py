@@ -21,16 +21,12 @@ Some of the docstring are not very informative, to be improved.
 
 """
 import pandas as pd 
-import networkx as nx 
-import openpyxl
 from openpyxl import load_workbook
 from openpyxl.formula import Tokenizer
 from openpyxl.utils import get_column_letter
 from openpyxl.utils import cols_from_range,rows_from_range
 from openpyxl.worksheet.formula import ArrayFormula, DataTableFormula
 
-import matplotlib.pylab  as plt 
-import seaborn as sns
 from pathlib import Path
 
 import modelclass as mc

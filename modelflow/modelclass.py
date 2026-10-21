@@ -225,14 +225,16 @@ class BaseModel():
         mmodel.equations_original = equations
         return mmodel
 
-    def get_histmodel(self):
-        """ return a model instance with a model which generates historic values for equations 
+    def get_histmodel(self, tags=('IDENT', 'I')):
+        """ return a model instance with a model which generates historic values for equations
         marked by a frml name I or IDENT
-        
+
+        tags is a string or a list of strings, the frml names to select (default IDENT and I)
+
         Uses :any:`find_hist_model`
-        
+
         """
-        hist_eq = mp.find_hist_model(self.equations)
+        hist_eq = mp.find_hist_model(self.equations, tags=tags)
         return type(self)(hist_eq, funks=self.funks)
 
     def analyzemodelnew(self, silent):
