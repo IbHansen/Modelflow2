@@ -62,7 +62,7 @@ autodoc_default_options = {
     }
 autoclass_content = 'both'
 
-exclude_patterns = ['modelsource/','setup.rst','modules.rst','index old.rst','solve.rst']
+exclude_patterns = ['modelsource/','setup.rst','modules.rst','solve.rst']
 sys.path.insert(0, os.path.abspath('../'))  
 html_theme_options = {
     #'analytics_id': 'G-XXXXXXXXXX',  #  Provided by Google in your dashboard
