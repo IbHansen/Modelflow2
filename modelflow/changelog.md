@@ -383,3 +383,5 @@ model.explain respects start= and end=: the value table in each box covers only 
 modelgrabexcel (renamed from model_Excel, which is kept as a stub that warns): Excel onboarding without the broken xlwings fallback (openpyxl expands repeated formulas itself); array formulas and data tables raise a clear NotImplementedError instead of failing in the tokenizer
 Version 2.88 uploaded 
 model.get_histmodel and find_hist_model take tags= (a string or a list of strings) to make a model of the frmls with other tags than IDENT/I, e.g. tags='HIST'; the default is unchanged 
+get_minimal_feedback_set is deterministic (sorted graph, ties broken by name, lexicographical topological sort, sorted hits order), so the feedback set and the solution are the same in every Python session; use_fbmin=True is the default 
+newtonstack_fbmin_ng reports the feedback residual at the solution when it finishes (it printed the residual from before the last Newton step, so "Solved" could show a large residual); keep_residual also stores this final residual 

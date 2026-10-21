@@ -3418,10 +3418,15 @@ class NewtonStackFbminSolver(SolverBase):
             self._dag_sweep(ctx)
         ctx.dag_sweeps += 1
 
+        # the residual printed in the loop is from before that iteration's
+        # Newton step, so evaluate it again at the final solution
+        residual = self._fb_residual(ctx)
+        newton_conv = np.max(np.abs(residual))
+
         ctx.iteration = iteration
         ctx.convergence = converged
 
-        # the feedback residual at the last iteration (opt-in); a Series over
+        # the feedback residual at the final solution (opt-in); a Series over
         # (period, variable) -- the fb variables may differ between periods
         if keep_residual and residual is not None:
             m.ng_stackfbmin_residual = pd.Series(
@@ -3431,10 +3436,10 @@ class NewtonStackFbminSolver(SolverBase):
 
         if not converged:
             print(f"Not converged in {iteration + 1} outer iterations "
-                  f"(last max res~{newton_conv:,.6g})")
+                  f"(max feedback residual at the end {newton_conv:,.6g})")
         elif not silent:
             print(f"Solved in {iteration + 1} outer iterations "
-                  f"(last max res~{newton_conv:,.6g})")
+                  f"(max feedback residual at the solution {newton_conv:,.6g})")
 
     def stats_lines(self, ctx):
         """Stacked fbmin statistics: size of the stacked feedback set vs the

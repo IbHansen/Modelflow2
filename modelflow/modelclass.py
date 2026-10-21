@@ -3745,8 +3745,9 @@ class Graph_Mixin():
                                 self.FVS_graph.add_edge(u, v)
                     
                     h,a = nx.hits(self.FVS_graph)
-                    self.fbhubs =  {k:v for k,v in sorted( h.items(), key=lambda x: x[1], reverse=True)}
-                    self.fbaut    =  {k:v for k,v in sorted( a.items(), key=lambda x: x[1], reverse=True)}
+                    # rounded and ties broken by name, so the order is the same in every session
+                    self.fbhubs =  {k:v for k,v in sorted( h.items(), key=lambda x: (-round(x[1], 12), x[0]))}
+                    self.fbaut    =  {k:v for k,v in sorted( a.items(), key=lambda x: (-round(x[1], 12), x[0]))}
                     
                     self.fblist = [v for v in self.fbhubs.keys()]
                 except Exception as e:
@@ -3982,21 +3983,27 @@ class Graph_Mixin():
         is acyclic.
         """
     
-        # Create a copy of the graph to avoid modifying the original graph
-        H = G.copy()
+        # Build a copy with sorted nodes and edges. The graphs are made from sets of
+        # variable names, whose order changes between Python sessions (hash
+        # randomization), and find_cycle follows the insertion order - so without
+        # this the feedback set, and with it the last digits of a solution, could
+        # differ from session to session.
+        H = nx.DiGraph()
+        H.add_nodes_from(sorted(G.nodes()))
+        H.add_edges_from(sorted(G.edges()))
         fvs = set()
-    
+
         # Function to calculate the degree of a vertex in the cycle
         def vertex_degree(vertex):
             return H.degree(vertex)
-    
+
         # Iterate until the graph becomes acyclic
         while True:
             try:
                 # Find a cycle in the graph
                 cycle = nx.find_cycle(H, orientation='original')
-                # Find the vertex in the cycle with the highest degree
-                vertex_to_remove = max(cycle, key=lambda x: vertex_degree(x[0]))[0]
+                # Find the vertex in the cycle with the highest degree, ties broken by name
+                vertex_to_remove = max(cycle, key=lambda x: (vertex_degree(x[0]), x[0]))[0]
                 # Add the vertex to the feedback vertex set
                 fvs.add(vertex_to_remove)
                 # Remove the vertex from the graph
@@ -4005,10 +4012,10 @@ class Graph_Mixin():
                 # If no cycle is found, the graph is now acyclic, and we break the loop
                 break
     
-        # Perform a topological sort on the modified graph
-        topological_sorted_order = list(nx.topological_sort(H))
-    
-        return list(fvs) , topological_sorted_order
+        # Perform a topological sort on the modified graph, ties broken by name
+        topological_sorted_order = list(nx.lexicographical_topological_sort(H))
+
+        return sorted(fvs) , topological_sorted_order
 
    
 
