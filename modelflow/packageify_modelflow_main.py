@@ -28,6 +28,7 @@ from pathlib import Path
 FILE_LIST = [
     "modelBLfunk.py",
     "model_Excel.py",
+    "modelgrabexcel.py",
     "model_cvx.py",
     "model_financial_stability.py",
     "model_latex_class.py",

@@ -81,8 +81,8 @@ py-modules = [
     "modelnewton", "modelinvert", "modeldiff","modelsolver_ng",
     # analysis (2)
     "modeldekom", "modelnet",
-    # onboard (8)
-    "modelgrabwf2", "modelgrab", "modelmacrograb", "modelgrabgdx",
+    # onboard (9)
+    "modelgrabwf2", "modelgrab", "modelmacrograb", "modelgrabgdx", "modelgrabgekkobank", "modelgrabexcel",
     "model_dynare", "model_Excel", "model_latex", "model_latex_class",
     # construct (2)
     "modelconstruct", "modelconstruct_estimation",

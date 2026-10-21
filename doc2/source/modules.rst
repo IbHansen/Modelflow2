@@ -5,9 +5,8 @@ modelflow
    :maxdepth: 4
 
    modelBLfunk
-   model_Excel
+   modelgrabexcel
    model_cvx
-   model_doable
    model_dynare
    model_financial_stability
    model_ifrs9

@@ -39,7 +39,7 @@ by one of the methods in the :class:`Solver_Mixin` class.
 """
 try:
     # if in linux 
-    import model_Excel as me
+    import modelgrabexcel as me
 except: 
     ...
 from pathlib import Path
@@ -2757,11 +2757,11 @@ class Dekomp_Mixin():
             
             print('\n Difference in growth rate', varnavn)
             print(diff_growth.to_string(na_rep=' ',
-                float_format=lambda x: '{0:9.1f}%'.format(x)))
-            
+                float_format=lambda x: '{0:9.3f}%'.format(x)))
+
             print('\n Contribution to growth rate', varnavn)
             print(att_growth.to_string(na_rep=' ',
-                float_format=lambda x: '{0:9.1f}%'.format(x)))
+                float_format=lambda x: '{0:9.3f}%'.format(x)))
 
         att_pct = att_pct[att_pct.columns].astype(float)
         dekomp_res_name  = namedtuple('dekompres', 'diff_level, att_level, att_pct, ,diff_growth , att_growth')
@@ -4746,6 +4746,8 @@ class Graph_Draw_Mixin():
 
 
         '''
+        tstart = self.current_per[0] if start == '' else start
+        tend = self.current_per[-1] if end == '' else end
         if up > 0:
             with self.timer('Get totgraph', debug) as t:
                 startgraph = self.totgraph   if lag else self.totgraph_nolag
@@ -4775,13 +4777,15 @@ class Graph_Draw_Mixin():
                     v.child, v.parent, att=self.localgraph[v.child][v.parent].get('att', None))
             nodeatt = {n: {'att': i} for n, i in pctdic2.items()}
             nx.set_node_attributes(self.newgraph, nodeatt)
-            nodevalues = {n: {'values': self.get_values(
-                n)} for n in self.newgraph.nodes}
+            with self.set_smpl(tstart, tend):
+                nodevalues = {n: {'values': self.get_values(
+                    n)} for n in self.newgraph.nodes}
             nx.set_node_attributes(self.newgraph, nodevalues)
         else:
             self.newgraph = nx.DiGraph([(var, var)])
-            nx.set_node_attributes(
-                self.newgraph, {var: {'values': self.get_values(var)}})
+            with self.set_smpl(tstart, tend):
+                nx.set_node_attributes(
+                    self.newgraph, {var: {'values': self.get_values(var)}})
             nx.set_node_attributes(self.newgraph, {
                                    var: {'att': self.get_att_pct(var, lag=lag, start=start, end=end)}})
         if noshow:
@@ -4849,8 +4853,8 @@ class Graph_Draw_Mixin():
                 hval = f"<TR><TD COLSPAN = '{dflen+1}' {self.maketip(v,True)}>{v}</TD></TR>"
                 lval = dftotable(dfval, dec)
                 try:
-                    latt = f"<TR><TD COLSPAN = '{dflen+1}'> % Explained by</TD></TR>{dftotable(self.att_dic[v],dec)}" if len(
-                        self.att_dic[v]) else ''
+                    latt = f"<TR><TD COLSPAN = '{dflen+1}'> % Explained by</TD></TR>{dftotable(att_dic[v],dec)}" if len(
+                        att_dic[v]) else ''
                 except:
                     latt = ''
                 # breakpoint()

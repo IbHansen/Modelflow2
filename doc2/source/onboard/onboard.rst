@@ -32,7 +32,7 @@ conventions are not followed, another model can't be onboarded
    :maxdepth: 2
    
    modelgrabwf2
-   model_Excel
+   modelgrabexcel
    
    model_dynare
    model_latex

@@ -216,11 +216,11 @@ def dekomp_fast(
         ))
         print("\n Difference in growth rate", varnavn)
         print(diff_growth.to_string(
-            na_rep=" ", float_format=lambda x: f"{x:9.1f}%"
+            na_rep=" ", float_format=lambda x: f"{x:9.3f}%"
         ))
         print("\n Contribution to growth rate", varnavn)
         print(att_growth.to_string(
-            na_rep=" ", float_format=lambda x: f"{x:9.1f}%"
+            na_rep=" ", float_format=lambda x: f"{x:9.3f}%"
         ))
 
     return DekompResult(
