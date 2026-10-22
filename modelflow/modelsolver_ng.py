@@ -2522,12 +2522,12 @@ class NewtonStackSolver(SolverBase):
         return ctx.model.ng_newton_diff_stack.declared_endo_list
 
     def build_evaluator(self, ctx):
-        """Compile the evaluators.  Without ``split`` the model's res triple
-        (prolog, core, epilog over the whole model, every Newton iteration).
-        With ``split=1`` the stacked-split triple from ``_prepare_split``:
-        prolog and epilog as gauss lines run once before / after Newton, the
-        core as res lines -- see ``_build_split``."""
-        ctx.split = bool(self._opt(ctx, "split", False))
+        """Compile the evaluators.  With ``split=1`` (the default) the
+        stacked-split triple from ``_prepare_split``: prolog and epilog as
+        gauss lines run once before / after Newton, the core as res lines --
+        see ``_build_split``.  With ``split=0`` the model's res triple
+        (prolog, core, epilog over the whole model, every Newton iteration)."""
+        ctx.split = bool(self._opt(ctx, "split", True))
         if ctx.split:
             ctx.split = self._prepare_split(ctx)
         if not ctx.split:
@@ -3833,7 +3833,8 @@ class Solver_ng_Mixin:
     def newtonstack_ng(self, databank=None, *args, **kwargs):
         """Solve with next-generation stacked Newton (defaults to ``self.basedf``).
 
-        ``split=1``: pro/core/epi decomposition at the stacked level -- Newton
+        ``split=1`` (the default; ``split=0`` turns it off): pro/core/epi
+        decomposition at the stacked level -- Newton
         (and the stacked LU) only on the core variables; upstream (prolog)
         variables computed in one period loop before, pure reporting (epilog)
         variables in one period loop after convergence.  All three parts are

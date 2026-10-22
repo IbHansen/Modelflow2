@@ -110,8 +110,8 @@ SOLVERS_ANY_FORM = {
     'newton_implicit':        ('newton_implicit',      newton_opts),
     'newton_ng':              ('newton_ng',            newton_opts),
     'newtonstack_implicit':   ('newtonstack_implicit', newton_opts),
-    'newtonstack_ng':         ('newtonstack_ng',       newton_opts),
-    # stacked pro/core/epi split: Newton and the stacked LU only on the core
+    'newtonstack_ng':         ('newtonstack_ng',       {**newton_opts, 'split': 0}),
+    # stacked pro/core/epi split (the default): Newton and the stacked LU only on the core
     'newtonstack_ng split':   ('newtonstack_ng',       {**newton_opts, 'split': 1}),
 }
 FORM_SOLVERS = {
