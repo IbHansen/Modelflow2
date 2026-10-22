@@ -154,9 +154,14 @@ class BaseModel():
                  var_description={}, model_description = '', 
                  var_groups = {}, reports = {}, equations_latex='', 
                  eviews_dict = {},use_fbmin= True,
-                 substitution = {},
+                 substitution = {}, ng = False,
                  **kwargs):
-        ''' initialize a model'''
+        ''' initialize a model
+
+        ng : if True a call without solver= dispatches to the next-generation
+             solvers (xgenr_ng, sim_ng, newton_ng, newtonstack_ng) instead of
+             the legacy ones; can also be set later with ``mmodel.ng = True``'''
+        self.ng = ng
         if i_eq != '':
             self.funks = funks
             self.equations = i_eq if '$' in i_eq else mp.tofrml(i_eq, sep='\n')
@@ -633,7 +638,7 @@ class BaseModel():
     def fixed_period_guard(self, what):
         ''' Only the ng solvers can evaluate a variable at a fixed period, X(2002).
         Raises an exception naming *what* (the legacy evaluator) if the model has such references '''
-        if getattr(self, 'fixed_periods', None):
+        if self.fixed_periods:
             refs = ', '.join(f'{var}({lag})' for var, lag in self.fixed_terms[:6])
             more = ' ...' if len(self.fixed_terms) > 6 else ''
             raise Exception(f'{self.name} refers to variables at fixed periods: {refs}{more}\n'
@@ -7367,8 +7372,10 @@ class Solver_Mixin():
             else:
                 solverguess = 'newton_un_normalized'
 
-        # a variable at a fixed period, X(2002), is only evaluated by the ng solvers
-        if getattr(self, 'fixed_periods', None):
+        # with ng=True (model option) the ng solvers are the default; a variable
+        # at a fixed period, X(2002), is only evaluated by the ng solvers.
+        # A normalized simultaneous model gets sim_ng - Newton must be asked for.
+        if self.ng or self.fixed_periods:
             solverguess = {'xgenr': 'xgenr_ng', 'sim': 'sim_ng',
                            'newtonstack': 'newtonstack_ng',
                            'newtonstack_un_normalized': 'newtonstack_ng',
