@@ -289,7 +289,8 @@ class BaseModel():
             mega = [(f,nt) for f,nt in mega_all if not pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
             mega_calc_add_factor = [(f,nt) for f,nt in mega_all if pt.kw_frml_name(f.frmlname, 'CALC_ADD_FACTOR')]
             calc_add_factor_frml = [f'FRML <CALC> {f.expression}' for f,nt in mega_calc_add_factor]
-            self.calc_add_factor_model = model(' '.join(calc_add_factor_frml),funks=self.funks,modelname='Calculate add factors')
+            self.calc_add_factor_model = model(' '.join(calc_add_factor_frml),funks=self.funks,modelname='Calculate add factors',
+                                               ng=self.ng)
             if not self.calc_add_factor_model.istopo:
                 raise Exception('The add factor calculation model should be recursive')
         else:
@@ -7427,7 +7428,8 @@ class Solver_Mixin():
                 if not silent:
                     print('Running calc_adjust_model ')
                     print(f'Dummies set {self.find_fix_dummy_fixed(outdf)}')
-                self.calc_add_factor_model.current_per=self.current_per   
+                self.calc_add_factor_model.current_per=self.current_per
+                self.calc_add_factor_model.ng = self.ng     # follows a later mmodel.ng = ...
                 out_add_factor = self.calc_add_factor_model(outdf,silent=silent) # calculate the adjustment factors 
                 
                 calc_add_factordf = out_add_factor.loc[self.current_per,self.fix_add_factor] # new adjust values 
@@ -9879,6 +9881,8 @@ class Fix_Mixin():
         selected  = [v for up in pat.split() for v in fnmatch.filter(beh, up.upper())]
         exo   = [v+'_X' for v in selected ]
         dummy = [v+'_D' for v in selected ]
+        # _X/_D columns read as integers (all zero) can not take the float values
+        dataframe[exo + dummy] = dataframe[exo + dummy].astype('float64')
         # breakpoint()
         with self.set_smpl(start,end,df=dataframe):
             dataframe.loc[self.current_per,dummy] = 1.0 
