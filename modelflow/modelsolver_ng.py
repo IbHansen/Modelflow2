@@ -847,6 +847,8 @@ class SolverBase:
                     + res-style feedback equations     parts=...)
         'stackeq'   dict of per-equation res-style    (gen_eqdict)      {var: eq}
                     functions (stacked fbmin sweep)
+        'stacksplit' stacked split: prolog/epilog gauss,  (gen_2d,      (pro,core,epi)
+                    core res lines over given orders  parts=...)
         ==========  ==================================================  =========
 
         The equation-to-source translation is done by the module-level ``gen_2d`` /
@@ -871,6 +873,12 @@ class SolverBase:
             return self._makelos_stackeq(
                 databank, transpile_reset=transpile_reset,
                 newdata=newdata, silent=silent)
+
+        if solvename == "stacksplit":
+            return self._makelos_stacksplit(
+                databank, kwargs["orders"], ljit=ljit, stringjit=stringjit,
+                chunk=chunk, transpile_reset=transpile_reset, newdata=newdata,
+                silent=silent, debug=kwargs.get("debug", 1))
 
         jitname = f"{m.name}_{solvename}_jit"
         nojitname = f"{m.name}_{solvename}_nojit"
@@ -951,6 +959,48 @@ class SolverBase:
             m.make_los_text = make_los_text
             exec(make_los_text, globals())  # creates make_los (returns a single func)
             setattr(m, attr, globals()["make_los"](m.funks, m.errfunk))
+        return getattr(m, attr)
+
+    def _makelos_stacksplit(self, databank, orders, *, ljit=0, stringjit=False,
+                            chunk=30, transpile_reset=False, newdata=False,
+                            silent=True, debug=1):
+        """Compile + cache the stacked-split triple (pro, core, epi) for
+        ``newtonstack_ng`` with ``split=1``.
+
+        *orders* is ``(prolog, core, epilog)``, variable lists from the stacked
+        split.  ``prolog`` / ``epilog`` are gauss lines (in-place on ``values``,
+        nodamp, in per-period topological order) run in a period loop once
+        before / after Newton; ``core`` is res lines (LHS -> ``outvalues``) run
+        in a period loop every Newton iteration.  Jitted like the other ng
+        solvers, in its own transpiled file
+        ``modelsource/<model>_stacksplit_jit_jitsolver.py``.
+        """
+        m = self.m
+        attr = f"ng_stacksplit_{m.name}_{'jit' if ljit else 'nojit'}".replace(" ", "_")
+        newdata = self._fixrow_changed(attr, databank) or newdata
+        orders = tuple(tuple(o) for o in orders)
+        if (newdata or transpile_reset or not hasattr(m, attr)
+                or getattr(m, attr + "_orders", None) != orders):
+            if not silent:
+                print(f"makelos_ng compiles the stacked split evaluators for {m.name}"
+                      + (" (jit)" if ljit else ""))
+            pro, core, epi = orders
+            parts = [("prolog", list(pro), True, "gauss"),
+                     ("core", list(core), True, "res"),
+                     ("epilog", list(epi), True, "gauss")]
+            solveout = partial(gen_2d, m, databank, debug=debug, chunk=chunk,
+                               ljit=ljit, parts=parts)
+            if ljit and not stringjit:
+                funcs = self._import_transpiled(
+                    f"{m.name}_stacksplit_jit", solveout,
+                    ("prolog", "core", "epilog"), transpile_reset)
+            else:
+                make_los_text = solveout()
+                m.make_los_text = make_los_text
+                exec(make_los_text, globals())  # creates make_los (returns 3 funcs)
+                funcs = globals()["make_los"](m.funks, m.errfunk)
+            setattr(m, attr, funcs)
+            setattr(m, attr + "_orders", orders)
         return getattr(m, attr)
 
     #: the fbmin evaluator quadruple, in generation / return order
@@ -2471,6 +2521,18 @@ class NewtonStackSolver(SolverBase):
         """Dump order: the declared (base) endogenous names of the Jacobian object."""
         return ctx.model.ng_newton_diff_stack.declared_endo_list
 
+    def build_evaluator(self, ctx):
+        """Compile the evaluators.  Without ``split`` the model's res triple
+        (prolog, core, epilog over the whole model, every Newton iteration).
+        With ``split=1`` the stacked-split triple from ``_prepare_split``:
+        prolog and epilog as gauss lines run once before / after Newton, the
+        core as res lines -- see ``_build_split``."""
+        ctx.split = bool(self._opt(ctx, "split", False))
+        if ctx.split:
+            ctx.split = self._prepare_split(ctx)
+        if not ctx.split:
+            super().build_evaluator(ctx)
+
     def prepare(self, ctx):
         """Build the stacked Jacobian solver, the residual mask and the flattened
         (period x variable) row/column index arrays used by ``iterate``."""
@@ -2479,18 +2541,9 @@ class NewtonStackSolver(SolverBase):
         silent = opt("silent", self.DEFAULT_SILENT)
         timeit = opt("timeit", False)
 
-        # stacked pro/core/epi split (``split=1``): Newton only on the core,
-        # prolog/epilog solved exactly by stacked sweeps -- see _prepare_split
-        split = bool(opt("split", False))
-        self.pro_pairs, self.epi_pairs, self.core_pairs = [], [], []
-        if split:
-            self._prepare_split(ctx)
-            # the split core is evaluated by plain-Python per-equation functions,
-            # so ljit does not speed up the iterations -- say it once per model
-            if opt("ljit", False) and not getattr(m, "ng_stack_split_jit_noted", False):
-                print("newtonstack_ng: split=1 evaluates the core without jit, "
-                      "ljit=1 does not speed up the iterations -- use split=0 with ljit=1")
-                m.ng_stack_split_jit_noted = True
+        # stacked pro/core/epi split (``split=1``, set up in build_evaluator):
+        # Newton and the stacked Jacobian only on the core
+        split = ctx.split
 
         # the cached diff object is shared with newtonstack_fbmin_ng, so it is
         # tagged with what it was built for ('full' or the core equation list);
@@ -2566,33 +2619,29 @@ class NewtonStackSolver(SolverBase):
             [ctx.newton_col_endo for r in ctx.stackrows]).flatten()     # unknowns
 
     def _prepare_split(self, ctx):
-        """Stacked pro/core/epi split (option ``split=1``).
+        """Stacked pro/core/epi split (option ``split=1``), called from
+        ``build_evaluator``.
 
-        The per-period prolog/core/epilog decomposition lifted to the stacked
-        graph: *core* variables take part in some cycle of the collapsed
-        (variable-level) dependency graph -- or are ``___RES`` equations, or
-        lie on a path from the core back into the core (hybrid models) --
-        and become the only stacked Newton unknowns; *prolog* variables never
-        depend on the core at any lag or lead and are solved exactly by one
-        stacked topological sweep before Newton; *epilog* (reporting)
-        variables -- the rest, which never feed back into the core -- are
-        swept once after convergence.  Conservative at the collapsed level: a
-        cycle whose lags sum to a nonzero value is not a true stacked cycle,
-        but its members still go to the core -- the split can only be too
-        small, never wrong.
+        The variables are classified once per model (``_build_split``, cached
+        as ``m.ng_stack_split_struct``) and the three parts compiled like the
+        other solvers' prolog/core/epilog (``makelos('stacksplit')``, jitted
+        with ``ljit``): ``ctx.pro`` and ``ctx.epi`` are gauss lines run in a
+        period loop once before / after Newton, ``ctx.solve`` the core as res
+        lines run in a period loop every Newton iteration.  Only the core
+        equations are evaluated during Newton: evaluating a reporting equation
+        at an intermediate iterate can raise (LOG of a transient negative
+        value).
+
+        Returns False -- solve without split -- when the core is empty.
         """
         m, databank = ctx.model, ctx.databank
         opt = lambda n, d: self._opt(ctx, n, d)
         silent = opt("silent", self.DEFAULT_SILENT)
-        per = ctx.sol_periode
 
-        # purely structural: depends on the equations and the solve span, not
-        # on data -- deliberately NOT invalidated by newton_reset (that only
-        # refreshes the Jacobian values via the solver rebuild)
-        struct_stale = (not hasattr(m, "ng_stack_split_struct")
-                        or m.ng_stack_split_struct["first"] != per[0]
-                        or m.ng_stack_split_struct["last"] != per[-1]
-                        or m.ng_stack_split_struct["n_per"] != len(per))
+        # purely structural: depends only on the equations, so neither
+        # newton_reset nor a new span invalidates it
+        struct_stale = (getattr(m, "ng_stack_split_struct", {}).get("kind")
+                        != "periodloop")
         if struct_stale:
             if not silent:
                 print("Building the stacked pro/core/epi split")
@@ -2602,53 +2651,91 @@ class NewtonStackSolver(SolverBase):
             print(f"Stacked split: {len(struct['core']):,} core / "
                   f"{len(struct['pro']):,} prolog / "
                   f"{len(struct['epi']):,} epilog variables")
+        if not struct["core"]:
+            if not silent:
+                print("newtonstack_ng split=1: the core is empty, solving without split")
+            return False
 
-        # per-equation evaluators for the sweeps (cached on the model by makelos)
-        eqdict = self.makelos(
-            "stackeq", databank, newdata=ctx.newdata,
-            transpile_reset=opt("transpile_reset", False), silent=silent)
-        rowof = [databank.index.get_loc(p) for p in per]
-        self.pro_pairs = [(eqdict[v], rowof[t]) for v, t in struct["pro_nodes"]]
-        self.epi_pairs = [(eqdict[v], rowof[t]) for v, t in struct["epi_nodes"]]
-        # the Newton residual is evaluated with the core equations only:
-        # prolog/epilog residuals are never read, and evaluating them at
-        # intermediate Newton states can raise (LOG of a transient negative
-        # core value in a reporting equation)
-        self.core_pairs = [(eqdict[v], r) for r in rowof
-                           for v in struct["core"]]
+        ctx.pro, ctx.solve, ctx.epi = self.makelos(
+            "stacksplit", databank,
+            orders=(struct["pro"], struct["core"], struct["epi"]),
+            ljit=opt("ljit", False),
+            stringjit=opt("stringjit", False),
+            transpile_reset=opt("transpile_reset", False),
+            chunk=opt("chunk", 30),
+            newdata=ctx.newdata,
+            silent=silent)
+        m.genrcolumns = databank.columns.copy()
+        m.genrindex = databank.index.copy()
+        return True
 
     def _build_split(self, ctx):
-        """Compute the pro/core/epi variable sets on the collapsed dependency
-        graph and the stacked topological orders (variable name, period index)
-        of the pro and epi nodes.  Only the structural differentiation of the
-        full model is used -- the derivatives are never evaluated."""
-        m, databank = ctx.model, ctx.databank
-        T = len(ctx.sol_periode)
+        """Classify the endogenous variables into prolog / core / epilog so
+        that each part runs as a compiled period loop.
 
-        fulldiff = newton_diff(m, forcenum=True, df=databank, silent=True)
+        The collapsed (variable-level) dependency graph is built from the
+        equations' own right-hand-side terms (``m.allvar[v]['terms']`` with
+        their lags) -- exact, also for kinks like RECODE, which a derivative
+        structure can miss.  Lags and leads couple the periods; a self-edge
+        with lag != 0 is a recursive chain across periods, not simultaneity,
+        and is left out of the graph so cumulating variables stay outside the
+        core.
 
-        def varlag(s):
-            # lag is an int, or the period as written ('2002', "'2002Q1'") for a
-            # variable at a fixed period: s is written like an equation, see tovarlag
-            if "(" in s:
-                name, lag = s.split("(", 1)
-                return name, pt.lag_value(pt.lag_field(lag[:-1]))
-            return s, 0
+        * core: ``___RES`` equations, variables in a cycle of the collapsed
+          graph or depending on their own current value, variables depending
+          on themselves at both a lag and a lead (a true stacked cycle the
+          collapsed graph can not see) or at a fixed period, and variables on
+          a path from the core back into the core.  The core is the Newton
+          system.
+        * prolog: never depends on the core, at any lag or lead -- its values
+          are final before Newton starts.
+        * epilog: never feeds the core -- computed after convergence; it may
+          read core and prolog values at any lag or lead, they are final.
+        * period-loop rule: a forward period loop is only exact when no
+          prolog (epilog) variable reads a lead -- or a fixed period -- of a
+          prolog (epilog) variable, itself included.  Such variables go to
+          the core, repeated until no variable moves (moving one can change
+          the group of the variables depending on it).
 
-        endo = m.endogene
+        Within a period the prolog and the epilog are ordered topologically
+        on their current-period edges (acyclic: every collapsed cycle is in
+        the core).  The core is sorted; that is the row order of the stacked
+        Jacobian.  Depends only on the equations, not on the span.
+        """
+        m = ctx.model
+        endo = set(m.endogene)
         eqname = lambda x: x + "___RES" if x + "___RES" in endo else x
         # (dependency equation, equation, lag): eq depends on dep's unknown at lag
-        cedges = {(eqname(varlag(rhs)[0]), v, varlag(rhs)[1])
-                  for v, deps in fulldiff.diffendocur.items() for rhs in deps}
+        edges = {(eqname(t.var), v, pt.lag_value(t.lag))
+                 for v in endo
+                 for t in m.allvar[v]["terms"][m.allvar[v]["assigpos"]:]
+                 if t.var and eqname(t.var) in endo}
+        is_lead = lambda l: pt.is_fixed_lag(l) or l > 0
 
-        # collapsed variable-level graph; a self-edge with lag != 0 is a
-        # recursive chain across periods, not simultaneity -- leave it out so
-        # cumulating reporting variables stay sweepable
         cg = nx.DiGraph()
-        cg.add_nodes_from(fulldiff.endovar)
-        cg.add_edges_from((a, b) for a, b, l in cedges if a != b or l == 0)
+        cg.add_nodes_from(endo)
+        cg.add_edges_from((a, b) for a, b, l in edges if a != b or l == 0)
 
-        core = {v for v in fulldiff.endovar if v.endswith("___RES")}
+        def closed(core):
+            """The core plus the variables on a path from the core back into
+            the core.  As epilog variables they would only be computed after
+            convergence, so the core equations depending on them would iterate
+            against stale values (happens in hybrid models, where the ___RES
+            equations forced into the core leave normalized equations between
+            them)."""
+            if not core:
+                return core
+            desc = set().union(*(nx.descendants(cg, v) for v in core))
+            anc = set().union(*(nx.ancestors(cg, v) for v in core))
+            return core | (desc & anc)
+
+        def groups(core):
+            """(prolog, epilog) for a given core."""
+            desc = (set().union(*(nx.descendants(cg, v) for v in core))
+                    if core else set())
+            return endo - core - desc, desc - core
+
+        core = {v for v in endo if v.endswith("___RES")}
         for scc in nx.strongly_connected_components(cg):
             if len(scc) > 1:
                 core |= scc
@@ -2666,75 +2753,34 @@ class NewtonStackSolver(SolverBase):
         # promoted: in that period it is its own current value.  Conservative
         # when the period is outside the span.
         selflags = {}
-        for a, b, l in cedges:
+        for a, b, l in edges:
             if a == b:
                 selflags.setdefault(a, set()).add(l)
         core |= {v for v, lags in selflags.items()
                  if any(pt.is_fixed_lag(l) for l in lags)
                  or (min(lags) < 0 and max(lags) > 0)}
 
-        # a variable on a path from the core back into the core (a descendant
-        # AND an ancestor of the core) must be solved with the core: as an
-        # epilog variable it would only be swept after convergence, so the
-        # core equations depending on it would iterate against a stale value
-        # (wrong solution).  It happens when the core is not one strongly
-        # connected block -- notably in a hybrid model, where the ___RES
-        # equations forced into the core leave normalized equations between
-        # them
-        if core:
-            desc = set().union(*(nx.descendants(cg, v) for v in core))
-            anc = set().union(*(nx.ancestors(cg, v) for v in core))
-            core |= desc & anc
+        core = closed(core)
+        pro, epi = groups(core)
+        # period-loop rule
+        while True:
+            bad = {b for a, b, l in edges if is_lead(l)
+                   and ((a in pro and b in pro) or (a in epi and b in epi))}
+            if not bad:
+                break
+            core = closed(core | bad)
+            pro, epi = groups(core)
 
-        desc = (set().union(*(nx.descendants(cg, v) for v in core))
-                if core else set())
-        epi_vars = [v for v in fulldiff.endovar if v not in core and v in desc]
-        pro_vars = [v for v in fulldiff.endovar
-                    if v not in core and v not in desc]
-
-        # period number in the span of each fixed period (None outside the span)
-        fixedpos = {}
-        for a, b, l in cedges:
-            if pt.is_fixed_lag(l) and l not in fixedpos:
-                try:
-                    fixedpos[l] = pt.fixed_period_loc(ctx.sol_periode, l)
-                except KeyError:
-                    fixedpos[l] = None
-
-        def source(l, t):
-            """Period number of a dependency at lag *l* seen from period *t*,
-            None outside the span (a fixed period is the same for every t)."""
-            s = fixedpos[l] if pt.is_fixed_lag(l) else t + l
-            return s if s is not None and 0 <= s < T else None
-
-        def node_order(vars_):
-            """Stacked topological order of (var, t) nodes over *vars_* --
-            acyclic by construction (any collapsed cycle and any mixed-sign
-            self-dependence went to the core)."""
-            vset = set(vars_)
+        def period_order(vars_):
+            """Topological order of *vars_* on their current-period edges."""
             g = nx.DiGraph()
-            g.add_nodes_from((v, t) for v in vars_ for t in range(T))
-            g.add_edges_from(((a, s), (b, t))
-                             for a, b, l in cedges
-                             if a in vset and b in vset
-                             for t in range(T) if (s := source(l, t)) is not None)
-            try:
-                return list(nx.topological_sort(g))
-            except nx.NetworkXUnfeasible:
-                # should be impossible -- the classification above is exact.
-                # If it ever fires the split logic has a hole: fall back to
-                # split=0 and please report the model structure.
-                raise RuntimeError(
-                    "newtonstack_ng split=1: the pro/epi node graph contains "
-                    "a cycle the classification missed -- run with split=0 "
-                    "and report this model structure") from None
+            g.add_nodes_from(vars_)
+            g.add_edges_from((a, b) for a, b, l in edges
+                             if l == 0 and a != b and a in vars_ and b in vars_)
+            return list(nx.lexicographical_topological_sort(g))
 
-        return {"first": ctx.sol_periode[0], "last": ctx.sol_periode[-1],
-                "n_per": T,
-                "core": [v for v in fulldiff.endovar if v in core],
-                "pro": pro_vars, "epi": epi_vars,
-                "pro_nodes": node_order(pro_vars),
-                "epi_nodes": node_order(epi_vars)}
+        return {"kind": "periodloop", "core": sorted(core),
+                "pro": period_order(pro), "epi": period_order(epi)}
 
     def iterate(self, ctx):
         """Stacked Newton over the whole span (relative-change stop). The equation
@@ -2764,12 +2810,12 @@ class NewtonStackSolver(SolverBase):
         colidx_endo = ctx.stackcolindex_endo
         resmask = ctx.is_residual_eq_stacked
 
-        # split mode: prolog variables never depend on the core -- one exact
-        # stacked sweep fixes them for the whole solve
-        if self.pro_pairs:
-            with m.timer("prolog sweep (stacked)", timeit):
-                for func, row in self.pro_pairs:
-                    func(values, values, row)
+        # split mode: prolog variables never depend on the core -- one period
+        # loop before Newton makes them final for the whole solve
+        if ctx.split:
+            with m.timer("prolog (period loop)", timeit):
+                for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
+                    ctx.pro(values, outvalues, row, alfa)
 
         residual = None
         last_base = last_step = None       # previous Newton step, for backoff
@@ -2778,23 +2824,20 @@ class NewtonStackSolver(SolverBase):
                 before = values[rowidx, colidx_endo]
                 with m.timer("calculate new solution", timeit):
                     # split mode: evaluate only the core equations -- see
-                    # _prepare_split (prolog/epilog residuals never read,
-                    # and reporting equations can raise at Newton iterates).
-                    # If the evaluation raises (LOG/SQRT domain error at an
-                    # infeasible iterate), halve the previous Newton step and
-                    # re-evaluate.
+                    # _prepare_split.  If the evaluation raises (LOG/SQRT
+                    # domain error at an infeasible iterate), halve the
+                    # previous Newton step and re-evaluate.
                     for backoff in range(8):
                         try:
-                            if self.core_pairs:
-                                for func, row in self.core_pairs:
-                                    func(values, outvalues, row)
-                                ctx.ittotal += len(ctx.stackrows)
+                            if ctx.split:
+                                for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
+                                    ctx.solve(values, outvalues, row, alfa)
                             else:
                                 for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
                                     ctx.pro(values, outvalues, row, alfa)
                                     ctx.solve(values, outvalues, row, alfa)
                                     ctx.epi(values, outvalues, row, alfa)
-                                    ctx.ittotal += 1
+                            ctx.ittotal += len(ctx.stackrows)
                             break
                         except Exception:
                             if last_step is None or backoff == 7:
@@ -2862,11 +2905,11 @@ class NewtonStackSolver(SolverBase):
         ctx.iteration = iteration
 
         # split mode: epilog (reporting) variables never feed back into the
-        # core -- one exact stacked sweep after convergence
-        if self.epi_pairs:
-            with m.timer("epilog sweep (stacked)", timeit):
-                for func, row in self.epi_pairs:
-                    func(values, values, row)
+        # core -- one period loop after convergence
+        if ctx.split:
+            with m.timer("epilog (period loop)", timeit):
+                for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
+                    ctx.epi(values, outvalues, row, alfa)
 
         # record the equation residual F(y)-y per period at the last iteration (opt-in)
         if keep_residual and residual is not None:
@@ -3791,10 +3834,10 @@ class Solver_ng_Mixin:
         """Solve with next-generation stacked Newton (defaults to ``self.basedf``).
 
         ``split=1``: pro/core/epi decomposition at the stacked level -- Newton
-        (and the stacked LU) only on the variables involved in collapsed-graph
-        cycles; upstream (prolog) variables swept exactly once before, pure
-        reporting (epilog) variables once after convergence.  Analogous to the
-        per-period prolog/core/epilog split of the one-period solvers."""
+        (and the stacked LU) only on the core variables; upstream (prolog)
+        variables computed in one period loop before, pure reporting (epilog)
+        variables in one period loop after convergence.  All three parts are
+        compiled like the other solvers (jitted with ``ljit``)."""
         if databank is None:
             databank = self.basedf
         return NewtonStackSolver(self)(databank, *args, **kwargs)
