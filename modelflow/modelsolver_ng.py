@@ -2485,6 +2485,12 @@ class NewtonStackSolver(SolverBase):
         self.pro_pairs, self.epi_pairs, self.core_pairs = [], [], []
         if split:
             self._prepare_split(ctx)
+            # the split core is evaluated by plain-Python per-equation functions,
+            # so ljit does not speed up the iterations -- say it once per model
+            if opt("ljit", False) and not getattr(m, "ng_stack_split_jit_noted", False):
+                print("newtonstack_ng: split=1 evaluates the core without jit, "
+                      "ljit=1 does not speed up the iterations -- use split=0 with ljit=1")
+                m.ng_stack_split_jit_noted = True
 
         # the cached diff object is shared with newtonstack_fbmin_ng, so it is
         # tagged with what it was built for ('full' or the core equation list);

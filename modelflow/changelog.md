@@ -384,4 +384,6 @@ modelgrabexcel (renamed from model_Excel, which is kept as a stub that warns): E
 Version 2.88 uploaded 
 model.get_histmodel and find_hist_model take tags= (a string or a list of strings) to make a model of the frmls with other tags than IDENT/I, e.g. tags='HIST'; the default is unchanged 
 get_minimal_feedback_set is deterministic (sorted graph, ties broken by name, lexicographical topological sort, sorted hits order), so the feedback set and the solution are the same in every Python session; use_fbmin=True is the default 
+model_parse no longer raises on a function name followed by a signed number or a quoted period, LOG(+25), EXP(-1): a function name is always the function, never a variable (the 2.88 check stopped FRB/US MCE models from loading) 
+newtonstack_ng prints a note (once per model) when split=1 is combined with ljit=1: the split core is evaluated without jit, on FRB/US MCE split=0 with jit is about 2.5 times faster 
 newtonstack_fbmin_ng reports the feedback residual at the solution when it finishes (it printed the residual from before the last Newton step, so "Solved" could show a large residual); keep_residual also stores this final residual 
