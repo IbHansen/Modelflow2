@@ -2644,7 +2644,7 @@ class Dekomp_Mixin():
         end_ = end if end != '' else self.current_per[-1]
 
         mfrml = model(self.allvar[varnavn]['frml'],
-                      funks=self.funks)   # calculate the formular
+                      funks=self.funks, ng=self.ng)   # calculate the formular
         print_per = mfrml.smpl(start_, end_, altdf_)
          
         old_start, old_end = altdf_.index.slice_locs(
@@ -2685,8 +2685,9 @@ class Dekomp_Mixin():
         difdf = {e: smallalt - alldf[e] for e in eksperiments}
         # allres       = {e : mfrml.xgenr(alldf[e],str(e[1]),str(e[1]),silent= True ) for e in eksperiments} # now evaluate each experiment
         # now evaluate each experiment
-        # a variable at a fixed period (X(2002)) is only evaluated by the ng xgenr
-        xgenr = mfrml.xgenr_ng if mfrml.fixed_periods else mfrml.xgenr
+        # the ng xgenr with the ng option; a variable at a fixed period (X(2002))
+        # is only evaluated by the ng xgenr
+        xgenr = mfrml.xgenr_ng if mfrml.ng or mfrml.fixed_periods else mfrml.xgenr
         allres = {e: xgenr(
             alldf[e], e[1], e[1], silent=True) for e in eksperiments}
         # dataframes with the effect of each update

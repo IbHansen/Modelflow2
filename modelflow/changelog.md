@@ -390,3 +390,5 @@ newtonstack_fbmin_ng reports the feedback residual at the solution when it finis
 model option ng=True (model(..., ng=True), modelload(..., ng=True) or mmodel.ng = True) makes a call without solver= dispatch to the ng solvers: xgenr_ng, sim_ng, newton_ng, newtonstack_ng; a normalized simultaneous model gets sim_ng, Newton must be selected with solver=; ng=False (default) keeps the current selection 
 model.fix works when the _X/_D columns are read as integers (all zero): they are made float before the values are set; with pandas 3 it raised TypeError: Invalid value 
 the add-factor model (CALC_ADD_FACTOR equations) follows the model's ng option, also when it is changed later with mmodel.ng = ...
+dekomp evaluates the equation with xgenr_ng when the model has ng=True (as it already did for fixed-period references)
+Version 2.89 uploaded 
