@@ -437,6 +437,184 @@ def extract_model_from_markdown(md_text: str, list_position: str = "front") -> s
     return "\n".join(model_lines)
 
 
+def _as_strings(value) -> list[str]:
+    """None -> [], 'x' -> ['x'], iterable -> list of non-empty strings."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value else []
+    return [v for v in value if v]
+
+
+def _marker_pattern(markers: list[str]) -> str:
+    """Regex alternation for markers; word-like markers only match whole words,
+    so 'FRML' does not match inside 'XFRML' or 'FRMLX'."""
+    parts = []
+    for m in sorted(markers, key=len, reverse=True):
+        pat = re.escape(m)
+        if re.match(r'\w', m):
+            pat = r'(?<!\w)' + pat
+        if re.search(r'\w$', m):
+            pat = pat + r'(?!\w)'
+        parts.append(pat)
+    return '|'.join(parts)
+
+
+def extract_equations(text: str, start=None, end=None, comment=None, transform=None) -> str:
+    """Extract equations from a string in a foreign (or plain) format.
+
+    Parameters
+    ----------
+    text : str
+        The source, e.g. the content of a Gekko .frm file or EViews equations.
+    start : str | list[str] | None
+        Marker(s) which start an equation, e.g. ``'FRML'``. Text outside
+        start ... end is ignored. ``None``: an equation starts right after the
+        previous one (or at the start of the line when ``end`` is None).
+    end : str | list[str] | None
+        Marker(s) which end an equation, e.g. ``'$'`` or ``';'``. An equation
+        can then span several lines. ``None``: one equation per line.
+    comment : str | list[str] | None
+        String(s) which start a comment; the rest of the line is dropped,
+        e.g. ``'()'`` for Gekko or ``"'"`` for EViews.
+    transform : callable | None
+        Called with each equation (markers removed, whitespace collapsed to
+        single spaces) and returns it in ModelFlow form, ``'lhs = rhs'`` or
+        ``'<opts> lhs = rhs'``. Return ``None`` or ``''`` to drop the equation.
+        See :func:`gekko_to_modelflow` and :func:`eviews_to_modelflow`.
+
+    Markers are matched case-insensitively, and word-like markers only as
+    whole words.
+
+    Returns
+    -------
+    str
+        One equation per line, ``lhs = rhs`` or ``<opts> lhs = rhs``, without
+        FRML and $ -- those are added later by clean_expressions (tofrml).
+    """
+    import warnings
+
+    comments = _as_strings(comment)
+    starts = _as_strings(start)
+    ends = _as_strings(end)
+
+    # 1. drop comments, line by line
+    if comments:
+        comment_re = re.compile('|'.join(re.escape(c) for c in comments))
+        lines = [comment_re.split(line, maxsplit=1)[0] for line in text.splitlines()]
+    else:
+        lines = text.splitlines()
+
+    # 2. cut into chunks, each holding at most one equation
+    if ends:
+        chunks = re.split(_marker_pattern(ends), '\n'.join(lines), flags=re.IGNORECASE)
+        unterminated = chunks.pop()            # text after the last end marker
+        if unterminated.strip() and (
+                not starts or re.search(_marker_pattern(starts), unterminated, flags=re.IGNORECASE)):
+            warnings.warn(f'extract_equations: text after the last end marker ignored: {unterminated.strip()[:80]!r}')
+    else:
+        chunks = lines
+
+    # 3. find the equation in each chunk
+    start_re = re.compile(_marker_pattern(starts), flags=re.IGNORECASE) if starts else None
+    statements = []
+    for chunk in chunks:
+        if start_re:
+            found = list(start_re.finditer(chunk))
+            if not found:
+                continue
+            if len(found) > 1:
+                warnings.warn(f'extract_equations: more than one start marker before an end marker, '
+                              f'only the last equation is used: {" ".join(chunk.split())[:80]!r}')
+            chunk = chunk[found[-1].end():]
+        stmt = ' '.join(chunk.split())
+        if not stmt:
+            continue
+        if transform is not None:
+            stmt = transform(stmt)
+            if not stmt or not stmt.strip():
+                continue
+        # a '$' left by a transform would switch tofrml off for the whole model
+        statements.append(stmt.strip().rstrip('$').rstrip())
+
+    return '\n'.join(statements)
+
+
+def to_line_mode(text: str) -> str:
+    """Bring ModelFlow text to one statement per line without '$'.
+
+    tofrml (in clean_expressions) only adds FRML and '$' when there is no '$'
+    at all in the text; with a single '$' anywhere every statement (FRML, LIST,
+    DO, ENDDO, DOABLE) must already be '$'-terminated. Mixing the two -- e.g.
+    list_defs ending in '$' plus extracted equations without -- breaks the
+    model. '$'-terminated text is therefore split on '$', each statement joined
+    to one line and the '$' dropped; '£' comments are removed. Text without
+    '$' is returned unchanged.
+    """
+    if '$' not in text:
+        return text
+    return extract_equations(text, end='$', comment=commentchar)
+
+
+def gekko_to_modelflow(stmt: str, code_map=None) -> str:
+    """Translate one Gekko equation (without FRML and $) to ModelFlow form.
+
+    ``'_SJRD log(C) = 0.5*log(Yd) + 1.5'`` -> ``'<STOC> log(C) = 0.5*log(Yd) + 1.5'``
+
+    The FRML code is mapped to ModelFlow options. Default: the letters after
+    the first one are read as J -> add factor, D -> exogenizing dummy, so J and
+    D -> ``<STOC>``, J only -> ``<ADD>``, D only -> ``<EXO>``, else ``<>``.
+    Gekko's relative J (JR) becomes an ordinary ModelFlow add factor.
+    Pass ``code_map`` (a dict code -> options or a callable) to override, for
+    instance ``functools.partial(gekko_to_modelflow, code_map={'_SJRD': '<est=ls,stoc>'})``.
+    Codes missing from a dict fall back to the default.
+
+    Also translates ``x[-1]`` -> ``x(-1)``, ``^`` -> ``**``, ``dif(``/``diff(`` -> ``DIFF(``
+    and ``pch(`` -> ``PCT_GROWTH(``.
+    """
+    import modelnormalize as nz
+
+    m = re.match(r'\s*(_\w+)\s+(.*)', stmt, flags=re.DOTALL)
+    code, body = (m.group(1), m.group(2)) if m else ('', stmt)
+
+    opts = None
+    if callable(code_map):
+        opts = code_map(code)
+    elif code_map:
+        opts = code_map.get(code, code_map.get(code.upper()))
+    if opts is None:
+        letters = code[2:].upper()
+        has_j, has_d = 'J' in letters, 'D' in letters
+        opts = '<STOC>' if has_j and has_d else '<ADD>' if has_j else '<EXO>' if has_d else '<>'
+
+    body = re.sub(r'\[\s*([+-]?\d+)\s*\]', r'(\1)', body)
+    body = body.replace('^', '**')
+    body = nz.funk_replace_list([('DIF', 'DIFF'), ('PCH', 'PCT_GROWTH')], body)
+    return f'{opts} {body}'
+
+
+def eviews_to_modelflow(stmt: str, behavioral_opts: str = '<>') -> str:
+    """Translate one EViews equation to ModelFlow form.
+
+    ``@IDENTITY`` equations get ``<>``, all other equations get
+    ``behavioral_opts`` (for instance ``'<STOC>'``). EViews functions are
+    translated with :meth:`modelgrabwf2.GrabWf2Model.trans_eviews`
+    (``D(`` -> ``DIFF(``, ``@PC`` -> ``PCT_GROWTH``, ``^`` -> ``**`` ...).
+    """
+    from modelgrabwf2 import GrabWf2Model
+
+    m = re.match(r'\s*@IDENTITY\s+(.*)', stmt, flags=re.IGNORECASE | re.DOTALL)
+    opts, body = ('<>', m.group(1)) if m else (behavioral_opts, stmt)
+    return f'{opts} {GrabWf2Model.trans_eviews(body).strip()}'
+
+
+# type_input presets for Makemodel; explicit eq_start/eq_end/comment_start/transform win
+EXTRACT_PRESETS = {
+    'gekko':  dict(eq_start='FRML', eq_end='$', comment_start='()', transform=gekko_to_modelflow),
+    'eviews': dict(eq_start=None,   eq_end=None, comment_start="'", transform=eviews_to_modelflow),
+}
+
+
 
 # def findlists_in_latex(input):
 #     '''extracte list with sublist from latex'''
@@ -2056,7 +2234,11 @@ class Makemodel(BaseExplode):
     |---|---|
     | `showoriginal_statements` | Input expressions |
     | `showlist_defs` | Lists definitions |
-    | `showtype_input` | Originaal as type modelflow or markdown |
+    | `showtype_input` | Original as type markdown, modelflow, single, gekko or eviews |
+    | `showeq_start` | String(s) which start an equation; giving any extraction argument overrides type_input='markdown' |
+    | `showeq_end` | String(s) which end an equation; None = one per line |
+    | `showcomment_start` | String(s) which start a comment to the end of the line |
+    | `showtransform` | Function translating each extracted equation to ModelFlow |
     | `showreplacements` | list of string tupels with string replacements |
     | `showfunks` | List of user specified functions to be used in model |
     | `showmodelname` | A optional name for this (sub) model |
@@ -2133,7 +2315,13 @@ class Makemodel(BaseExplode):
     normal_expressions    : List[Any] = field(init=False,        metadata={"description": "List of normal expressions"})
     list_specification    : str       = field(init=False,        metadata={"description": "All list specifications in string "})
     modellist             : str       = field(init=False,        metadata={"description": "The lists defined in string as a dictionary"})
-    type_input            : str       = field(default= 'markdown'     ,metadata={"description": "Originaal as type modelflow or markdown"})
+    type_input            : str       = field(default= 'markdown'     ,metadata={"description": "Original as type markdown, modelflow, single, gekko or eviews"})
+    # Equation extraction for non-markdown input, see extract_equations().
+    # type_input='gekko'/'eviews' fills in defaults from EXTRACT_PRESETS.
+    eq_start              : Optional[Any] = field(default=None, metadata={"description": "String(s) which start an equation, e.g. 'FRML'"})
+    eq_end                : Optional[Any] = field(default=None, metadata={"description": "String(s) which end an equation, e.g. '$'; None = one equation per line"})
+    comment_start         : Optional[Any] = field(default=None, metadata={"description": "String(s) which start a comment running to the end of the line"})
+    transform             : Optional[Any] = field(default=None, metadata={"description": "Function translating each extracted equation to ModelFlow, e.g. gekko_to_modelflow"})
     # Optional estimation. An equation is estimated only if its FRML-name
     # contains <estimator=...>/<est=...> or <estimator>/<est>. If the flag has no value,
     # the global estimator below is used. Untagged equations remain identities.
@@ -2158,16 +2346,32 @@ class Makemodel(BaseExplode):
         Untagged equations are treated exactly as before.
         '''
 
-        if   self.type_input == 'markdown': 
+        extract_args_given = any(v is not None for v in
+                                 (self.eq_start, self.eq_end, self.comment_start, self.transform))
+
+        if self.type_input in EXTRACT_PRESETS or extract_args_given:
+           # extraction arguments win over the default type_input='markdown'
+           preset = EXTRACT_PRESETS.get(self.type_input, {})
+           for name, default in preset.items():
+               if getattr(self, name) is None:
+                   setattr(self, name, default)
+           extracted_frml = to_line_mode(self.list_defs) + '\n' + extract_equations(
+               self.original_statements,
+               start=self.eq_start, end=self.eq_end,
+               comment=self.comment_start, transform=self.transform)
+           self.markdown_model = ''
+
+        elif self.type_input == 'markdown':
             extracted_frml = extract_model_from_markdown(self.list_defs+self.original_statements)
             self.markdown_model = (mfmod_list_to_codeblock(self.original_statements))
-            
-        elif self.type_input == 'single':  
+
+        elif self.type_input == 'single':
            extracted_frml = self.original_statements.replace('\n', '')
            self.markdown_model = ''
-            
-        else:   
-           extracted_frml = self.list_defs+self.original_statements
+
+        else:
+           # one statement per line, also when the source is '$'-terminated
+           extracted_frml = to_line_mode(self.list_defs) + '\n' + to_line_mode(self.original_statements)
            self.markdown_model = ''
         
         self.clean_frml_statements = clean_expressions(

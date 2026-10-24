@@ -392,3 +392,4 @@ model.fix works when the _X/_D columns are read as integers (all zero): they are
 the add-factor model (CALC_ADD_FACTOR equations) follows the model's ng option, also when it is changed later with mmodel.ng = ...
 dekomp evaluates the equation with xgenr_ng when the model has ng=True (as it already did for fixed-period references)
 Version 2.89 uploaded 
+Makemodel can extract equations from non-markdown text: eq_start, eq_end, comment_start and transform (extract_equations), with type_input gekko and eviews presets (gekko_to_modelflow, eviews_to_modelflow); non-markdown input (also type_input modelflow) is brought to one statement per line without $ (to_line_mode), so list_defs ending in $ no longer stop tofrml from adding FRML 
