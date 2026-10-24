@@ -657,8 +657,9 @@ class SolverBase:
     #: default value of the ``silent`` option for this solver
     DEFAULT_SILENT = 1
     #: whether an endogenous variable at a fixed period inside the solve span
-    #: (``X(2025)`` solved 2020-2100) is allowed -- for now only for res, which
-    #: evaluates the input values by design; every simulation refuses it, see
+    #: (``X(2025)`` solved 2020-2100) is allowed -- for the stacked solvers,
+    #: which solve every period at once, and for res, which evaluates the
+    #: input values by design; the per-period solvers refuse it, see
     #: ``_check_fixed_periods``
     fixed_in_span_ok = False
 
@@ -785,10 +786,11 @@ class SolverBase:
         before the solve span that is data. For an endogenous X inside the
         span a per-period solver reads the starting value in the periods
         before 2002, and in 2002 itself the dependency is not part of the
-        solve order - so for now a simulation with an endogenous variable at a
-        fixed period inside the span raises an exception. (The stacked
-        solvers handle it exactly, X(2025) is a column of the stacked
-        Jacobian; fixed_in_span_ok = True allows it again.)
+        solve order - so a per-period solver raises an exception for an
+        endogenous variable at a fixed period inside the span. The stacked
+        solvers handle it exactly (X(2025) is a column of the stacked
+        Jacobian, a node of the stacked graph) and set
+        fixed_in_span_ok = True.
         """
         m = ctx.model
         index = ctx.databank.index
@@ -805,8 +807,9 @@ class SolverBase:
             raise Exception(
                 f"{', '.join(inside)} refers to an endogenous variable at a fixed "
                 f"period inside the solve span {ctx.sol_periode[0]} to "
-                f"{ctx.sol_periode[-1]}. That is not allowed in a simulation.\n"
-                "Solve a span without the period, or let an exogenous variable "
+                f"{ctx.sol_periode[-1]}. A per-period solver can not solve that.\n"
+                "Use a stacked solver (newtonstack_ng or newtonstack_fbmin_ng), "
+                "solve a span without the period, or let an exogenous variable "
                 "hold the value.")
 
     def _fixrow_changed(self, cachename, databank):
@@ -2515,7 +2518,7 @@ class NewtonStackSolver(SolverBase):
 
     solvename = "res"          # residual 2-D evaluator (== legacy 'newton')
     needs_outvalues = True
-    fixed_in_span_ok = False   # exact (X(2025) is a column of the stacked Jacobian), but not allowed for now
+    fixed_in_span_ok = True    # exact: X(2025) is a column of the stacked Jacobian
 
     def dump_order(self, ctx):
         """Dump order: the declared (base) endogenous names of the Jacobian object."""
@@ -2632,7 +2635,9 @@ class NewtonStackSolver(SolverBase):
         at an intermediate iterate can raise (LOG of a transient negative
         value).
 
-        Returns False -- solve without split -- when the core is empty.
+        Returns False -- solve without split -- when the core is empty, or
+        when no core equation reads a core variable (the core Jacobian is -I,
+        the derivative model would have no equations).
         """
         m, databank = ctx.model, ctx.databank
         opt = lambda n, d: self._opt(ctx, n, d)
@@ -2641,7 +2646,8 @@ class NewtonStackSolver(SolverBase):
         # purely structural: depends only on the equations, so neither
         # newton_reset nor a new span invalidates it
         struct_stale = (getattr(m, "ng_stack_split_struct", {}).get("kind")
-                        != "periodloop")
+                        != "periodloop"
+                        or "coupled" not in m.ng_stack_split_struct)
         if struct_stale:
             if not silent:
                 print("Building the stacked pro/core/epi split")
@@ -2654,6 +2660,11 @@ class NewtonStackSolver(SolverBase):
         if not struct["core"]:
             if not silent:
                 print("newtonstack_ng split=1: the core is empty, solving without split")
+            return False
+        if not struct["coupled"]:
+            if not silent:
+                print("newtonstack_ng split=1: no core equation reads a core variable, "
+                      "solving without split")
             return False
 
         ctx.pro, ctx.solve, ctx.epi = self.makelos(
@@ -2779,8 +2790,15 @@ class NewtonStackSolver(SolverBase):
                              if l == 0 and a != b and a in vars_ and b in vars_)
             return list(nx.lexicographical_topological_sort(g))
 
+        # whether a core equation reads a core variable (at any lag). Not when
+        # the core only holds variables moved there by the period-loop rule,
+        # like Z = Y/Y(2025) with Y in the prolog: the core Jacobian is then
+        # -I and the derivative model would have no equations
+        coupled = any(a in core and b in core for a, b, l in edges)
+
         return {"kind": "periodloop", "core": sorted(core),
-                "pro": period_order(pro), "epi": period_order(epi)}
+                "pro": period_order(pro), "epi": period_order(epi),
+                "coupled": coupled}
 
     def iterate(self, ctx):
         """Stacked Newton over the whole span (relative-change stop). The equation
@@ -3031,7 +3049,7 @@ class NewtonStackFbminSolver(SolverBase):
 
     solvename = "stackeq"
     needs_outvalues = True
-    fixed_in_span_ok = False   # exact (X(2025) is a node of the stacked graph), but not allowed for now
+    fixed_in_span_ok = True    # exact: X(2025) is a node of the stacked graph
     DEFAULT_JACOBIAN = "stack"
     #: SCCs larger than this use the collapsed variable-level feedback set
     #: instead of the cycle-by-cycle FVS heuristic (which is O(n_fb * edges)

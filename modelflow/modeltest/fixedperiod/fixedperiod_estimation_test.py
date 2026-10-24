@@ -89,7 +89,7 @@ mm = Makemodel('''FRML <estimator=ols,smpl=2001 2020> Y = C(1) + C(2)*(X/X(2005)
 FRML <> W = Y/Y(2005)*100 $''', input_df=df, type_input='modelflow')
 print(mm.normal_frml)
 assert 'X/X(2005)' in mm.normal_frml and 'Y/Y(2005)' in mm.normal_frml
-# W uses the endogenous Y in 2005: not allowed with 2005 inside the solve span (for now)
+# W uses the endogenous Y in 2005: the default (per-period) solver refuses 2005 inside the solve span
 expect_error(lambda: mm.mmodel(df, 2001, 2020, silent=1), 'Y(2005) inside the solve span')
 mres = mm.mmodel(df, 2006, 2020, silent=1)          # after 2005: Y(2005) is data
 assert close(mres.loc[2006:2020, 'W'], mres.Y.loc[2006:2020] / df.loc[2005, 'Y'] * 100)

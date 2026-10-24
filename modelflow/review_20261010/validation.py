@@ -87,7 +87,7 @@ for name,fn in [('laglead',laglead),('hybrid',hybrid),('normalization',normaliza
 for script in ['fixedperiod_test.py','fixedperiod_estimation_test.py']:
     def run(script=script):
         with open(script+'.log','w',encoding='utf-8') as log,contextlib.redirect_stdout(log),contextlib.redirect_stderr(log):
-            runpy.run_path(str(ROOT/'modeltest'/script),run_name='__main__')
+            runpy.run_path(str(ROOT/'modeltest'/'fixedperiod'/script),run_name='__main__')
     check(script,run)
 print('\nVALIDATION RESULTS')
 for name,result in checks:

@@ -12,9 +12,11 @@ value of X in 2002, X('2002Q1') in a quarterly model, X('2002-03') in a monthly.
   solvers raise an exception.
 * The generated code reads the databank row of 2002 - a constant, so the code
   is regenerated when the same columns come with another index.
-* For now a simulation refuses an endogenous variable at a fixed period inside
-  the solve span; res_ng, which only evaluates, allows it. (The stacked
-  Jacobian has the derivative in the column of the period, cell 10.)
+* A per-period solver refuses an endogenous variable at a fixed period inside
+  the solve span; res_ng, which only evaluates, allows it, and so do the
+  stacked solvers, which solve it exactly (the stacked Jacobian has the
+  derivative in the column of the period, cell 10) - tested in
+  fixedperiod_inspan_test.py.
 
 Run the #%% cells in order.  Each cell prints what it checks; an assert stops
 at the first wrong number.
@@ -190,10 +192,11 @@ expect_error(lambda: msim.sim(dfs, 2005, 2010), 'legacy sim')
 expect_error(lambda: msim.res(dfs, 2005, 2010), 'legacy res')
 expect_error(lambda: msim.sim1d_ng(dfs, 2005, 2010), 'sim1d_ng')
 
-#%% 9. an endogenous variable at a fixed period inside the solve span is not allowed (for now)
+#%% 9. an endogenous variable at a fixed period inside the solve span: the per-period solvers refuse
+# (the stacked solvers solve it, see fixedperiod_inspan_test.py)
 mins = model('Y = 0.5*Y(-1) + X \n Z = Y/Y(2006)*100', modelname='fixinspan')
 dfi = pd.DataFrame({'X': np.linspace(1, 3, n), 'Y': 1.0, 'Z': 0.0}, index=years)
-for solver in ['xgenr_ng', 'sim_ng', 'newton_ng', 'newtonstack_ng', 'newtonstack_fbmin_ng']:
+for solver in ['xgenr_ng', 'sim_ng', 'newton_ng']:
     expect_error(lambda: getattr(mins, solver)(dfi, 2003, 2010, silent=1),
                  f'{solver} with Y(2006) inside 2003-2010')
 expect_error(lambda: mins(dfi, 2003, 2010, silent=1), 'model() with Y(2006) inside 2003-2010')
@@ -213,7 +216,7 @@ print(nd.diff_model.equations)
 jac = nd.get_diff_df_tot(df=dfi)
 print(jac.loc[(slice(None), 'Z'), (slice(None), 'Y')].round(2))
 
-#%% 11. a simultaneous model with the fixed period inside the span is refused too
+#%% 11. a simultaneous model with the fixed period inside the span is refused by the per-period solvers too
 msim2 = model('''
 C = 0.6*Y + 0.2*C(-1) + 0.1*Y(2006)
 Y = C + G
@@ -221,7 +224,7 @@ Z = Y/Y(2006)*100
 ''', modelname='fixinspan2')
 dfs2 = pd.DataFrame({'G': np.linspace(20, 30, n), 'C': 60.0, 'Y': 100.0, 'Z': 0.0},
                     index=years)
-for solver in ['sim_ng', 'newton_ng', 'newton_fbmin_ng', 'newtonstack_ng', 'newtonstack_fbmin_ng']:
+for solver in ['sim_ng', 'newton_ng', 'newton_fbmin_ng']:
     expect_error(lambda: getattr(msim2, solver)(dfs2, 2003, 2010, silent=1),
                  f'{solver}, simultaneous, Y(2006) inside 2003-2010')
 print('ok')
