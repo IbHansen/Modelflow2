@@ -3876,3 +3876,32 @@ class Solver_ng_Mixin:
         if databank is None:
             databank = self.basedf
         return NewtonStackFbminSolver(self)(databank, *args, **kwargs)
+
+    def stack_info(self):
+        """Print the size of the last stacked Newton system (``newtonstack_ng``):
+        the periods solved together, the pro/core/epi split, the stacked
+        Jacobian and the nonzeros of its LU factorization.  Call it after a
+        solve."""
+        diff = getattr(self, "ng_newton_diff_stack", None)
+        jac = getattr(diff, "stacked", None)
+        if jac is None:
+            raise Exception("No stacked Newton system yet: solve with newtonstack_ng first")
+        per = getattr(self, "ng_old_stack_periode", self.current_per)
+        n, nunknown = jac.shape[0], len(diff.endovar)
+        print(f"Periods solved together      : {len(per)} ({per[0]} to {per[-1]})")
+        print(f"Endogenous variables         : {len(self.endogene)}")
+        if getattr(self, "ng_newton_diff_stack_key", "full") != "full":
+            s = self.ng_stack_split_struct
+            print(f"  core / prolog / epilog     : {len(s['core'])} / {len(s['pro'])} / {len(s['epi'])}")
+        print(f"Newton unknowns per period   : {nunknown}")
+        print(f"Stacked Jacobian             : {n:,} x {n:,} = {n * n:,} elements")
+        print(f"  nonzero                    : {jac.nnz:,} ({jac.nnz / n / n:.4%}), {jac.nnz / n:.1f} per row")
+        # get_solvestacked keeps the SuperLU solve method; its object holds L and U
+        lu = getattr(getattr(diff, "solvestacked", None), "__self__", None)
+        if hasattr(lu, "L"):
+            fill = lu.L.nnz + lu.U.nnz
+            print(f"LU factorization (SuperLU {getattr(diff, 'permc_spec', None) or 'NATURAL'})")
+            print(f"  nonzero in L + U           : {fill:,} ({fill / jac.nnz:.1f} times the Jacobian)")
+            print(f"  memory, about              : {fill * 12 / 1e6:,.1f} MB")
+        else:
+            print("LU factorization             : nonzeros not available (factorizer='umfpack')")

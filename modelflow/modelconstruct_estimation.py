@@ -598,14 +598,14 @@ def eviews_to_modelflow(stmt: str, behavioral_opts: str = '<>') -> str:
 
     ``@IDENTITY`` equations get ``<>``, all other equations get
     ``behavioral_opts`` (for instance ``'<STOC>'``). EViews functions are
-    translated with :meth:`modelgrabwf2.GrabWf2Model.trans_eviews`
+    translated with :meth:`modelgrabwf2.GrabWfModel.trans_eviews`
     (``D(`` -> ``DIFF(``, ``@PC`` -> ``PCT_GROWTH``, ``^`` -> ``**`` ...).
     """
-    from modelgrabwf2 import GrabWf2Model
+    from modelgrabwf2 import GrabWfModel
 
     m = re.match(r'\s*@IDENTITY\s+(.*)', stmt, flags=re.IGNORECASE | re.DOTALL)
     opts, body = ('<>', m.group(1)) if m else (behavioral_opts, stmt)
-    return f'{opts} {GrabWf2Model.trans_eviews(body).strip()}'
+    return f'{opts} {GrabWfModel.trans_eviews(body).strip()}'
 
 
 # type_input presets for Makemodel; explicit eq_start/eq_end/comment_start/transform win

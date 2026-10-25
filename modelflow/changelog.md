@@ -397,3 +397,6 @@ newtonstack_ng and newtonstack_fbmin_ng solve a model with an endogenous variabl
 newtonstack_ng split=1 solves without split when no core equation reads a core variable (the core only holds variables reading a lead or a fixed period of the prolog, like Z = Y(+1) in a recursive model); it raised AttributeError "allvar" from an empty derivative model 
 model.run_on_load = True is saved by modeldump (.pcim and .pcimz), and modelload then simulates the model with the saved period and options when it is loaded (run=None is the new default; run=True/False still decides) 
 Version 2.90 uploaded 
+model.stack_info() prints the size of the last stacked Newton system (newtonstack_ng): periods solved together, core/prolog/epilog split, the stacked Jacobian and its nonzeros, and the nonzeros and memory of the SuperLU factorization 
+Version 2.91 uploaded 
+Makemodel type_input='eviews' (eviews_to_modelflow) failed with ImportError: it imported GrabWf2Model, the class in modelgrabwf2 is GrabWfModel 
