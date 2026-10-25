@@ -93,6 +93,33 @@ assert 'X/X(2005)' in mm.normal_frml and 'Y/Y(2005)' in mm.normal_frml
 expect_error(lambda: mm.mmodel(df, 2001, 2020, silent=1), 'Y(2005) inside the solve span')
 mres = mm.mmodel(df, 2006, 2020, silent=1)          # after 2005: Y(2005) is data
 assert close(mres.loc[2006:2020, 'W'], mres.Y.loc[2006:2020] / df.loc[2005, 'Y'] * 100)
+# a stacked solver solves it: Y(2005) is the solved Y in 2005
+mstk = mm.mmodel.newtonstack_ng(df, 2001, 2020, silent=1)
+assert close(mstk.loc[2001:2020, 'W'], mstk.Y.loc[2001:2020] / mstk.loc[2005, 'Y'] * 100, tol=1e-6)
+assert close(mstk.loc[2005, 'W'], 100.0, tol=1e-6)
+print('ok')
+
+#%% 6b. Makemodel estimation only, two equations, with and without FRML ... $: the same estimates as the workaround
+# the second equation: V depends on Y relative to 2005
+df['V'] = 1.0 + 0.5 * df.Y / df.loc[2005, 'Y'] + 2.0 * df.Z + rng.normal(0, 0.05, n)
+df['Y_AT_2005'] = df.loc[2005, 'Y']
+ref_v = Estimate_ols(org_eq='V = C(1) + C(2)*(Y/Y_AT_2005) + C(3)*Z', input_df=df,
+                     smpl=(2001, 2020), ecm=False)
+with_frml = Makemodel('''FRML <estimator=ols,smpl=2001 2020> Y = C(1) + C(2)*(X/X(2005)) + C(3)*Z $
+FRML <estimator=ols,smpl=2001 2020> V = C(1) + C(2)*(Y/Y(2005)) + C(3)*Z $''',
+                      input_df=df, type_input='modelflow')
+without_frml = Makemodel('''<estimator=ols,smpl=2001 2020> Y = C(1) + C(2)*(X/X(2005)) + C(3)*Z
+<estimator=ols,smpl=2001 2020> V = C(1) + C(2)*(Y/Y(2005)) + C(3)*Z''',
+                         input_df=df, type_input='modelflow')
+for name, mx in [('with FRML $', with_frml), ('without FRML $', without_frml)]:
+    print(f'{name}:\n{mx.normal_frml}')
+    assert 'X/X(2005)' in mx.normal_frml and 'Y/Y(2005)' in mx.normal_frml
+    assert len(mx.estimation_records) == 2
+    for rec, reference in zip(mx.estimation_records, [ref, ref_v]):    # cell 3 has ref for Y
+        est = rec['estimator_object']
+        print(rec['original_expression'], est.coef_estimate_dict)
+        assert close(list(est.coef_estimate_dict.values()), list(reference.coef_estimate_dict.values()))
+assert with_frml.normal_frml == without_frml.normal_frml
 print('ok')
 
 #%% 7. quarterly: the period as text, as for indexing the dataframe

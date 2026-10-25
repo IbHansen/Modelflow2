@@ -6924,6 +6924,7 @@ class Json_Mixin():
             'current_per': current_per_json ,
             'modelname': self.name,
             'oldkwargs': self.__dict__.get('oldkwargs',{}),
+            'run_on_load': self.__dict__.get('run_on_load', False),
             'var_description': self.var_description,
             'equations_latex': self.equations_latex ,
             'keep_solutions': {k:v.to_json(double_precision=15) for k,v in self.keep_solutions.items()} if (keep and dump_data) else {},
@@ -6947,16 +6948,17 @@ class Json_Mixin():
             return json.dumps(dumpjson)
 
     @classmethod
-    def modelload(cls, infile, funks=[], run=False, keep_json=False, 
+    def modelload(cls, infile, funks=[], run=None, keep_json=False,
          default_url=r'https://raw.githubusercontent.com/IbHansen/modelflow-manual/main/model_repo/',**kwargs):
         '''
-             
+
 
              Parameters
              ----------
              infile : A file name or an url with a .pcim file
              funks : Functions to use in the resulting model
-             run : simulate the model with the saved time and options 
+             run : simulate the model with the saved time and options. None (default)
+                   simulates if the model was dumped with model.run_on_load = True
              keep_json : save a dict (self.json_keep) in the model instance 
              default_url : TYPE, optional
                  Where to look if the file is not avaiable. The default is r'https://raw.githubusercontent.com/IbHansen/modelflow-manual/main/model_repo/'.
@@ -7061,7 +7063,10 @@ class Json_Mixin():
         modelname = input['modelname']
         # breakpoint()
         mmodel = cls(frml, modelname=modelname, funks=funks,**kwargs)
-        mmodel.oldkwargs = input.get('oldkwargs',{}) 
+        mmodel.oldkwargs = input.get('oldkwargs',{})
+        mmodel.run_on_load = input.get('run_on_load', False)
+        if run is None:
+            run = mmodel.run_on_load and has_data
         mmodel.json_current_per = current_per
         mmodel.set_var_description(input.get('var_description', {}))
         mmodel.equations_latex = input.get('equations_latex', '')

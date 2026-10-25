@@ -217,6 +217,7 @@ class Parquet_Mixin:
             'frml': self.equations,
             'modelname': self.name,
             'oldkwargs': self.oldkwargs,
+            'run_on_load': self.__dict__.get('run_on_load', False),
             'var_description': self.var_description,
             'equations_latex': self.equations_latex,
             'wb_MFMSAOPTIONS': (
@@ -270,7 +271,7 @@ class Parquet_Mixin:
         cls,
         infile,
         funks=[],
-        run=False,
+        run=None,
         keep_json=False,
         default_url=(
             r'https://raw.githubusercontent.com/IbHansen/'
@@ -286,8 +287,9 @@ class Parquet_Mixin:
             File name or URL.
         funks : list
             User-supplied functions for the model.
-        run : bool
-            If True, simulate after loading.
+        run : bool or None
+            If True, simulate after loading. None (default) simulates if the
+            model was dumped with ``model.run_on_load = True``.
         keep_json : bool
             If True, stash the raw metadata dict on the model instance.
         **kwargs
@@ -326,7 +328,7 @@ class Parquet_Mixin:
     # ── internal: load from feather/zip ──────────────────────────────────
 
     @classmethod
-    def _load_feather_zip(cls, pinfile, funks=[], run=False,
+    def _load_feather_zip(cls, pinfile, funks=[], run=None,
                           keep_json=False, **kwargs):
         """Read a .pcimz archive and reconstruct the model.
         
@@ -383,6 +385,9 @@ class Parquet_Mixin:
             modelname = meta['modelname']
             mmodel = cls(frml, modelname=modelname, funks=funks, **kwargs)
             mmodel.oldkwargs = meta.get('oldkwargs', {})
+            mmodel.run_on_load = meta.get('run_on_load', False)
+            if run is None:
+                run = mmodel.run_on_load
             mmodel.json_current_per = current_per
             mmodel.set_var_description(meta.get('var_description', {}))
             mmodel.equations_latex = meta.get('equations_latex', '')
