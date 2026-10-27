@@ -736,6 +736,10 @@ if AnyWidget is not None:
             self.observe(self._refresh, names=self._settings)
             self._refresh()
 
+        def __repr__(self):
+            # the text/plain output, shown where the widget is not run (a static book)
+            return f'Interactive causality viewer for {self.var}, run the notebook to use it'
+
         def _refresh(self, change=None):
             navn = self.var.upper()
             if navn not in self.mmodel.allvar:
