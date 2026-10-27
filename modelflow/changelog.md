@@ -400,3 +400,7 @@ Version 2.90 uploaded
 model.stack_info() prints the size of the last stacked Newton system (newtonstack_ng): periods solved together, core/prolog/epilog split, the stacked Jacobian and its nonzeros, and the nonzeros and memory of the SuperLU factorization 
 Version 2.91 uploaded 
 Makemodel type_input='eviews' (eviews_to_modelflow) failed with ImportError: it imported GrabWf2Model, the class in modelgrabwf2 is GrabWfModel 
+model.test_model now reports equations whose calculated value is NaN (before, NaN slipped through the tolerance test), with the number of NaN periods and the first one 
+Version 2.92 uploaded 
+ng solvers no longer report a solution with NaN or inf as converged (the relconv test skipped NaN); sim_ng stops iterating on NaN and names the NaN variables, also NaN in prolog/epilog 
+model.sim, sim1d and base_sim no longer report a solution with NaN or inf as converged; sim and sim1d stop iterating on NaN and name the NaN variables, also NaN in prolog/epilog 

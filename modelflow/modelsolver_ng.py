@@ -124,6 +124,7 @@ from scipy.sparse.linalg import splu
 from tqdm import tqdm
 
 import modelpattern as pt
+from modelhelp import nonfinite_places
 from modelnewton import newton_diff
 
 DEFAULT_relconv = 0.0000001
@@ -700,6 +701,9 @@ class SolverBase:
         tested only if ``|before| >= absconv``; convergence means every tested
         variable moved less than ``relconv`` in relative terms between iterations.
 
+        A NaN or inf in ``after`` is never converged (``absconv <= |NaN|`` is
+        False, so it would otherwise drop out of the test).
+
         Returns ``(converged, relchange)`` where ``relchange`` is the per-element
         relative change (0 where not tested).
         """
@@ -713,6 +717,7 @@ class SolverBase:
             converged = bool((relchange[select] <= relconv).all())
         else:
             converged = True
+        converged = converged and bool(np.isfinite(after).all())
         return converged, relchange
 
     @staticmethod
@@ -1236,6 +1241,7 @@ class GaussSeidelSolver(SolverBase):
 
         convplace = ctx.convplace
         convnames = m.list_names(self.conv_order(ctx), opt("conv", "*"))
+        endonames = list(m.endogene)   # same order as ctx.endoplace
         bars = "{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt}"
 
         for fairiteration in range(ctx.fair_max_iterations):
@@ -1274,11 +1280,24 @@ class GaussSeidelSolver(SolverBase):
                                 if not silent:
                                     print(f"{m.periode} Solved in {iteration} iterations")
                                 break
+                            nonfinite = nonfinite_places(itafter)
+                            if len(nonfinite):
+                                # iterating more will not remove a NaN, stop and say where
+                                bad = [convnames[i] for i in nonfinite]
+                                print(f"{m.periode} not converged, NaN or inf in {len(bad)} variables after {iteration} iterations: {' '.join(bad[:10])}{' ...' if len(bad) > 10 else ''}")
+                                break
                             itbefore = itafter
                     else:
                         print(f"{m.periode} not converged in {iteration} iterations")
 
                     ctx.epi(values, values, row, 1.0)
+
+                    # the convergence test only sees the core, prolog/epilog can also be NaN
+                    nonfinite = nonfinite_places(values[row, ctx.endoplace])
+                    if len(nonfinite) and ctx.convergence:
+                        ctx.convergence = False
+                        bad = [endonames[i] for i in nonfinite]
+                        print(f"{m.periode} NaN or inf in {len(bad)} endogenous variables: {' '.join(bad[:10])}{' ...' if len(bad) > 10 else ''}")
 
                     # record the equation residual F(y)-y at the last iteration,
                     # only when the user asked for it (needs the extra res model)

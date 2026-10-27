@@ -116,6 +116,7 @@ from modelhelp import cutout, update_var
 from modelnormalize import normal
 from modeldekom import totdif
 from modelhelp import debug_var
+from modelhelp import nonfinite_places
 
 
 # functions used in BL language
@@ -1027,7 +1028,8 @@ class BaseModel():
                     convergence = True
                     for after, before in zip(itafter, itbefore):
                         #                        print(before,after)
-                        if before > absconv and abs(after-before)/abs(before) > relconv:
+                        # NaN fails before > absconv, so it has to be tested on its own
+                        if not np.all(np.isfinite(after)) or (before > absconv and abs(after-before)/abs(before) > relconv):
                             convergence = False
                             break
                     if convergence:
@@ -2105,13 +2107,16 @@ class Model_help_Mixin():
                 if nofit and v.endswith('_FITTED'): continue
                 check = self.get_values(v,pct=True).T
                 check.columns = ['Before check','After calculation','Difference','Pct']
-                if (check.Difference.abs() >= tol).any():
+                # NaN >= tol is False, so a calculated NaN has to be caught separately
+                isnan = check['After calculation'].isna()
+                if (check.Difference.abs() >= tol).any() or isnan.any():
                     err=err+1
                     maxdiff = check.Difference.abs().max()
                     maxpct  = check.Pct.abs().max()
+                    nantext = f' NaN in {isnan.sum()} periods from {check.index[isnan][0]}' if isnan.any() else ''
                     if err==1 :
-                        print('\nVariable with residuals above threshold')
-                    print(f"{v:{self.maxnavlen}}, Max difference:{maxdiff:15.8f} Max Pct {maxpct:15.10f}% It is number {i:5} in the solveorder and error number {err}")
+                        print('\nVariable with residuals above threshold or NaN result')
+                    print(f"{v:{self.maxnavlen}}, Max difference:{maxdiff:15.8f} Max Pct {maxpct:15.10f}% It is number {i:5} in the solveorder and error number {err}{nantext}")
                     if showall:
                         print(f'{self.allvar[v]["frml"]}')
                         print(f'{self.var_description[v]}')
@@ -7637,7 +7642,8 @@ class Solver_Mixin():
         # this is how convergence is measured
         convplace = [databank.columns.get_loc(c) for c in convvar]
         convergence = True
-        endoplace = [databank.columns.get_loc(c) for c in list(self.endogene)]
+        endovar = list(self.endogene)
+        endoplace = [databank.columns.get_loc(c) for c in endovar]
         # breakpoint()
         if ldumpvar:
             self.dumplist = []
@@ -7665,6 +7671,7 @@ class Solver_Mixin():
                             values[row, c] = values[row-1, c]
                     itbefore = values[row, convplace]
                     self.pro2d(values, values,  row,  1.0)
+                    corenan = False
                     for iteration in range(max_iterations):
                         with self.timer(f'Evaluate {self.periode}/{iteration} ', timeon) as t:
                             self.solve2d(values, values, row,  alfa)
@@ -7676,18 +7683,30 @@ class Solver_Mixin():
                         if iteration > first_test:
                             itafter = values[row, convplace]
                             select = absconv <= np.abs(itbefore)
+                            # NaN drops out of select, so it has to be tested on its own
+                            nonfinite = nonfinite_places(itafter)
                             convergence = (
-                                np.abs((itafter-itbefore)[select])/np.abs(itbefore[select]) <= relconv).all()
+                                np.abs((itafter-itbefore)[select])/np.abs(itbefore[select]) <= relconv).all() and not len(nonfinite)
                             if convergence:
                                 if not silent:
                                     print(
                                         f'{self.periode} Solved in {iteration} iterations')
                                 break
+                            if len(nonfinite):
+                                corenan = True
+                                bad = [convvar[i] for i in nonfinite]
+                                print(f"{self.periode} not converged, NaN or inf in {len(bad)} variables after {iteration} iterations: {' '.join(bad[:10])}{' ...' if len(bad) > 10 else ''}")
+                                break
                             itbefore = itafter
                     else:
                         print(f'{self.periode} not converged in {iteration} iterations')
-    
+
                     self.epi2d(values, values, row,  1.0)
+                    # the convergence test only sees the core, prolog/epilog can also be NaN
+                    nonfinite = nonfinite_places(values[row, endoplace])
+                    if len(nonfinite) and not corenan:
+                        bad = [endovar[i] for i in nonfinite]
+                        print(f"{self.periode} NaN or inf in {len(bad)} endogenous variables: {' '.join(bad[:10])}{' ...' if len(bad) > 10 else ''}")
                     pbar.update()
         endtime = time.time()
 
@@ -7972,7 +7991,8 @@ class Solver_Mixin():
 #        convplace=[databank.columns.get_loc(c) for c in convvar] # this is how convergence is measured
         convplace = [self.allvar[c]['startnr'] -
                      self.allvar[c]['maxlead'] for c in convvar]
-        endoplace = [databank.columns.get_loc(c) for c in list(self.endogene)]
+        endovar = list(self.endogene)
+        endoplace = [databank.columns.get_loc(c) for c in endovar]
 
         convergence = True
 
@@ -8007,6 +8027,7 @@ class Solver_Mixin():
                 itbeforeold = [a[c] for c in convplace]
                 itbefore = a[convplace]
                 this_pro1d(a,  1.0)
+                corenan = False
                 for iteration in range(max_iterations):
                     with self.timer(f'Evaluate {self.periode}/{iteration} ', timeon) as t:
                         this_solve1d(a,  alfa)
@@ -8019,20 +8040,32 @@ class Solver_Mixin():
                         itafter = a[convplace]
                         # breakpoint()
                         select = absconv <= np.abs(itbefore)
+                        # NaN drops out of select, so it has to be tested on its own
+                        nonfinite = nonfinite_places(itafter)
                         convergence = (
-                            np.abs((itafter-itbefore)[select])/np.abs(itbefore[select]) <= relconv).all()
+                            np.abs((itafter-itbefore)[select])/np.abs(itbefore[select]) <= relconv).all() and not len(nonfinite)
                         if convergence:
                             if not silent:
                                 print(
                                     f'{self.periode} Solved in {iteration} iterations')
                             break
+                        if len(nonfinite):
+                            corenan = True
+                            bad = [convvar[i] for i in nonfinite]
+                            print(f"{self.periode} not converged, NaN or inf in {len(bad)} variables after {iteration} iterations: {' '.join(bad[:10])}{' ...' if len(bad) > 10 else ''}")
+                            break
                         itbefore = itafter
                 else:
                     print(f'{self.periode} not converged in {iteration} iterations')
-                    
+
                 this_epi1d(a,  1.0)
 
                 self.saveeval3(values, row, a)
+                # the convergence test only sees the core, prolog/epilog can also be NaN
+                nonfinite = nonfinite_places(values[row, endoplace])
+                if len(nonfinite) and not corenan:
+                    bad = [endovar[i] for i in nonfinite]
+                    print(f"{self.periode} NaN or inf in {len(bad)} endogenous variables: {' '.join(bad[:10])}{' ...' if len(bad) > 10 else ''}")
 
         if ldumpvar:
             self.dumpdf = pd.DataFrame(self.dumplist)

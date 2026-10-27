@@ -133,6 +133,23 @@ def update_var(databank,xvar,operator='=',inputval=0,start='',end='',create=1, l
                     print(('{:<'+forspalte+'} {:>20.4f} {:>20.4f} {:>20.4f}').format(str(i),orgdata[i],newdata[i],diff[i]))                
 
 
+def nonfinite_places(values):
+    ''' positions in the 1-d array values which are NaN or inf
+
+    values can be an object array (when the model has matrix variables), then
+    each cell is tested and a matrix counts if any of its elements is NaN or inf '''
+    values = np.asarray(values)
+    if values.dtype != object:
+        return np.flatnonzero(~np.isfinite(values))
+    out = []
+    for i, v in enumerate(values):
+        try:
+            if not np.all(np.isfinite(v)):
+                out.append(i)
+        except TypeError:   # not a number, so it can not be NaN
+            pass
+    return np.array(out, dtype=int)
+
 def tovarlag(var,lag):
     ''' creates a stringof var(lag) if lag else just lag '''
     if type(lag)==int:
