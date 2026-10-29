@@ -405,3 +405,4 @@ Version 2.92 uploaded
 ng solvers no longer report a solution with NaN or inf as converged (the relconv test skipped NaN); sim_ng stops iterating on NaN and names the NaN variables, also NaN in prolog/epilog 
 model.sim, sim1d and base_sim no longer report a solution with NaN or inf as converged; sim and sim1d stop iterating on NaN and name the NaN variables, also NaN in prolog/epilog 
 model.causality shows "Interactive causality viewer for VAR, run the notebook to use it" where the widget is not run, as in a static book (it showed <modelcausality.CausalityViewer object at 0x...>) 
+model.draw and tracepre/tracedep no longer fail with a graphviz syntax error when a variable description contains a double quote (html_replace now escapes " as &quot;) 

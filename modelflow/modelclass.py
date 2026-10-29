@@ -3176,7 +3176,7 @@ class Description_Mixin():
         out = (ind.replace('&','&#38;').replace('<', '&lt;').replace('>', '&gt;').replace('\n', '&#10;')
                .replace('æ', '&#230;').replace('ø', '&#248;').replace('å', '&#229;')
                .replace('Æ', '&#198;').replace('Ø', '&#216;').replace('Å', '&#197;')
-               .replace('$','&#36;')
+               .replace('$','&#36;').replace('"', '&quot;')
                )
         return out
 
