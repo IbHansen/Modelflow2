@@ -9647,9 +9647,23 @@ class Solver_Mixin():
 
     def errfunk(self, values, linenr, overhead=4, overeq=0):
         '''Development function to handle run time errors in model calculations'''
-    
+
         import pandas as pd
-    
+
+        if getattr(self, 'errfunk_defer', False):
+            # a Newton trial step: keep the error point, the solver dumps it only if it gives up
+            self.errfunk_deferred = (values.copy(), linenr, overhead, overeq)
+            return
+
+        if hasattr(self, 'dumplist'):
+            # first, so the returns below keep it, and it must never mask the real error
+            dumplist = self.dumplist
+            del self.dumplist
+            try:
+                self.dumpdf = pd.DataFrame(dumplist, columns=['fair', 'per', 'iteration'] + list(self.dump))
+            except Exception as e:
+                print('>> Could not build .dumpdf:', e)
+
         def find_log_arguments(text):
             """Return all arguments inside balanced LOG(...) calls."""
             out = []
@@ -9696,7 +9710,8 @@ class Solver_Mixin():
         outeq = self.allvar[errvar]['frml']
     
         print('>>:', outeq,)
-        print('In:', self.periode,'\n')
+        per = getattr(self, 'periode', None)     # not set if the error comes before the period loop
+        print('In:', per if per is not None else 'unknown period', '\n')
         print('Below you will find information which might help you identify the problem')
         terms = self.allvar[errvar]['terms']
         
@@ -9709,7 +9724,7 @@ class Solver_Mixin():
                     
    
         try:
-            basepos = self.errdump.index.get_loc(self.periode)
+            basepos = self.errdump.index.get_loc(per)
             rows = []
             seen = set()
     
@@ -9748,8 +9763,8 @@ class Solver_Mixin():
                 for arg in log_args:
                     try:
                         val = self.errdump.mfcalc(
-                            f'<{self.periode}> {tmpvar} = {arg}'
-                        ).loc[self.periode, tmpvar]
+                            f'<{per}> {tmpvar} = {arg}'
+                        ).loc[per, tmpvar]
                         status = 'Bad log argument' if pd.isna(val) or val <= 0 else 'ok'
                     except Exception:
                         val = ''
@@ -9765,13 +9780,8 @@ class Solver_Mixin():
     
         print('\nA snapshot of the data at the error point is at .errdump')
         print('Also .lastdf contains a copy of .errdump for inspecting')
-    
-        if hasattr(self, 'dumplist'):
-            self.dumpdf = pd.DataFrame(self.dumplist)
-            del self.dumplist
-            self.dumpdf.columns = ['fair', 'per', 'iteration'] + self.dump
-            
-            
+
+
     def show_iterations(self, pat='*', per='', last=0, change=False,top=.9):
         '''
         shows the last iterations for the most recent simulation. 

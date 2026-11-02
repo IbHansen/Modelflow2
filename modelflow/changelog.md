@@ -406,3 +406,5 @@ ng solvers no longer report a solution with NaN or inf as converged (the relconv
 model.sim, sim1d and base_sim no longer report a solution with NaN or inf as converged; sim and sim1d stop iterating on NaN and name the NaN variables, also NaN in prolog/epilog 
 model.causality shows "Interactive causality viewer for VAR, run the notebook to use it" where the widget is not run, as in a static book (it showed <modelcausality.CausalityViewer object at 0x...>) 
 model.draw and tracepre/tracedep no longer fail with a graphviz syntax error when a variable description contains a double quote (html_replace now escapes " as &quot;) 
+ng solvers keep the iteration dump (model.dumpdf) when an equation raises, as model.sim does; newton_fbmin_ng names the failing period when the error comes in its first-period Jacobian (errfunk raised AttributeError on .periode and hid the real error) 
+newton_old_ng and newtonstack_ng no longer print "Houston, we have a problem" or overwrite .errdump when a failed line-search step is backed off; the dump comes only if the solver gives up 

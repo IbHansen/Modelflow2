@@ -106,6 +106,7 @@ Adding a new solver means: subclass :class:`SolverBase`, implement ``iterate``
 (and whichever hooks differ), and register it in ``Solver_ng_Mixin.NG_SOLVERS``.
 """
 
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
 from itertools import chain, zip_longest
@@ -586,6 +587,29 @@ def import_transpiled(jitname, solveout, partnames, transpile_reset, silent=True
     return tuple(getattr(m1, name) for name in partnames)
 
 
+@contextmanager
+def errdump_deferred(m):
+    """Evaluate a Newton trial step without the "Houston" printout and ``.errdump``.
+
+    ``m.errfunk`` only stores the error point in ``m.errfunk_deferred``; the
+    solver calls ``errdump_flush`` when it gives up and re-raises.
+    """
+    m.errfunk_deferred = None
+    m.errfunk_defer = True
+    try:
+        yield
+    finally:
+        m.errfunk_defer = False
+
+
+def errdump_flush(m):
+    """Run the deferred ``m.errfunk`` (printout + ``.errdump``) before a re-raise."""
+    deferred = getattr(m, "errfunk_deferred", None)
+    m.errfunk_deferred = None
+    if deferred is not None:
+        m.errfunk(*deferred)
+
+
 @dataclass
 class SolveContext:
     """Everything the shared setup produces and the core loop / teardown needs."""
@@ -678,11 +702,15 @@ class SolverBase:
         ``_finalize`` -- is identical for every solver; only the hooks differ.
         """
         ctx = self._setup_data(databank, start, end, opts)
-        self.prepare(ctx)                 # solver-specific (default: no-op)
-        self._setup_conv(ctx)             # needs prepare() results (declared_endo_list)
-        ctx.starttime = time.time()
-        self.iterate(ctx)                 # THE core algorithm
-        ctx.endtime = time.time()
+        try:
+            self.prepare(ctx)             # solver-specific (default: no-op)
+            self._setup_conv(ctx)         # needs prepare() results (declared_endo_list)
+            ctx.starttime = time.time()
+            self.iterate(ctx)             # THE core algorithm
+            ctx.endtime = time.time()
+        finally:
+            # also when the solve raised: a later errfunk must not build .dumpdf from this run
+            vars(ctx.model).pop("dumplist", None)
         return self._finalize(ctx)
 
     @staticmethod
@@ -1117,9 +1145,12 @@ class SolverBase:
         ctx.convplace = [self._place(ctx, c) for c in convvar]
         ctx.endoplace = [databank.columns.get_loc(c) for c in list(m.endogene)]
 
+        vars(m).pop("dumplist", None)     # a leftover from a solve that raised
         if self._opt(ctx, "ldumpvar", False):
             ctx.dump = m.list_names(self.dump_order(ctx), self._opt(ctx, "dumpvar", "*"))
             ctx.dumpplac = [self._place(ctx, v) for v in ctx.dump]
+            # shared with the model so errfunk can build m.dumpdf when an equation raises
+            m.dumplist, m.dump = ctx.dumplist, ctx.dump
 
     # ------------------------------------------------------------------ #
     #  Shared teardown.                                                  #
@@ -1625,15 +1656,17 @@ class NewtonSolverOld(SolverBase):
                     reverted = False
                     for backoff in range(9):
                         try:
-                            if self.core_funcs:
-                                for func in self.core_funcs:
-                                    func(values, outvalues, row)
-                            else:
-                                ctx.pro(values, outvalues, row, alfa)
-                                ctx.solve(values, outvalues, row, alfa)
-                                ctx.epi(values, outvalues, row, alfa)
+                            with errdump_deferred(m):
+                                if self.core_funcs:
+                                    for func in self.core_funcs:
+                                        func(values, outvalues, row)
+                                else:
+                                    ctx.pro(values, outvalues, row, alfa)
+                                    ctx.solve(values, outvalues, row, alfa)
+                                    ctx.epi(values, outvalues, row, alfa)
                         except Exception:
                             if backoff >= 8:
+                                errdump_flush(m)
                                 raise
                             if backoff == 7:
                                 # halvings exhausted while still infeasible:
@@ -1642,6 +1675,7 @@ class NewtonSolverOld(SolverBase):
                                 # final evaluation attempt
                                 if not (self.core_sweep
                                         and last_y is not None):
+                                    errdump_flush(m)
                                     raise
                                 values[row, newton_col_unknown] = last_y
                                 damped_sweeps(row, 10)
@@ -1681,6 +1715,7 @@ class NewtonSolverOld(SolverBase):
                                         print(f"{m.periode}: restarting the "
                                               "core from the previous period")
                                 else:
+                                    errdump_flush(m)
                                     raise
                             else:
                                 last_step = 0.5 * last_step
@@ -2263,6 +2298,7 @@ class NewtonFbminSolver(SolverBase):
             if (not hasattr(m, "ng_newton_solver_fbmin_fd_first")
                     or opt("newton_reset", False)):
                 row = databank.index.get_loc(first_per)
+                m.periode = first_per     # for errfunk if an equation raises here
                 m.ng_newton_solver_fbmin_fd_first = \
                     self._fd_jacobian_solver(ctx, row)
             ctx.solver = m.ng_newton_solver_fbmin_fd_first
@@ -2866,18 +2902,20 @@ class NewtonStackSolver(SolverBase):
                     # previous Newton step and re-evaluate.
                     for backoff in range(8):
                         try:
-                            if ctx.split:
-                                for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
-                                    ctx.solve(values, outvalues, row, alfa)
-                            else:
-                                for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
-                                    ctx.pro(values, outvalues, row, alfa)
-                                    ctx.solve(values, outvalues, row, alfa)
-                                    ctx.epi(values, outvalues, row, alfa)
+                            with errdump_deferred(m):
+                                if ctx.split:
+                                    for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
+                                        ctx.solve(values, outvalues, row, alfa)
+                                else:
+                                    for m.periode, row in zip(ctx.sol_periode, ctx.stackrows):
+                                        ctx.pro(values, outvalues, row, alfa)
+                                        ctx.solve(values, outvalues, row, alfa)
+                                        ctx.epi(values, outvalues, row, alfa)
                             ctx.ittotal += len(ctx.stackrows)
                             break
                         except Exception:
                             if last_step is None or backoff == 7:
+                                errdump_flush(m)
                                 raise
                             last_step = 0.5 * last_step
                             values[rowidx, colidx_endo] = last_base - last_step
