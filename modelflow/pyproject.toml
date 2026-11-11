@@ -84,8 +84,8 @@ py-modules = [
     # onboard (9)
     "modelgrabwf2", "modelgrab", "modelmacrograb", "modelgrabgdx", "modelgrabgekkobank", "modelgrabexcel",
     "model_dynare", "model_Excel", "model_latex", "model_latex_class",
-    # construct (2)
-    "modelconstruct", "modelconstruct_estimation",
+    # construct (3)
+    "modelconstruct", "modelconstruct_estimation", "modelode",
     # estimate (2)
     "modelestimation", "modelestimator_new",
     # report (3)
