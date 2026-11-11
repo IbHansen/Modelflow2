@@ -83,7 +83,7 @@ py-modules = [
     "modeldekom", "modelnet",
     # onboard (9)
     "modelgrabwf2", "modelgrab", "modelmacrograb", "modelgrabgdx", "modelgrabgekkobank", "modelgrabexcel",
-    "model_dynare", "model_Excel", "model_latex", "model_latex_class",
+    "model_dynare", "model_Excel", "model_latex", "model_latex_class", "modelode",
     # construct (2)
     "modelconstruct", "modelconstruct_estimation",
     # estimate (2)
