@@ -517,10 +517,6 @@ try:
         # user_ns; pass it through to Makemodel which already knows how to
         # parse strings, tuples, slices, etc. via _parse_smpl.
         smpl         = _resolve_option(options, 'smpl',         user_ns)
-        # ODE integrator for <ODE> models, e.g. scheme=rk4 (see modelode): a plain word, not a
-        # literal or a name in the namespace, so it is taken as written (quotes allowed)
-        scheme       = options.get('scheme')
-        scheme       = scheme.strip('\'"') if isinstance(scheme, str) else None
         # Named coefficient prefixes, so an equation on a magic line can be
         # written with lambda/beta_longterm rather than c(1)/c(2). Reaches the
         # estimator through estimator_kwargs, the same route Makemodel uses for
@@ -609,8 +605,6 @@ try:
             makemodel_kwargs['estimator'] = estimator
         if smpl is not None:
             makemodel_kwargs['smpl'] = smpl
-        if scheme:
-            makemodel_kwargs['scheme'] = scheme
         if estimator_kwargs:
             makemodel_kwargs['estimator_kwargs'] = estimator_kwargs
 

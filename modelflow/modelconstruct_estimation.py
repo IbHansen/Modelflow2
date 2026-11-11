@@ -24,7 +24,6 @@ from modelpattern import namepat, check_syntax_model
 from modelhelp import debug_var
 from model_latex_class import a_latex_model,a_latex_equation,defrack, depower,debrace,defunk
 from modelreport import LatexRepo
-from modelode import ode_transform, exclusion_lists
 
 class ModelSpecificationError(Exception):
     pass
@@ -2264,7 +2263,6 @@ class Makemodel(BaseExplode):
     | `showpost_doable` | Expanded after doable |
     | `showpost_do` | Frmls after do expansion |
     | `showpost_sum` | Frmls after expanding sums |
-    | `showpost_ode` | Frmls after the ODE integrator (`scheme=`), else as post_sum |
     | `showexpanded_frml` | frmls after expanding |
 
     **4. Lists**
@@ -2313,16 +2311,11 @@ class Makemodel(BaseExplode):
     post_doable           : str       = field(init=False,        metadata={"description": "Expanded after doable"})
     post_do               : str       = field(init=False,        metadata={"description": "Frmls after do expansion"})
     post_sum              : str       = field(init=False,        metadata={"description": "Frmls after expanding sums"})
-    post_ode              : str       = field(init=False,        metadata={"description": "Frmls after the ODE integrator (scheme=), else as post_sum"})
     expanded_frml         : str       = field(init=False,        metadata={"description": "frmls after expanding "})
     normal_expressions    : List[Any] = field(init=False,        metadata={"description": "List of normal expressions"})
     list_specification    : str       = field(init=False,        metadata={"description": "All list specifications in string "})
     modellist             : str       = field(init=False,        metadata={"description": "The lists defined in string as a dictionary"})
     type_input            : str       = field(default= 'markdown'     ,metadata={"description": "Original as type markdown, modelflow, single, gekko or eviews"})
-    # ODE models: <ODE> S = f (or S = S(-1) + DT*f) are integrated with a Runge-Kutta scheme by modelode.ode_transform;
-    # NO{list} in a DO/doable/sum means 'all the other elements' (modelode.exclusion_lists)
-    scheme                : Optional[str] = field(default=None, metadata={"description": "ODE integrator for <ODE> models: euler, heun, midpoint, ralston or rk4; None = no transformation"})
-    dt                    : str       = field(default='DT',  metadata={"description": "Name of the time step variable (a dataframe column) for scheme="})
     # Equation extraction for non-markdown input, see extract_equations().
     # type_input='gekko'/'eviews' fills in defaults from EXTRACT_PRESETS.
     eq_start              : Optional[Any] = field(default=None, metadata={"description": "String(s) which start an equation, e.g. 'FRML'"})
@@ -2381,11 +2374,9 @@ class Makemodel(BaseExplode):
            extracted_frml = to_line_mode(self.list_defs) + '\n' + to_line_mode(self.original_statements)
            self.markdown_model = ''
         
-        extracted_frml = apply_replacements(extracted_frml,self.replacements)
-        if self.scheme:
-            # NO{list} = 'all the other elements'; runs before doable and DO, in the style of the input
-            extracted_frml = exclusion_lists(extracted_frml)
-        self.clean_frml_statements = clean_expressions(extracted_frml).strip().upper()
+        self.clean_frml_statements = clean_expressions(
+                apply_replacements(extracted_frml,self.replacements)
+                ).strip().upper()
         # debug_var(extract_model_from_markdown(self.original_statements))
         
         
@@ -2396,12 +2387,8 @@ class Makemodel(BaseExplode):
         self.modellist = list_extract(self.post_do) 
         self.post_sum = sumunroll(self.post_do,listin=self.modellist)    # then we unroll the sum 
         
-        # scheme='rk4' etc.: the <ODE> / Euler-step equations become the Runge-Kutta model (modelode)
-        self.post_ode = (ode_transform(self.post_sum, method=self.scheme, dt=self.dt, funks=self.funks)
-                         if self.scheme else self.post_sum)
-
-        self.expanded_frml =  self.post_ode
-        self.expanded_frml_list = find_frml(self.expanded_frml)
+        self.expanded_frml =  self.post_sum 
+        self.expanded_frml_list = find_frml(self.expanded_frml) 
         self.expanded_frml_split = [split_frml_reqopts(frml) for frml in self.expanded_frml_list]
 
         self.estimation_records = []
