@@ -715,6 +715,9 @@ class newton_diff():
                 self.solvelusparsedic = {p: self._factorize_umfpack(jac, timeit=False)
                                          for p,jac in self.jacsparsedic.items()}
             return self.solvelusparsedic
+        if self._other_factorizer():
+            self.solvelusparsedic = {p: self._factorize_other(jac) for p,jac in self.jacsparsedic.items()}
+            return self.solvelusparsedic
         # the per-period Jacobian pattern is the model's dependency graph, not
         # a band, so scipy's default ordering (COLAMD) is kept unless a
         # permc_spec is set explicitly
@@ -737,6 +740,9 @@ class newton_diff():
             self.stacked = self.get_diff_mat_tot(df=df)
         if getattr(self,'factorizer',None) == 'umfpack':
             self.solvestacked = self._factorize_umfpack(self.stacked)
+        elif self._other_factorizer():
+            with ttimer(f'factorize stacked jacobian ({self._factorizer_name()})',self.timeit):
+                self.solvestacked = self._factorize_other(self.stacked)
         else:
             with ttimer('factorize stacked jacobian',self.timeit):
                 # 'NATURAL' preserves the block-band structure of the stacked
@@ -747,6 +753,20 @@ class newton_diff():
                 permc_spec = getattr(self,'permc_spec',None) or 'NATURAL'
                 self.solvestacked = sp.sparse.linalg.splu(self.stacked,permc_spec=permc_spec).solve
         return self.solvestacked
+
+    def _factorizer_name(self):
+        f = getattr(self,'factorizer',None)
+        return getattr(f,'__name__','a function') if callable(f) else (f or 'superlu')
+
+    def _other_factorizer(self):
+        '''True when the factorizer is one of those in modelfactorize (pardiso, normal, mumps, a function)'''
+        f = getattr(self,'factorizer',None)
+        return callable(f) or (f or 'superlu').lower() not in ('superlu','umfpack')
+
+    def _factorize_other(self, jac):
+        '''Factorize with a factorizer from modelfactorize. Returns a solve callable like ``factorized``.'''
+        from modelfactorize import make_solver
+        return make_solver(jac, self.factorizer, verbose=bool(self.timeit) or not getattr(self,'silent',True))
 
     def _factorize_umfpack(self, jac, timeit=None):
         """LU factorization through cvxopt's UMFPACK, reusing the symbolic analysis.

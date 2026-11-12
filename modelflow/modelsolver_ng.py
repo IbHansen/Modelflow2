@@ -2791,14 +2791,29 @@ class NewtonStackSolver(SolverBase):
             them)."""
             if not core:
                 return core
-            desc = set().union(*(nx.descendants(cg, v) for v in core))
-            anc = set().union(*(nx.ancestors(cg, v) for v in core))
+            desc = reach(core, cg.succ)
+            anc = reach(core, cg.pred)
             return core | (desc & anc)
+
+        def reach(sources, adj):
+            """All nodes on a path from any of *sources* (the sources
+            included): one traversal from all sources at once.  The union of
+            nx.descendants over the sources gives the same sets where they
+            are used below (only membership outside the core matters), but
+            costs one traversal per source -- an hour for a 15,000 variable
+            core."""
+            seen = set(sources)
+            stack = list(sources)
+            while stack:
+                for w in adj[stack.pop()]:
+                    if w not in seen:
+                        seen.add(w)
+                        stack.append(w)
+            return seen
 
         def groups(core):
             """(prolog, epilog) for a given core."""
-            desc = (set().union(*(nx.descendants(cg, v) for v in core))
-                    if core else set())
+            desc = reach(core, cg.succ) if core else set()
             return endo - core - desc, desc - core
 
         core = {v for v in endo if v.endswith("___RES")}
@@ -3961,4 +3976,6 @@ class Solver_ng_Mixin:
             print(f"  nonzero in L + U           : {fill:,} ({fill / jac.nnz:.1f} times the Jacobian)")
             print(f"  memory, about              : {fill * 12 / 1e6:,.1f} MB")
         else:
-            print("LU factorization             : nonzeros not available (factorizer='umfpack')")
+            print(f"Factorization                : factorizer={diff._factorizer_name()!r}, nonzeros not available")
+            if getattr(lu, "info", ""):
+                print(f"  {lu.info}")
