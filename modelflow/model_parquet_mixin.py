@@ -216,7 +216,7 @@ class Parquet_Mixin:
             'format': 'feather_zip',
             'frml': self.equations,
             'modelname': self.name,
-            'oldkwargs': self.oldkwargs,
+            'oldkwargs': self.__dict__.get('oldkwargs', {}),   # a model never solved has none
             'run_on_load': self.__dict__.get('run_on_load', False),
             'var_description': self.var_description,
             'equations_latex': self.equations_latex,
