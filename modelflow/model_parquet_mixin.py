@@ -164,7 +164,7 @@ class Parquet_Mixin:
 
     # ── dump ──────────────────────────────────────────────────────────────
 
-    def modeldump(self, file_path='', keep=False, large=False, compact=False, **kwargs):
+    def modeldump(self, file_path='', keep=False, large=False, compact=False, derivatives=False, **kwargs):
         """Dump model to disk.
 
         Parameters
@@ -181,6 +181,12 @@ class Parquet_Mixin:
             If True (only effective when large=True), store float64
             columns as float32 to roughly halve file size.
             On load the data is restored to float64.
+        derivatives : bool
+            If True, also store the expressions for the derivatives that a Newton
+            solver has found (``model.diff_expressions``). A Newton solver in a later
+            session takes them from the model instead of finding them again, which is
+            the slow part of its first solve for a large model. They are used only if
+            the equations and the solver options are the same.
 
         A model instance without a lastdf holds no dataframe, so the feather
         format has nothing to be fast about. Such a model is always written as a
@@ -194,7 +200,7 @@ class Parquet_Mixin:
 
         if not large or nodata:
             # ── original JSON/gzip path ──────────────────────────────────
-            return super().modeldump(file_path=file_path, keep=keep, **kwargs)
+            return super().modeldump(file_path=file_path, keep=keep, derivatives=derivatives, **kwargs)
 
         # ── fast feather/zip path ────────────────────────────────────────
         pathname = Path(file_path)
@@ -219,6 +225,7 @@ class Parquet_Mixin:
             'oldkwargs': self.__dict__.get('oldkwargs', {}),   # a model never solved has none
             'run_on_load': self.__dict__.get('run_on_load', False),
             'straight': bool(self.__dict__.get('straight', False)),   # loads the same way again
+            'diff_expressions': self.__dict__.get('diff_expressions', {}) if derivatives else {},
             'var_description': self.var_description,
             'equations_latex': self.equations_latex,
             'wb_MFMSAOPTIONS': (
@@ -388,6 +395,7 @@ class Parquet_Mixin:
             model_kwargs = {**({'straight': True} if meta.get('straight', False) else {}), **kwargs}
             mmodel = cls(frml, modelname=modelname, funks=funks, **model_kwargs)
             mmodel.oldkwargs = meta.get('oldkwargs', {})
+            mmodel.diff_expressions = meta.get('diff_expressions', {})
             mmodel.run_on_load = meta.get('run_on_load', False)
             if run is None:
                 run = mmodel.run_on_load

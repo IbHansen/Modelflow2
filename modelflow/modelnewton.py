@@ -196,7 +196,21 @@ class newton_diff():
         else:
             self.exoplacdic = {}
         # breakpoint()
-        self.diffendocur = self.modeldiff()
+        # The expressions for the derivatives depend only on the equations and on these options, not on the data.
+        # Finding them (sympy) is the slow part for a large model, so they are kept on the model
+        # (mmodel.diff_expressions), where modeldump stores them and modelload brings them back.
+        import hashlib
+        key_text = '|'.join([self.mmodel.equations, ' '.join(self.endovar), str(bool(self.forcenum)),
+                             str(bool(self.onlyendocur)), str(bool(self.endoandexo)), str(self.maxdif)])
+        self.diff_key = hashlib.sha1(key_text.encode('utf-8')).hexdigest()
+        stored = self.mmodel.__dict__.setdefault('diff_expressions', {})
+        if self.diff_key in stored:
+            if not self.silent: print('The expressions for the derivatives are taken from the model (diff_expressions)')
+            self.diffendocur = stored[self.diff_key]
+        else:
+            self.diffendocur = self.modeldiff()
+            stored.clear()            # one set is kept: the latest
+            stored[self.diff_key] = self.diffendocur
         self.diff_model = self.get_diffmodel()
 
     @property

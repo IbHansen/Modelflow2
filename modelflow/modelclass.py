@@ -6865,10 +6865,14 @@ class Json_Mixin():
 
         return pathname, dump_data
 
-    def modeldump_base(self, outfile='',keep=False,data=True):
+    def modeldump_base(self, outfile='',keep=False,data=True,derivatives=False):
         '''Dumps a model and its lastdf to a json file
 
         if keep=True the model.keep_solutions will alse be dumped
+
+        if derivatives=True the expressions for the derivatives, which a Newton solver has found
+        (model.diff_expressions), are dumped too. A Newton solver in a later session then takes them
+        from the model instead of finding them again - the slow part of its first solve for a large model
 
         if data=False, or the model instance has no lastdf, only the model
         structure is dumped and the file has no dataframes'''
@@ -6931,6 +6935,7 @@ class Json_Mixin():
             'oldkwargs': self.__dict__.get('oldkwargs',{}),
             'run_on_load': self.__dict__.get('run_on_load', False),
             'straight': bool(self.__dict__.get('straight', False)),   # loads the same way again
+            'diff_expressions': self.__dict__.get('diff_expressions', {}) if derivatives else {},
             'var_description': self.var_description,
             'equations_latex': self.equations_latex ,
             'keep_solutions': {k:v.to_json(double_precision=15) for k,v in self.keep_solutions.items()} if (keep and dump_data) else {},
@@ -7072,6 +7077,7 @@ class Json_Mixin():
         model_kwargs = {**({'straight': True} if input.get('straight', False) else {}), **kwargs}
         mmodel = cls(frml, modelname=modelname, funks=funks,**model_kwargs)
         mmodel.oldkwargs = input.get('oldkwargs',{})
+        mmodel.diff_expressions = input.get('diff_expressions', {})
         mmodel.run_on_load = input.get('run_on_load', False)
         if run is None:
             run = mmodel.run_on_load and has_data
@@ -7128,12 +7134,12 @@ class Json_Mixin():
 
 class Zip_Mixin():
     '''This experimental class zips a dumped file '''
-    def modeldump(self, file_path='',keep=False,zip_file=True,data=True):
+    def modeldump(self, file_path='',keep=False,zip_file=True,data=True,derivatives=False):
         pathname, dump_data = self._dump_pathname(file_path, self.has_data, data=data)
 
         pathname.parent.mkdir(parents=True, exist_ok=True)
 
-        json_string = self.modeldump_base(keep=keep,data=dump_data)
+        json_string = self.modeldump_base(keep=keep,data=dump_data,derivatives=derivatives)
 
 
         if zip_file:
