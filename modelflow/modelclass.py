@@ -6930,6 +6930,7 @@ class Json_Mixin():
             'modelname': self.name,
             'oldkwargs': self.__dict__.get('oldkwargs',{}),
             'run_on_load': self.__dict__.get('run_on_load', False),
+            'straight': bool(self.__dict__.get('straight', False)),   # loads the same way again
             'var_description': self.var_description,
             'equations_latex': self.equations_latex ,
             'keep_solutions': {k:v.to_json(double_precision=15) for k,v in self.keep_solutions.items()} if (keep and dump_data) else {},
@@ -7067,7 +7068,9 @@ class Json_Mixin():
             current_per = None
         modelname = input['modelname']
         # breakpoint()
-        mmodel = cls(frml, modelname=modelname, funks=funks,**kwargs)
+        # a model dumped with straight=True is loaded like that, unless the call says otherwise
+        model_kwargs = {**({'straight': True} if input.get('straight', False) else {}), **kwargs}
+        mmodel = cls(frml, modelname=modelname, funks=funks,**model_kwargs)
         mmodel.oldkwargs = input.get('oldkwargs',{})
         mmodel.run_on_load = input.get('run_on_load', False)
         if run is None:
