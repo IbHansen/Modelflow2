@@ -75,7 +75,29 @@ class RefinedSolver:
     def _apply(self, r):
         raise NotImplementedError
 
+    def _release(self):
+        """Free memory the garbage collector does not see (PARDISO keeps its factors inside MKL)."""
+
+    def release(self):
+        """Free the factorization now. The solve function can not be used afterwards."""
+        if self.__dict__.get('released'):
+            return
+        self.released = True
+        try:
+            self._release()
+        finally:
+            for attr in ('A', 'AsT', 'U', 'dr', 'dc', 's', 'ctx'):
+                self.__dict__.pop(attr, None)
+
+    def __del__(self):
+        try:
+            self.release()
+        except Exception:
+            pass
+
     def solve(self, b):
+        if self.__dict__.get('released'):
+            raise RuntimeError(f"factorizer='{self.name}': this factorization has been released, factorize again")
         b = np.ascontiguousarray(b, dtype=float)
         nb = max(np.abs(b).max(), 1e-300)
         x = self._apply(b)
@@ -107,7 +129,18 @@ def _pypardiso():
     return pypardiso
 
 
-class PardisoSolver(RefinedSolver):
+class _PardisoRelease:
+    """PARDISO keeps the factors in MKL's own memory, which is only given back by a call with phase -1.
+    pypardiso does not make that call when its solver object is deleted, so without this every
+    factorization stays in memory until the process ends."""
+
+    def _release(self):
+        s = self.__dict__.get('s')
+        if s is not None:
+            s.free_memory(everything=True)
+
+
+class PardisoSolver(_PardisoRelease, RefinedSolver):
     """LU of J with MKL PARDISO (static pivoting)."""
     name = 'pardiso'
 
@@ -119,7 +152,7 @@ class PardisoSolver(RefinedSolver):
         return self.s.solve(self.A, r)
 
 
-class NormalSolver(RefinedSolver):
+class NormalSolver(_PardisoRelease, RefinedSolver):
     """The normal equations J'J x = J'b with a PARDISO Cholesky factorization.
 
     J is scaled to As = Dr J Dc (rows to largest element 1, then columns to norm 1), which decides the conditioning
@@ -148,6 +181,10 @@ class NormalSolver(RefinedSolver):
         except pypardiso.pardiso_wrapper.PyPardisoError:
             # J'J is positive definite in exact arithmetic only: with a badly conditioned J a pivot can come out
             # as zero or negative. Then the symmetric indefinite factorization, which pivots.
+            try:
+                self.s.free_memory(everything=True)                     # what the failed attempt left in MKL
+            except Exception:
+                pass
             self.s = pypardiso.PyPardisoSolver(mtype=-2)
             self.s.factorize(self.U)
             self.info += ', not numerically positive definite: symmetric indefinite factorization'
@@ -219,6 +256,8 @@ class MumpsProcessSolver:
         return ans
 
     def solve(self, b):
+        if self.__dict__.get('released'):
+            raise RuntimeError("factorizer='mumps': this factorization has been released, factorize again")
         np.save(self.tmp / 'b.npy', np.ascontiguousarray(b, dtype=float))
         ans = self._ask(f'solve {self.tmp / "b.npy"} {self.tmp / "x.npy"}')
         self.last = (float(ans[1]), int(ans[2]))
@@ -229,7 +268,11 @@ class MumpsProcessSolver:
             print(f'   mumps solve: relative linear residual {ans[1]} after {ans[2]} refinements', flush=True)
         return np.load(self.tmp / 'x.npy')
 
-    def __del__(self):
+    def release(self):
+        """Stop the helper process, which frees its factorization."""
+        if self.__dict__.get('released'):
+            return
+        self.released = True
         try:
             self.p.stdin.write('quit\n')
             self.p.stdin.flush()
@@ -240,6 +283,9 @@ class MumpsProcessSolver:
             self._tmp.cleanup()
         except Exception:
             pass
+
+    def __del__(self):
+        self.release()
 
 
 def _mumps(A, verbose=False):
@@ -268,6 +314,14 @@ def make_solver(A, factorizer, verbose=False):
         raise ValueError(f'factorizer={factorizer!r} is not known. Use one of None, '
                          f"'superlu', 'umfpack', {', '.join(repr(k) for k in FACTORIZERS)} or a function") from None
     return maker(A, verbose).solve
+
+
+def release(solve):
+    """Free the factorization behind a solve function from make_solver now, instead of when the garbage
+    collector gets to it. Other solve functions (SuperLU, a user function without ``release``) are left alone."""
+    owner = getattr(solve, '__self__', None)
+    if owner is not None and callable(getattr(owner, 'release', None)):
+        owner.release()
 
 
 if __name__ == '__main__':            # the MUMPS helper process

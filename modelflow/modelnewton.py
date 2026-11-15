@@ -730,6 +730,8 @@ class newton_diff():
                                          for p,jac in self.jacsparsedic.items()}
             return self.solvelusparsedic
         if self._other_factorizer():
+            # no release of the previous dict here: newton_ng keeps the solvers of earlier calls (other periods)
+            # in its own dict; they are freed (__del__) when that dict drops them
             self.solvelusparsedic = {p: self._factorize_other(jac) for p,jac in self.jacsparsedic.items()}
             return self.solvelusparsedic
         # the per-period Jacobian pattern is the model's dependency graph, not
@@ -755,6 +757,9 @@ class newton_diff():
         if getattr(self,'factorizer',None) == 'umfpack':
             self.solvestacked = self._factorize_umfpack(self.stacked)
         elif self._other_factorizer():
+            # the previous factorization is freed first, so the peak memory is one factorization, not two
+            self._release_other(getattr(self,'solvestacked',None))
+            self.solvestacked = None
             with ttimer(f'factorize stacked jacobian ({self._factorizer_name()})',self.timeit):
                 self.solvestacked = self._factorize_other(self.stacked)
         else:
@@ -781,6 +786,16 @@ class newton_diff():
         '''Factorize with a factorizer from modelfactorize. Returns a solve callable like ``factorized``.'''
         from modelfactorize import make_solver
         return make_solver(jac, self.factorizer, verbose=bool(self.timeit) or not getattr(self,'silent',True))
+
+    @staticmethod
+    def _release_other(*solves):
+        '''Free the factorizations behind solve callables from _factorize_other now. PARDISO keeps its factors
+        in MKL memory the garbage collector does not see. Callers still holding an old solve callable get a
+        clear error if they use it; the solvers replace it with the new one at once.'''
+        from modelfactorize import release
+        for solve in solves:
+            if solve is not None:
+                release(solve)
 
     def _factorize_umfpack(self, jac, timeit=None):
         """LU factorization through cvxopt's UMFPACK, reusing the symbolic analysis.
