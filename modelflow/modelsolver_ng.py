@@ -2579,6 +2579,12 @@ class NewtonStackSolver(SolverBase):
         """Dump order: the declared (base) endogenous names of the Jacobian object."""
         return ctx.model.ng_newton_diff_stack.declared_endo_list
 
+    def conv_order(self, ctx):
+        """Convergence order: the declared (base) endogenous names of the Jacobian object.
+        iterate tests convergence on all stacked unknowns; the base-class default
+        (model.coreorder) would start the feedback-set search, minutes on a large core."""
+        return ctx.model.ng_newton_diff_stack.declared_endo_list
+
     def build_evaluator(self, ctx):
         """Compile the evaluators.  With ``split=1`` (the default) the
         stacked-split triple from ``_prepare_split``: prolog and epilog as
