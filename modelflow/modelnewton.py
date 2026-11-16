@@ -541,12 +541,175 @@ class newton_diff():
         dmelt['lag'] = dmelt['lag'].astype(int)
         return dmelt
 
-  
+    def _stacked_plan(self, per, is_residual_eq=None):
+        '''The fill plan of the stacked jacobian: its sparsity pattern for the periods per.
 
-    def get_diff_mat_tot(self, df=None):
+        The pattern depends on the derivative model and the periods only, so it is made once and
+        kept in self._stackplan. _stacked_from_plan fills in the values.
+
+        The diagonal -1 is a part of the plan: on all rows of a normalized model, else on the
+        rows which are not residual equations when is_residual_eq is given (one value per
+        equation, or per equation and period) - the same rule as get_solvestacked.
+
+        A derivative is placed like get_diff_melted and get_diff_mat_tot do: row = number*nvar+var,
+        column = (number+lag)*nvar+pvar, dropped when number+lag is outside the periods. A
+        derivative with respect to a variable at a fixed period (X(2002)) goes to the column of
+        that period, and is dropped when the period is not among the periods (fixed_to_rowlag).
+
+        Returns a namespace with:
+          key                    what the plan was made for
+          keep                   bool (periods, derivatives): the derivative is in the matrix.
+                                 Derivatives in the order of sorted(self.diff_model.endogene)
+          slot                   the place in data of every kept value, in the order of values[keep]
+          const_slot             the places in data of the diagonal -1
+          indices, indptr, shape, nnz   the csc structure. Entries on the same place share a slot
+        '''
+        from types import SimpleNamespace
+
+        per = pd.Index(per)
+        normalized = bool(self.mmodel.normalized)
+        nres = None if (is_residual_eq is None or normalized) else np.asarray(is_residual_eq,dtype=bool)
+        key = (tuple(per), normalized, None if nres is None else nres.tobytes())
+        plan = getattr(self,'_stackplan',None)
+        if plan is not None and plan.key == key:
+            return plan
+
+        with ttimer('make the fill plan of the stacked jacobian',self.timeit):
+            coltup = [split_diffname(c) for c in sorted(self.diff_model.endogene)]
+            endo = self.mmodel.endogene
+            var  = np.array([self.placdic[v] for v,p,l in coltup],dtype=np.int64)
+            pvar = np.array([self.placdic[p+'___RES' if (p+'___RES' in endo) else p] for v,p,l in coltup],dtype=np.int64)
+            nper,nvar = len(per),len(self.endovar)
+            size = nper*nvar
+
+            number = np.arange(nper,dtype=np.int64)[:,None]
+            fixed = [pt.is_fixed_lag(l) for v,p,l in coltup]
+            lag = np.array([0 if f else l for (v,p,l),f in zip(coltup,fixed)],dtype=np.int64)
+            pnumber = number + lag[None,:]              # the number of the period of pvar
+            for j in np.flatnonzero(fixed):
+                try:
+                    pnumber[:,j] = pt.fixed_period_loc(per,coltup[j][2])
+                except KeyError:
+                    pnumber[:,j] = -1                   # not among the periods: data
+            keep = (pnumber >= 0) & (pnumber <= nper-1)
+            row = (number*nvar + var[None,:])[keep]
+            col = (pnumber*nvar + pvar[None,:])[keep]
+
+            if normalized:
+                diag = np.arange(size,dtype=np.int64)
+            elif nres is not None:
+                if len(nres) == nvar:
+                    nres = np.tile(nres,nper)
+                if len(nres) != size:
+                    raise ValueError(f'is_residual_eq has {len(nres)} values, it should have {nvar} (equations) or {size} (equations*periods)')
+                diag = np.flatnonzero(~nres).astype(np.int64)
+            else:
+                diag = np.zeros(0,dtype=np.int64)
+
+            # column-major and rows sorted = the order of csc. Entries on the same place get the same slot
+            place = np.concatenate([col,diag])*size + np.concatenate([row,diag])
+            uniq,inv = np.unique(place,return_inverse=True)
+            inv = inv.ravel()
+            nnz = len(uniq)
+            itype = np.int32 if max(nnz,size) < np.iinfo(np.int32).max else np.int64
+            self._stackplan = SimpleNamespace(
+                key        = key,
+                keep       = keep,
+                slot       = inv[:len(row)],
+                const_slot = inv[len(row):],
+                indices    = (uniq % size).astype(itype),
+                indptr     = np.searchsorted(uniq // size,np.arange(size+1)).astype(itype),
+                shape      = (size,size),
+                nnz        = nnz)
+        return self._stackplan
+
+    def _stacked_from_plan(self, plan, values):
+        '''The stacked jacobian from a fill plan (_stacked_plan) and the values of the derivatives:
+        a (periods, derivatives) array with the derivatives in the order of sorted(self.diff_model.endogene).
+
+        NaN counts as 0.0, like the fillna in get_diff_melted, inf is left as it is. Values on the
+        same place are added. A new matrix with its own arrays every time: no caller can damage the plan.'''
+        v = np.asarray(values,dtype=float)[plan.keep]
+        v[np.isnan(v)] = 0.0
+        data = np.bincount(plan.slot,weights=v,minlength=plan.nnz)
+        data[plan.const_slot] -= 1.0
+        return sp.sparse.csc_matrix((data,plan.indices.copy(),plan.indptr.copy()),shape=plan.shape)
+
+
+
+    def get_diff_mat_tot(self, df=None, is_residual_eq=None):
         """
+        The stacked Jacobian for all periods in the model's `current_per`, a new csc matrix.
+
+        The sparsity pattern is made once (_stacked_plan), a call evaluates the derivative model
+        and places the values (_stacked_from_plan).
+
+        Args:
+            df (pandas.DataFrame, optional): Input DataFrame for the calculations. If not provided,
+                                             the model's internal DataFrame (`self.df`) is used.
+            is_residual_eq (bool array, optional): True for the residual equations (___RES), one
+                                             value per equation or per equation and period.
+
+        Notes:
+            - The diagonal -1 is in the matrix: on all rows of a normalized model, else on the rows
+              which are not residual equations when is_residual_eq is given.
+            - A derivative which evaluates to zero stays in the pattern, so the pattern is the same
+              from call to call.
+            - self.stacked is the matrix returned.
+            - get_diff_mat_tot_melt is the former version (without is_residual_eq).
+            - self.stackfill = 'melt' makes the matrix the former way (get_diff_mat_tot_melt and
+              the diagonal subtracted afterwards); 'plan' or not set is the fill plan.
+        """
+        stackfill = (getattr(self,'stackfill',None) or 'plan').lower()
+        if stackfill not in ('plan','melt'):
+            raise ValueError(f"stackfill={stackfill!r} is not known, use 'plan' (the fill plan) or 'melt' (the former fill)")
+        if stackfill == 'melt':
+            with ttimer('stacked jacobian the former way (stackfill=melt)',self.timeit):
+                # normalized: get_diff_mat_tot_melt has subtracted the identity
+                stacked = self.get_diff_mat_tot_melt(df=df)
+                if is_residual_eq is not None and not self.mmodel.normalized:
+                    notres = ~np.asarray(is_residual_eq,dtype=bool)
+                    if len(notres) == self.nvar:
+                        notres = np.tile(notres,len(self.numbers))
+                    if len(notres) != stacked.shape[0]:
+                        raise ValueError(f'is_residual_eq has {len(notres)} values, expected {self.nvar} or {stacked.shape[0]}')
+                    stacked = stacked - sp.sparse.diags(notres.astype(float),format='csc')
+                self.stacked = stacked.tocsc()
+            return self.stacked
+        _per = self.mmodel.current_per
+        if not hasattr(_per,'__iter__'):
+            _per = [_per]
+        _df = self.df if type(df)  != pd.DataFrame else df
+        self.df = _df
+        _df = _df.pipe(lambda df0: df0.rename(columns={c: c.upper() for c in df0.columns}))
+        # as in get_diff_melted: the columns of the derivative model are added before the call
+        _df = insertModelVar(_df, self.diff_model)
+
+        self.diff_model.current_per = _per
+        with ttimer('calculate derivatives',self.timeit):
+            reseval = self.diff_model.res_ng if self.use_res_ng else self.diff_model.res
+            out = reseval(_df,silent=self.silent,stats=0,ljit=self.ljit,chunk=self.nchunk)
+        with ttimer('stacked jacobian from the fill plan',self.timeit):
+            rows = out.index.get_indexer(_per)
+            if (rows < 0).any():
+                raise KeyError('Periods of the stacked jacobian are not in the dataframe index')
+            cpos = out.columns.get_indexer(sorted(self.diff_model.endogene))
+            per = out.index[rows]
+            self.numbers = list(range(len(per)))
+            self.maxnumber = len(per)-1
+            self.numbers_to_date = dict(enumerate(per))
+            self.nvar = len(self.endovar)
+            values = out.iloc[rows,cpos].to_numpy(dtype=float)
+            plan = self._stacked_plan(per,is_residual_eq)
+            self.stacked = self._stacked_from_plan(plan,values)
+        return self.stacked
+
+    def get_diff_mat_tot_melt(self, df=None):
+        """
+        The former get_diff_mat_tot, kept to test the new one against.
+
         Generate a stacked Jacobian matrix for the entire model across the current period.
-    
+
         This function constructs a sparse matrix representing the Jacobian for the specified 
         period range, either normalized or unnormalized, depending on the model's configuration.
     
@@ -749,11 +912,8 @@ class newton_diff():
 #        if update or not hasattr(self,'stacked'):
     
         # breakpoint()     
-        if is_residual_eq is not None and not self.mmodel.normalized :
-           diag_mask = sp.sparse.diags((~is_residual_eq).astype(float))
-           self.stacked =  self.get_diff_mat_tot(df=df) - diag_mask
-        else:
-            self.stacked = self.get_diff_mat_tot(df=df)
+        # the diagonal -1 of the rows which are not residual equations is placed by get_diff_mat_tot
+        self.stacked = self.get_diff_mat_tot(df=df,is_residual_eq=is_residual_eq)
         if getattr(self,'factorizer',None) == 'umfpack':
             self.solvestacked = self._factorize_umfpack(self.stacked)
         elif self._other_factorizer():

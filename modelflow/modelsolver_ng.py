@@ -2634,6 +2634,9 @@ class NewtonStackSolver(SolverBase):
         ctx.is_residual_eq_stacked = np.tile(is_residual_eq, len(ctx.sol_periode))
 
         m.ng_newton_diff_stack.timeit = timeit
+        # how the stacked Jacobian is filled: 'plan' (fill plan, default) or
+        # 'melt' (the former fill).  Read at every build of the matrix.
+        m.ng_newton_diff_stack.stackfill = opt("stackfill", "plan")
         # ordering of the stacked LU (get_solvestacked defaults to 'NATURAL',
         # band-preserving, when unset) and factorization engine.  Applied on
         # every call; when they change, the cached stacked solver is dropped --
@@ -3188,6 +3191,7 @@ class NewtonStackFbminSolver(SolverBase):
                     delattr(m, attr)
         diff = m.ng_newton_diff_stack
         diff.timeit = timeit
+        diff.stackfill = opt("stackfill", "plan")   # as in newtonstack_ng
         per = ctx.sol_periode
 
         struct_stale = (opt("newton_reset", False)
@@ -3399,14 +3403,11 @@ class NewtonStackFbminSolver(SolverBase):
         struct = m.ng_stackfbmin_struct
         fb, dag = struct["fb_nodes"], struct["dag_nodes"]
 
-        stacked = diff.get_diff_mat_tot(df=df)
-        if not m.normalized:
-            # normalized rows in a mixed system still need their -I term
-            isres = np.array([v.endswith("___RES") for v in diff.endovar],
-                             dtype=bool)
-            isres_stacked = np.tile(isres, struct["n_per"])
-            stacked = stacked - sps.diags((~isres_stacked).astype(float))
-        stacked = stacked.tocsr()
+        # normalized rows in a mixed system still need their -I term:
+        # get_diff_mat_tot places it from the mask of residual equations
+        isres = np.array([v.endswith("___RES") for v in diff.endovar],
+                         dtype=bool)
+        stacked = diff.get_diff_mat_tot(df=df, is_residual_eq=isres).tocsr()
 
         jred = stacked[fb][:, fb].toarray()
         if len(dag):
