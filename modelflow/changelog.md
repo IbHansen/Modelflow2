@@ -416,3 +416,4 @@ factorizer='pardiso' and 'normal' free PARDISO's memory: the factors live in MKL
 Version 2.93 uploaded 
 newtonstack_ng no longer runs the feedback-set search (model.coreorder) for its convergence list, which it does not use: the first stacked solve of MAKRO was 2 minutes faster (30 years 185 -> 57 s) 
 newtonstack_ng and newtonstack_fbmin_ng fill the stacked Jacobian from a fill plan: the sparsity pattern is made once and a rebuild only places the new values of the derivatives; stackfill='melt' gives the former fill (default stackfill='plan') 
+Estimation reports: when the left-hand side is a transformation such as DLOG(CON), the report also shows actual, fitted and residuals of the variable itself (CON, one-step fit); the numbers are in estimator.af_level_df and for a whole model in Makemodel.actual_fitted() / Listmodels.actual_fitted(); plot_actual_vs_fitted(est, level=True) 

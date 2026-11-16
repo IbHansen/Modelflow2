@@ -1378,6 +1378,62 @@ class EstimatorBackend(Eq_parent, ABC):
             .rename(columns=lambda s: s.lower().capitalize())
         )
 
+    # ---- A/F and residuals of the endogenous variable itself ---------------
+
+    @cached_property
+    def lhs_is_transformed(self) -> bool:
+        """True when the left-hand side is a transformation of the endogenous
+        variable (``DLOG(CON)``, ``DIFF(CON)``, ``LOG(CON/P)`` ...), so
+        :attr:`af_df` is not in the units of the variable itself."""
+        lhs = self.org_eq_clean.split("=", 1)[0]
+        return "".join(lhs.split()).upper() != self.endo_var.upper()
+
+    @cached_property
+    def af_level_df(self) -> Optional[pd.DataFrame]:
+        """Actual, fitted and residuals of the endogenous variable itself.
+
+        :attr:`af_df` and :attr:`residuals_df` are in the units of the
+        left-hand side as it was estimated, e.g. ``DLOG(CON)``. Here the
+        estimated equation is solved for the variable (``CON``):
+
+        * ``Actual``    the variable,
+        * ``Fitted``    the normalized equation with the estimated
+          coefficients, evaluated on the data. Lagged values of the variable
+          are the actual ones, so this is the one-step (static) fit, not a
+          dynamic simulation,
+        * ``Residuals`` ``Actual - Fitted``, in the units of the variable.
+
+        When the left-hand side is the variable itself the frame holds the
+        same numbers as :attr:`af_df` and :attr:`residuals_df`. ``None`` (and
+        a message) when the equation can't be solved for the variable.
+        """
+        if not self.lhs_is_transformed:
+            return self.af_df.join(self.residuals_df)
+        start, end = self.smpl
+        try:
+            normalized = nz.normal(
+                self.org_eq_baked, add_add_factor=False
+            ).normalized
+            lhs, rhs = normalized.split("=", 1)
+            if lhs.strip().upper() != self.endo_var.upper():
+                raise ValueError(f"normalized to {lhs.strip()!r}")
+            res = self.eq_var_df.mfcalc(
+                f"<{start},{end}> FITTED_LEVEL = {rhs}"
+            )
+            out = pd.DataFrame({
+                "Actual": res.loc[start:end, self.endo_var],
+                "Fitted": res.loc[start:end, "FITTED_LEVEL"],
+            })
+        except Exception as e:
+            print(
+                f"{type(self).__name__}({self.endo_var}): no actual/fitted "
+                f"for the variable itself, the equation could not be solved "
+                f"for it ({type(e).__name__}: {str(e)[:100]})"
+            )
+            return None
+        out["Residuals"] = out["Actual"] - out["Fitted"]
+        return out
+
     @cached_property
     def estimation_smpl(self) -> Tuple[Any, Any]:
         """The usable sample, derived from non-missing residuals.
@@ -2088,6 +2144,11 @@ class LSResult:
         title_html = self._build_title_html()
         summary_html = self.olsmodel._render_summary_html()
         plot_html = self._build_plot_html(plot_format)
+        # the same for the endogenous variable itself, when the left-hand
+        # side is a transformation of it (DLOG(CON) -> CON)
+        if (self.olsmodel.lhs_is_transformed
+                and self.olsmodel.af_level_df is not None):
+            plot_html += self._build_plot_html(plot_format, level=True)
         return title_html + summary_html + plot_html
 
     def show(self, plot_format: str = "svg") -> None:
@@ -2124,17 +2185,21 @@ class LSResult:
             f"<pre><code>{normalized}</code></pre></p>"
         )
 
-    def _build_plot_html(self, plot_format: str) -> str:
+    def _build_plot_html(self, plot_format: str, level: bool = False) -> str:
         buf = BytesIO()
         plot_actual_vs_fitted(
             self.olsmodel, save_to=buf, format=plot_format,
-            figsize=(8, 5), dpi=150,
+            figsize=(8, 5), dpi=150, level=level,
         )
         buf.seek(0)
         b64 = base64.b64encode(buf.read()).decode("utf-8")
         mime = "svg+xml" if plot_format == "svg" else "png"
+        heading = (
+            f"Actual vs Fitted Plot: {self.olsmodel.endo_var} itself "
+            "(one-step fit)" if level else "Actual vs Fitted Plot"
+        )
         return (
-            "<h3>Actual vs Fitted Plot</h3>"
+            f"<h3>{heading}</h3>"
             f'<img style="max-width:100%; height:auto;" '
             f'src="data:image/{mime};base64,{b64}" />'
         )
@@ -2440,28 +2505,44 @@ def plot_actual_vs_fitted(
     format: str = "png",
     figsize: Tuple[float, float] = (7, 3),
     dpi: int = 150,
+    level: bool = False,
 ):
     """Plot Actual vs Fitted (top panel) and Residuals (bottom panel).
+
+    ``level=False`` plots the left-hand side as it was estimated (``af_df``,
+    ``residuals_df``), ``level=True`` the endogenous variable itself
+    (``af_level_df``): ``CON`` when the left-hand side is ``DLOG(CON)``.
 
     If ``save_to`` is a file-like object, the plot is saved there and the
     figure is closed; otherwise it is shown interactively.
     """
+    if level:
+        af_df = residuals_df = emodel.af_level_df
+        if af_df is None:
+            raise ValueError(
+                f"{emodel.endo_var}: no actual/fitted for the variable itself"
+            )
+        title = f"Actual vs Fitted: {emodel.endo_var} itself (one-step fit)"
+    else:
+        af_df, residuals_df = emodel.af_df, emodel.residuals_df
+        title = f"Actual vs Fitted: {emodel.endo_var}"
+
     fig = plt.figure(figsize=figsize, dpi=dpi)
     gs = GridSpec(3, 1, height_ratios=[2, 0.1, 1])
 
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[2], sharex=ax1)
 
-    ax1.plot(emodel.af_df.index, emodel.af_df["Actual"],
+    ax1.plot(af_df.index, af_df["Actual"],
              label="Actual", linewidth=2)
-    ax1.plot(emodel.af_df.index, emodel.af_df["Fitted"],
+    ax1.plot(af_df.index, af_df["Fitted"],
              label="Fitted", linestyle="--")
-    ax1.set_title(f"Actual vs Fitted: {emodel.endo_var}")
+    ax1.set_title(title)
     ax1.set_ylabel(emodel.endo_var)
     ax1.grid(True)
     ax1.legend()
 
-    ax2.plot(emodel.residuals_df.index, emodel.residuals_df["Residuals"],
+    ax2.plot(residuals_df.index, residuals_df["Residuals"],
              color="gray")
     ax2.axhline(0, color="red", linestyle="--", linewidth=1)
     ax2.set_title("Residuals")

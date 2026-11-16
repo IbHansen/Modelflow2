@@ -2685,6 +2685,44 @@ class Makemodel(BaseExplode):
             cols[name] = ser
         return pd.DataFrame(cols)
 
+    def actual_fitted(self, level: bool = True):
+        """Actual, fitted and residuals of all estimated equations as one DataFrame.
+
+        The columns have two levels: the endogenous variable, and ``Actual``,
+        ``Fitted``, ``Residuals``. Take one equation with
+        ``mm.actual_fitted()['CON']``.
+
+        level : bool, default True
+            True: the endogenous variable itself. When the left-hand side is
+            ``DLOG(CON)`` this is ``CON``, its one-step fitted value (the
+            estimated equation solved for ``CON``, lagged values are the
+            actual ones) and the residual in the units of ``CON``.
+            False: the left-hand side as it was estimated (``DLOG(CON)``).
+
+        Each equation covers its own estimation sample, so rows outside it
+        are NaN. An equation which can't be solved for its variable is left
+        out with ``level=True``.
+
+        Per-equation access: ``rec['estimator_object'].af_level_df`` (or
+        ``.af_df`` and ``.residuals_df``) on the entries of
+        :attr:`estimation_records`; ``modelestimator_new.plot_actual_vs_fitted
+        (est, level=True)`` draws the chart of the report.
+        """
+        import pandas as pd
+        frames = {}
+        for rec in self.estimation_records:
+            est = rec.get('estimator_object')
+            if not _is_estimator_backend_instance(est):
+                continue
+            frame = est.af_level_df if level else est.af_df.join(est.residuals_df)
+            if frame is None:
+                continue
+            name = getattr(est, 'endo_var', '') or rec.get('frmlname', '')
+            frames[name] = frame
+        if not frames:
+            return pd.DataFrame()
+        return pd.concat(frames, axis=1)
+
     @property
     def markdown_with_estimation(self) -> str:
         """Original Markdown input with compact estimation tables inserted.
@@ -3080,6 +3118,18 @@ class Listmodels(BaseExplode):
         """
         import pandas as pd
         frames = [mex.tvalues for mex in self.makemodels]
+        frames = [f for f in frames if not f.empty]
+        if not frames:
+            return pd.DataFrame()
+        return pd.concat(frames, axis=1)
+
+    def actual_fitted(self, level: bool = True):
+        """Actual, fitted and residuals of all member Makemodels, combined column-wise.
+
+        See :meth:`Makemodel.actual_fitted` for the layout.
+        """
+        import pandas as pd
+        frames = [mex.actual_fitted(level=level) for mex in self.makemodels]
         frames = [f for f in frames if not f.empty]
         if not frames:
             return pd.DataFrame()
