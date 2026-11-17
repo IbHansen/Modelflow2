@@ -2366,7 +2366,8 @@ class Makemodel(BaseExplode):
             self.markdown_model = (mfmod_list_to_codeblock(self.original_statements))
 
         elif self.type_input == 'single':
-           extracted_frml = self.original_statements.replace('\n', '')
+           # join the lines with a space, so a tag ending a line stays apart from the equation
+           extracted_frml = ' '.join(line.strip() for line in self.original_statements.splitlines()).strip()
            self.markdown_model = ''
 
         else:
@@ -2718,6 +2719,8 @@ class Makemodel(BaseExplode):
             if frame is None:
                 continue
             name = getattr(est, 'endo_var', '') or rec.get('frmlname', '')
+            if level:                       # the variable is the outer column level
+                frame = frame.rename(columns=lambda c: c.removeprefix(f'{est.endo_var}__'))
             frames[name] = frame
         if not frames:
             return pd.DataFrame()

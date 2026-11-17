@@ -41,10 +41,11 @@ mm = Makemodel(text, eq_start='FRML', eq_end='$', input_df=df)
 est_con, est_inv = [rec['estimator_object'] for rec in mm.estimation_records]
 
 #%% 1. the frame of one equation
-lev = est_con.af_level_df
-print(lev.loc[1995:1999].round(4))
+lev_prefixed = est_con.af_level_df
+print(lev_prefixed.loc[1995:1999].round(4))
 assert est_con.lhs_is_transformed and not est_inv.lhs_is_transformed
-assert list(lev.columns) == ['Actual', 'Fitted', 'Residuals']
+assert list(lev_prefixed.columns) == ['CON__Actual', 'CON__Fitted', 'CON__Residuals']
+lev = lev_prefixed.rename(columns=lambda c: c.removeprefix('CON__'))
 assert lev.index[0] == 1995 and lev.index[-1] == 2020
 assert np.array_equal(lev['Actual'].to_numpy(), df.loc[1995:2020, 'CON'].to_numpy())
 # the level fit is the fit of dlog(con) put on top of the actual lag
@@ -54,7 +55,7 @@ assert np.allclose(lev['Residuals'], lev['Actual'] - lev['Fitted'])
 # log(actual/fitted) is the residual of the estimated equation
 assert np.allclose(np.log(lev['Actual'] / lev['Fitted']), est_con.residuals_df['Residuals'], atol=1e-8)
 # a left-hand side which is the variable: the same numbers as af_df / residuals_df
-assert est_inv.af_level_df.equals(est_inv.af_df.join(est_inv.residuals_df))
+assert est_inv.af_level_df.equals(est_inv.af_df.join(est_inv.residuals_df).add_prefix('INV__'))
 print('ok')
 
 #%% 2. the frame of the whole model

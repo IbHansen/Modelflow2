@@ -1403,12 +1403,17 @@ class EstimatorBackend(Eq_parent, ABC):
           dynamic simulation,
         * ``Residuals`` ``Actual - Fitted``, in the units of the variable.
 
+        The columns are prefixed with the variable name and ``__``
+        (``CON__Actual``, ``CON__Fitted``, ``CON__Residuals``), so frames of
+        several equations can be joined side by side.
+
         When the left-hand side is the variable itself the frame holds the
         same numbers as :attr:`af_df` and :attr:`residuals_df`. ``None`` (and
         a message) when the equation can't be solved for the variable.
         """
+        prefix = f"{self.endo_var}__"
         if not self.lhs_is_transformed:
-            return self.af_df.join(self.residuals_df)
+            return self.af_df.join(self.residuals_df).add_prefix(prefix)
         start, end = self.smpl
         try:
             normalized = nz.normal(
@@ -1432,7 +1437,7 @@ class EstimatorBackend(Eq_parent, ABC):
             )
             return None
         out["Residuals"] = out["Actual"] - out["Fitted"]
-        return out
+        return out.add_prefix(prefix)
 
     @cached_property
     def estimation_smpl(self) -> Tuple[Any, Any]:
@@ -2517,11 +2522,13 @@ def plot_actual_vs_fitted(
     figure is closed; otherwise it is shown interactively.
     """
     if level:
-        af_df = residuals_df = emodel.af_level_df
-        if af_df is None:
+        if emodel.af_level_df is None:
             raise ValueError(
                 f"{emodel.endo_var}: no actual/fitted for the variable itself"
             )
+        prefix = f"{emodel.endo_var}__"
+        af_df = residuals_df = emodel.af_level_df.rename(
+            columns=lambda c: c.removeprefix(prefix))
         title = f"Actual vs Fitted: {emodel.endo_var} itself (one-step fit)"
     else:
         af_df, residuals_df = emodel.af_df, emodel.residuals_df
