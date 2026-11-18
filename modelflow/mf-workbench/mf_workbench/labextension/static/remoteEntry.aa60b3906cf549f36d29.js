@@ -145,7 +145,7 @@ __webpack_require__.d(exports, {
 /******/ 		// This function allow to reference async chunks
 /******/ 		__webpack_require__.u = (chunkId) => {
 /******/ 			// return url for filenames based on template
-/******/ 			return "" + chunkId + "." + {"lib_index_js":"776a3a8ee62c3bcf9386","style_index_js":"e859d22a766885bf64cb"}[chunkId] + ".js";
+/******/ 			return "" + chunkId + "." + {"lib_index_js":"7639063f5fa120ca69cb","style_index_js":"c9996fa72ef309b9d33d"}[chunkId] + ".js";
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -420,9 +420,9 @@ __webpack_require__.d(exports, {
 /******/ 		});
 /******/ 		const installedModules = {};
 /******/ 		const moduleToHandlerMapping = {
-/******/ 			"webpack/sharing/consume/default/@jupyterlab/apputils": () => (loadSingletonVersion("default", "@jupyterlab/apputils", false, [1,4,6,9])),
-/******/ 			"webpack/sharing/consume/default/@jupyterlab/notebook": () => (loadSingletonVersion("default", "@jupyterlab/notebook", false, [1,4,5,9])),
-/******/ 			"webpack/sharing/consume/default/@lumino/widgets": () => (loadSingletonVersion("default", "@lumino/widgets", false, [1,2,3,1,,"alpha",1]))
+/******/ 			"webpack/sharing/consume/default/@jupyterlab/apputils": () => (loadSingletonVersion("default", "@jupyterlab/apputils", false, [1,4,1,13])),
+/******/ 			"webpack/sharing/consume/default/@jupyterlab/notebook": () => (loadSingletonVersion("default", "@jupyterlab/notebook", false, [1,4,0,13])),
+/******/ 			"webpack/sharing/consume/default/@lumino/widgets": () => (loadSingletonVersion("default", "@lumino/widgets", false, [1,2,0,1]))
 /******/ 		};
 /******/ 		// no consumes in initial chunks
 /******/ 		const chunkMapping = {
@@ -570,4 +570,4 @@ __webpack_require__.d(exports, {
 /******/ 	
 /******/ })()
 ;
-//# sourceMappingURL=remoteEntry.6c0f9737fa6b2a256ade.js.map
+//# sourceMappingURL=remoteEntry.aa60b3906cf549f36d29.js.map
