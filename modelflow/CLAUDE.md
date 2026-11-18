@@ -76,6 +76,7 @@ These modules sit *above* the core BLL and provide richer authoring surfaces or 
 | Module | Role |
 |---|---|
 | `modelestimator_new.py` | Plugin-style estimation backends: `Estimate_ols` (statsmodels OLS), `Estimate_nls_lmfit` (nonlinear via lmfit), `Estimate_nls_eviews` (nonlinear via EViews round-trip). Base class `EstimatorBackend` defines the contract; add new backends by subclassing it and implementing `_fit()` and `_render_summary_html()`. |
+| `modelestimator_r.py` | R as estimation engine, built on `EstimatorBackend`: `Estimate_r_lm` (`lm`, `hac` Newey-West, `ivreg` 2SLS — regressor frame built as in `Estimate_ols`), `Estimate_r_nls` (`nls`, `nlsLM` — normalized equation translated to an R formula via the AST, lags become data columns), factory `Estimate_r(eq, method=...)`. Runs a generated R script via `Rscript.exe` or rpy2 (`backend='auto'/'rscript'/'rpy2'`), exchanging csv files in a temp folder; finds R on Windows via registry/Program Files. Checks R's residuals against ModelFlow's. Builtin estimator names `r_lm`, `r_nls`. |
 | `modelestimation.py` | Older estimation helpers: `LSResult` (HTML report wrapper), `EqContainer` (stitch multiple estimated equations into a model), `EqContainer.init_add_factors()`. Parses EViews-style `C(n)` parameter notation to ModelFlow `prefix__n` form. |
 
 ### Onboarding from external systems

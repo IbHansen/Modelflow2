@@ -86,8 +86,8 @@ py-modules = [
     "model_dynare", "model_Excel", "model_latex", "model_latex_class", "modelode",
     # construct (2)
     "modelconstruct", "modelconstruct_estimation",
-    # estimate (2)
-    "modelestimation", "modelestimator_new",
+    # estimate (3)
+    "modelestimation", "modelestimator_new", "modelestimator_r",
     # report (3)
     "modelreport", "modelhtml", "modeldisplay",
     # viz (8)

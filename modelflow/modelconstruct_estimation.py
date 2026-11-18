@@ -1600,6 +1600,9 @@ BUILTIN_ESTIMATORS = {
     'ols': 'Estimate_ols',
     'nls_lmfit': 'Estimate_nls_lmfit',
     'nls_eviews': 'Estimate_nls_eviews',
+    # R as the estimation engine (modelestimator_r); method lm / nls by default
+    'r_lm': 'Estimate_r_lm',
+    'r_nls': 'Estimate_r_nls',
 }
 
 
@@ -1649,6 +1652,11 @@ def _get_estimator_class(estimator_name, estimator_classes: Optional[dict] = Non
         raise ModelSpecificationError(
             "Equations with <estimator=...> require modelestimator_new to be importable."
         ) from exc
+
+    if class_names[name].startswith('Estimate_r_'):
+        # The R backends live in their own module so modelestimator_new
+        # does not depend on them.
+        import modelestimator_r as me
 
     try:
         return getattr(me, class_names[name])
