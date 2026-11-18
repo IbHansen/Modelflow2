@@ -84,6 +84,21 @@ def _period_series_to_json(series):
     return json.dumps(result_dict)
 
 
+def storable_options(options):
+    """The sticky solve options (oldkwargs) that can be written as JSON. Others, such as a function given as
+    factorizer=, are left out with a note: the loaded model then uses the default for them."""
+    keep, dropped = {}, []
+    for k, v in (options or {}).items():
+        try:
+            json.dumps(v)
+            keep[k] = v
+        except (TypeError, ValueError):
+            dropped.append(k)
+    if dropped:
+        print(f'modeldump: the solve option(s) {", ".join(dropped)} can not be saved and are left out')
+    return keep
+
+
 def _df_to_feather_bytes(df):
     """Serialize a DataFrame to in-memory Feather/Arrow IPC bytes.
     
@@ -222,7 +237,7 @@ class Parquet_Mixin:
             'format': 'feather_zip',
             'frml': self.equations,
             'modelname': self.name,
-            'oldkwargs': self.__dict__.get('oldkwargs', {}),   # a model never solved has none
+            'oldkwargs': storable_options(self.__dict__.get('oldkwargs', {})),   # a model never solved has none
             'run_on_load': self.__dict__.get('run_on_load', False),
             'straight': bool(self.__dict__.get('straight', False)),   # loads the same way again
             'diff_expressions': self.__dict__.get('diff_expressions', {}) if derivatives else {},

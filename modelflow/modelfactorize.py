@@ -27,6 +27,10 @@ None        SuperLU through scipy (handled in modelnewton, with ``permc_spec``) 
 a callable  ``factorizer(J)`` must return the function ``solve(b) -> x``                   -
 =========== ============================================================================= ====================
 
+PARDISO settings (iparm), GMRES instead of repeated correction (krylov) and the accuracy of the linear solve
+(refine_tol) are given through ``factorizer=modelfactorize.pardiso(iparm={...}, krylov=True, refine_tol=1e-9)``
+or ``modelfactorize.normal(...)``.
+
 The solve functions are bound methods; the object behind (``solve.__self__``) has ``info`` (a text on the
 factorization) and ``last`` (relative linear residual and number of refinements of the latest solve).
 
@@ -46,6 +50,7 @@ import scipy.sparse as sps
 REFINE_TOL = 1e-11       # relative linear residual (max norm) the refinement aims for
 WARN_TOL = 1e-8          # a warning when the refinement ends above this
 FAIL_TOL = 1e-2          # an exception when it ends above this: the step would be wrong
+STALL_STEPS = 3          # the refinement stops when the residual has not halved in this many steps
 
 
 class RefinedSolver:
@@ -56,6 +61,8 @@ class RefinedSolver:
 
     name = ''
     max_refine = 20
+    krylov = False           # True: GMRES with the factorization as preconditioner instead of repeated correction
+    refine_tol = REFINE_TOL  # the relative linear residual the refinement aims for
 
     def __init__(self, A, verbose=False):
         self.verbose = verbose
@@ -95,19 +102,75 @@ class RefinedSolver:
         except Exception:
             pass
 
+    def _refine(self, b, nb):
+        """Repeated correction x += M(b - J x). Stops at refine_tol, or when the residual has not halved in
+        STALL_STEPS steps: it has then reached the rounding floor of b - J x, and more steps only cost time.
+        Returns the best x seen."""
+        x = self._apply(b)
+        best_rel, best_x, stall = np.inf, x, 0
+        for k in range(self.max_refine + 1):
+            r = b - self.A @ x
+            rel = np.abs(r).max() / nb
+            if not np.isfinite(rel):
+                break
+            if rel < best_rel:
+                stall = 0 if rel < 0.5 * best_rel else stall + 1
+                best_rel, best_x = rel, x
+            else:
+                stall += 1
+            if best_rel < self.refine_tol or stall >= STALL_STEPS or k == self.max_refine:
+                break
+            x = x + self._apply(r)
+        return best_x, best_rel, k
+
+    def _gmres(self, b, nb):
+        """GMRES preconditioned from the right with the factorization (it minimizes the true residual, which a
+        left-preconditioned GMRES such as scipy's does not), starting from the plain step. Same stopping rules as
+        _refine, counted in preconditioner applications. No restart: at most max_refine directions."""
+        A, M, m = self.A, self._apply, self.max_refine
+        x0 = M(b)
+        r = b - A @ x0
+        best_rel, best_x, stall = np.abs(r).max() / nb, x0, 0
+        k = 0
+        beta = np.linalg.norm(r)
+        if not (np.isfinite(best_rel) and best_rel >= self.refine_tol and beta > 0):
+            return best_x, best_rel, k
+        V, Z = [r / beta], []
+        H = np.zeros((m + 1, m))
+        for j in range(m):
+            k = j + 1
+            z = M(V[j])
+            Z.append(z)
+            w = A @ z
+            for _ in range(2):                          # Gram-Schmidt twice, for orthogonality in floating point
+                for i in range(j + 1):
+                    h = V[i] @ w
+                    H[i, j] += h
+                    w -= h * V[i]
+            H[j + 1, j] = np.linalg.norm(w)
+            e = np.zeros(j + 2)
+            e[0] = beta
+            y = np.linalg.lstsq(H[:j + 2, :j + 1], e, rcond=None)[0]
+            x = x0 + np.column_stack(Z) @ y
+            rel = np.abs(b - A @ x).max() / nb
+            if not np.isfinite(rel):
+                break
+            if rel < best_rel:
+                stall = 0 if rel < 0.5 * best_rel else stall + 1
+                best_rel, best_x = rel, x
+            else:
+                stall += 1
+            if best_rel < self.refine_tol or stall >= STALL_STEPS or not H[j + 1, j] > 0:
+                break
+            V.append(w / H[j + 1, j])
+        return best_x, best_rel, k
+
     def solve(self, b):
         if self.__dict__.get('released'):
             raise RuntimeError(f"factorizer='{self.name}': this factorization has been released, factorize again")
         b = np.ascontiguousarray(b, dtype=float)
         nb = max(np.abs(b).max(), 1e-300)
-        x = self._apply(b)
-        rel = np.inf
-        for k in range(self.max_refine + 1):
-            r = b - self.A @ x
-            rel = np.abs(r).max() / nb
-            if not np.isfinite(rel) or rel < REFINE_TOL or k == self.max_refine:
-                break
-            x = x + self._apply(r)
+        x, rel, k = (self._gmres if self.krylov else self._refine)(b, nb)
         self.last = (rel, k)
         if not rel < FAIL_TOL:
             raise ArithmeticError(f"factorizer='{self.name}' can not solve this linear system: relative residual "
@@ -116,7 +179,8 @@ class RefinedSolver:
             print(f"factorizer='{self.name}': the linear solve is not accurate, relative residual {rel:.2g} "
                   f'after {k} refinements', flush=True)
         elif self.verbose:
-            print(f'   {self.name} solve: relative linear residual {rel:.2g} after {k} refinements', flush=True)
+            print(f'   {self.name} solve: relative linear residual {rel:.2g} after {k} '
+                  f'{"GMRES steps" if self.krylov else "refinements"}', flush=True)
         return x
 
 
@@ -140,12 +204,42 @@ class _PardisoRelease:
             s.free_memory(everything=True)
 
 
+def _pardiso_solver(mtype, iparm=None):
+    """A PyPardisoSolver. With ``iparm`` (a dict {0-based index: value}, the numbering of the MKL C documentation)
+    the array is filled with MKL's defaults for this mtype (pardisoinit), iparm[0] is set to 1 (use the array) and
+    the given entries override. Without it pypardiso's iparm[0]=0 leaves every setting to MKL."""
+    s = _pypardiso().PyPardisoSolver(mtype=mtype)
+    if iparm:
+        import ctypes
+        s.libmkl.pardisoinit(s.pt.ctypes.data_as(ctypes.c_void_p), ctypes.byref(ctypes.c_int32(mtype)),
+                             s.iparm.ctypes.data_as(ctypes.c_void_p))
+        s.iparm[0] = 1
+        for i, v in iparm.items():
+            if not 1 <= int(i) <= 63:
+                raise ValueError(f'iparm index {i} is not one of 1-63 (0-based, as in the MKL C documentation)')
+            s.iparm[int(i)] = v
+    return s
+
+
 class PardisoSolver(_PardisoRelease, RefinedSolver):
     """LU of J with MKL PARDISO (static pivoting)."""
     name = 'pardiso'
 
+    def __init__(self, A, verbose=False, iparm=None, krylov=False, refine_tol=None):
+        self.iparm = dict(iparm or {})
+        self.krylov = bool(krylov)
+        if refine_tol is not None:
+            self.refine_tol = float(refine_tol)
+        super().__init__(A, verbose)
+        if self.iparm:
+            self.info += f', iparm {self.iparm}'
+        if self.krylov:
+            self.info += ', GMRES'
+        if refine_tol is not None:
+            self.info += f', refine_tol {self.refine_tol:g}'
+
     def _factorize(self):
-        self.s = _pypardiso().PyPardisoSolver()
+        self.s = _pardiso_solver(11, self.iparm)
         self.s.factorize(self.A)
 
     def _apply(self, r):
@@ -159,6 +253,19 @@ class NormalSolver(_PardisoRelease, RefinedSolver):
     of As'As. With x = Dc y the approximate solution of J x = r is Dc (As'As)^-1 As' Dr r."""
     name = 'normal'
     max_refine = 40
+
+    def __init__(self, A, verbose=False, iparm=None, krylov=False, refine_tol=None):
+        self.iparm = dict(iparm or {})
+        self.krylov = bool(krylov)
+        if refine_tol is not None:
+            self.refine_tol = float(refine_tol)
+        super().__init__(A, verbose)
+        if self.iparm:
+            self.info += f', iparm {self.iparm}'
+        if self.krylov:
+            self.info += ', GMRES'
+        if refine_tol is not None:
+            self.info += f', refine_tol {self.refine_tol:g}'
 
     def _factorize(self):
         A = self.A
@@ -176,7 +283,7 @@ class NormalSolver(_PardisoRelease, RefinedSolver):
         pypardiso = _pypardiso()
         self.info = f", J'J {2 * self.U.nnz - A.shape[0]:,} non-zeros"
         try:
-            self.s = pypardiso.PyPardisoSolver(mtype=2)                # real symmetric positive definite
+            self.s = _pardiso_solver(2, self.iparm)                    # real symmetric positive definite
             self.s.factorize(self.U)
         except pypardiso.pardiso_wrapper.PyPardisoError:
             # J'J is positive definite in exact arithmetic only: with a badly conditioned J a pivot can come out
@@ -185,7 +292,7 @@ class NormalSolver(_PardisoRelease, RefinedSolver):
                 self.s.free_memory(everything=True)                     # what the failed attempt left in MKL
             except Exception:
                 pass
-            self.s = pypardiso.PyPardisoSolver(mtype=-2)
+            self.s = _pardiso_solver(-2, self.iparm)
             self.s.factorize(self.U)
             self.info += ', not numerically positive definite: symmetric indefinite factorization'
 
@@ -298,6 +405,36 @@ def _mumps(A, verbose=False):
                           'variable MODELFLOW_MUMPS_PYTHON set to the python of an environment that has it '
                           '(conda create -n mumpsenv -c conda-forge python numpy scipy python-mumps)') from None
     return MumpsSolver(A, verbose)
+
+
+def _with_options(cls, iparm, krylov, refine_tol):
+    iparm = dict(iparm or {})
+    if refine_tol is not None and not 0 < refine_tol < FAIL_TOL:
+        raise ValueError(f'refine_tol={refine_tol} must be between 0 and {FAIL_TOL}')
+
+    def factorizer(A, verbose=False):
+        return cls(A, verbose, iparm=iparm, krylov=krylov, refine_tol=refine_tol).solve
+    factorizer.__name__ = (f'{cls.name}(iparm={iparm}, krylov={krylov}'
+                           + ('' if refine_tol is None else f', refine_tol={refine_tol:g}') + ')')
+    return factorizer
+
+
+def pardiso(iparm=None, krylov=False, refine_tol=None):
+    """factorizer='pardiso' with options: ``factorizer=modelfactorize.pardiso(iparm={1: 13}, krylov=True)``.
+
+    iparm   a dict {index: value} with the 0-based numbering of the MKL C documentation; entries not given keep
+            MKL's defaults. Example: iparm[1]=13 = parallel nested dissection (3) with the aggressive
+            factorization of oneMKL 2026 at level 1 (the tens digit, 1-9; for large matrices only).
+    krylov  True: the solve uses GMRES with the factorization as preconditioner instead of repeated correction.
+            Fewer solves with the factors when the factorization is far from exact (J'J of a large model).
+    refine_tol  the relative linear residual (max norm) the refinement or GMRES aims for, default REFINE_TOL
+            (1e-11). Newton converges as well with a looser 1e-9 and needs fewer solves with the factors."""
+    return _with_options(PardisoSolver, iparm, krylov, refine_tol)
+
+
+def normal(iparm=None, krylov=False, refine_tol=None):
+    """factorizer='normal' with options for the J'J factorization and the solve, see ``pardiso``."""
+    return _with_options(NormalSolver, iparm, krylov, refine_tol)
 
 
 FACTORIZERS = {'pardiso': PardisoSolver, 'normal': NormalSolver, 'mumps': _mumps}

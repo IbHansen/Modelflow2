@@ -6925,6 +6925,7 @@ class Json_Mixin():
             current_per_json = None
 
 
+        from model_parquet_mixin import storable_options
         dumpjson = {
             'version': '1.10',
             'has_data': dump_data,
@@ -6932,7 +6933,7 @@ class Json_Mixin():
             'lastdf': self.dump_df.to_json(double_precision=15) if dump_data else None,
             'current_per': current_per_json ,
             'modelname': self.name,
-            'oldkwargs': self.__dict__.get('oldkwargs',{}),
+            'oldkwargs': storable_options(self.__dict__.get('oldkwargs',{})),
             'run_on_load': self.__dict__.get('run_on_load', False),
             'straight': bool(self.__dict__.get('straight', False)),   # loads the same way again
             'diff_expressions': self.__dict__.get('diff_expressions', {}) if derivatives else {},
