@@ -85,10 +85,13 @@ def _period_series_to_json(series):
 
 
 def storable_options(options):
-    """The sticky solve options (oldkwargs) that can be written as JSON. Others, such as a function given as
-    factorizer=, are left out with a note: the loaded model then uses the default for them."""
+    """The sticky solve options (oldkwargs) that can be written as JSON. A function with a ``spec`` dict (the
+    factorizers from modelfactorize.normal/pardiso) is stored as that dict. Others, such as a user function given
+    as factorizer=, are left out with a note: the loaded model then uses the default for them."""
     keep, dropped = {}, []
     for k, v in (options or {}).items():
+        if callable(v) and isinstance(getattr(v, 'spec', None), dict):
+            v = v.spec
         try:
             json.dumps(v)
             keep[k] = v

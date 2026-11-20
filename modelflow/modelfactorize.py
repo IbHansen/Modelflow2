@@ -24,12 +24,18 @@ None        SuperLU through scipy (handled in modelnewton, with ``permc_spec``) 
             ``import mumps`` works. Otherwise in a helper process, started with the
             python named by the environment variable MODELFLOW_MUMPS_PYTHON (the
             python.exe of an environment where python-mumps is installed).
+a dict      ``{'method': 'normal', 'iparm': {1: 13}, 'refine_tol': 1e-6}``: one of the above  as the method
+            with its settings, see below
 a callable  ``factorizer(J)`` must return the function ``solve(b) -> x``                   -
 =========== ============================================================================= ====================
 
 PARDISO settings (iparm), GMRES instead of repeated correction (krylov) and the accuracy of the linear solve
-(refine_tol) are given through ``factorizer=modelfactorize.pardiso(iparm={...}, krylov=True, refine_tol=1e-9)``
-or ``modelfactorize.normal(...)``.
+(refine_tol) are given as a dict, ``factorizer={'method': 'normal', 'iparm': {1: 13}, 'krylov': True,
+'refine_tol': 1e-6}``, or through ``factorizer=modelfactorize.pardiso(...)`` / ``modelfactorize.normal(...)``.
+The dict is plain JSON: it is saved with the model's solve options (``modeldump``), so a loaded model solves the
+same way, and two equal dicts count as the same factorizer, so the factorization is reused between solves. The
+functions carry the same dict as ``.spec``, which ``modeldump`` stores. The tens digit of iparm[1] (oneMKL 2026)
+is dropped with a note on an older MKL.
 
 The solve functions are bound methods; the object behind (``solve.__self__``) has ``info`` (a text on the
 factorization) and ``last`` (relative linear residual and number of refinements of the latest solve).
@@ -205,10 +211,31 @@ class _PardisoRelease:
             s.free_memory(everything=True)
 
 
+_MKL_VERSION = None
+
+
+def mkl_version(solver=None):
+    """The year of the oneMKL behind pypardiso (2025, 2026, ...), 0 when it can not be read."""
+    global _MKL_VERSION
+    if _MKL_VERSION is None:
+        try:
+            import ctypes
+            s = solver or _pypardiso().PyPardisoSolver()
+            buf = ctypes.create_string_buffer(256)
+            s.libmkl.mkl_get_version_string(buf, 256)
+            _MKL_VERSION = int(buf.value.decode().split('Version ')[1][:4])
+        except Exception:
+            _MKL_VERSION = 0
+    return _MKL_VERSION
+
+
 def _pardiso_solver(mtype, iparm=None):
     """A PyPardisoSolver. With ``iparm`` (a dict {0-based index: value}, the numbering of the MKL C documentation)
     the array is filled with MKL's defaults for this mtype (pardisoinit), iparm[0] is set to 1 (use the array) and
-    the given entries override. Without it pypardiso's iparm[0]=0 leaves every setting to MKL."""
+    the given entries override. Without it pypardiso's iparm[0]=0 leaves every setting to MKL.
+
+    The tens digit of iparm[1] (the aggressive factorization, e.g. 13) needs oneMKL 2026; with an older MKL it is
+    dropped with a note, so a model saved with it also solves there."""
     s = _pypardiso().PyPardisoSolver(mtype=mtype)
     if iparm:
         import ctypes
@@ -216,9 +243,14 @@ def _pardiso_solver(mtype, iparm=None):
                              s.iparm.ctypes.data_as(ctypes.c_void_p))
         s.iparm[0] = 1
         for i, v in iparm.items():
-            if not 1 <= int(i) <= 63:
+            i, v = int(i), int(v)
+            if not 1 <= i <= 63:
                 raise ValueError(f'iparm index {i} is not one of 1-63 (0-based, as in the MKL C documentation)')
-            s.iparm[int(i)] = v
+            if i == 1 and v >= 10 and mkl_version(s) < 2026:
+                print(f'factorizer: iparm[1]={v} needs oneMKL 2026 (this is {mkl_version(s) or "unknown"}), '
+                      f'iparm[1]={v % 10} is used', flush=True)
+                v = v % 10
+            s.iparm[i] = v
     return s
 
 
@@ -418,6 +450,10 @@ def _with_options(cls, iparm, krylov, refine_tol):
     factorizer.__name__ = (f'{cls.name}(iparm={iparm}, krylov={krylov}'
                            + ('' if refine_tol is None else f', refine_tol={refine_tol:g}') + ')')
     factorizer.takes_verbose = True          # make_solver passes verbose on (a user function gets A only)
+    # the same choice as a dict: modeldump stores this, so a loaded model solves the same way
+    factorizer.spec = {'method': cls.name, **({'iparm': iparm} if iparm else {}),
+                       **({'krylov': True} if krylov else {}),
+                       **({'refine_tol': refine_tol} if refine_tol is not None else {})}
     return factorizer
 
 
@@ -443,15 +479,65 @@ FACTORIZERS = {'pardiso': PardisoSolver, 'normal': NormalSolver, 'mumps': _mumps
 BUILTIN = (None, 'superlu', 'umfpack')        # handled in modelnewton
 
 
+SPEC_KEYS = ('method', 'iparm', 'krylov', 'refine_tol')
+
+
+def method_of(factorizer):
+    """The method of a factorizer option: 'superlu', 'umfpack', 'pardiso', 'normal', 'mumps', or 'function'
+    for a function without a spec."""
+    if factorizer is None:
+        return 'superlu'
+    if isinstance(factorizer, dict):
+        return str(factorizer.get('method', '')).lower()
+    if callable(factorizer):
+        spec = getattr(factorizer, 'spec', None)
+        return spec['method'] if isinstance(spec, dict) else 'function'
+    return str(factorizer).lower()
+
+
+def from_spec(spec):
+    """The factorizer a dict describes: {'method': 'normal', 'iparm': {1: 13}, 'krylov': False, 'refine_tol': 1e-6}.
+    Only 'method' is required; iparm, krylov and refine_tol are for 'pardiso' and 'normal'. A dict is plain JSON, so
+    it is saved with the model's solve options and a loaded model solves the same way. Returns a function from
+    ``pardiso``/``normal``, or the method name for the others."""
+    unknown = set(spec) - set(SPEC_KEYS)
+    if unknown:
+        raise ValueError(f'factorizer={spec!r}: unknown key(s) {sorted(unknown)}, use {", ".join(SPEC_KEYS)}')
+    method = method_of(spec)
+    options = {k: spec[k] for k in ('iparm', 'krylov', 'refine_tol') if k in spec}
+    if method in ('pardiso', 'normal'):
+        iparm = {int(k): int(v) for k, v in (options.get('iparm') or {}).items()}   # JSON makes the keys strings
+        return _with_options(PardisoSolver if method == 'pardiso' else NormalSolver,
+                             iparm, bool(options.get('krylov', False)), options.get('refine_tol'))
+    if method in ('superlu', 'umfpack', 'mumps'):
+        if options:
+            raise ValueError(f'factorizer={spec!r}: {", ".join(options)} only apply to pardiso and normal')
+        return method
+    raise ValueError(f"factorizer={spec!r}: 'method' must be one of superlu, umfpack, pardiso, normal, mumps")
+
+
+def describe(factorizer):
+    """A short text for a factorizer option, for messages."""
+    if isinstance(factorizer, dict):
+        made = from_spec(factorizer)
+        return getattr(made, '__name__', made)
+    if callable(factorizer):
+        return getattr(factorizer, '__name__', 'a function')
+    return factorizer or 'superlu'
+
+
 def make_solver(A, factorizer, verbose=False):
     """Factorize A with the chosen factorizer and return the function solve(b) -> x."""
+    if isinstance(factorizer, dict):
+        factorizer = from_spec(factorizer)
     if callable(factorizer):
         return factorizer(A, verbose) if getattr(factorizer, 'takes_verbose', False) else factorizer(A)
     try:
         maker = FACTORIZERS[factorizer.lower()]
     except (KeyError, AttributeError):
         raise ValueError(f'factorizer={factorizer!r} is not known. Use one of None, '
-                         f"'superlu', 'umfpack', {', '.join(repr(k) for k in FACTORIZERS)} or a function") from None
+                         f"'superlu', 'umfpack', {', '.join(repr(k) for k in FACTORIZERS)}, a dict "
+                         "such as {'method': 'normal', 'refine_tol': 1e-6} or a function") from None
     return maker(A, verbose).solve
 
 

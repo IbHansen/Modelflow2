@@ -887,7 +887,7 @@ class newton_diff():
         # every period's Jacobian shares one sparsity pattern, so with
         # factorizer='umfpack' the symbolic analysis is done once and reused
         # across all periods (and later nonlin refreshes)
-        if getattr(self,'factorizer',None) == 'umfpack':
+        if self._factorizer_method() == 'umfpack':
             with ttimer('umfpack factorize per-period jacobians',self.timeit):
                 self.solvelusparsedic = {p: self._factorize_umfpack(jac, timeit=False)
                                          for p,jac in self.jacsparsedic.items()}
@@ -914,7 +914,7 @@ class newton_diff():
         # breakpoint()     
         # the diagonal -1 of the rows which are not residual equations is placed by get_diff_mat_tot
         self.stacked = self.get_diff_mat_tot(df=df,is_residual_eq=is_residual_eq)
-        if getattr(self,'factorizer',None) == 'umfpack':
+        if self._factorizer_method() == 'umfpack':
             self.solvestacked = self._factorize_umfpack(self.stacked)
         elif self._other_factorizer():
             # the previous factorization is freed first, so the peak memory is one factorization, not two
@@ -934,13 +934,17 @@ class newton_diff():
         return self.solvestacked
 
     def _factorizer_name(self):
-        f = getattr(self,'factorizer',None)
-        return getattr(f,'__name__','a function') if callable(f) else (f or 'superlu')
+        from modelfactorize import describe
+        return describe(getattr(self,'factorizer',None))
+
+    def _factorizer_method(self):
+        '''superlu, umfpack, pardiso, normal, mumps or function - also for a factorizer given as a dict'''
+        from modelfactorize import method_of
+        return method_of(getattr(self,'factorizer',None))
 
     def _other_factorizer(self):
         '''True when the factorizer is one of those in modelfactorize (pardiso, normal, mumps, a function)'''
-        f = getattr(self,'factorizer',None)
-        return callable(f) or (f or 'superlu').lower() not in ('superlu','umfpack')
+        return self._factorizer_method() not in ('superlu','umfpack')
 
     def _factorize_other(self, jac):
         '''Factorize with a factorizer from modelfactorize. Returns a solve callable like ``factorized``.'''
