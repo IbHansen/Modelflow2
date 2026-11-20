@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """Tests of modelestimator_r against a real R.
 
-R lives in its own conda environment (conda-forge's Windows R can not share
-book314b with cvxopt):
+R is any R ModelFlow can find: normally R from CRAN (cran.r-project.org) with
+install.packages(c("sandwich", "lmtest", "ivreg", "minpack.lm")), or the
+variable MODELFLOW_RSCRIPT. Without either, the conda environment mfr is used
+when it exists (conda-forge's Windows R can not share an environment with
+cvxopt):
 
     conda create -n mfr -c conda-forge --override-channels r-base=4.5 r-sandwich r-lmtest r-ivreg r-minpack.lm
 
-Point MODELFLOW_RSCRIPT at that environment (done below if it is not set).
 Every result is checked against a Python reference: Estimate_ols, numpy 2SLS
 and Estimate_nls_lmfit.
 """
@@ -17,10 +19,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-os.environ.setdefault(
-    "MODELFLOW_RSCRIPT", str(Path.home() / "miniforge3" / "envs" / "mfr"))
-
 import modelestimator_r as mr
+
+try:
+    mr.find_rscript()                     # CRAN R, MODELFLOW_RSCRIPT, PATH, ...
+except mr.REstimationError:
+    mfr = Path.home() / "miniforge3" / "envs" / "mfr"
+    if not mfr.is_dir():
+        raise
+    os.environ["MODELFLOW_RSCRIPT"] = str(mfr)
 from modelestimator_new import Estimate_ols, Estimate_nls_lmfit
 from modelestimator_r import Estimate_r, Estimate_r_lm, Estimate_r_nls
 

@@ -34,9 +34,12 @@ Quick start
 
 Requirements
 ------------
-- R (https://cran.r-project.org). On Windows it is found automatically in
-  the standard install locations; otherwise pass ``rscript_path=`` or set the
-  ``MODELFLOW_RSCRIPT`` environment variable.
+- R installed as an ordinary program from https://cran.r-project.org
+  (RStudio from https://posit.co is convenient for installing packages), not
+  in the conda environment. ModelFlow only runs Rscript as a separate process,
+  so R and the Python packages never conflict. On Windows it is found
+  automatically in the standard install locations; otherwise pass
+  ``rscript_path=`` or set the ``MODELFLOW_RSCRIPT`` environment variable.
 - R packages, only for the methods that need them: ``sandwich`` (hac),
   ``ivreg`` or ``AER`` (ivreg), ``minpack.lm`` (nlsLM), and optionally
   ``lmtest`` (extra residual tests for the linear methods). Install from R
@@ -68,12 +71,6 @@ Rscript is located from: the rscript_path argument, the MODELFLOW_RSCRIPT
 environment variable, R_HOME, PATH, the Windows registry (HKCU/HKLM
 SOFTWARE\\R-core) and finally C:\\Program Files\\R\\R-x.y.z and
 %LOCALAPPDATA%\\Programs\\R\\R-x.y.z (the newest version wins).
-rscript_path / MODELFLOW_RSCRIPT may also name a conda environment with
-r-base. On Windows conda-forge's R can not share an environment with
-ModelFlow (gsl pins clash), so give R its own::
-
-    conda create -n mfr -c conda-forge --override-channels r-base=4.5 r-sandwich r-lmtest r-ivreg r-minpack.lm
-    setx MODELFLOW_RSCRIPT %USERPROFILE%\\miniforge3\\envs\\mfr
 
 After every fit the residuals R reports are compared with the residuals
 ModelFlow computes from the estimated coefficients (check_residuals=True).
@@ -225,18 +222,11 @@ def find_rscript(rscript_path: Optional[Union[str, Path]] = None) -> Path:
     ----------
     rscript_path : str | Path, optional
         Explicit location: the executable itself, its ``bin`` folder, the R
-        installation folder (``C:\\Program Files\\R\\R-4.4.1``) or a conda
-        environment with ``r-base`` (``C:\\...\\miniforge3\\envs\\mfr``).
+        installation folder (``C:\\Program Files\\R\\R-4.6.2``).
 
     Search order when ``rscript_path`` is not given: the
     ``MODELFLOW_RSCRIPT`` environment variable, ``R_HOME``, ``PATH``, the
     Windows registry, and the default install folders (newest version).
-
-    R from conda-forge can not always be installed in the same environment
-    as ModelFlow (on Windows its gsl pin clashes with cvxopt's). Put it in an
-    environment of its own and point ``MODELFLOW_RSCRIPT`` at that
-    environment; the DLL folders of the environment are put on ``PATH``
-    when Rscript is run.
 
     Raises
     ------
