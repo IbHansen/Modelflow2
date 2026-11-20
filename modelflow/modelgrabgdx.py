@@ -21,8 +21,12 @@ display_bytype_tables
     by type (Set, Parameter, Variable, Equation).
     
     
-requires GAMS instalation and  
-pip install "gamsapi[transfer]"   
+Reading GDX files needs two packages from PyPI, no GAMS installation:
+
+    pip install "gamsapi[transfer]" gamspy-base
+
+gams.transfer reads the files with the GDX library of gamspy-base. A GAMS
+system folder can still be given with gams_dir=.
 """
 
 from IPython.display import display, Markdown
@@ -41,17 +45,35 @@ try:
 except ImportError:
     HAS_GAMS = False
 
-def _require_gams(gams_dir):
+GAMS_INSTALL = 'pip install "gamsapi[transfer]" gamspy-base'
+
+
+def gams_system_dir(gams_dir=None):
+    """The GAMS system folder used to read GDX files.
+
+    gams_dir when it is given, otherwise the folder of the gamspy-base
+    package, which holds the GDX library (no GAMS installation needed).
+    """
     if not HAS_GAMS:
         raise ImportError(
-            "The 'gams.transfer' package is required but not installed. "
-            "Install it with: pip install gams[transfer]"
+            "Reading GDX files needs the 'gams.transfer' package. "
+            f"Install it with: {GAMS_INSTALL}"
         )
-    if not Path(gams_dir).is_dir():
-        raise FileNotFoundError(
-            f"GAMS system directory not found: '{gams_dir}'. "
-            "Install GAMS from https://www.gams.com or pass the correct gams_dir."
-        )
+    if gams_dir is not None:
+        if not Path(gams_dir).is_dir():
+            raise FileNotFoundError(
+                f"GAMS system directory not found: '{gams_dir}'. Leave gams_dir "
+                f"out to use the GDX library of gamspy-base ({GAMS_INSTALL})."
+            )
+        return str(gams_dir)
+    try:
+        import gamspy_base
+    except ImportError:
+        raise ImportError(
+            "Reading GDX files needs the GDX library of the 'gamspy-base' "
+            f"package. Install it with: {GAMS_INSTALL}"
+        ) from None
+    return gamspy_base.directory
 
 def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
@@ -63,11 +85,11 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     )
     return out
 
-def get_gdx_t(filename="baseline.gdx", gams_dir=r"C:\GAMS\47"):
+def get_gdx_t(filename="baseline.gdx", gams_dir=None):
     
-    _require_gams(gams_dir)
+    system_dir = gams_system_dir(gams_dir)
     print(f'\nStart reading {filename}')
-    container = gt.Container(filename, system_directory=gams_dir)
+    container = gt.Container(filename, system_directory=system_dir)
     # print(f'Finished reading {filename}')
 
     dfs = {}
@@ -85,7 +107,7 @@ def get_gdx_t(filename="baseline.gdx", gams_dir=r"C:\GAMS\47"):
 
 
 
-def display_content(filename="baseline.gdx", gams_dir=r"C:\GAMS\47"):
+def display_content(filename="baseline.gdx", gams_dir=None):
     """Display one Markdown table per full_typename in Jupyter."""
     
     bytype,_ = get_gdx_t(filename=filename, gams_dir=gams_dir)
@@ -191,7 +213,7 @@ def free_to_timeseries_t(bytype, dfs, t_name="t", value_col="level", sep="__"):
 @dataclass
 class GdxDataset:
     filename: str | Path
-    gams_dir: str = r"C:\GAMS\47"
+    gams_dir: str | None = None
     name: str = field(init=False)
     df: pd.DataFrame = field(init=False)
     var_descriptions: dict[str, str] = field(init=False)
@@ -221,15 +243,16 @@ class GdxDataset:
             print('Number of periods  : 0')
     
      
-def model_grab_gdx(gdx_files, gams_dir=r"C:\GAMS\47", max_workers=None):
+def model_grab_gdx(gdx_files, gams_dir=None, max_workers=None):
     """Build a model from one or more GDX files.
     
     Parameters
     ----------
     gdx_files : str, Path, or list of str/Path
         One or more paths to .gdx files.
-    gams_dir : str
-        GAMS system directory.
+    gams_dir : str or None
+        GAMS system directory. None (default) uses the GDX library of the
+        gamspy-base package, so no GAMS installation is needed.
     max_workers : int or None
         Number of threads for parallel GDX loading.
         None  = min(len(gdx_files), 8)  (auto).
@@ -538,7 +561,7 @@ class GdxStaticDataset:
     """
     filename: str | Path
     years: object = tuple(range(2021, 2051))
-    gams_dir: str = r"C:\GAMS\47"
+    gams_dir: str | None = None
     name: str = field(init=False)
     df: pd.DataFrame = field(init=False)
     var_descriptions: dict[str, str] = field(init=False)
