@@ -1,5 +1,5 @@
 @echo off
-call "%USERPROFILE%\miniforge3\condabin\conda.bat" activate book314
+call "%USERPROFILE%\miniforge3\condabin\conda.bat" activate book314b
 cd /d "%~dp1"
 jupyter notebook "%~nx1"
 

@@ -541,6 +541,23 @@ def gen_eqdict(m, databank):
     return "".join(chain(fib1, body, fib2))
 
 
+@contextmanager
+def compile_progress(silent):
+    """The generated jit code shows a tqdm bar per part while numba compiles (``tqdm.tqdm(...)`` in the source).
+    With ``silent`` the bars are switched off here, at run time: the generated text stays the same, so numba's
+    on-disk cache of a transpiled file stays valid."""
+    import tqdm as tqdm_module
+    if not silent:
+        yield
+        return
+    original = tqdm_module.tqdm
+    tqdm_module.tqdm = partial(original, disable=True)
+    try:
+        yield
+    finally:
+        tqdm_module.tqdm = original
+
+
 def import_transpiled(jitname, solveout, partnames, transpile_reset, silent=True):
     """Write/refresh the transpiled jit source file and import its functions.
 
@@ -579,11 +596,13 @@ def import_transpiled(jitname, solveout, partnames, transpile_reset, silent=True
     if not silent:
         print(f'{"Writes" if stale else "Reuses"} the evaluation functions in {jitfile}')
     modname = f"{jitfile.parent.name}.{jitfile.stem}"
-    if modname in sys.modules:
-        m1 = (importlib.reload(sys.modules[modname]) if stale
-              else sys.modules[modname])
-    else:
-        m1 = importlib.import_module("." + jitfile.stem, jitfile.parent.name)
+    # numba compiles while the module is imported; an unchanged file only loads numba's cache: no bars then
+    with compile_progress(silent or not stale):
+        if modname in sys.modules:
+            m1 = (importlib.reload(sys.modules[modname]) if stale
+                  else sys.modules[modname])
+        else:
+            m1 = importlib.import_module("." + jitfile.stem, jitfile.parent.name)
     return tuple(getattr(m1, name) for name in partnames)
 
 
@@ -948,8 +967,9 @@ class SolverBase:
                         print(f"now makelos makes a {solvename} jit function")
                     m.make_los_text_jit = solveout()
                     exec(m.make_los_text_jit, globals())  # creates make_los
-                    pro_jit, core_jit, epi_jit = globals()["make_los"](
-                        m.funks, m.errfunk)
+                    with compile_progress(silent):
+                        pro_jit, core_jit, epi_jit = globals()["make_los"](
+                            m.funks, m.errfunk)
                 else:
                     # transpiled-file path: the file is rewritten (and the
                     # module reloaded, numba recompiling) whenever the freshly
@@ -958,7 +978,7 @@ class SolverBase:
                     # column-layout change.
                     pro_jit, core_jit, epi_jit = self._import_transpiled(
                         jitname, solveout, ("prolog", "core", "epilog"),
-                        transpile_reset)
+                        transpile_reset, silent=silent)
                 setattr(m, f"pro_{jitname}", pro_jit)
                 setattr(m, f"core_{jitname}", core_jit)
                 setattr(m, f"epi_{jitname}", epi_jit)
@@ -978,9 +998,9 @@ class SolverBase:
             return (getattr(m, f"pro_{nojitname}"), getattr(m, f"core_{nojitname}"),
                     getattr(m, f"epi_{nojitname}"))
 
-    def _import_transpiled(self, jitname, solveout, partnames, transpile_reset):
+    def _import_transpiled(self, jitname, solveout, partnames, transpile_reset, silent=True):
         """See the module-level ``import_transpiled``."""
-        return import_transpiled(jitname, solveout, partnames, transpile_reset)
+        return import_transpiled(jitname, solveout, partnames, transpile_reset, silent=silent)
 
     def _makelos_dag(self, databank, *, transpile_reset=False, newdata=False,
                      silent=True):
@@ -1029,12 +1049,13 @@ class SolverBase:
             if ljit and not stringjit:
                 funcs = self._import_transpiled(
                     f"{m.name}_stacksplit_jit", solveout,
-                    ("prolog", "core", "epilog"), transpile_reset)
+                    ("prolog", "core", "epilog"), transpile_reset, silent=silent)
             else:
                 make_los_text = solveout()
                 m.make_los_text = make_los_text
                 exec(make_los_text, globals())  # creates make_los (returns 3 funcs)
-                funcs = globals()["make_los"](m.funks, m.errfunk)
+                with compile_progress(silent):
+                    funcs = globals()["make_los"](m.funks, m.errfunk)
             setattr(m, attr, funcs)
             setattr(m, attr + "_orders", orders)
         return getattr(m, attr)
@@ -1078,12 +1099,13 @@ class SolverBase:
                 # whenever the generated source differs from the file on disk
                 funcs = self._import_transpiled(
                     f"{m.name}_fbmin_jit", solveout, self.FBMIN_PARTNAMES,
-                    transpile_reset)
+                    transpile_reset, silent=silent)
             else:
                 make_los_text = solveout()
                 m.make_los_text = make_los_text
                 exec(make_los_text, globals())  # creates make_los (returns 4 funcs)
-                funcs = globals()["make_los"](m.funks, m.errfunk)
+                with compile_progress(silent):
+                    funcs = globals()["make_los"](m.funks, m.errfunk)
             setattr(m, attr, funcs)
         return getattr(m, attr)
 

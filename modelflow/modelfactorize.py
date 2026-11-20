@@ -48,7 +48,7 @@ import numpy as np
 import scipy.sparse as sps
 
 REFINE_TOL = 1e-11       # relative linear residual (max norm) the refinement aims for
-WARN_TOL = 1e-8          # a warning when the refinement ends above this
+WARN_TOL = 1e-8          # a warning when the refinement ends above this (or above 10 x a looser refine_tol)
 FAIL_TOL = 1e-2          # an exception when it ends above this: the step would be wrong
 STALL_STEPS = 3          # the refinement stops when the residual has not halved in this many steps
 
@@ -175,7 +175,8 @@ class RefinedSolver:
         if not rel < FAIL_TOL:
             raise ArithmeticError(f"factorizer='{self.name}' can not solve this linear system: relative residual "
                                   f"{rel:.2g} after {k} refinements. Use another factorizer")
-        if not rel < WARN_TOL:
+        # warn relative to the accuracy asked for: a refine_tol looser than WARN_TOL is a choice, not a problem
+        if not rel < max(WARN_TOL, 10 * self.refine_tol):
             print(f"factorizer='{self.name}': the linear solve is not accurate, relative residual {rel:.2g} "
                   f'after {k} refinements', flush=True)
         elif self.verbose:
@@ -416,6 +417,7 @@ def _with_options(cls, iparm, krylov, refine_tol):
         return cls(A, verbose, iparm=iparm, krylov=krylov, refine_tol=refine_tol).solve
     factorizer.__name__ = (f'{cls.name}(iparm={iparm}, krylov={krylov}'
                            + ('' if refine_tol is None else f', refine_tol={refine_tol:g}') + ')')
+    factorizer.takes_verbose = True          # make_solver passes verbose on (a user function gets A only)
     return factorizer
 
 
@@ -444,7 +446,7 @@ BUILTIN = (None, 'superlu', 'umfpack')        # handled in modelnewton
 def make_solver(A, factorizer, verbose=False):
     """Factorize A with the chosen factorizer and return the function solve(b) -> x."""
     if callable(factorizer):
-        return factorizer(A)
+        return factorizer(A, verbose) if getattr(factorizer, 'takes_verbose', False) else factorizer(A)
     try:
         maker = FACTORIZERS[factorizer.lower()]
     except (KeyError, AttributeError):

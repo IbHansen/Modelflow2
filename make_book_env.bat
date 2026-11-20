@@ -38,8 +38,10 @@ if /i "%~2"=="updatebase" (
 )
 
 rem === 2. Create the environment ===
+rem No python-mumps here: its build needs the OpenMP OpenBLAS (libomp.dll), which clashes with
+rem pypardiso's Intel libiomp5md.dll ("OMP: Error #15", the kernel dies). Use MODELFLOW_MUMPS_PYTHON.
 echo === Creating %ENVNAME% ===
-call conda create -y -n %ENVNAME% -c ibh -c conda-forge python=3.14 ibh::modelflow "pandas>=3.0,<3.1" "jupyterlab>=4.5,<4.6" papermill jupyterlab_rise spyder-kernels=3.1 eviews::py2eviews jupyterlab-myst anywidget ffmpeg nodejs python-mumps pymetis
+call conda create -y -n %ENVNAME% -c ibh -c conda-forge python=3.14 ibh::modelflow "pandas>=3.0,<3.1" "jupyterlab>=4.5,<4.6" papermill jupyterlab_rise spyder-kernels=3.1 eviews::py2eviews jupyterlab-myst anywidget ffmpeg nodejs pymetis
 if errorlevel 1 goto :fail
 call conda activate %ENVNAME%
 if errorlevel 1 goto :fail
@@ -69,7 +71,7 @@ if errorlevel 1 echo *** jupyter lab build failed - only needed for @plotly/dash
 rem === 7. Check ===
 echo.
 echo === Check ===
-python -c "import pypardiso, gamspy, mumps, pandas, modelclass; print('imports ok, pandas', pandas.__version__)"
+python -c "import pypardiso, gamspy, pandas, modelclass; print('imports ok, pandas', pandas.__version__)"
 call conda list pandas | findstr /b "pandas"
 call jupyter labextension list
 echo --- pinned:
