@@ -6865,10 +6865,23 @@ class Json_Mixin():
 
         return pathname, dump_data
 
-    def modeldump_base(self, outfile='',keep=False,data=True,derivatives=False):
+    def dump_frame(self, savebase=False):
+        '''The dataframe a dump stores: dump_df (normally the lastdf), or with savebase=True the basedf instead.
+        Only one dataframe is stored, so the file stays small; kept solutions can be added with keep=True.'''
+        if savebase:
+            base = self.__dict__.get('basedf')
+            if isinstance(base, pd.DataFrame):
+                return base
+            print('modeldump: savebase=True, but the model instance has no basedf - the lastdf is dumped')
+        return self.dump_df
+
+    def modeldump_base(self, outfile='',keep=False,data=True,derivatives=False,savebase=False):
         '''Dumps a model and its lastdf to a json file
 
         if keep=True the model.keep_solutions will alse be dumped
+
+        if savebase=True the basedf is dumped instead of the lastdf (for instance the baseline after an
+        experiment has been run). modelload gives it back as the dataframe of the file, as always
 
         if derivatives=True the expressions for the derivatives, which a Newton solver has found
         (model.diff_expressions), are dumped too. A Newton solver in a later session then takes them
@@ -6930,7 +6943,7 @@ class Json_Mixin():
             'version': '1.10',
             'has_data': dump_data,
             'frml': self.equations,
-            'lastdf': self.dump_df.to_json(double_precision=15) if dump_data else None,
+            'lastdf': self.dump_frame(savebase).to_json(double_precision=15) if dump_data else None,
             'current_per': current_per_json ,
             'modelname': self.name,
             'oldkwargs': storable_options(self.__dict__.get('oldkwargs',{})),
@@ -7135,12 +7148,12 @@ class Json_Mixin():
 
 class Zip_Mixin():
     '''This experimental class zips a dumped file '''
-    def modeldump(self, file_path='',keep=False,zip_file=True,data=True,derivatives=False):
+    def modeldump(self, file_path='',keep=False,zip_file=True,data=True,derivatives=False,savebase=False):
         pathname, dump_data = self._dump_pathname(file_path, self.has_data, data=data)
 
         pathname.parent.mkdir(parents=True, exist_ok=True)
 
-        json_string = self.modeldump_base(keep=keep,data=dump_data,derivatives=derivatives)
+        json_string = self.modeldump_base(keep=keep,data=dump_data,derivatives=derivatives,savebase=savebase)
 
 
         if zip_file:

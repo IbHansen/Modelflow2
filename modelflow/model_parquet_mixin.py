@@ -179,7 +179,8 @@ class Parquet_Mixin:
 
     # ── dump ──────────────────────────────────────────────────────────────
 
-    def modeldump(self, file_path='', keep=False, large=False, compact=False, derivatives=False, **kwargs):
+    def modeldump(self, file_path='', keep=False, large=False, compact=False, derivatives=False, savebase=False,
+                  **kwargs):
         """Dump model to disk.
 
         Parameters
@@ -202,6 +203,11 @@ class Parquet_Mixin:
             session takes them from the model instead of finding them again, which is
             the slow part of its first solve for a large model. They are used only if
             the equations and the solver options are the same.
+        savebase : bool
+            If True, store the basedf instead of the lastdf (for instance the baseline after an
+            experiment has been run). Only one dataframe is stored, so the file stays small; kept
+            solutions can be added with ``keep=True``. ``modelload`` gives it back as the dataframe
+            of the file, as always.
 
         A model instance without a lastdf holds no dataframe, so the feather
         format has nothing to be fast about. Such a model is always written as a
@@ -215,7 +221,8 @@ class Parquet_Mixin:
 
         if not large or nodata:
             # ── original JSON/gzip path ──────────────────────────────────
-            return super().modeldump(file_path=file_path, keep=keep, derivatives=derivatives, **kwargs)
+            return super().modeldump(file_path=file_path, keep=keep, derivatives=derivatives, savebase=savebase,
+                                     **kwargs)
 
         # ── fast feather/zip path ────────────────────────────────────────
         pathname = Path(file_path)
@@ -276,7 +283,7 @@ class Parquet_Mixin:
             # current_per
             zf.writestr('current_per.json', current_per_json)
             # lastdf  →  feather
-            zf.writestr('lastdf.feather', _df_to_feather_bytes(_maybe_compact(self.dump_df)))
+            zf.writestr('lastdf.feather', _df_to_feather_bytes(_maybe_compact(self.dump_frame(savebase))))
             # keep_solutions  →  one feather each, indexed by position
             if keep:
                 for i, (name, df) in enumerate(self.keep_solutions.items()):
