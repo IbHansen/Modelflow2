@@ -1557,7 +1557,7 @@ class DisplayKeepFigDef(DisplayDef):
                                      xlabel='',kind = line.kind ,samefig=options.samefig and all_by_var,
                                      dec=dec)
              
-             if options.legend and self.base_last and  axes[i].get_legend() is not None:
+             if options.legend and self.base_last and by_var and axes[i].get_legend() is not None:
                  axes[i].get_legend().remove()
                  
          for ax in axes[number:]:

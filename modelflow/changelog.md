@@ -434,3 +434,4 @@ Version 2.95 uploaded
 Makemodel.tvalues and Makemodel.actual_fitted leave out equations tagged <DROP> (they are estimated but not in the model); before, a dropped alternative for the same variable replaced the equation in the model, as the results are keyed by variable. The estimation output shows the samples as (2001, 2020) instead of (np.int64(2001), np.int64(2020)) 
 
 modelode (experimental): implicit methods for stiff systems (backward_euler, trapezoid, implicit_midpoint, radau3, or an own tableau) and auxiliaries that are simultaneous among themselves; each time step then holds a simultaneous block, solved with solver='newton_ng' (ode_transform says so); unknown methods and misshaped tableaux are refused. Test modeltest/odetest/ode_implicit_test.py
+mpak.plot with by_var=False and no scenarios= shows the legend again; it was removed for all base/last plots, though there each chart has one line per variable
