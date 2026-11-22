@@ -1919,15 +1919,24 @@ def _estimator_coefficients_for_markdown(estimator_obj) -> dict:
     return _extract_params_from_estimator(estimator_obj)
 
 
+def _markdown_format_smpl(smpl):
+    """(2001, 2020) for a sample pair, also when the ends are numpy scalars,
+    whose repr inside a tuple is np.int64(2001)."""
+    if isinstance(smpl, (tuple, list)) and len(smpl) == 2:
+        return f"({smpl[0]}, {smpl[1]})"
+    return smpl
+
+
 def _estimation_record_to_markdown(record: dict) -> str:
     """Create a compact Markdown report block for one Makemodel estimation."""
     est = record.get("estimator_object")
     estimator_name = record.get("estimator") or type(est).__name__
-    requested_smpl = record.get("smpl", "")
+    requested_smpl = _markdown_format_smpl(record.get("smpl", ""))
     try:
         effective_smpl = getattr(est, "estimation_smpl")
     except Exception:
         effective_smpl = getattr(est, "_effective_smpl", "")
+    effective_smpl = _markdown_format_smpl(effective_smpl)
 
     original = record.get("original_expression") or getattr(est, "org_eq", "")
     baked = record.get("baked_expression") or getattr(est, "org_eq_baked", "")
@@ -2677,7 +2686,8 @@ class Makemodel(BaseExplode):
         estimated equation named by its endogenous variable. NaN where a
         parameter is not in that equation or the backend provides no
         t-statistic (fixed/derived parameters, failed covariance, EViews
-        ``NA`` rows).
+        ``NA`` rows). Equations tagged ``<DROP>`` are estimated but are not
+        in the model, so they are left out.
 
         Per-equation access: ``rec['estimator_object'].tvalues`` on the
         entries of :attr:`estimation_records`.
@@ -2685,6 +2695,8 @@ class Makemodel(BaseExplode):
         import pandas as pd
         cols = {}
         for rec in self.estimation_records:
+            if kw_frml_name(rec.get('frmlname', ''), 'DROP'):
+                continue
             est = rec.get('estimator_object')
             try:
                 ser = est.tvalues
@@ -2710,7 +2722,8 @@ class Makemodel(BaseExplode):
 
         Each equation covers its own estimation sample, so rows outside it
         are NaN. An equation which can't be solved for its variable is left
-        out with ``level=True``.
+        out with ``level=True``, and so are equations tagged ``<DROP>``: they
+        are estimated but are not in the model.
 
         Per-equation access: ``rec['estimator_object'].af_level_df`` (or
         ``.af_df`` and ``.residuals_df``) on the entries of
@@ -2720,6 +2733,8 @@ class Makemodel(BaseExplode):
         import pandas as pd
         frames = {}
         for rec in self.estimation_records:
+            if kw_frml_name(rec.get('frmlname', ''), 'DROP'):
+                continue
             est = rec.get('estimator_object')
             if not _is_estimator_backend_instance(est):
                 continue

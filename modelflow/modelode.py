@@ -13,6 +13,11 @@ and returns FRML text for the same ODE system integrated with a one-step method 
 Butcher tableau (euler, heun, midpoint, ralston, rk4). Every generated equation is recursive
 within the period, so ModelFlow solves one time step per row in a single ordered sweep.
 
+Experimental: implicit tableaux (backward_euler, trapezoid, implicit_midpoint, radau3, or an own
+tableau with nonzeros on or above the diagonal), for stiff systems, and auxiliaries that are
+simultaneous among themselves. Each time step then holds a simultaneous block; solve with
+solver='newton_ng'. ode_transform prints a note when this is the case.
+
 Rules (see experiments/projecttile/nbody_rk4_design.md):
 - inside f and inside the auxiliaries needed by f, X and X(-1) both mean "X at the current stage";
   the lag pattern of an Euler model is discarded. A lag of 2 or more, a lead or a fixed period is an error.
@@ -62,7 +67,19 @@ BUTCHER = {
     'ralston':  dict(a=[[], [Fraction(2, 3)]],            b=[0.25, 0.75],             c=[0, Fraction(2, 3)]),
     'rk4':      dict(a=[[], [0.5], [0, 0.5], [0, 0, 1]],  b=[Fraction(1, 6), Fraction(1, 3),
                                                              Fraction(1, 3), Fraction(1, 6)], c=[0, 0.5, 0.5, 1]),
+    # implicit methods, for stiff systems: a stage uses its own derivative, so every period holds a simultaneous
+    # block, to be solved with solver='newton_ng' (Gauss-Seidel diverges when DT times the stiffness exceeds 1)
+    'backward_euler':    dict(a=[[1]],                     b=[1],                      c=[1]),
+    'trapezoid':         dict(a=[[0, 0], [0.5, 0.5]],      b=[0.5, 0.5],               c=[0, 1]),
+    'implicit_midpoint': dict(a=[[0.5]],                   b=[1],                      c=[0.5]),
+    'radau3':   dict(a=[[Fraction(5, 12), Fraction(-1, 12)], [Fraction(3, 4), Fraction(1, 4)]],
+                     b=[Fraction(3, 4), Fraction(1, 4)],   c=[Fraction(1, 3), 1]),
 }
+
+
+def is_implicit(tableau):
+    """True when a stage uses its own or a later stage's derivative (a nonzero on or above the diagonal of a)."""
+    return any(aij for i, row in enumerate(tableau['a']) for j, aij in enumerate(row) if j >= i)
 
 _FUNK_OP = re.compile(r'^[A-Z_][A-Z0-9_]*$')      # an op token that is a function name (SQRT, EXP, ...)
 
@@ -318,11 +335,19 @@ def _show_report(rows, exo, dt, method, report):
 def ode_transform(frml_text, method='rk4', dt='DT', funks=[], report=False):
     """FRML text of the model integrated with `method` (a key of BUTCHER or a dict a/b/c).
 
+    An implicit method, or simultaneous auxiliaries, give a simultaneous block in every period (experimental):
+    solve the model with solver='newton_ng'.
+
     report=True shows how each equation was classified (state / aux / report) and the derivatives: a markdown
     table in a notebook, plain text elsewhere; report='text' or report='markdown' chooses explicitly."""
+    if isinstance(method, str) and method.lower() not in BUTCHER:
+        raise OdeTransformError(f'unknown method {method!r}; use one of {", ".join(BUTCHER)} or a dict a/b/c')
     tab = BUTCHER[method.lower()] if isinstance(method, str) else method
     a, b, c = tab['a'], tab['b'], [_stage_time(ci) for ci in tab['c']]
     nst = len(b)
+    if len(a) != nst or len(c) != nst or any(len(row) > nst for row in a):
+        raise OdeTransformError(f'the Butcher tableau needs {nst} rows in a and {nst} values in c, as many as in b')
+    implicit = is_implicit(tab)
     dt = dt.upper()
 
     expanded = mp.explode(exclusion_lists(frml_text))
@@ -352,10 +377,9 @@ def ode_transform(frml_text, method='rk4', dt='DT', funks=[], report=False):
     for eq in states:
         for v in {t.var for t in eq.f_tokens if t.var} & aux_names:
             needed |= {v} | nx.ancestors(g, v)
+    # auxiliaries needed by a derivative may be simultaneous among themselves (an algebraic loop): each stage then
+    # holds a simultaneous block, which the model's solver handles like any other
     cycles = [cyc for cyc in nx.simple_cycles(g.subgraph(needed))]
-    if cycles:
-        errors.append('auxiliaries needed by a derivative are simultaneous: ' +
-                      ', '.join(' -> '.join(cyc) for cyc in cycles))
     for eq in auxs:
         eq.kind = 'aux' if eq.lhs in needed else 'report'
         if eq.kind == 'aux':
@@ -384,7 +408,18 @@ def ode_transform(frml_text, method='rk4', dt='DT', funks=[], report=False):
         _show_report(rows, sorted(allvars - endo - {dt}), dt, method, report)
 
     by_name = {eq.lhs: eq for eq in auxs}
-    needed_order = [by_name[n] for n in nx.topological_sort(g.subgraph(needed))]
+    if cycles:    # no recursive order exists; the model's own analysis finds the simultaneous block
+        needed_order = [eq for eq in auxs if eq.lhs in needed]
+    else:
+        needed_order = [by_name[n] for n in nx.topological_sort(g.subgraph(needed))]
+    if implicit or cycles:
+        why = ([f'the method {method if isinstance(method, str) else "(own tableau)"} is implicit'] if implicit else []) + \
+              ([('auxiliaries needed by a derivative are simultaneous: ' +
+                 ', '.join(' -> '.join(cyc) for cyc in cycles))] if cycles else [])
+        print(f'ode_transform: {" and ".join(why)}, so every time step holds a simultaneous block. '
+              "Solve it with solver='newton_ng', with a tight relconv (e.g. 1e-12) so the solver's tolerance stays "
+              "below the error of the method. Gauss-Seidel (the default) diverges on stiff systems, and the "
+              "legacy solver='newton' stops at an absolute change of 0.001 (newton_absconv).")
 
     def stage_map(i):
         ci = c[i - 1]
