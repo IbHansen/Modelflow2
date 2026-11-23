@@ -435,3 +435,4 @@ Makemodel.tvalues and Makemodel.actual_fitted leave out equations tagged <DROP> 
 
 modelode (experimental): implicit methods for stiff systems (backward_euler, trapezoid, implicit_midpoint, radau3, or an own tableau) and auxiliaries that are simultaneous among themselves; each time step then holds a simultaneous block, solved with solver='newton_ng' (ode_transform says so); unknown methods and misshaped tableaux are refused. Test modeltest/odetest/ode_implicit_test.py
 mpak.plot with by_var=False and no scenarios= shows the legend again; it was removed for all base/last plots, though there each chart has one line per variable
+Version 2.96 uploaded 
