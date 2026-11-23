@@ -11,8 +11,14 @@ for any `model` instance in the notebook namespace:
 - **Attribution** – attribution table for the focused variable
   (`get_att_pct` by default, `dekomp` fallback).
 
-All ModelFlow-specific logic lives in `mf_workbench/kernel.py` in the
-three `_mf_*` functions — that is where to customize.
+All ModelFlow-specific logic lives in ModelFlow's `modelinspect.py`
+(dependencies, variable rows, attribution, tables, plots, reports), which the
+ModelFlow MCP server uses too - so the panel and an AI assistant show the same
+thing. `mf_workbench/kernel.py` is only the comm plumbing.
+
+The kernel also keeps what the panel shows now (`kernel.FOCUS`: model,
+variable, up/down, pattern), answered by the `focus` action, so an assistant
+attached to the same kernel can see what the user is looking at.
 
 ## Layout
 
@@ -25,7 +31,7 @@ mf-workbench/
 ├── style/index.css
 └── mf_workbench/
     ├── __init__.py         # labextension paths
-    └── kernel.py           # comm target + ModelFlow introspection
+    └── kernel.py           # comm target (logic in modelflow/modelinspect.py)
 ```
 
 ## Build (one-time setup)
@@ -62,6 +68,7 @@ build the wheel once (see Release) and `pip install` it there - the
 compiled labextension travels inside the wheel, and JupyterLab 4 picks
 up prebuilt extensions with no rebuild.
 
+The kernel's ModelFlow must include `modelinspect.py`.
 The package must also be importable **in the kernel's environment**
 (the panel silently runs `import mf_workbench.kernel` on connect). With
 a single conda env this is automatic; with multiple kernels, install it

@@ -89,7 +89,7 @@ py-modules = [
     # estimate (3)
     "modelestimation", "modelestimator_new", "modelestimator_r",
     # report (3)
-    "modelreport", "modelhtml", "modeldisplay",
+    "modelreport", "modelhtml", "modeldisplay", "modelinspect",
     # viz (8)
     "modelvis", "modeljupyter", "modeljupytermagic", "modelwidget",
     "modelwidget_input", "modelwidget_core", "modeldash", "modeldashboot", "modeldashsidebar",
