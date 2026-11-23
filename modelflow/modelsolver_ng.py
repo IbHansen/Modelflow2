@@ -629,6 +629,32 @@ def errdump_flush(m):
         m.errfunk(*deferred)
 
 
+class SolveError(ArithmeticError):
+    """A solve that did not succeed, raised when the solve option ``newton_raise=True`` is given.
+
+    ``status`` is the record also stored as ``model.ng_solve_status``; ``result`` is the result frame
+    the solve would have returned (None when it stopped in an equation). An ArithmeticError, so code
+    catching that keeps working."""
+
+    def __init__(self, message, status=None, result=None):
+        super().__init__(message)
+        self.status = status or {}
+        self.result = result
+
+
+class NotConvergedError(SolveError):
+    """The solve reached max_iterations without converging."""
+
+
+class DivergedError(SolveError):
+    """The residual became NaN/inf and halving the step did not cure it."""
+
+
+class EquationError(SolveError, ValueError):
+    """An equation raised while the model was evaluated (math domain, division by zero, overflow).
+    The original exception is ``__cause__``. Also a ValueError, like the math domain error it wraps."""
+
+
 @dataclass
 class SolveContext:
     """Everything the shared setup produces and the core loop / teardown needs."""
@@ -676,6 +702,12 @@ class SolveContext:
     diffcount: int = 0
     iteration: int = 0
     convergence: bool = False
+    # outcome, set by the solvers that report it (newtonstack_ng) -- see SolverBase._status
+    reason: "str | None" = None        # 'converged', 'max_iterations', 'non-finite residual', 'evaluation error'
+    max_residual: "float | None" = None
+    steps: "int | None" = None         # Newton steps taken
+    refreshes: int = 0                # Jacobian refreshes on stall (newton_stall_refresh)
+    linesearch_steps: int = 0          # halved steps (line search, failed evaluations)
     # timing
     starttimesetup: float = 0.0
     endtimesetup: float = 0.0
@@ -730,7 +762,25 @@ class SolverBase:
         finally:
             # also when the solve raised: a later errfunk must not build .dumpdf from this run
             vars(ctx.model).pop("dumplist", None)
-        return self._finalize(ctx)
+            ctx.model.ng_solve_status = self._status(ctx)
+        result = self._finalize(ctx)
+        # newton_raise: a failed solve raises; the solvers that report an outcome set ctx.reason
+        if self._opt(ctx, "newton_raise", False) and ctx.reason not in (None, "converged"):
+            status = ctx.model.ng_solve_status
+            err = DivergedError if ctx.reason == "non-finite residual" else NotConvergedError
+            res = status["max_residual"]
+            raise err(f"{status['solver']}: {ctx.reason} after {status['iterations']} iterations"
+                      + ("" if res is None else f", max residual {res:.3g}"),
+                      status=status, result=result)
+        return result
+
+    def _status(self, ctx):
+        """The outcome of the solve, stored as ``model.ng_solve_status`` (also when it raised).
+        ``reason`` and the counts are None / 0 for solvers that do not report them."""
+        return {"solver": type(self).__name__, "converged": bool(ctx.convergence),
+                "iterations": ctx.iteration if ctx.steps is None else ctx.steps,
+                "reason": ctx.reason, "max_residual": ctx.max_residual,
+                "refreshes": ctx.refreshes, "linesearch_steps": ctx.linesearch_steps}
 
     @staticmethod
     def _opt(ctx, name, default):
@@ -2591,6 +2641,29 @@ class NewtonStackSolver(SolverBase):
     mask marks the residual rows, the residual is assembled per row accordingly
     and the stacked Jacobian is built consistently via
     ``get_solvestacked(df, mask)`` (normalized rows carry the ``-I`` term).
+
+    Robustness options (all off by default; the merit is ``max |residual|``, the
+    "Max residual" printed and tested against ``newton_absconv``):
+
+    * ``newton_linesearch=True``: a step must lower max |residual|, else it is
+      halved, down to ``newton_ls_min`` (1/16) times the step; then the smallest
+      step is taken, or a refresh is made (below).
+    * ``newton_stall_refresh=N``: up to N times per call, when a full step does not
+      lower max |residual| below ``newton_stall_ratio`` (1.0: only a growth counts)
+      times the value before it (or raises, or gives NaN), and the Jacobian is not
+      from the point before the step (stored from an earlier solve, or older than
+      the last step), the iterate goes back to that point and the Jacobian is
+      recalculated and factorized there. A Jacobian from that very point is not
+      renewed: the step is shortened (line search) or taken. Not below
+      ``newton_absconv``. With a stored factorization this renews the Jacobian only
+      when it stops working.
+    * ``newton_raise=True``: a failed solve raises ``NotConvergedError`` /
+      ``DivergedError`` (``.result`` is the frame, ``.status`` the record), an
+      equation that raises gives ``EquationError`` (``__cause__`` the original).
+
+    A NaN/inf residual is treated as a failed evaluation (the step is halved); if
+    that does not cure it the solve stops ("non-finite residual"). The outcome is
+    stored as ``model.ng_solve_status``.
     """
 
     solvename = "res"          # residual 2-D evaluator (== legacy 'newton')
@@ -2923,6 +2996,12 @@ class NewtonStackSolver(SolverBase):
         newtonnodamp = opt("newtonnodamp", 0)
         ldumpvar = opt("ldumpvar", False)
         keep_residual = opt("keep_residual", False)
+        # robustness options, all off by default -- see the class docstring
+        linesearch = opt("newton_linesearch", False)
+        ls_min = opt("newton_ls_min", 1 / 16)
+        stall_refresh = int(opt("newton_stall_refresh", 0) or 0)
+        stall_ratio = opt("newton_stall_ratio", 1.0)
+        newton_raise = opt("newton_raise", False)
 
         rowidx = ctx.stackrowindex
         colidx = ctx.stackcolindex
@@ -2937,16 +3016,37 @@ class NewtonStackSolver(SolverBase):
                     ctx.pro(values, outvalues, row, alfa)
 
         residual = None
+        newton_conv = None
         last_base = last_step = None       # previous Newton step, for backoff
+        last_conv = None                   # max |residual| at last_base
+        # halvings of one step: 7 for a failed evaluation (as before); with the
+        # line search down to newton_ls_min
+        max_halvings = (max(1, int(round(-np.log2(ls_min)))) if linesearch else 7)
+        ctx.steps = 0
+        # steps taken on the current Jacobian since it was computed: 0 when prepare
+        # built it at the start, None for one stored from an earlier solve. The
+        # Jacobian is from the point before the last step exactly when this is 1.
+        steps_on_jac = 0 if ctx.diffcount else None
         for iteration in range(max_iterations):
             with m.timer(f"\nNewton it:{iteration}", timeit):
                 before = values[rowidx, colidx_endo]
+                refresh = False            # a new Jacobian at this point before the step
+                halvings, lam = 0, 1.0
                 with m.timer("calculate new solution", timeit):
-                    # split mode: evaluate only the core equations -- see
-                    # _prepare_split.  If the evaluation raises (LOG/SQRT
-                    # domain error at an infeasible iterate), halve the
-                    # previous Newton step and re-evaluate.
-                    for backoff in range(8):
+                    # Evaluate the equations at the new iterate. A trial fails when
+                    # the evaluation raises (LOG/SQRT domain error at an infeasible
+                    # iterate), the residual is not finite, with the line search when
+                    # max |residual| is not lower than before the step, and with the
+                    # stall refresh when it is above newton_stall_ratio times that
+                    # (both only above newton_absconv).
+                    # A failed full step on a Jacobian from another point than the
+                    # one before the step (stored, or older than the last step) goes
+                    # back to that point and renews the Jacobian there, while a
+                    # refresh is left. Otherwise the step is halved: a failed
+                    # evaluation as before, a residual that does not fall with the
+                    # line search; when that is used up the smallest step is taken.
+                    while True:
+                        failure = None
                         try:
                             with errdump_deferred(m):
                                 if ctx.split:
@@ -2958,53 +3058,108 @@ class NewtonStackSolver(SolverBase):
                                         ctx.solve(values, outvalues, row, alfa)
                                         ctx.epi(values, outvalues, row, alfa)
                             ctx.ittotal += len(ctx.stackrows)
+                        except Exception as e:
+                            failure = e
+                        if failure is None:
+                            with m.timer("extract new solution", timeit):
+                                eq_after = outvalues[rowidx, colidx]        # calculated equations
+                                y_implied = outvalues[rowidx, colidx_endo]  # calculated unknowns
+                                y_old = values[rowidx, colidx]              # previous equation values
+                            # residual: G(y,x) on residual rows, F(y,x)-y on normalized rows
+                            residual = eq_after.copy()
+                            residual[~resmask] = y_implied[~resmask] - y_old[~resmask]
+                            newton_conv = np.max(np.abs(residual))
+                            watch = (last_step is not None and last_conv is not None
+                                     and last_conv > newton_absconv)
+                            if not np.isfinite(newton_conv):
+                                failure = "non-finite residual"
+                            elif (linesearch and watch
+                                  and newton_conv > (1 - 1e-4 * lam) * last_conv):
+                                failure = "no decrease"
+                            elif (stall_refresh and watch and halvings == 0
+                                  and newton_conv > stall_ratio * last_conv):
+                                failure = "stall"
+                        if failure is None:
                             break
-                        except Exception:
-                            if last_step is None or backoff == 7:
-                                errdump_flush(m)
-                                raise
+                        if (last_step is not None and halvings == 0 and steps_on_jac != 1
+                                and ctx.refreshes < stall_refresh):
+                            if not silent:
+                                what = (f"max residual {last_conv:.3g} -> {newton_conv:.3g}"
+                                        if failure in ("stall", "no decrease")
+                                        else str(failure)[:80])
+                                print(f"No progress ({what}): new Jacobian at the point "
+                                      f"before the step")
+                            values[rowidx, colidx_endo] = last_base
+                            before = values[rowidx, colidx_endo]
+                            last_step = None
+                            refresh = True
+                            continue               # evaluate there again
+                        if (failure != "stall" and last_step is not None
+                                and halvings < max_halvings):
+                            if not silent:
+                                if isinstance(failure, Exception):
+                                    print("Evaluation failed at the stacked Newton "
+                                          "iterate, halving the step")
+                                elif failure == "no decrease":
+                                    print(f"Line search: max residual {newton_conv:.3g} "
+                                          f"> {last_conv:.3g}, halving the step")
+                                else:
+                                    print("Non-finite residual at the stacked Newton "
+                                          "iterate, halving the step")
+                            halvings += 1
+                            lam *= 0.5
+                            ctx.linesearch_steps += 1
                             last_step = 0.5 * last_step
                             values[rowidx, colidx_endo] = last_base - last_step
                             before = values[rowidx, colidx_endo]
+                            continue
+                        if failure == "stall":
+                            break                  # the Jacobian is fresh: take the step
+                        if failure == "no decrease":
                             if not silent:
-                                print("Evaluation failed at the stacked Newton "
-                                      "iterate, halving the step")
-                with m.timer("extract new solution", timeit):
-                    eq_after = outvalues[rowidx, colidx]        # calculated equations
-                    y_implied = outvalues[rowidx, colidx_endo]  # calculated unknowns
-                    y_old = values[rowidx, colidx]              # previous equation values
-                # residual: G(y,x) on residual rows, F(y,x)-y on normalized rows
-                residual = eq_after.copy()
-                residual[~resmask] = y_implied[~resmask] - y_old[~resmask]
-
-                newton_conv = np.max(np.abs(residual))
+                                print("Line search: no decrease down to the smallest "
+                                      "step, taking it")
+                            break
+                        if isinstance(failure, Exception):
+                            ctx.reason = "evaluation error"
+                            ctx.iteration = iteration
+                            errdump_flush(m)
+                            if newton_raise:
+                                raise EquationError(
+                                    f"newtonstack_ng: {type(failure).__name__} in the "
+                                    f"equations in {m.periode}: {failure}",
+                                    status=self._status(ctx)) from failure
+                            raise failure
+                        break                      # non-finite residual: stop below
+                if failure == "non-finite residual":
+                    ctx.reason = failure
+                    break
                 if not silent:
                     print(f"Iteration  {iteration} Max residual "
                           f"{newton_conv:>{25},.{12}f}")
-                # scheduled Jacobian refresh -- skipped when the equations
-                # already hold (max |residual| <= newton_absconv): the
-                # remaining step is tiny and the current Jacobian is good
-                # enough for it, while a rebuild (stacked derivatives +
-                # factorization) costs many times a whole iteration
-                if (iteration != 0 and nonlin and not (iteration % nonlin)
+                # Jacobian refresh: on stall (above), or scheduled with nonlin --
+                # skipped when the equations already hold (max |residual| <=
+                # newton_absconv): the remaining step is tiny and the current
+                # Jacobian is good enough for it, while a rebuild (stacked
+                # derivatives + factorization) costs many times a whole iteration
+                if refresh:
+                    ctx.refreshes += 1
+                    self._refresh_solver(ctx, values, resmask, iteration, timeit, silent)
+                    steps_on_jac = 0
+                elif (iteration != 0 and nonlin and not (iteration % nonlin)
                         and newton_conv > newton_absconv):
-                    with m.timer("Updating solver", timeit):
-                        if not silent:
-                            print(f"Updating solver, iteration {iteration}")
-                        df_now = pd.DataFrame(
-                            values, index=ctx.databank.index,
-                            columns=ctx.databank.columns)
-                        buildstart = time.time()
-                        ctx.solver = m.ng_getstacksolver(df_now, resmask)
-                        m.ng_stackbuildtime += time.time() - buildstart
-                        m.ng_stacksolver = ctx.solver
-                        ctx.diffcount += 1
+                    self._refresh_solver(ctx, values, resmask, iteration, timeit, silent)
+                    steps_on_jac = 0
 
                 with m.timer("Update solution", timeit):
                     update = ctx.solver(residual)
                     damp = newtonalfa if iteration <= newtonnodamp else 1.0
                 last_base, last_step = before, damp * update
+                last_conv = newton_conv
                 values[rowidx, colidx_endo] = before - damp * update
+                ctx.steps += 1
+                if steps_on_jac is not None:
+                    steps_on_jac += 1
 
                 if ldumpvar:
                     for periode, row in zip(m.current_per, ctx.stackrows):
@@ -3040,10 +3195,29 @@ class NewtonStackSolver(SolverBase):
             for i, periode in enumerate(ctx.sol_periode):
                 self._record_residual(ctx, periode, eqnames, resmat[i])
 
+        ctx.max_residual = None if newton_conv is None else float(newton_conv)
+        if ctx.reason is None:
+            ctx.reason = "converged" if ctx.convergence else "max_iterations"
         if not ctx.convergence:
-            print(f"Not converged in {iteration} iterations")
+            print(f"Not converged in {iteration} iterations"
+                  + (": non-finite residual" if ctx.reason == "non-finite residual" else ""))
         elif not silent:
             print(f"Solved in {iteration} iterations")
+
+    def _refresh_solver(self, ctx, values, resmask, iteration, timeit, silent):
+        """New stacked Jacobian and factorization at the current iterate (``values``)."""
+        m = ctx.model
+        with m.timer("Updating solver", timeit):
+            if not silent:
+                print(f"Updating solver, iteration {iteration}")
+            df_now = pd.DataFrame(
+                values, index=ctx.databank.index,
+                columns=ctx.databank.columns)
+            buildstart = time.time()
+            ctx.solver = m.ng_getstacksolver(df_now, resmask)
+            m.ng_stackbuildtime += time.time() - buildstart
+            m.ng_stacksolver = ctx.solver
+            ctx.diffcount += 1
 
     def stats_lines(self, ctx):
         """Stacked Newton timing / floating-point-operation statistics (model +
