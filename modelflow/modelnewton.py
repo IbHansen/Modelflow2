@@ -50,6 +50,172 @@ from modelhelp import tovarlag, ttimer, insertModelVar
 import modeljupyter as mj
 from modelhelp import debug_var
  
+class Diff_function(Function):
+    ''' Base class for model functions which sympy does not know.
+
+    Without it sympy returns Derivative(...) for an equation with such a function, and the whole
+    equation gets numerical derivatives. A subclass tells sympy the partial derivatives, sympy does
+    the chain rule, and the derivative comes out as an expression in model functions.
+
+    To implement a function make a subclass, named as the function in the model in upper case,
+    with the method partials. It gets the arguments and returns a list with the derivative with
+    respect to each argument (None for an argument with no derivative: then the numerical
+    derivative is used)::
+
+        class LOGIT(Diff_function):
+            @classmethod
+            def partials(cls, u):
+                return [1/(u*(1-u))]
+
+    The expressions returned have to be written with functions the model knows, as they end up as
+    equations in the derivative model. The subclass is registered when it is defined (also a
+    subclass for a function in funks=, defined in a notebook before the derivatives are found),
+    and is used by newton_diff.modeldiff. A function with a derivative which does not fit partials
+    (like RECODE) can define _eval_derivative instead.'''
+
+    registry = {}       # function name in upper case -> class
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        Diff_function.registry[cls.__name__.upper()] = cls
+
+    @classmethod
+    def partials(cls, *args):
+        return None
+
+    def fdiff(self, argindex=1):
+        from sympy.core.function import ArgumentIndexError
+        partials = self.partials(*self.args)
+        if partials is None or argindex > len(partials) or partials[argindex-1] is None:
+            raise ArgumentIndexError(self, argindex)      # sympy leaves Derivative(...): numerical derivative
+        return sympify(partials[argindex-1])
+
+    @staticmethod
+    def used_in(equations):
+        ''' The registered functions used in a string of equations (upper case)'''
+        return sorted(name for name in Diff_function.registry
+                      if re.search(r'(?<![A-Z0-9_])' + re.escape(name) + r'\(', equations))
+
+    @staticmethod
+    def sympy_names():
+        ''' Function names for sympify: the registered functions and the model functions sympy has itself'''
+        import sympy
+        return {**Diff_function.registry,
+                'SQRT': sympy.sqrt, 'TANH': sympy.tanh,
+                'SUM_EXCEL': lambda *args: sympy.Add(*args)}
+
+
+def diff_switch(condition, yes, no):
+    ''' recode(condition,yes,no) for the derivative of a function with a kink (max, min, abs).
+    When sympy has decided the condition (max(2,3)) the branch is returned'''
+    from sympy import S
+    if condition is S.true:
+        return sympify(yes)
+    if condition is S.false:
+        return sympify(no)
+    return RECODE(condition, yes, no)
+
+
+class RECODE(Diff_function):
+    ''' recode(condition,yes,no) for sympy, so the derivative comes out as an expression:
+
+        d recode(c,a,b)/dx = recode(c, da/dx, db/dx)
+
+    The condition is taken as constant: its derivative is zero except at the switch point,
+    where recode has a kink (or a jump) and no derivative.'''
+
+    @classmethod
+    def eval(cls, c, a, b):
+        if a == b:                  # the same in both branches: no switch needed
+            return a
+
+    def _eval_derivative(self, x):
+        from sympy.logic.boolalg import BooleanAtom
+        c, a, b = self.args
+        # the condition can be a comparison (X > 3) or an expression which is 0 or 1 (a dummy variable)
+        if isinstance(c, BooleanAtom):
+            # sympy has evaluated the condition (A == B becomes False, as it compares the
+            # expressions and not the values): the numerical derivative is used instead
+            raise ValueError('Condition in recode can not be used by sympy')
+        return RECODE(c, a.diff(x), b.diff(x))
+
+
+class MAX(Diff_function):
+    ''' max(a,b,...): the derivative is the derivative of the largest argument.
+    At a tie the first argument is taken'''
+
+    @classmethod
+    def eval(cls, *args):
+        if len(args) > 2:           # max(a,b,c) = max(a,max(b,c))
+            return cls(args[0], cls(*args[1:]))
+        if len(args) == 2 and args[0] == args[1]:
+            return args[0]
+
+    @classmethod
+    def partials(cls, a, b):
+        return [diff_switch(a >= b, 1, 0), diff_switch(a >= b, 0, 1)]
+
+
+class MIN(Diff_function):
+    ''' min(a,b,...): the derivative is the derivative of the smallest argument.
+    At a tie the first argument is taken'''
+
+    @classmethod
+    def eval(cls, *args):
+        if len(args) > 2:
+            return cls(args[0], cls(*args[1:]))
+        if len(args) == 2 and args[0] == args[1]:
+            return args[0]
+
+    @classmethod
+    def partials(cls, a, b):
+        return [diff_switch(a <= b, 1, 0), diff_switch(a <= b, 0, 1)]
+
+
+class ABS(Diff_function):
+    ''' abs(u): the derivative is the sign of u (1 at u = 0)'''
+
+    @classmethod
+    def partials(cls, u):
+        return [diff_switch(u >= 0, 1, -1)]
+
+
+class LOGIT(Diff_function):
+    ''' logit(u) = log(u/(1-u))'''
+
+    @classmethod
+    def partials(cls, u):
+        return [1/(u*(1-u))]
+
+
+class LOGIT_INVERSE(Diff_function):
+    ''' logit_inverse(u) = 1/(1+exp(-u))'''
+
+    @classmethod
+    def partials(cls, u):
+        return [LOGIT_INVERSE(u)*(1-LOGIT_INVERSE(u))]
+
+
+class ERF(Diff_function):
+    ''' erf(u). The constant 2/sqrt(pi) is a number, as the model does not know pi'''
+
+    @classmethod
+    def partials(cls, u):
+        from sympy import exp, Float
+        return [Float(2/np.sqrt(np.pi))*exp(-u**2)]
+
+
+class NORMCDF(Diff_function):
+    ''' normcdf(x,mu=0,sigma=1), the cumulative normal distribution'''
+
+    @classmethod
+    def partials(cls, x, mu=0, sigma=1):
+        from sympy import exp, Float
+        z = (x-mu)/sigma
+        density = Float(1/np.sqrt(2*np.pi))*exp(-z**2/2)/sigma
+        return [density, -density, -z*density]
+
+
 @dataclass
 class diff_value_base:
     ''' class define columns in database with values from differentiation'''
@@ -202,6 +368,12 @@ class newton_diff():
         import hashlib
         key_text = '|'.join([self.mmodel.equations, ' '.join(self.endovar), str(bool(self.forcenum)),
                              str(bool(self.onlyendocur)), str(bool(self.endoandexo)), str(self.maxdif)])
+        # stored expressions from before a function got its symbolic derivative are not reused
+        diff_functions_used = Diff_function.used_in(self.mmodel.equations.upper())
+        if diff_functions_used == ['RECODE']:
+            key_text += '|recode_symbolic'   # the key from when RECODE was the only one: these stored expressions are still good
+        elif diff_functions_used:
+            key_text += '|diff_functions:' + ','.join(diff_functions_used)
         self.diff_key = hashlib.sha1(key_text.encode('utf-8')).hexdigest()
         stored = self.mmodel.__dict__.setdefault('diff_expressions', {})
         if self.diff_key in stored:
@@ -268,6 +440,7 @@ class newton_diff():
 
         with ttimer('Find espressions for partial derivatives',self.timeit):
             clash = {var : Symbol(var) for var in self.mmodel.allvar.keys()}
+            clash.update(Diff_function.sympy_names())     # the functions sympy is told how to differentiate (recode, max, logit ...)
             # clash = {var :None for var in self.mmodel.allvar.keys()}
             diffendocur={} #defaultdict(defaultdict) #here we wanmt to store the derivativs
             i=0
@@ -287,6 +460,7 @@ class newton_diff():
                 udtryk=re.sub(r'EXP\(','exp(',udtryk)
                 lhs,rhs=udtryk.split('=',1)
                 post = '_____XXYY'
+                kat = None     # if sympify fails the numerical derivative is used, not the expression of the previous equation
                 try:
                     if not self.forcenum:
                         # kat=sympify(rhs[0:-1], md._clash) # we take the the $ out _clash1 makes I is not taken as imiganary 

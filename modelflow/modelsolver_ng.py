@@ -597,12 +597,26 @@ def import_transpiled(jitname, solveout, partnames, transpile_reset, silent=True
         print(f'{"Writes" if stale else "Reuses"} the evaluation functions in {jitfile}')
     modname = f"{jitfile.parent.name}.{jitfile.stem}"
     # numba compiles while the module is imported; an unchanged file only loads numba's cache: no bars then
+    # The module is loaded from the file just written, not looked up on sys.path: another
+    # ``modelsource`` folder earlier on the path (e.g. one in the modelflow source folder
+    # when PYTHONPATH points there) would otherwise shadow the one in the working folder.
+    import importlib.util
+    target = jitfile.resolve()
     with compile_progress(silent or not stale):
-        if modname in sys.modules:
-            m1 = (importlib.reload(sys.modules[modname]) if stale
-                  else sys.modules[modname])
+        loaded = sys.modules.get(modname)
+        loaded_file = getattr(loaded, "__file__", None)
+        if (loaded is not None and not stale and loaded_file
+                and Path(loaded_file).resolve() == target):
+            m1 = loaded
         else:
-            m1 = importlib.import_module("." + jitfile.stem, jitfile.parent.name)
+            spec = importlib.util.spec_from_file_location(modname, target)
+            m1 = importlib.util.module_from_spec(spec)
+            sys.modules[modname] = m1
+            try:
+                spec.loader.exec_module(m1)
+            except BaseException:
+                sys.modules.pop(modname, None)
+                raise
     return tuple(getattr(m1, name) for name in partnames)
 
 
