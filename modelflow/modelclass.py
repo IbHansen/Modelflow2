@@ -2809,6 +2809,15 @@ class Dekomp_Mixin():
                 if ldekomp:
                     x = self.dekomp(v.child, lprint=1, start=start, end=end)
 
+    def _description_with_lag(self, name):
+        """The description of a row of an attribution table. A lagged row, ``X(-1)``, gets the
+        description of ``X`` followed by the lag. A name without description is returned as it is."""
+        name = str(name)
+        var, paren, lag = name.partition('(')
+        if var.strip() not in self.var_description:
+            return name
+        return self.var_description[var.strip()] + (f' ({lag}' if paren else '')
+
     def dekomp_plot_per(self, varnavn, sort=False, pct=True, per='', threshold=0.0
                          ,rename=True
                          ,nametrans = lambda varnames,thismodel : varnames
@@ -2843,7 +2852,7 @@ class Dekomp_Mixin():
         xx = self.dekomp(varnavn.upper(), lprint=False,time_att=time_att)
         ddf = join_name_lag(xx[2] if pct else xx[1])
         if rename:
-            ddf = ddf.rename(index= self.var_description)
+            ddf = ddf.rename(index=self._description_with_lag)
         else:
             ddf.index = nametrans(ddf.index,self)
 
@@ -3012,7 +3021,7 @@ class Dekomp_Mixin():
         # print(f'{self.current_per=}')
         ddf0 = self.get_att_pct(varnavn,lag=lag,time_att=time_att) if pct else  self.get_att_level(varnavn,lag=lag)
         if rename:
-            ddf0 = ddf0.rename(index= self.var_description)
+            ddf0 = ddf0.rename(index=self._description_with_lag)
         else:
             ddf0.index = nametrans(ddf0.index,self)
         ddf = cutout(ddf0, threshold)
