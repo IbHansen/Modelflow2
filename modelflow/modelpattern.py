@@ -382,6 +382,63 @@ def check_syntax_model(equations):
     return True
 
 
+def inline_recode(terms, frml=''):
+    ''' The terms the code writers use for an equation: recode(c,a,b) written as
+
+        ( ( a ) if ( c ) else ( b ) )
+
+    so only the chosen branch is evaluated. recode(x>0, log(x), 0) then works when x<=0.
+    As a function call both branches were evaluated.
+
+    Works on parsed terms, where a lag is part of its variable term, so only function calls
+    have parentheses. The arguments are split at the two commas at depth 0 of the recode,
+    and each argument is handled by a recursive call (recode in recode, recode in a function).
+
+    Returns the same list when there is no recode in the terms.
+    *frml* is only used in the error message. '''
+    if not any(t.op == 'RECODE' for t in terms):
+        return terms
+
+    def op(text):
+        return nterm('', text, '', '')
+
+    out = []
+    i = 0
+    while i < len(terms):
+        t = terms[i]
+        if t.op != 'RECODE':
+            out.append(t)
+            i += 1
+            continue
+        args = [[]]
+        depth = 0
+        j = i + 1                                   # the ( after RECODE
+        while True:
+            if j >= len(terms):
+                raise Exception(f'recode( is not closed with a ) in:\n{frml}')
+            tj = terms[j]
+            if tj.op in ('(', '['):
+                depth += 1
+                if depth > 1:
+                    args[-1].append(tj)
+            elif tj.op in (')', ']'):
+                depth -= 1
+                if depth == 0:
+                    break
+                args[-1].append(tj)
+            elif tj.op == ',' and depth == 1:
+                args.append([])
+            else:
+                args[-1].append(tj)
+            j += 1
+        if len(args) != 3 or not all(args):
+            raise Exception(f'recode takes 3 arguments: recode(condition,yes,no). Here it has {len(args)} in:\n{frml}')
+        condition, yes, no = (inline_recode(a, frml) for a in args)
+        out.extend([op('('), op('('), *yes, op(') if ('), *condition, op(') else ('), *no, op(')'), op(')')])
+        i = j + 1
+    return out
+
+
 def udtryk_parse(udtryk,funks=[]):
     '''returns a list of terms from an expression ie: lhs=rhs $ 
     or just an expression like x+b '''
