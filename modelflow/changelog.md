@@ -441,3 +441,6 @@ modelnewton: class Diff_function for functions sympy does not know: a subclass n
 modelsolver_ng import_transpiled loads the generated jit file by its path, so another modelsource folder earlier on sys.path (e.g. in the modelflow folder on PYTHONPATH) can not shadow the one in the working folder (ModuleNotFoundError with ljit=True) 24/11
 
 model.dekomp_plot and dekomp_plot_per with rename=True now also show the description for lagged variables: X(-1) gets the description of X followed by (-1). Before the lagged rows kept their variable name 24/11
+modelreport pdf(show=True) now shows the pdf in Jupyter Notebook 7: it is embedded as a data url, because Chrome/Edge do not show a pdf served from /files/ (sandbox header) in a frame. DisplayContainerDef.pdf now returns the pdf, so combined reports are shown too 25/11
+modelreport pdf: when xelatex reports LaTeX errors but still writes the pdf, the pdf is now shown/opened and the first errors from the log are printed; before nothing was shown. model.text(...) now replaces {key} from model.substitution also in the LaTeX/pdf output, as in the html (other braces are left for LaTeX) 25/11
+Tables (model.ibsstyle and modelreport html tables) are readable in dark themes: the sticky row and column headings use the theme background (var(--jp-layout-color0, var(--vscode-editor-background, white))) instead of white 25/11

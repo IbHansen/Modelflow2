@@ -807,10 +807,18 @@ class LatexRepo:
             return 
 
         # xx0 = run(f'latexmk -pdf -dvi- -ps- -f {self.name}.tex'      ,cwd = f'{latex_dir}')
-        if xx0.returncode: 
-             wb.open(latex_dir.absolute(), new=1)
- 
-             raise Exception(f'Error creating PDF file, {xx0.returncode},\n is latex installed?. If so look in the latex file, {latex_file}')
+        if xx0.returncode:
+            if not pdf_file.exists():
+                wb.open(latex_dir.absolute(), new=1)
+                raise Exception(f'Error creating PDF file, {xx0.returncode},\n is latex installed?. If so look in the latex file, {latex_file}')
+            # xelatex in batchmode still writes the pdf after a LaTeX error: show it, report the errors
+            log_file = latex_dir / f'{self.name}.log'
+            log_lines = log_file.read_text(encoding='utf-8', errors='replace').splitlines() if log_file.exists() else []
+            errors = [f'{l} {log_lines[i+1].strip() if i+1 < len(log_lines) else ""}'
+                      for i, l in enumerate(log_lines) if l.startswith('!')]
+            print(f'LaTeX reported errors, the pdf may look wrong. See {log_file}')
+            for e in errors[:5]:
+                print(f'   {e}')
              
         if pdfopen:
             fileurl = f'file://{pdf_file.resolve()}'
@@ -818,10 +826,13 @@ class LatexRepo:
             wb.open(fileurl , new=2)
         # from modelhelp import debug_var 
         if show:
-             # debug_var(show,pdf_file)
-             # debug_var(IFrame(pdf_file, width=width, height=height))
-
-             return IFrame(pdf_file, width=width, height=height)
+             # The pdf is embedded as a data url. An IFrame pointing to the file is
+             # served by Jupyter's /files/ handler with a "sandbox" CSP header, and
+             # Chrome/Edge will not show a pdf in a sandboxed frame (Notebook 7).
+             import base64
+             pdf64 = base64.b64encode(pdf_file.read_bytes()).decode('ascii')
+             return HTML(f'<div><iframe src="data:application/pdf;base64,{pdf64}" '
+                         f'width="{width}" height="{height}" style="border:none;"></iframe></div>')
 
 
     def __and__(self, other):
@@ -1126,7 +1137,7 @@ class DisplayVarTableDef(DisplayDef):
 
             if (line.textlinetype == 'textline' and line.centertext !='' ):
                 col0 = '<tr><td <th class="row_heading level0 row0" >  </td>'
-                out = out + '\n'+col0 + f"<td colspan='{len(df.columns)}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{line.centertext}</td></tr>"
+                out = out + '\n'+col0 + f"<td colspan='{len(df.columns)}' style='text-align: center;position: sticky; top: 0; background: var(--jp-layout-color0, var(--vscode-editor-background, white)); left: 0;'>{line.centertext}</td></tr>"
 
             elif line.textlinetype == 'scenarioline':
                 # Spans the whole row so a long name does not widen the label column
@@ -1308,7 +1319,7 @@ class DisplayVarTableDef(DisplayDef):
             ('position', 'sticky'),
             ('left', '0'),
             ('z-index', '3'),
-            ('background-color', 'white'),
+            ('background-color', 'var(--jp-layout-color0, var(--vscode-editor-background, white))'),
             ('width', '300px'),  # Set the width of the row headings
             ('min-width', '200px'),  # Ensure the minimum width is respected
             ('max-width', '400px')  # Ensure the maximum width is respected
@@ -1320,14 +1331,14 @@ class DisplayVarTableDef(DisplayDef):
             ('position', 'sticky'),
             ('top', '0'),
             ('z-index', '2'),
-            ('background-color', 'white')
+            ('background-color', 'var(--jp-layout-color0, var(--vscode-editor-background, white))')
         ]
     },
     {
         'selector': 'th',
         'props': [
             ('text-align', 'left') , # Align text to the left
-            ('background-color', 'white'),  # Ensuring headers are not transparent
+            ('background-color', 'var(--jp-layout-color0, var(--vscode-editor-background, white))'),  # Ensuring headers are not transparent
                ('z-index', '2')  # Headers z-index on par with column headings
         ]
     },
@@ -1703,10 +1714,15 @@ class DisplayTextDef(DisplayDef):
          return self.__class__(mmodel=self.mmodel, spec=new_spec, name=new_name)
 
  
-    @property 
+    @property
     def latex(self) :
-        return self.latex_text
-    
+        # {key} is replaced for keys in mmodel.substitution, as in the html. Other
+        # braces are LaTeX, so string_substitution (format_map) can not be used.
+        subst = getattr(self.mmodel, 'substitution', None) or {}
+        return re.sub(r'\{(\w+)\}',
+                      lambda m: str(subst[m.group(1)]) if m.group(1) in subst else m.group(0),
+                      self.latex_text)
+
   
 
     @property
@@ -1771,9 +1787,11 @@ class DisplayContainerDef:
         try: 
             repo = LatexRepo(self.latex ,name=self.name)
             out =  repo.pdf(pdfopen,show,width,height,typesetter)
-        except:
+        except Exception as e:
+            print(f"⚠️ Warning: PDF generation failed: {e}")
             out= None
-            
+        return out
+
     @property
     def spec_list(self):
         out = [r.save_spec for r in self.reports]  
@@ -2013,7 +2031,7 @@ def center_multiindex_headers(df):
                ('position', 'sticky'),
                ('left', '0'),
                ('z-index', '3'),
-               ('background-color', 'white'),
+               ('background-color', 'var(--jp-layout-color0, var(--vscode-editor-background, white))'),
                ('width', '300px'),  # Set the width of the row headings
                ('min-width', '200px'),  # Ensure the minimum width is respected
                ('max-width', '400px')  # Ensure the maximum width is respected
@@ -2025,14 +2043,14 @@ def center_multiindex_headers(df):
                ('position', 'sticky'),
                ('top', '0'),
                ('z-index', '2'),
-               ('background-color', 'white')
+               ('background-color', 'var(--jp-layout-color0, var(--vscode-editor-background, white))')
            ]
        },
        {
            'selector': 'th',
            'props': [
                ('text-align', 'left') , # Align text to the left
-               ('background-color', 'white'),  # Ensuring headers are not transparent
+               ('background-color', 'var(--jp-layout-color0, var(--vscode-editor-background, white))'),  # Ensuring headers are not transparent
                   ('z-index', '2')  # Headers z-index on par with column headings
            ]
        },
@@ -2227,7 +2245,7 @@ def insert_centered_row(html_text, centered_text, num_columns):
     # Construct the new row with centered text
     col0 = '<tr><td <th class="row_heading level0 row0" >  </td>'
 
-    new_row = '\n'+col0 + f"<td colspan='{num_columns}' style='text-align: center;position: sticky; top: 0; background: white; left: 0;'>{centered_text}</td></tr>"
+    new_row = '\n'+col0 + f"<td colspan='{num_columns}' style='text-align: center;position: sticky; top: 0; background: var(--jp-layout-color0, var(--vscode-editor-background, white)); left: 0;'>{centered_text}</td></tr>"
     
     # Insert the new row at the beginning of the tbody
     

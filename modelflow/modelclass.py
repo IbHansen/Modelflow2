@@ -5554,9 +5554,9 @@ class Display_Mixin():
             xpct = '%' if percent else ''
             styles = [
             {'selector': '.row_heading, .corner',
-             'props': [('position', 'sticky'), ('left', '0'), ('background', 'white')]},
+             'props': [('position', 'sticky'), ('left', '0'), ('background', 'var(--jp-layout-color0, var(--vscode-editor-background, white))')]},
             {'selector': '.col_heading',
-             'props': [('position', 'sticky'), ('top', '0'), ('background', 'white')]}
+             'props': [('position', 'sticky'), ('top', '0'), ('background', 'var(--jp-layout-color0, var(--vscode-editor-background, white))')]}
               ]
             
             result = df.style.set_table_styles(styles)
