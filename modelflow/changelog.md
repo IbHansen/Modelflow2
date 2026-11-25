@@ -444,3 +444,4 @@ model.dekomp_plot and dekomp_plot_per with rename=True now also show the descrip
 modelreport pdf(show=True) now shows the pdf in Jupyter Notebook 7: it is embedded as a data url, because Chrome/Edge do not show a pdf served from /files/ (sandbox header) in a frame. DisplayContainerDef.pdf now returns the pdf, so combined reports are shown too 25/11
 modelreport pdf: when xelatex reports LaTeX errors but still writes the pdf, the pdf is now shown/opened and the first errors from the log are printed; before nothing was shown. model.text(...) now replaces {key} from model.substitution also in the LaTeX/pdf output, as in the html (other braces are left for LaTeX) 25/11
 Tables (model.ibsstyle and modelreport html tables) are readable in dark themes: the sticky row and column headings use the theme background (var(--jp-layout-color0, var(--vscode-editor-background, white))) instead of white 25/11
+Version 2.97 uploaded 
