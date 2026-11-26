@@ -805,7 +805,9 @@ class newton_diff():
         same place are added. A new matrix with its own arrays every time: no caller can damage the plan.'''
         v = np.asarray(values,dtype=float)[plan.keep]
         v[np.isnan(v)] = 0.0
-        data = np.bincount(plan.slot,weights=v,minlength=plan.nnz)
+        # astype: bincount of an empty slot array is int64 even with weights (no derivatives in the span,
+        # e.g. a one-period solve of Y = 0.6*Y(+1) + E), and the -1.0 on the diagonal would then fail
+        data = np.bincount(plan.slot,weights=v,minlength=plan.nnz).astype(float,copy=False)
         data[plan.const_slot] -= 1.0
         return sp.sparse.csc_matrix((data,plan.indices.copy(),plan.indptr.copy()),shape=plan.shape)
 
