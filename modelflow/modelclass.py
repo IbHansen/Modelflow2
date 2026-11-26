@@ -325,6 +325,8 @@ class BaseModel():
         # self.aequalterm = ('','','=','','')     # this is how a term with = looks like
         # this is how a term with = looks like
         self.aequalterm = ('', '=', '', '')
+        # a recode function in funks= is the user's own: it is called, not written as if else
+        own_recode = any(f.__name__.upper() == 'RECODE' for f in self.funks)
         for frmlnumber, ((frml, fr, n, udtryk), nt) in enumerate(mega):
             # find the position of =
             assigpos = nt.index(self.aequalterm)
@@ -339,6 +341,7 @@ class BaseModel():
                 raise Exception(f'{bad}( : {bad} is not a function. Lags and leads are written with a sign, '
                                 f'{bad}(-1) or {bad}(+1), a fixed period as a year, {bad}(2002), or as text, '
                                 f"{bad}('2002Q1'), all without blanks:\n{frml}")
+            recode_nt = nt if own_recode else pt.inline_recode(nt, frml)
             # variables to the left of the =
             zendovar = [t.var for t in nt[:assigpos] if t.var]
             # do this formular define a matrix on the left of =
@@ -352,6 +355,10 @@ class BaseModel():
                 self.allvar[endo]['frmlnumber'] = frmlnumber
                 self.allvar[endo]['frml'] = frml
                 self.allvar[endo]['terms'] = nt[:]
+                # the terms for the code writers, with recode(c,a,b) as ((a) if (c) else (b)):
+                # only the chosen branch is evaluated. The same list as terms when there is no recode
+                self.allvar[endo]['recodeterms'] = (self.allvar[endo]['terms'] if recode_nt is nt
+                                                    else recode_nt[:])
                 self.allvar[endo]['frmlname'] = n
                 self.allvar[endo]['matrix'] = boolmatrix
                 self.allvar[endo]['assigpos'] = assigpos
@@ -679,7 +686,7 @@ class BaseModel():
         fib1.append(long+'try :\n')
         startline = len(fib1)+1
         content = (longer + ('pass  # '+v + '\n' if self.allvar[v]['dropfrml']
-                   else ''.join((totext(t) for t in self.allvar[v]['terms'])))
+                   else ''.join((totext(t) for t in self.allvar[v]['recodeterms'])))
                    for v in self.solveorder)
 
         fib2 = [long + 'except :\n']
@@ -789,7 +796,7 @@ class BaseModel():
         this. But can easely be implemented by makeing a function to multiply tupels
         '''
         self.fixed_period_guard('The one-period array (make_gaussline)')
-        termer = self.allvar[vx]['terms']
+        termer = self.allvar[vx]['recodeterms']
         assigpos = self.allvar[vx]['assigpos']
         if nodamp:
             ldamp = False
@@ -825,7 +832,7 @@ class BaseModel():
         ''' takes a list of terms and translates to a line calculating line
         '''
         self.fixed_period_guard('The one-period array (make_resline)')
-        termer = self.allvar[vx]['terms']
+        termer = self.allvar[vx]['recodeterms']
         assigpos = self.allvar[vx]['assigpos']
         out = []
 
@@ -7815,7 +7822,7 @@ class Solver_Mixin():
             this. But can easely be implemented by makeing a function to multiply tupels
             nodamp is for pre and epilog solutions, which should not be dampened. 
             '''
-            termer = self.allvar[vx]['terms']
+            termer = self.allvar[vx]['recodeterms']
             assigpos = self.allvar[vx]['assigpos']
             if nodamp:
                 ldamp = False
@@ -7855,7 +7862,7 @@ class Solver_Mixin():
         def make_resline2(vx, nodamp):
             ''' takes a list of terms and translates to a line calculating linne
             '''
-            termer = self.allvar[vx]['terms']
+            termer = self.allvar[vx]['recodeterms']
             assigpos = self.allvar[vx]['assigpos']
             out = []
 

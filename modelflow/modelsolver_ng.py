@@ -112,6 +112,7 @@ from functools import partial
 from itertools import chain, zip_longest
 from pathlib import Path
 import importlib
+import importlib.util
 import re
 import time
 import sys  # noqa: F401  -- referenced by exec'd solver code (sys.exc_info)
@@ -169,7 +170,7 @@ def _cell(arr, t, columnsnr, fixrow):
 
 def _gaussline_1d(m, vx, nodamp=False):
     """One Gauss-Seidel line addressing the stuffed 1-D array ``a`` (by startnr)."""
-    termer = m.allvar[vx]["terms"]
+    termer = m.allvar[vx]["recodeterms"]
     assigpos = m.allvar[vx]["assigpos"]
     if nodamp:
         ldamp = False
@@ -220,7 +221,7 @@ def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=Fal
 
     def make_gaussline2(vx, nodamp=False):
         """Translate one equation ``vx`` to a 2-D in-place Gauss-Seidel line."""
-        termer = m.allvar[vx]["terms"]
+        termer = m.allvar[vx]["recodeterms"]
         assigpos = m.allvar[vx]["assigpos"]
         if nodamp:
             ldamp = False
@@ -248,7 +249,7 @@ def gen_2d(m, databank, debug=1, chunk=None, ljit=False, type="gauss", cache=Fal
 
     def make_resline2(vx, nodamp):
         """Translate one equation ``vx`` to a 2-D residual line (LHS -> outvalues)."""
-        termer = m.allvar[vx]["terms"]
+        termer = m.allvar[vx]["recodeterms"]
         assigpos = m.allvar[vx]["assigpos"]
         out = []
         for i, t in enumerate(termer[:-1]):
@@ -482,7 +483,7 @@ def gen_dag(m, databank):
     fib1.append(long + "try :\n")
     startline = len(fib1) + 1
     content = (longer + ("pass  # " + v + "\n" if m.allvar[v]["dropfrml"]
-               else "".join(totext(t) for t in m.allvar[v]["terms"]))
+               else "".join(totext(t) for t in m.allvar[v]["recodeterms"]))
                for v in m.solveorder)
     fib2 = [long + "except :\n"]
     fib2.append(longer + f"errorfunk(values,sys.exc_info()[2].tb_lineno,overhead={startline-1},overeq={0})\n")
@@ -510,7 +511,7 @@ def gen_eqdict(m, databank):
 
     def make_resline2(vx):
         """Translate one equation ``vx`` to a residual line (LHS -> outvalues)."""
-        termer = m.allvar[vx]["terms"]
+        termer = m.allvar[vx]["recodeterms"]
         assigpos = m.allvar[vx]["assigpos"]
         out = []
         for i, t in enumerate(termer[:-1]):
@@ -600,7 +601,6 @@ def import_transpiled(jitname, solveout, partnames, transpile_reset, silent=True
     # The module is loaded from the file just written, not looked up on sys.path: another
     # ``modelsource`` folder earlier on the path (e.g. one in the modelflow source folder
     # when PYTHONPATH points there) would otherwise shadow the one in the working folder.
-    import importlib.util
     target = jitfile.resolve()
     with compile_progress(silent or not stale):
         loaded = sys.modules.get(modname)
