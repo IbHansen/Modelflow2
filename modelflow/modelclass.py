@@ -6884,10 +6884,13 @@ class Json_Mixin():
             print('modeldump: savebase=True, but the model instance has no basedf - the lastdf is dumped')
         return self.dump_df
 
-    def modeldump_base(self, outfile='',keep=False,data=True,derivatives=False,savebase=False):
+    def modeldump_base(self, outfile='',keep=False,data=True,derivatives=False,savebase=False,reports=True):
         '''Dumps a model and its lastdf to a json file
 
         if keep=True the model.keep_solutions will alse be dumped
+
+        if reports=False the stored report definitions (model.reports) are not dumped; they can be
+        saved in a file of their own with model.reportdump
 
         if savebase=True the basedf is dumped instead of the lastdf (for instance the baseline after an
         experiment has been run). modelload gives it back as the dataframe of the file, as always
@@ -6964,7 +6967,7 @@ class Json_Mixin():
             'keep_solutions': {k:v.to_json(double_precision=15) for k,v in self.keep_solutions.items()} if (keep and dump_data) else {},
             'wb_MFMSAOPTIONS': self.wb_MFMSAOPTIONS if hasattr(self, 'wb_MFMSAOPTIONS') else '',
             'var_groups'     : self.var_groups,
-            'reports'        : self.reports , 
+            'reports'        : self.reports if reports else {},
 
             'model_description'     : self.model_description,
             'eviews_dict'           : self.eviews_dict,
@@ -7157,12 +7160,13 @@ class Json_Mixin():
 
 class Zip_Mixin():
     '''This experimental class zips a dumped file '''
-    def modeldump(self, file_path='',keep=False,zip_file=True,data=True,derivatives=False,savebase=False):
+    def modeldump(self, file_path='',keep=False,zip_file=True,data=True,derivatives=False,savebase=False,reports=True):
         pathname, dump_data = self._dump_pathname(file_path, self.has_data, data=data)
 
         pathname.parent.mkdir(parents=True, exist_ok=True)
 
-        json_string = self.modeldump_base(keep=keep,data=dump_data,derivatives=derivatives,savebase=savebase)
+        json_string = self.modeldump_base(keep=keep,data=dump_data,derivatives=derivatives,savebase=savebase,
+                                          reports=reports)
 
 
         if zip_file:
@@ -10282,9 +10286,107 @@ class Report_Mixin:
              raise Exception('Wrong report key try again')
          else: 
              out = self.report_from_spec(self.reports[key])
-         
-             return out 
-             
+
+             return out
+
+    def reportdump(self, path, names=None):
+        '''Save report definitions (json) to a file.
+
+        The file holds a dict {report name: definition} - only the
+        definitions, not the numbers - so it can be loaded into any model
+        with the same variable names with :any:`reportload`.
+
+        Args:
+            path: file name; '.rsim' is added if there is no suffix
+                (the content is json, so any suffix can be used).
+            names (str|list|None): the stored reports to save (names in
+                self.reports, a string may hold several names separated by
+                blanks). None saves all. A report object (from mpak.table,
+                mpak.plot, ... + ...) can also be given; it is saved under its
+                name without being added to the model.
+
+        Returns:
+            The path of the file.
+        '''
+        if names is None:
+            out = dict(self.reports)
+        else:
+            items = names.split() if isinstance(names, str) else (
+                list(names) if isinstance(names, (list, tuple)) else [names])
+            out = {}
+            for item in items:
+                if isinstance(item, str):
+                    if item not in self.reports:
+                        raise Exception(f'No stored report with the name {item}. '
+                                        f'Possible values: {", ".join(self.reports)}')
+                    out[item] = self.reports[item]
+                else:
+                    out[item.name] = item.save_spec
+        if not out:
+            print('No reports to save')
+        path = Path(path)
+        if not path.suffix:
+            path = path.with_suffix('.rsim')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(out, f, indent=1)
+        print(f'Reports saved to {path}: {", ".join(out)}')
+        return path
+
+    def reportload(self, path, names=None, replace=True):
+        '''Load report definitions saved by :any:`reportdump` into self.reports.
+
+        Args:
+            path: file name; '.rsim' is added if the file has no suffix and
+                is not found.
+            names (str|list|None): the reports to load from the file (a string
+                may hold several names separated by blanks). None loads all.
+            replace (bool|str): True: all reports in the file are loaded, a
+                report with the same name in the model is replaced, the other
+                reports in the model are kept. False: a report already in the
+                model is kept and the one in the file is skipped. 'all': the
+                reports in the model are dropped and all reports in the file
+                are loaded, so the model has exactly the reports in the file.
+
+        Returns:
+            list of the names loaded. Use mpak.get_report(name) to make one.
+        '''
+        path = Path(path)
+        if not path.exists() and not path.suffix:
+            path = path.with_suffix('.rsim')
+        with open(path, encoding='utf-8') as f:
+            content = json.load(f)
+        if not isinstance(content, dict):
+            raise Exception(f'{path} does not hold report definitions '
+                            '(a dict of report name and definition)')
+        if names is not None:
+            wanted = names.split() if isinstance(names, str) else list(names)
+            missing = [n for n in wanted if n not in content]
+            if missing:
+                raise Exception(f'Not in {path}: {", ".join(missing)}. '
+                                f'Possible values: {", ".join(content)}')
+            content = {n: content[n] for n in wanted}
+        # a definition can be a json string (as made by save_spec) or the decoded dict
+        content = {k: v if isinstance(v, str) else json.dumps(v, indent=4)
+                   for k, v in content.items()}
+        if replace == 'all':
+            dropped = [n for n in self.reports if n not in content]
+            if dropped:
+                print(f'Dropped from the model: {", ".join(dropped)}')
+            self.reports = dict(content)
+        else:
+            if not replace:
+                skipped = [n for n in content if n in self.reports]
+                if skipped:
+                    print(f'Already in the model, not loaded: {", ".join(skipped)}')
+                content = {k: v for k, v in content.items() if k not in self.reports}
+            self.reports = self.reports | content
+        if content:
+            print(f'Reports loaded from {path}: {", ".join(content)}')
+        else:
+            print(f'No reports loaded from {path}')
+        return list(content)
+
 from model_parquet_mixin import Parquet_Mixin
 from modelcausality import Causality_Mixin
 

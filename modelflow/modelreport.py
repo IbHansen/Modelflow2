@@ -1773,7 +1773,7 @@ class DisplayContainerDef:
 
     def set_scenarios(self,scenarios):
        rs = [r.set_options(scenarios=scenarios) for r in self.reports]
-       out = DisplayContainerDef(mmodel=self.mmodel,reports= rs)
+       out = DisplayContainerDef(mmodel=self.mmodel,reports= rs,name=self.name,options=self.options)
 
        return out   
 
@@ -1818,8 +1818,10 @@ class DisplayContainerDef:
     def reports_restore(cls,mmodel,json_string):
         reports_json_strings = json.loads(json_string)
 
-        out = cls(mmodel=mmodel,reports = [create_instance_from_json(mmodel,r) for r in reports_json_strings['reports']]  )
-        return out 
+        out = cls(mmodel=mmodel,reports = [create_instance_from_json(mmodel,r) for r in reports_json_strings['reports']],
+                  name = reports_json_strings.get('name','Report_test'),
+                  options = reports_json_strings.get('options',{}) )
+        return out
         # print (*[r for r in reports_json_strings['reports']],sep='\n')     
         
         

@@ -183,7 +183,7 @@ class Parquet_Mixin:
     # ── dump ──────────────────────────────────────────────────────────────
 
     def modeldump(self, file_path='', keep=False, large=False, compact=False, derivatives=False, savebase=False,
-                  **kwargs):
+                  reports=True, **kwargs):
         """Dump model to disk.
 
         Parameters
@@ -211,6 +211,9 @@ class Parquet_Mixin:
             experiment has been run). Only one dataframe is stored, so the file stays small; kept
             solutions can be added with ``keep=True``. ``modelload`` gives it back as the dataframe
             of the file, as always.
+        reports : bool
+            If True (default), store the report definitions (``model.reports``). If False they are
+            left out; they can be saved in a file of their own with ``model.reportdump``.
 
         A model instance without a lastdf holds no dataframe, so the feather
         format has nothing to be fast about. Such a model is always written as a
@@ -225,7 +228,7 @@ class Parquet_Mixin:
         if not large or nodata:
             # ── original JSON/gzip path ──────────────────────────────────
             return super().modeldump(file_path=file_path, keep=keep, derivatives=derivatives, savebase=savebase,
-                                     **kwargs)
+                                     reports=reports, **kwargs)
 
         # ── fast feather/zip path ────────────────────────────────────────
         pathname = Path(file_path)
@@ -259,7 +262,7 @@ class Parquet_Mixin:
                 else ''
             ),
             'var_groups': self.var_groups,
-            'reports': self.reports,
+            'reports': self.reports if reports else {},
             'model_description': self.model_description,
             'eviews_dict': self.eviews_dict,
             'substitution': self.substitution,
